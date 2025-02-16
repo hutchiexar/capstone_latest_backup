@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Messages Section -->
+    {% if messages %}
+    <div class="messages mb-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="material-icons align-middle me-2">receipt</i>
+                        Record Payment Receipt
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Violation Summary -->
+                    <div class="violation-summary mb-4">
+                        <h6 class="text-muted mb-3">Violation Details</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="detail-item">
+                                    <label>Violation #</label>
+                                    <div class="value">{{ violation.id }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="detail-item">
+                                    <label>Date</label>
+                                    <div class="value">{{ violation.violation_date|date:"F d, Y" }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="detail-item">
+                                    <label>Violator</label>
+                                    <div class="value">{{ violation.violator.get_full_name }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="detail-item">
+                                    <label>Amount Due</label>
+                                    <div class="value fw-bold">₱{{ violation.fine_amount }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Receipt Form -->
+                    <form method="post" class="receipt-form">
+                        {% csrf_token %}
+                        <h6 class="text-muted mb-3">Receipt Information</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="receipt_number" class="form-label required">BIR Receipt Number</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="receipt_number" 
+                                           name="receipt_number" 
+                                           required
+                                           pattern="[0-9]+"
+                                           title="Please enter a valid receipt number (numbers only)"
+                                           placeholder="Enter BIR receipt number">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="receipt_date" class="form-label required">Receipt Date</label>
+                                    <input type="date" 
+                                           class="form-control" 
+                                           id="receipt_date" 
+                                           name="receipt_date" 
+                                           required
+                                           value="{{ today|date:'Y-m-d' }}">
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label for="remarks" class="form-label">Remarks</label>
+                                    <textarea class="form-control" 
+                                              id="remarks" 
+                                              name="remarks" 
+                                              rows="2"
+                                              placeholder="Optional remarks about the payment"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 d-flex justify-content-end gap-2">
+                            <a href="{% url 'violations_list' %}" class="btn btn-light">
+                                <i class="material-icons">arrow_back</i>
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="material-icons">check</i>
+                                Record Payment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Form Styles */
+.receipt-form .form-label {
+    font-weight: 500;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.receipt-form .form-label.required::after {
+    content: "*";
+    color: var(--danger);
+    margin-left: 0.25rem;
+}
+
+.receipt-form .form-control {
+    padding: 0.75rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.receipt-form .form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.15);
+}
+
+/* Detail Item Styles */
+.detail-item {
+    margin-bottom: 0.5rem;
+}
+
+.detail-item label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 0.25rem;
+    display: block;
+}
+
+.detail-item .value {
+    font-size: 1rem;
+    color: var(--text-dark);
+}
+
+/* Card Styles */
+.card {
+    border-radius: 12px;
+}
+
+.card-header {
+    border-top-left-radius: 12px !important;
+    border-top-right-radius: 12px !important;
+}
+
+/* Button Styles */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn .material-icons {
+    font-size: 1.1rem;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 1rem !important;
+    }
+    
+    .btn {
+        padding: 0.625rem 1.25rem;
+    }
+    
+    .detail-item .value {
+        font-size: 0.95rem;
+    }
+}
+</style>
+{% endblock %} 

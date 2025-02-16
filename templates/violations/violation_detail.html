@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="card shadow">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Violation Details</h5>
+        </div>
+        <div class="card-body">
+            <!-- Violation details here -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h6 class="font-weight-bold">Violation Information</h6>
+                    <p><strong>Date:</strong> {{ violation.violation_date|date:"F d, Y H:i" }}</p>
+                    <p><strong>Location:</strong> {{ violation.location }}</p>
+                    <p><strong>Type:</strong> {{ violation.violation_type }}</p>
+                    <p><strong>Fine Amount:</strong> ₱{{ violation.fine_amount }}</p>
+                    <p><strong>Status:</strong> 
+                        <span class="badge {% if violation.status == 'PAID' %}bg-success{% elif violation.status == 'PENDING' %}bg-warning{% else %}bg-danger{% endif %}">
+                            {{ violation.status }}
+                        </span>
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="font-weight-bold">Violator Information</h6>
+                    <p><strong>License Number:</strong> {{ violation.violator.license_number }}</p>
+                    <p><strong>Name:</strong> {{ violation.violator.first_name }} {{ violation.violator.last_name }}</p>
+                    <p><strong>Due Date:</strong> {{ violation.payment_due_date|date:"F d, Y" }}</p>
+                </div>
+            </div>
+            
+            {% if violation.status == 'PENDING' %}
+                <div class="mt-4">
+                    <h6>Payment Options</h6>
+                    <div class="payment-methods">
+                        <button class="btn btn-primary" onclick="initiatePayment('card')">
+                            <i class="fas fa-credit-card me-2"></i>Pay with Card
+                        </button>
+                        <button class="btn btn-success ms-2" onclick="initiatePayment('gcash')">
+                            <i class="fas fa-mobile-alt me-2"></i>Pay with GCash
+                        </button>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const violationId = '{{ violation.id }}';
+
+    window.initiatePayment = async function(method) {
+        try {
+            // Show loading state
+            const button = event.target.closest('button');
+            const originalText = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+
+            console.log('Initiating payment for violation:', violationId);
+
+            // Get checkout session URL from backend
+            const response = await fetch(`/violation/${violationId}/process-payment/`);
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to create checkout session');
+            }
+
+            // Redirect to checkout URL
+            if (data.checkout_url) {
+                window.location.href = data.checkout_url;
+            } else {
+                throw new Error('No checkout URL received');
+            }
+
+        } catch (error) {
+            console.error('Payment Error:', error);
+            showErrorMessage(error, button);
+            restoreButton(button, originalText);
+        }
+    }
+
+    function showErrorMessage(error, button) {
+        const errorAlert = document.createElement('div');
+        errorAlert.className = 'alert alert-danger mt-3';
+        errorAlert.innerHTML = `<i class="fas fa-exclamation-circle me-2"></i>Payment failed: ${error.message}`;
+        button.closest('.payment-methods').after(errorAlert);
+    }
+
+    function restoreButton(button, originalText) {
+        button.disabled = false;
+        button.innerHTML = originalText;
+    }
+
+    // Check for payment status in URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const status = urlParams.get('status');
+    
+    if (status === 'success') {
+        const successAlert = document.createElement('div');
+        successAlert.className = 'alert alert-success';
+        successAlert.innerHTML = '<i class="fas fa-check-circle me-2"></i>Payment successful!';
+        document.querySelector('.card-body').prepend(successAlert);
+        
+        // Update status badge immediately
+        const statusBadge = document.querySelector('.badge');
+        if (statusBadge) {
+            statusBadge.className = 'badge bg-warning';
+            statusBadge.textContent = 'DISPUTED';
+        }
+        
+        // Reload the page after a delay to show updated status
+        setTimeout(() => {
+            window.location.href = window.location.pathname;
+        }, 2000);
+    } else if (status === 'cancelled') {
+        const cancelAlert = document.createElement('div');
+        cancelAlert.className = 'alert alert-warning';
+        cancelAlert.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Payment was cancelled.';
+        document.querySelector('.card-body').prepend(cancelAlert);
+    }
+});
+</script>
+
+<style>
+.payment-methods {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.btn {
+    min-width: 150px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+}
+
+.alert {
+    margin-top: 1rem;
+    text-align: center;
+}
+
+.badge {
+    padding: 0.5em 1em;
+}
+</style>
+{% endblock %}

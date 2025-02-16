@@ -1,0 +1,315 @@
+<div class="modal-content p-4">
+    <!-- User Header -->
+    <div class="user-header mb-4">
+        <div class="d-flex align-items-start gap-4">
+            <div class="avatar-container">
+                {% if profile.avatar %}
+                <img src="{{ profile.avatar.url }}" alt="User avatar" class="user-avatar">
+                {% else %}
+                <div class="avatar-placeholder">
+                    {{ profile.user.get_initials }}
+                </div>
+                {% endif %}
+            </div>
+            <div class="flex-grow-1">
+                <h5 class="user-name mb-2">{{ profile.user.get_full_name }}</h5>
+                <div class="user-meta">
+                    <span class="badge role-badge role-{{ profile.role|lower }} mb-2">
+                        {{ profile.get_role_display }}
+                    </span>
+                    <div class="text-muted small">
+                        <i class="material-icons me-1">badge</i>
+                        {{ profile.enforcer_id }}
+                    </div>
+                </div>
+            </div>
+            <span class="status-badge {% if profile.user.is_active %}status-active{% else %}status-inactive{% endif %}">
+                {{ profile.user.is_active|yesno:"Active,Inactive" }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Contact Information -->
+    <div class="info-section mb-4">
+        <h6 class="section-title">
+            <i class="material-icons me-2">contact_mail</i>
+            Contact Information
+        </h6>
+        <div class="info-content">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="info-item">
+                        <label>Email Address</label>
+                        <div class="value">{{ profile.user.email }}</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-item">
+                        <label>Phone Number</label>
+                        <div class="value">{{ profile.phone_number|default:"Not provided" }}</div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="info-item">
+                        <label>Address</label>
+                        <div class="value">{{ profile.address|default:"Not provided" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Account Information -->
+    <div class="info-section mb-4">
+        <h6 class="section-title">
+            <i class="material-icons me-2">account_circle</i>
+            Account Information
+        </h6>
+        <div class="info-content">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="info-item">
+                        <label>Username</label>
+                        <div class="value">{{ profile.user.username }}</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-item">
+                        <label>Join Date</label>
+                        <div class="value">{{ profile.user.date_joined|date:"F d, Y" }}</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-item">
+                        <label>Last Login</label>
+                        <div class="value">{{ profile.user.last_login|date:"F d, Y H:i"|default:"Never" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Summary -->
+    <div class="info-section">
+        <h6 class="section-title">
+            <i class="material-icons me-2">history</i>
+            Activity Summary
+        </h6>
+        <div class="info-content">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Violations</div>
+                        <div class="stat-value">{{ profile.total_violations }}</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="stat-label">This Month</div>
+                        <div class="stat-value">{{ profile.monthly_violations }}</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="stat-label">Today</div>
+                        <div class="stat-value">{{ profile.today_violations }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Modal Styles */
+.modal-content {
+    border-radius: 12px;
+    border: none;
+}
+
+/* User Header Styles */
+.user-header {
+    border-bottom: 2px solid var(--bg-light);
+}
+
+.avatar-container {
+    width: 80px;
+    height: 80px;
+    flex-shrink: 0;
+}
+
+.user-avatar {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+.avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    background-color: var(--primary-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    border-radius: 12px;
+}
+
+.user-name {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 0.5rem;
+}
+
+.user-meta {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Section Styles */
+.section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--bg-light);
+}
+
+.section-title .material-icons {
+    font-size: 1.2rem;
+}
+
+/* Information Item Styles */
+.info-section {
+    background-color: white;
+    border-radius: 8px;
+}
+
+.info-content {
+    padding: 1rem;
+    background-color: var(--bg-light);
+    border-radius: 8px;
+}
+
+.info-item {
+    margin-bottom: 0.5rem;
+}
+
+.info-item label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 0.25rem;
+    display: block;
+}
+
+.info-item .value {
+    font-size: 1rem;
+    color: var(--text-dark);
+}
+
+/* Badge Styles */
+.role-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.status-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.status-active {
+    background-color: #e8fff3;
+    color: #0bb783;
+}
+
+.status-inactive {
+    background-color: #ffe2e5;
+    color: #f64e60;
+}
+
+/* Statistics Cards */
+.stat-card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .modal-content {
+        padding: 1rem !important;
+    }
+    
+    .avatar-container {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .user-name {
+        font-size: 1.1rem;
+    }
+    
+    .info-content {
+        padding: 0.75rem;
+    }
+    
+    .info-item .value {
+        font-size: 0.95rem;
+    }
+    
+    .section-title {
+        font-size: 0.95rem;
+    }
+    
+    .stat-value {
+        font-size: 1.25rem;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .modal-content {
+        border: none !important;
+    }
+    
+    .info-content {
+        background-color: white !important;
+        border: 1px solid #ddd;
+    }
+    
+    .section-title {
+        color: black !important;
+    }
+    
+    .stat-card {
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+}
+</style> 

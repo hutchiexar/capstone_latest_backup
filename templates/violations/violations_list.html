@@ -1,0 +1,403 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <span class="material-icons me-2" style="color: var(--primary-color)">gavel</span>
+                    <h4 class="mb-0">Manage Violations</h4>
+                </div>
+                <div class="d-flex align-items-center">
+                    {% include 'includes/search_form.html' with placeholder="Search by name, license number..." %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Card -->
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-body p-4">
+            <!-- Table Container -->
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="violationsTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Date</th>
+                            <th>Violator</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for violation in violations %}
+                        <tr>
+                            <td>{{ violation.id }}</td>
+                            <td>{{ violation.violation_date|date:"M d, Y" }}</td>
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <span class="fw-medium">{{ violation.violator.first_name }} {{ violation.violator.last_name }}</span>
+                                    <small class="text-muted">{{ violation.violator.license_number }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="violation-types">
+                                    {% for type in violation.get_violation_types %}
+                                    <span class="violation-type">{{ type }}</span>
+                                    {% if not forloop.last %}<span class="separator">•</span>{% endif %}
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td>₱{{ violation.fine_amount }}</td>
+                            <td>
+                                {% include 'includes/status_badge.html' with status=violation.status display_text=violation.get_status_display %}
+                            </td>
+                            <td class="text-end">
+                                <div class="action-buttons">
+                                    <button onclick="showViolationDetail({{ violation.id }})" 
+                                            class="btn btn-action btn-view">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                <div class="text-muted">
+                                    <span class="material-icons d-block mb-2" style="font-size: 2.5rem; opacity: 0.5;">search_off</span>
+                                    <p class="mb-0">No traffic violations found</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status Change Modal -->
+<div class="modal fade" id="statusChangeModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Update Status</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="status-options">
+                    {% for status_code, status_label in status_choices %}
+                    <button class="status-option" data-status="{{ status_code }}">
+                        <span class="status-dot status-{{ status_code|lower }}"></span>
+                        {{ status_label }}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Violation Detail Modal -->
+<div class="modal fade" id="violationDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Violation Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Table Styles */
+.table-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
+}
+
+.table-responsive {
+    border-radius: 8px;
+    overflow: hidden;
+    max-height: calc(100vh - 330px);
+    overflow-y: auto;
+}
+
+/* Custom scrollbar styles */
+.table-responsive::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+/* Keep table header visible */
+.table thead th {
+    position: sticky;
+    top: 0;
+    background-color: #f8f9fa;
+    z-index: 1;
+}
+
+/* Ensure proper spacing */
+.card-body {
+    padding: 1rem !important;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    background-color: var(--bg-light);
+    border-bottom: 2px solid var(--border-color);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+    padding: 1rem;
+    vertical-align: middle;
+}
+
+.table td {
+    padding: 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Define specific column widths */
+.table th:nth-child(1), .table td:nth-child(1) { width: 80px; } /* ID */
+.table th:nth-child(2), .table td:nth-child(2) { width: 180px; } /* Date */
+.table th:nth-child(3), .table td:nth-child(3) { width: 200px; } /* Violator */
+.table th:nth-child(4), .table td:nth-child(4) { width: 300px; max-width: 400px; white-space: normal; } /* Type */
+.table th:nth-child(5), .table td:nth-child(5) { width: 200px; } /* Amount */
+.table th:nth-child(6), .table td:nth-child(6) { width: 120px; } /* Status */
+.table th:nth-child(7), .table td:nth-child(7) { width: 120px; } /* Actions */
+
+/* Ensure table cells don't wrap */
+.table th,
+.table td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Hover effect */
+.table tbody tr:hover {
+    background-color: var(--bg-light);
+}
+
+/* Status badge styles */
+.status-badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.85rem;
+    display: inline-block;
+    text-align: center;
+    min-width: 100px;
+}
+
+/* Action buttons */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-start;
+}
+
+.action-buttons .btn {
+    padding: 0.4rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-buttons .material-icons {
+    font-size: 1.1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .table th,
+    .table td {
+        padding: 0.75rem;
+    }
+    
+    .status-badge {
+        padding: 0.3rem 0.6rem;
+        font-size: 0.8rem;
+        min-width: 90px;
+    }
+}
+
+/* Violation Types Styles */
+.violation-types {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.violation-type {
+    font-size: 0.9rem;
+    color: var(--text-dark);
+}
+
+.separator {
+    color: #9ca3af;
+    font-size: 0.8rem;
+}
+
+/* Table header shadow for visual separation */
+.table thead th {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Pagination container */
+.pagination-container {
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    background: #fff;
+    border-top: 1px solid #e9ecef;
+}
+</style>
+
+<script>
+let currentViolationId = null;
+
+function showStatusModal(violationId, currentStatus) {
+    currentViolationId = violationId;
+    const modal = new bootstrap.Modal(document.getElementById('statusChangeModal'));
+    
+    // Highlight current status
+    document.querySelectorAll('.status-option').forEach(option => {
+        if (option.dataset.status === currentStatus) {
+            option.classList.add('active');
+        } else {
+            option.classList.remove('active');
+        }
+    });
+    
+    modal.show();
+}
+
+// Add click handlers to status options
+document.querySelectorAll('.status-option').forEach(option => {
+    option.addEventListener('click', function() {
+        if (currentViolationId) {
+            updateViolationStatus(currentViolationId, this.dataset.status);
+            bootstrap.Modal.getInstance(document.getElementById('statusChangeModal')).hide();
+        }
+    });
+});
+
+function updateViolationStatus(violationId, newStatus) {
+    confirmAction(
+        'Update Violation Status',
+        `Are you sure you want to change this violation's status to ${newStatus.toLowerCase()}?`,
+        () => {
+            fetch(`/violations/${violationId}/update-status/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: `status=${newStatus}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'Error updating status');
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error);
+            });
+        }
+    );
+}
+
+// Initialize DataTable
+$(document).ready(function() {
+    const table = $('#violationsTable').DataTable({
+        pageLength: 10,
+        order: [[1, "desc"]],
+        dom: 'rt<"bottom d-flex justify-content-between align-items-center pt-3"ip>',
+        responsive: true
+    });
+
+    // Custom search functionality
+    $('#searchInput').on('keyup', function() {
+        table.search($(this).val()).draw();
+    });
+});
+
+function showViolationDetail(violationId) {
+    const modalBody = document.querySelector('#violationDetailModal .modal-body');
+    const modal = new bootstrap.Modal(document.getElementById('violationDetailModal'));
+    
+    modalBody.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    `;
+    
+    modal.show();
+
+    fetch(`/violation/${violationId}/modal/`)
+        .then(response => response.text())
+        .then(html => {
+            modalBody.innerHTML = html;
+        })
+        .catch(error => {
+            modalBody.innerHTML = `
+                <div class="alert alert-danger">
+                    Error loading violation details: ${error.message}
+                </div>
+            `;
+        });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const searchForm = document.querySelector('.search-form');
+
+    // Handle clear search
+    const clearButton = document.querySelector('.clear-search');
+    if (clearButton) {
+        clearButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.location.href = this.getAttribute('href');
+        });
+    }
+});
+</script>
+
+{% include 'includes/pagination.html' %}
+{% endblock %} 

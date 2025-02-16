@@ -1,0 +1,337 @@
+<!-- Success Toast -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="successToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body" id="toastMessage"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-content">
+    <!-- Violation Header -->
+    <div class="violation-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="violation-info">
+                    <div class="violation-badge">#{{ violation.id }}</div>
+                    <h5 class="violation-title">Violation Record</h5>
+                    <div class="violation-date">
+                        <span class="material-icons">event</span>
+                        {{ violation.violation_date|date:"F d, Y" }}
+                    </div>
+                </div>
+            </div>
+            <div class="violation-status">
+                {% include 'includes/status_badge.html' with status=violation.status display_text=violation.get_status_display %}
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-body">
+        <div class="violation-grid">
+            <!-- Violator Information -->
+            <div class="info-card">
+                <div class="info-header">
+                    <span class="material-icons">person</span>
+                    <h6>Violator Information</h6>
+                            </div>
+                <div class="info-content">
+                    <div class="info-group">
+                        <label>Full Name</label>
+                        <div class="info-value">{{ violation.violator.first_name }} {{ violation.violator.last_name }}</div>
+                            </div>
+                    <div class="info-group">
+                        <label>License Number</label>
+                        <div class="info-value">{{ violation.violator.license_number }}</div>
+                            </div>
+                    <div class="info-group">
+                        <label>Phone Number</label>
+                        <div class="info-value">{{ violation.violator.phone_number|default:"Not provided" }}</div>
+                            </div>
+                    <div class="info-group">
+                        <label>Address</label>
+                        <div class="info-value">{{ violation.violator.address|default:"Not provided" }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Violation Details -->
+            <div class="info-card">
+                <div class="info-header">
+                    <span class="material-icons">gavel</span>
+                    <h6>Violation Details</h6>
+                </div>
+                <div class="info-content">
+                    <div class="info-group">
+                        <label>Violation Types</label>
+                        <div class="info-value violation-types">
+                                    {% for type in violation.get_violation_types %}
+                            <span class="violation-type">{{ type }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                    <div class="info-group">
+                        <label>Fine Amount</label>
+                        <div class="info-value amount">₱{{ violation.fine_amount }}</div>
+                            </div>
+                    <div class="info-group">
+                        <label>Location</label>
+                        <div class="info-value">{{ violation.location }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enforcer Information -->
+            <div class="info-card enforcer-card">
+                <div class="info-header">
+                    <span class="material-icons">badge</span>
+                    <h6>Enforcer Information</h6>
+                            </div>
+                <div class="info-content">
+                    <div class="enforcer-grid">
+                        <div class="info-group">
+                            <label>Enforcer Name</label>
+                            <div class="info-value">{{ violation.enforcer.get_full_name }}</div>
+                            </div>
+                        <div class="info-group">
+                            <label>Enforcer ID</label>
+                            <div class="info-value">{{ violation.enforcer.userprofile.enforcer_id }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Modal Base Styles */
+.modal-content {
+    border: none;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #f8f9fa;
+}
+
+/* Violation Header */
+.violation-header {
+    background: #fff;
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+
+.violation-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.violation-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background: var(--primary-color);
+    color: #fff;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.violation-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin: 0;
+}
+
+.violation-date {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-light);
+    font-size: 0.875rem;
+}
+
+.violation-date .material-icons {
+    font-size: 1rem;
+}
+
+/* Modal Body Layout */
+.modal-body {
+    padding: 1.5rem;
+}
+
+.violation-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Info Cards */
+.info-card {
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.info-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    background: rgba(0,0,0,0.02);
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+
+.info-header .material-icons {
+    color: var(--primary-color);
+    font-size: 1.25rem;
+}
+
+.info-header h6 {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.info-content {
+    padding: 1.25rem;
+}
+
+/* Info Groups */
+.info-group {
+    margin-bottom: 1rem;
+}
+
+.info-group:last-child {
+    margin-bottom: 0;
+}
+
+.info-group label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-light);
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.info-value {
+    font-size: 0.9375rem;
+    color: var(--text-dark);
+    line-height: 1.5;
+}
+
+/* Special Styles */
+.violation-types {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.violation-type {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background: rgba(0,35,102,0.08);
+    color: var(--primary-color);
+    border-radius: 4px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+}
+
+.amount {
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 1.125rem;
+}
+
+.enforcer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+/* Status Badge Styles */
+.status-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.875rem;
+}
+
+.status-pending { background-color: #fff4de; color: #ffa800; }
+.status-paid { background-color: #e8fff3; color: #0bb783; }
+.status-settled { background-color: #e7f5ff; color: #3699ff; }
+.status-overdue { background-color: #ffe2e5; color: #f64e60; }
+
+/* Toast Styles */
+.toast-container {
+    z-index: 9999;
+}
+
+.toast {
+    background-color: #0bb783 !important;
+}
+
+.toast-body {
+    padding: 1rem 1.5rem;
+    font-weight: 500;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .violation-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .violation-header {
+        padding: 1rem;
+    }
+
+    .modal-body {
+        padding: 1rem;
+    }
+
+    .info-header {
+        padding: 0.875rem 1rem;
+    }
+
+    .info-content {
+        padding: 1rem;
+    }
+}
+
+/* Scrollbar Styling */
+.modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+</style>
+
+<script>
+// Add touch event handling for modal scrolling
+document.addEventListener('DOMContentLoaded', function() {
+    const modalBody = document.querySelector('.modal-body');
+    if (modalBody) {
+        modalBody.addEventListener('touchmove', function(e) {
+            e.stopPropagation();
+        }, { passive: true });
+    }
+});
+</script> 

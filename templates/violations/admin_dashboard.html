@@ -1,0 +1,509 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Statistics Cards Row -->
+    <div class="row g-4 mb-4">
+        <!-- Total Violations Card -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase mb-2">Total Violations</h6>
+                            <h2 class="mb-0">{{ total_violations }}</h2>
+                            <div class="trend-info mt-2">
+                                <span class="material-icons trend-up">trending_up</span>
+                                <span>{{ weekly_violations }} this week</span>
+                            </div>
+                        </div>
+                        <div class="stat-icon">
+                            <span class="material-icons">gavel</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Revenue Card -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase mb-2">Total Revenue</h6>
+                            <h2 class="mb-0">₱{{ total_revenue|floatformat:2 }}</h2>
+                            <div class="trend-info mt-2">
+                                <span class="material-icons trend-up">trending_up</span>
+                                <span>₱{{ weekly_revenue|floatformat:2 }} this week</span>
+                            </div>
+                        </div>
+                        <div class="stat-icon">
+                            <span class="material-icons">payments</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Violations Card -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase mb-2">Pending Cases</h6>
+                            <h2 class="mb-0">{{ pending_violations }}</h2>
+                            <div class="trend-info mt-2">
+                                <span class="material-icons warning">warning</span>
+                                <span>Requires attention</span>
+                            </div>
+                        </div>
+                        <div class="stat-icon">
+                            <span class="material-icons">pending_actions</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overdue Violations Card -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase mb-2">Overdue Cases</h6>
+                            <h2 class="mb-0">{{ overdue_violations }}</h2>
+                            <div class="trend-info mt-2">
+                                <span class="material-icons error">error</span>
+                                <span>Past due date</span>
+                            </div>
+                        </div>
+                        <div class="stat-icon">
+                            <span class="material-icons">report_problem</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-4">
+        <!-- Violations Chart -->
+        <div class="col-xl-8">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Violations Overview</h5>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-range="week">Week</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary active" data-range="month">Month</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-range="year">Year</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="violationsChart"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Distribution -->
+        <div class="col-xl-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">Status Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <div id="statusDistributionChart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Violations Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Recent Violations</h5>
+            <a href="{% url 'violations_list' %}" class="btn btn-primary btn-sm">View All</a>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Violation</th>
+                            <th>Location</th>
+                            <th>Status</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for violation in recent_violations %}
+                        <tr>
+                            <td>{{ violation.violation_date|date:"M d, Y" }}</td>
+                            <td>{{ violation.violation_type }}</td>
+                            <td>{{ violation.location }}</td>
+                            <td>
+                                <span class="badge {% if violation.status == 'PAID' %}bg-success
+                                           {% elif violation.status == 'PENDING' %}bg-warning
+                                           {% elif violation.status == 'SETTLED' %}bg-info
+                                           {% else %}bg-danger{% endif %}">
+                                    {{ violation.status }}
+                                </span>
+                            </td>
+                            <td>₱{{ violation.fine_amount }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Dashboard Styling */
+    .stat-card {
+        transition: transform 0.2s;
+        border: none;
+        border-radius: 12px;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .stat-card .card-body {
+        padding: 1.5rem;
+    }
+
+    .stat-card h6 {
+        color: var(--text-dark);
+        font-size: 0.8rem;
+        font-weight: 600;
+        opacity: 0.7;
+    }
+
+    .stat-card h2 {
+        color: var(--text-dark);
+        font-weight: 700;
+        font-size: 1.8rem;
+    }
+
+    .trend-info {
+        font-size: 0.85rem;
+        color: var(--text-dark);
+        opacity: 0.7;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .trend-info .material-icons {
+        font-size: 1rem;
+    }
+
+    .trend-up {
+        color: var(--success);
+    }
+
+    .warning {
+        color: var(--warning);
+    }
+
+    .error {
+        color: var(--danger);
+    }
+
+    .stat-icon {
+        background: rgba(37, 99, 235, 0.1);
+        padding: 1rem;
+        border-radius: 12px;
+    }
+
+    .stat-icon .material-icons {
+        font-size: 2rem;
+        color: var(--primary-color);
+    }
+
+    /* Chart Cards */
+    .card-header {
+        background: transparent;
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .card-header h5 {
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    /* Table Styling */
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table th {
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 1rem 1.5rem;
+        background: var(--bg-light);
+        border-bottom: 2px solid rgba(0,0,0,0.05);
+    }
+
+    .table td {
+        padding: 1rem 1.5rem;
+        vertical-align: middle;
+    }
+
+    .badge {
+        font-weight: 500;
+        padding: 0.5em 0.75em;
+        border-radius: 6px;
+    }
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Violations Overview Chart
+    const violationsData = {
+        series: [{
+            name: 'Violations',
+            data: JSON.parse('{{ violations_data|safe }}')
+        }],
+        chart: {
+            type: 'area',
+            height: 350,
+            toolbar: {
+                show: true,
+                tools: {
+                    download: false,
+                    selection: true,
+                    zoom: true,
+                    zoomin: true,
+                    zoomout: true,
+                    pan: true,
+                    reset: true
+                }
+            },
+            fontFamily: 'Plus Jakarta Sans, sans-serif',
+            background: 'transparent'
+        },
+        grid: {
+            borderColor: '#f1f1f1',
+            strokeDashArray: 4,
+            xaxis: {
+                lines: {
+                    show: true
+                }
+            },
+            yaxis: {
+                lines: {
+                    show: true
+                }
+            }
+        },
+        dataLabels: {
+            enabled: false
+        },
+        markers: {
+            size: 4,
+            colors: ['#2563eb'],
+            strokeColors: '#fff',
+            strokeWidth: 2,
+            hover: {
+                size: 6
+            }
+        },
+        stroke: {
+            curve: 'smooth',
+            width: 2
+        },
+        fill: {
+            type: 'gradient',
+            gradient: {
+                shadeIntensity: 1,
+                opacityFrom: 0.45,
+                opacityTo: 0.05,
+                stops: [50, 100]
+            }
+        },
+        colors: ['#2563eb'],
+        xaxis: {
+            categories: JSON.parse('{{ dates|safe }}'),
+            type: 'datetime',
+            labels: {
+                style: {
+                    colors: '#64748b',
+                    fontSize: '12px'
+                },
+                datetimeFormatter: {
+                    year: 'yyyy',
+                    month: "MMM 'yy",
+                    day: 'dd MMM'
+                }
+            },
+            axisBorder: {
+                show: false
+            },
+            axisTicks: {
+                show: false
+            }
+        },
+        yaxis: {
+            title: {
+                text: 'Number of Violations',
+                style: {
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    color: '#64748b'
+                }
+            },
+            labels: {
+                style: {
+                    colors: '#64748b',
+                    fontSize: '12px'
+                },
+                formatter: function(val) {
+                    return Math.round(val);
+                }
+            }
+        },
+        tooltip: {
+            shared: true,
+            theme: 'light',
+            y: {
+                formatter: function(val) {
+                    return val.toFixed(0) + " violations"
+                }
+            },
+            marker: {
+                show: true
+            }
+        }
+    };
+
+    // Status Distribution Chart
+    var statusData = {
+        series: [
+            parseInt('{{ pending_violations }}'), 
+            parseInt('{{ paid_violations }}'), 
+            parseInt('{{ settled_violations }}'), 
+            parseInt('{{ overdue_violations }}')
+        ],
+        chart: {
+            type: 'donut',
+            height: 350,
+            fontFamily: 'Plus Jakarta Sans, sans-serif'
+        },
+        labels: ['Pending', 'Paid', 'Settled', 'Overdue'],
+        colors: ['#eab308', '#22c55e', '#3b82f6', '#ef4444'],
+        plotOptions: {
+            pie: {
+                donut: {
+                    size: '65%',
+                    labels: {
+                        show: true,
+                        name: {
+                            show: true,
+                            fontSize: '14px',
+                            fontWeight: 600
+                        },
+                        value: {
+                            show: true,
+                            fontSize: '16px',
+                            fontWeight: 700,
+                            formatter: function(val) {
+                                return Math.round(val);
+                            }
+                        },
+                        total: {
+                            show: true,
+                            label: 'Total',
+                            fontSize: '16px',
+                            fontWeight: 700,
+                            formatter: function(w) {
+                                return w.globals.seriesTotals.reduce((a, b) => a + b, 0);
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        dataLabels: {
+            enabled: true,
+            formatter: function(val, opts) {
+                return opts.w.config.labels[opts.seriesIndex];
+            }
+        },
+        legend: {
+            show: true,
+            position: 'bottom',
+            fontSize: '14px',
+            markers: {
+                width: 10,
+                height: 10,
+                radius: 50
+            }
+        },
+        responsive: [{
+            breakpoint: 480,
+            options: {
+                chart: {
+                    width: 200
+                },
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }]
+    };
+
+    // Initialize Charts
+    var violationsChart = new ApexCharts(document.querySelector("#violationsChart"), violationsData);
+    var statusChart = new ApexCharts(document.querySelector("#statusDistributionChart"), statusData);
+    
+    violationsChart.render();
+    statusChart.render();
+
+    // Time range selector functionality
+    document.querySelectorAll('[data-range]').forEach(button => {
+        button.addEventListener('click', function() {
+            // Remove active class from all buttons
+            document.querySelectorAll('[data-range]').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            // Add active class to clicked button
+            this.classList.add('active');
+            
+            // Update chart data based on selected range
+            updateChartData(this.dataset.range);
+        });
+    });
+
+    function updateChartData(range) {
+        fetch(`/api/statistics/${range}/`)
+            .then(response => response.json())
+            .then(data => {
+                violationsChart.updateOptions({
+                    xaxis: {
+                        categories: data.violations.labels
+                    }
+                });
+                violationsChart.updateSeries([{
+                    data: data.violations.datasets[0].data
+                }]);
+            });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,288 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Card -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <span class="material-icons me-2" style="color: var(--primary-color)">gavel</span>
+                    <div>
+                        <h4 class="mb-1">Adjudication Form</h4>
+                        <p class="text-muted mb-0">Citation #{{ violation.id }}</p>
+                    </div>
+                </div>
+                <div class="status-badge status-{{ violation.status|lower }}">
+                    {{ violation.get_status_display }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Content -->
+    <form id="adjudicationForm" method="POST" action="{% url 'submit_adjudication' violation.id %}">
+        {% csrf_token %}
+        <div class="row g-4">
+            <!-- Left Column -->
+            <div class="col-lg-6">
+                <!-- Violation Details Card -->
+                <div class="card shadow-sm border-0 rounded-3 h-100">
+                    <div class="card-body p-4">
+                        <h5 class="section-title">
+                            <i class="fas fa-file-alt me-2"></i>Violation Details
+                        </h5>
+                        <div class="info-grid">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="info-item autofilled">
+                                        <label>Citation Number</label>
+                                        <p class="citation-number">{{ violation.id }}</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="info-item autofilled">
+                                        <label>Date of Violation</label>
+                                        <p>{{ violation.violation_date|date:"F d, Y" }}</p>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="info-item autofilled">
+                                        <label>Apprehending Officer</label>
+                                        <p>{{ violation.enforcer.get_full_name }}</p>
+                                        <small>ID: {{ violation.enforcer.userprofile.enforcer_id }}</small>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="info-item autofilled">
+                                        <label>Location</label>
+                                        <p>{{ violation.location }}</p>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="info-item autofilled">
+                                        <label>Violations Committed</label>
+                                        <ul class="violations-list">
+                                            {% for type in violation.get_violation_types %}
+                                            <li>{{ type }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="col-lg-6">
+                <!-- Violator and Decision Card -->
+                <div class="card shadow-sm border-0 rounded-3 h-100">
+                    <div class="card-body p-4">
+                        <!-- Violator Information -->
+                        <h5 class="section-title">
+                            <i class="fas fa-user me-2"></i>Violator Information
+                        </h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <div class="info-item autofilled">
+                                    <label>Name</label>
+                                    <p>{{ violation.violator.first_name }} {{ violation.violator.last_name }}</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-item autofilled">
+                                    <label>License Number</label>
+                                    <p>{{ violation.violator.license_number }}</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-item autofilled">
+                                    <label>Phone Number</label>
+                                    <p>{{ violation.violator.phone_number|default:"N/A" }}</p>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="info-item autofilled">
+                                    <label>Address</label>
+                                    <p>{{ violation.violator.address }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Adjudication Decision -->
+                        <h5 class="section-title">
+                            <i class="fas fa-gavel me-2"></i>Adjudication Decision
+                        </h5>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="info-item autofilled">
+                                    <label>Adjudicating Officer</label>
+                                    <p>{{ user.get_full_name }}</p>
+                                    <small>ID: {{ user.userprofile.enforcer_id }}</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="totalPenalty">Total Penalty</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₱</span>
+                                        <input type="number" class="form-control" id="totalPenalty" 
+                                               name="total_penalty" min="0" step="0.01" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label for="remarks">Decision/Remarks</label>
+                                    <textarea class="form-control" id="remarks" name="remarks" rows="4" 
+                                             placeholder="Enter your decision and any additional remarks..." required></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="d-flex justify-content-end gap-2 mt-4">
+            <a href="{% url 'adjudication_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-times me-2"></i>Cancel
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-gavel me-2"></i>Submit Decision
+            </button>
+        </div>
+    </form>
+</div>
+
+<style>
+/* Enhanced Card Styling */
+.card {
+    background: white;
+    border: none;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+}
+
+/* Section Title */
+.section-title {
+    color: var(--text-dark);
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--primary-color);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Info Items */
+.info-item.autofilled {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    height: 100%;
+}
+
+.info-item.autofilled label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.info-item.autofilled p {
+    margin: 0;
+    font-weight: 500;
+    color: #333;
+}
+
+/* Form Controls */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-control {
+    border: 1px solid #dee2e6;
+    padding: 0.75rem;
+    border-radius: 8px;
+}
+
+.input-group {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.input-group-text {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    color: #495057;
+    font-weight: 500;
+}
+
+/* Status Badge */
+.status-badge {
+    padding: 0.5rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.status-pending { background-color: #fff4de; color: #ffa800; }
+.status-disputed { background-color: #e7f5ff; color: #3699ff; }
+.status-settled { background-color: #e8fff3; color: #0bb783; }
+
+/* Violations List */
+.violations-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.violations-list li {
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.violations-list li:last-child {
+    margin-bottom: 0;
+}
+
+/* Action Buttons */
+.btn {
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+}
+</style>
+
+<script>
+// Form validation
+document.getElementById('adjudicationForm').addEventListener('submit', function(e) {
+    const totalPenalty = document.getElementById('totalPenalty').value;
+    const remarks = document.getElementById('remarks').value;
+
+    if (!totalPenalty || parseFloat(totalPenalty) <= 0) {
+        e.preventDefault();
+        alert('Please enter a valid penalty amount');
+        return;
+    }
+
+    if (!remarks.trim()) {
+        e.preventDefault();
+        alert('Please enter your decision remarks');
+        return;
+    }
+});
+</script>
+{% endblock %} 

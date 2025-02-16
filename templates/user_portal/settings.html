@@ -1,0 +1,258 @@
+{% extends 'user_portal/base_user.html' %}
+{% load static %}
+
+{% block title %}Settings - CTTMO User Portal{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Settings Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <span class="material-icons me-3" style="font-size: 2rem; color: var(--bs-primary)">settings</span>
+                        <div>
+                            <h4 class="mb-1">Account Settings</h4>
+                            <p class="text-muted mb-0">Manage your account preferences and notifications</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Notification Settings -->
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-4">Notification Preferences</h5>
+                    <form method="post" action="{% url 'user_portal:user_settings' %}">
+                        {% csrf_token %}
+                        <div class="notification-settings">
+                            <div class="form-check mb-3">
+                                <input type="checkbox" class="form-check-input" id="violation_notifications" 
+                                       name="notifications" value="violations"
+                                       {% if 'violations' in user_profile.notification_preferences %}checked{% endif %}>
+                                <label class="form-check-label" for="violation_notifications">
+                                    <div class="d-flex align-items-start">
+                                        <span class="material-icons me-2" style="color: var(--bs-danger)">report</span>
+                                        <div>
+                                            <p class="mb-0 fw-medium">Violation Notifications</p>
+                                            <small class="text-muted">Receive notifications about new violations and updates</small>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input type="checkbox" class="form-check-input" id="payment_notifications" 
+                                       name="notifications" value="payments"
+                                       {% if 'payments' in user_profile.notification_preferences %}checked{% endif %}>
+                                <label class="form-check-label" for="payment_notifications">
+                                    <div class="d-flex align-items-start">
+                                        <span class="material-icons me-2" style="color: var(--bs-success)">payments</span>
+                                        <div>
+                                            <p class="mb-0 fw-medium">Payment Notifications</p>
+                                            <small class="text-muted">Get updates about payments and due dates</small>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input type="checkbox" class="form-check-input" id="report_notifications" 
+                                       name="notifications" value="reports"
+                                       {% if 'reports' in user_profile.notification_preferences %}checked{% endif %}>
+                                <label class="form-check-label" for="report_notifications">
+                                    <div class="d-flex align-items-start">
+                                        <span class="material-icons me-2" style="color: var(--bs-info)">description</span>
+                                        <div>
+                                            <p class="mb-0 fw-medium">Report Updates</p>
+                                            <small class="text-muted">Stay informed about your report status changes</small>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input type="checkbox" class="form-check-input" id="system_notifications" 
+                                       name="notifications" value="system"
+                                       {% if 'system' in user_profile.notification_preferences %}checked{% endif %}>
+                                <label class="form-check-label" for="system_notifications">
+                                    <div class="d-flex align-items-start">
+                                        <span class="material-icons me-2" style="color: var(--bs-warning)">campaign</span>
+                                        <div>
+                                            <p class="mb-0 fw-medium">System Notifications</p>
+                                            <small class="text-muted">Receive important system updates and announcements</small>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <span class="material-icons me-2">save</span>Save Preferences
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Security -->
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-4">Account Security</h5>
+                    <div class="security-settings">
+                        <div class="mb-4">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <div class="d-flex align-items-center">
+                                    <span class="material-icons me-2" style="color: var(--bs-primary)">lock</span>
+                                    <h6 class="mb-0">Password</h6>
+                                </div>
+                                <a href="#" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                                    Change Password
+                                </a>
+                            </div>
+                            <p class="text-muted small mb-0">Last changed: Never</p>
+                        </div>
+                        <div class="mb-4">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <div class="d-flex align-items-center">
+                                    <span class="material-icons me-2" style="color: var(--bs-info)">email</span>
+                                    <h6 class="mb-0">Email Verification</h6>
+                                </div>
+                                <span class="badge bg-success">Verified</span>
+                            </div>
+                            <p class="text-muted small mb-0">Your email address is verified</p>
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <div class="d-flex align-items-center">
+                                    <span class="material-icons me-2" style="color: var(--bs-danger)">delete</span>
+                                    <h6 class="mb-0">Delete Account</h6>
+                                </div>
+                                <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                                    Delete Account
+                                </button>
+                            </div>
+                            <p class="text-muted small mb-0">Permanently delete your account and all data</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="changePasswordModalLabel">Change Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'user_portal:change_password' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Current Password</label>
+                        <input type="password" class="form-control" name="current_password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">New Password</label>
+                        <input type="password" class="form-control" name="new_password1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Confirm New Password</label>
+                        <input type="password" class="form-control" name="new_password2" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Change Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Account Modal -->
+<div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteAccountModalLabel">Delete Account</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <span class="material-icons text-danger" style="font-size: 4rem;">warning</span>
+                    <h5 class="mt-3">Are you sure you want to delete your account?</h5>
+                    <p class="text-muted">This action cannot be undone. All your data will be permanently deleted.</p>
+                </div>
+                <form method="post" action="{% url 'user_portal:delete_account' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Please type "DELETE" to confirm</label>
+                        <input type="text" class="form-control" name="confirmation" required 
+                               pattern="DELETE" title="Please type DELETE in uppercase">
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-danger">
+                            <span class="material-icons me-2">delete_forever</span>Delete Account
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.form-check-label {
+    cursor: pointer;
+}
+
+.notification-settings .form-check {
+    padding: 1rem;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.notification-settings .form-check:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.05);
+}
+
+.notification-settings .form-check-input:checked ~ .form-check-label {
+    color: var(--bs-primary);
+}
+
+.security-settings .badge {
+    padding: 0.5rem 1rem;
+}
+
+.modal-content {
+    border: none;
+    border-radius: 12px;
+}
+
+.modal-header {
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.modal-footer {
+    border-top: 1px solid rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %} 

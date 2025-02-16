@@ -1,0 +1,2663 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Traffic Violation System</title>
+    
+    <!-- Updated Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <!-- CSS Dependencies -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    
+    <style>
+        :root {
+            /* New Modern Color Scheme */
+            --primary-color: #2563eb;      /* Royal Blue */
+            --secondary-color: #1e293b;    /* Dark Slate */
+            --accent-color: #3b82f6;       /* Bright Blue */
+            --accent-teal: #0d9488;        /* Teal */
+            --accent-yellow: #eab308;      /* Yellow */
+            --text-light: #f8fafc;         /* Light Gray */
+            --text-dark: #0f172a;          /* Dark Gray */
+            --bg-light: #f1f5f9;           /* Light Background */
+            --bg-dark: #334155;            /* Dark Background */
+            --success: #22c55e;            /* Green */
+            --danger: #ef4444;             /* Red */
+            --warning: #f59e0b;            /* Orange */
+            --info: #3b82f6;               /* Blue */
+            --sidebar-width: 260px;
+
+            /* Updated font variables */
+            --font-primary: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-secondary: 'Inter', sans-serif;
+        }
+
+        /* Base Typography */
+        body {
+            font-family: var(--font-secondary);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        /* Headings */
+        h1, h2, h3, h4, h5, h6,
+        .h1, .h2, .h3, .h4, .h5, .h6 {
+            font-family: var(--font-primary);
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+
+        /* Navigation and Buttons */
+        .btn, 
+        .nav-link,
+        .sidebar-link {
+            font-family: var(--font-primary);
+            font-weight: 500;
+            letter-spacing: 0.01em;
+        }
+
+        /* Form Elements */
+        .form-control,
+        .form-select,
+        .form-label {
+            font-family: var(--font-secondary);
+        }
+
+        /* Cards and Alerts */
+        .card-title {
+            font-family: var(--font-primary);
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+
+        .alert {
+            font-family: var(--font-secondary);
+        }
+
+        /* Tables */
+        .table th {
+            font-family: var(--font-primary);
+            font-weight: 600;
+            font-size: 0.85rem;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+
+        .table td {
+            font-family: var(--font-secondary);
+        }
+
+        /* Font Weights */
+        .font-light { font-weight: 400; }
+        .font-regular { font-weight: 500; }
+        .font-medium { font-weight: 600; }
+        .font-semibold { font-weight: 700; }
+
+        /* Update specific elements */
+        body {
+            background-color: var(--accent-color);
+            color: var(--text-dark);
+            font-family: var(--font-primary);
+        }
+
+        .card {
+            background-color: #fff;
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: var(--text-dark);
+        }
+
+        .btn-primary:hover {
+            background-color: #e0d422;
+            border-color: #e0d422;
+        }
+
+        .navbar, .sidebar-header, .user-profile {
+            background-color: var(--secondary-color);
+        }
+
+        .list-group-item {
+            color: var(--text-light);
+        }
+
+        .list-group-item.active {
+            background-color: var(--primary-color);
+            color: var(--text-dark);
+        }
+
+        .alert-success {
+            background-color: var(--primary-color);
+            color: var(--text-dark);
+        }
+
+        .alert-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .alert-warning {
+            background-color: var(--accent-color);
+            color: var(--text-dark);
+        }
+
+        .alert-info {
+            background-color: var(--secondary-color);
+            color: var(--text-light);
+        }
+
+        .sidebar-content, .sidebar-section-title {
+            background-color: var(--secondary-color);
+        }
+
+        .sidebar-section-title {
+            color: var(--text-light);
+        }
+
+        .user-info, .user-details {
+            color: var(--text-light);
+        }
+
+        .user-action-btn {
+            background-color: var(--secondary-color);
+            color: var(--text-light);
+        }
+
+        .user-action-btn:hover {
+            background-color: #5A5560;
+        }
+
+        /* Additional styles for better contrast and readability */
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(250, 237, 38, 0.25);
+        }
+
+        .input-group-text {
+            background-color: var(--secondary-color);
+            color: var(--text-light);
+        }
+
+        .modal-content {
+            background-color: #fff;
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 3px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header, .modal-footer {
+            border-color: var(--accent-color);
+        }
+
+        #wrapper {
+            display: flex;
+            width: 100%;
+        }
+
+        /* Updated Sidebar Styling */
+        #sidebar-wrapper {
+            min-height: 100vh;
+            width: 280px;
+            background: var(--secondary-color);
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: var(--text-light);
+            text-decoration: none;
+        }
+
+        .sidebar-brand img {
+            width: 32px;
+            height: 32px;
+        }
+
+        .sidebar-brand span {
+            font-family: var(--font-secondary);
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--text-light);
+        }
+
+        .sidebar-content {
+            padding: 1rem 0;
+            overflow-y: auto;
+            height: calc(100vh - 180px);
+        }
+
+        .sidebar-section {
+            margin-bottom: 1rem;
+            padding: 0 1rem;
+        }
+
+        .sidebar-section-title {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 0.5rem 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .list-group-item {
+            background: transparent;
+            border: none;
+            padding: 0.75rem 1rem;
+            color: #fff !important;
+            border-radius: 8px;
+            margin: 0.25rem 0;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .list-group-item:hover {
+            background: rgba(37, 99, 235, 0.3) !important;
+            color: #fff !important;
+            transform: translateX(5px);
+        }
+
+        .list-group-item.active {
+            background: #2563eb !important;
+            color: #fff !important;
+            font-weight: 500;
+        }
+
+        .list-group-item.active:hover {
+            background: #1d4ed8 !important;
+            color: #fff !important;
+        }
+
+        .list-group-item .material-icons {
+            font-size: 1.25rem;
+            opacity: 0.8;
+            color: #fff;
+        }
+
+        .list-group-item:hover .material-icons {
+            opacity: 1;
+        }
+
+        /* User Profile Section */
+        .user-profile {
+            padding: 1rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            position: fixed;
+            bottom: 0;
+            width: 280px;
+            background: var(--secondary-color);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.5rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .user-details {
+            flex: 1;
+        }
+
+        .user-name {
+            color: var(--text-light);
+            font-weight: 600;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+        .user-role {
+            color: var(--text-light);
+            opacity: 0.7;
+            font-size: 0.8rem;
+            margin: 0;
+        }
+
+        .user-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .user-action-btn {
+            padding: 0.5rem;
+            border: none;
+            background: rgba(255,255,255,0.1);
+            color: var(--text-light);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .user-action-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* Content Wrapper */
+        #page-content-wrapper {
+            margin-left: 280px;
+            width: calc(100% - 280px);
+            min-height: 100vh;
+            padding: 2rem;
+            transition: all 0.3s;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            #sidebar-wrapper {
+                margin-left: -280px;
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                z-index: 1050;
+                box-shadow: none;
+                transition: all 0.3s ease-in-out;
+            }
+
+            #sidebar-wrapper.active {
+                margin-left: 0;
+                box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+            }
+
+            #page-content-wrapper {
+                margin-left: 0;
+                width: 100%;
+                padding-left: 40px !important;
+                transition: all 0.3s ease-in-out;
+            }
+
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 1040;
+                opacity: 0;
+                transition: opacity 0.3s ease-in-out;
+            }
+
+            .sidebar-overlay.active {
+                display: block;
+                opacity: 1;
+            }
+
+            #mobile-toggle {
+                display: none !important;
+            }
+
+            .sidebar-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .sidebar-toggle .material-icons {
+                font-size: 1.25rem;
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar-toggle.active .material-icons {
+                transform: rotate(180deg);
+            }
+
+            .sidebar-content {
+                height: calc(100vh - 180px);
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .user-profile {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                background: var(--secondary-color);
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+                padding: 1rem;
+            }
+        }
+
+        /* Improved Sidebar Animation */
+        #sidebar-wrapper {
+            transition: margin-left 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+
+        #page-content-wrapper {
+            transition: margin-left 0.3s ease-in-out;
+        }
+
+        /* Prevent body scroll when sidebar is open */
+        body.sidebar-open {
+            overflow: hidden;
+        }
+
+        /* Adjust content padding when toggle is visible */
+        @media (max-width: 768px) {
+            #page-content-wrapper {
+                padding-left: 60px;
+            }
+        }
+
+        /* Enhanced touch targets for mobile */
+        @media (max-width: 768px) {
+            .list-group-item {
+                padding: 0.875rem 1rem;
+                margin: 0.375rem 0;
+            }
+
+            .sidebar-section {
+                padding: 0 0.75rem;
+            }
+
+            .user-info {
+                padding: 0.75rem;
+            }
+        }
+
+        /* Messages Styling */
+        .messages {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1060;
+            max-width: 350px;
+        }
+
+        .alert {
+            margin-bottom: 0.5rem;
+            border: none;
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            animation: slideInRight 0.3s ease-out;
+        }
+
+        .alert.hide {
+            animation: slideOutRight 0.3s ease-out;
+        }
+
+        .alert-success {
+            background-color: var(--primary-color);
+            color: var(--secondary-color);
+        }
+
+        .alert-danger {
+            background-color: #46344E;
+            color: #FAED26;
+        }
+
+        .alert-warning {
+            background-color: #ffa800;
+            color: white;
+        }
+
+        .alert-info {
+            background-color: #0dcaf0;
+            color: white;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        /* Sidebar Styling */
+        #sidebar-wrapper {
+            background: var(--secondary-color);
+            box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .list-group-item {
+            color: var(--text-light);
+        }
+
+        .list-group-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .list-group-item.active {
+            background: var(--primary-color);
+            color: var(--text-light);
+        }
+
+        /* Card Styling */
+        .card {
+            background: white;
+            border: none;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-header {
+            background: white;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        /* Button Styling */
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: var(--text-light);
+        }
+
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+            border-color: #1d4ed8;
+        }
+
+        /* Alert Styling */
+        .alert-success {
+            background-color: var(--success);
+            color: var(--text-light);
+        }
+
+        .alert-danger {
+            background-color: var(--danger);
+            color: var(--text-light);
+        }
+
+        .alert-warning {
+            background-color: var(--warning);
+            color: var(--text-dark);
+        }
+
+        .alert-info {
+            background-color: var(--info);
+            color: var(--text-light);
+        }
+
+        /* Badge Styling */
+        .badge {
+            font-weight: 500;
+            padding: 0.5em 1em;
+        }
+
+        .bg-primary {
+            background-color: var(--primary-color) !important;
+        }
+
+        .bg-success {
+            background-color: var(--success) !important;
+        }
+
+        .bg-danger {
+            background-color: var(--danger) !important;
+        }
+
+        .bg-warning {
+            background-color: var(--warning) !important;
+        }
+
+        .bg-info {
+            background-color: var(--info) !important;
+        }
+
+        /* Form Styling */
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.25);
+        }
+
+        /* Table Styling */
+        .table th {
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            font-weight: 600;
+        }
+
+        /* User Profile Section */
+        .user-profile {
+            background: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .user-info {
+            color: var(--text-light);
+        }
+
+        .user-action-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+        }
+
+        .user-action-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Content Area */
+        #page-content-wrapper {
+            background-color: var(--bg-light);
+        }
+
+        /* Modal Styling */
+        .modal-content {
+            border: none;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header {
+            background-color: var(--primary-color);
+            color: var(--text-light);
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-light);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-color);
+        }
+
+        /* Adjust font weights */
+        .font-light { font-weight: 300; }
+        .font-regular { font-weight: 400; }
+        .font-medium { font-weight: 500; }
+        .font-semibold { font-weight: 600; }
+        .font-bold { font-weight: 700; }
+
+        /* Update specific elements */
+        h1, h2, h3, h4, h5, h6,
+        .h1, .h2, .h3, .h4, .h5, .h6 {
+            font-family: var(--font-primary);
+            font-weight: 600;
+        }
+
+        .btn {
+            font-family: var(--font-primary);
+            font-weight: 500;
+        }
+
+        .form-control {
+            font-family: var(--font-primary);
+        }
+
+        .nav-link {
+            font-family: var(--font-primary);
+        }
+
+        .dropdown-item {
+            font-family: var(--font-primary);
+        }
+
+        .card-title {
+            font-family: var(--font-primary);
+            font-weight: 600;
+        }
+
+        .alert {
+            font-family: var(--font-primary);
+        }
+
+        /* Table Action Buttons */
+        .action-buttons {
+            display: flex !important;
+            gap: 0.5rem !important;
+            justify-content: flex-end !important;
+            min-width: 120px !important;
+        }
+
+        .btn-action {
+            width: 36px !important;
+            height: 36px !important;
+            padding: 0 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 8px !important;
+            border: 1px solid #e5e7eb !important;
+            background-color: white !important;
+            color: #6b7280 !important;
+            transition: all 0.2s ease !important;
+            position: relative !important;
+        }
+
+        .btn-action:hover {
+            background-color: #f8fafc !important;
+            border-color: #cbd5e1 !important;
+            color: var(--primary-color) !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+        }
+
+        .btn-action:active {
+            transform: translateY(0) !important;
+        }
+
+        .btn-action .material-icons {
+            font-size: 1.25rem !important;
+        }
+
+        /* Action Button Variants */
+        .btn-action.btn-view {
+            color: #3b82f6 !important;
+            border-color: #bfdbfe !important;
+            background-color: #eff6ff !important;
+        }
+
+        .btn-action.btn-view:hover {
+            color: #2563eb !important;
+            border-color: #93c5fd !important;
+            background-color: #dbeafe !important;
+        }
+
+        .btn-action.btn-edit {
+            color: #10b981 !important;
+            border-color: #a7f3d0 !important;
+            background-color: #ecfdf5 !important;
+        }
+
+        .btn-action.btn-edit:hover {
+            color: #059669 !important;
+            border-color: #6ee7b7 !important;
+            background-color: #d1fae5 !important;
+        }
+
+        .btn-action.btn-delete {
+            color: #ef4444 !important;
+            border-color: #fecaca !important;
+            background-color: #fef2f2 !important;
+        }
+
+        .btn-action.btn-delete:hover {
+            color: #dc2626 !important;
+            border-color: #fca5a5 !important;
+            background-color: #fee2e2 !important;
+        }
+
+        .btn-action.btn-print {
+            color: #8b5cf6 !important;
+            border-color: #ddd6fe !important;
+            background-color: #f5f3ff !important;
+        }
+
+        .btn-action.btn-print:hover {
+            color: #7c3aed !important;
+            border-color: #c4b5fd !important;
+            background-color: #ede9fe !important;
+        }
+
+        /* Tooltip styles */
+        .btn-action[title] {
+            position: relative !important;
+        }
+
+        .btn-action[title]::before {
+            content: attr(title) !important;
+            position: absolute !important;
+            bottom: calc(100% + 5px) !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            padding: 0.25rem 0.5rem !important;
+            background-color: #1f2937 !important;
+            color: white !important;
+            font-size: 0.75rem !important;
+            border-radius: 4px !important;
+            white-space: nowrap !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            transition: all 0.2s ease !important;
+            z-index: 1000 !important;
+        }
+
+        .btn-action[title]::after {
+            content: "" !important;
+            position: absolute !important;
+            bottom: calc(100% + 3px) !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            border-width: 5px !important;
+            border-style: solid !important;
+            border-color: #1f2937 transparent transparent transparent !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            transition: all 0.2s ease !important;
+            z-index: 1000 !important;
+        }
+
+        .btn-action[title]:hover::before,
+        .btn-action[title]:hover::after {
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .btn-action {
+                width: 32px !important;
+                height: 32px !important;
+            }
+
+            .btn-action .material-icons {
+                font-size: 1.125rem !important;
+            }
+
+            .btn-action[title]::before,
+            .btn-action[title]::after {
+                display: none !important;
+            }
+        }
+
+        /* Prevent layout shifts when modal opens */
+        body.modal-open {
+            overflow-y: scroll !important;
+            padding-right: 0 !important;
+        }
+
+        /* Table container styles */
+        .table-responsive {
+            width: 100% !important;
+            margin: 0 !important;
+            overflow-x: auto;
+        }
+
+        .table {
+            width: 100% !important;
+            margin-bottom: 0;
+            table-layout: fixed;
+        }
+
+        /* Ensure consistent cell widths */
+        .table th,
+        .table td {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Modal styles */
+        .modal {
+            padding-right: 0 !important;
+        }
+
+        .modal-open .modal {
+            overflow-y: hidden;
+        }
+
+        .modal-dialog {
+            margin: 1.75rem auto;
+            max-width: 800px;
+        }
+
+        @media (max-width: 768px) {
+            .modal-dialog {
+                margin: 1rem;
+            }
+        }
+
+        /* Prevent content jumping */
+        html {
+            overflow-y: scroll;
+        }
+
+        /* Prevent layout shifts */
+        body {
+            padding-right: 0 !important;
+            overflow-y: scroll !important;
+        }
+
+        body.modal-open {
+            overflow-y: hidden !important;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Table container styles */
+        .table-container {
+            width: 100% !important;
+            overflow: hidden !important;
+            position: relative !important;
+        }
+
+        .table-responsive {
+            margin: 0 !important;
+            overflow-x: auto !important;
+            position: relative !important;
+            max-height: calc(100vh - 300px) !important;
+        }
+
+        .table {
+            width: 100% !important;
+            margin-bottom: 0 !important;
+            table-layout: fixed !important;
+        }
+
+        /* Modal styles */
+        .modal {
+            padding: 0 !important;
+        }
+
+        .modal-dialog {
+            max-width: 95% !important;
+            width: 1000px !important;
+            margin: 1rem auto !important;
+        }
+
+        .modal-dialog.modal-lg {
+            max-width: 95% !important;
+            width: 1200px !important;
+        }
+
+        .modal-content {
+            max-height: calc(100vh - 2rem) !important;
+            overflow-y: auto !important;
+        }
+
+        .modal-body {
+            padding: 1.5rem !important;
+        }
+
+        /* Responsive modal */
+        @media (max-width: 1200px) {
+            .modal-dialog,
+            .modal-dialog.modal-lg {
+                width: 95% !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .modal-dialog,
+            .modal-dialog.modal-lg {
+                margin: 0.5rem !important;
+                width: auto !important;
+            }
+            
+            .modal-body {
+                padding: 1rem !important;
+            }
+        }
+
+        /* DataTables specific fixes */
+        .dataTables_wrapper {
+            width: 100% !important;
+            overflow: hidden !important;
+        }
+
+        .dataTables_scrollBody {
+            overflow-x: hidden !important;
+        }
+
+        /* Prevent horizontal scrollbar */
+        html {
+            overflow-x: hidden !important;
+        }
+
+        /* Content wrapper fix */
+        #content-wrapper {
+            overflow-x: hidden !important;
+            width: 100% !important;
+        }
+
+        /* Modal Backdrop Fix */
+        .modal-backdrop {
+            opacity: 0.5;
+        }
+
+        /* Modal Z-index Hierarchy */
+        .modal {
+            z-index: 1050;
+        }
+        
+        .modal-backdrop {
+            z-index: 1040;
+        }
+        
+        #confirmationModal {
+            z-index: 1060 !important;
+        }
+        
+        #confirmationModal + .modal-backdrop {
+            z-index: 1055 !important;
+        }
+
+        /* Confirmation Modal Specific Styles */
+        #confirmationModal {
+            padding-right: 0 !important;
+        }
+
+        #confirmationModal .modal-dialog {
+            max-width: 400px;
+            margin: 1.75rem auto;
+            transition: transform 0.2s ease-out;
+        }
+
+        #confirmationModal .modal-content {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        #confirmationModal .modal-header {
+            padding: 1.25rem 1.5rem;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 12px 12px 0 0;
+            border-bottom: none;
+        }
+
+        #confirmationModal .modal-body {
+            padding: 1.5rem;
+            font-size: 1rem;
+        }
+
+        #confirmationModal .modal-footer {
+            padding: 1rem 1.5rem;
+            background-color: #f8f9fa;
+            border-radius: 0 0 12px 12px;
+            border-top: none;
+        }
+
+        #confirmationModal .btn-close {
+            color: white;
+            opacity: 0.8;
+            filter: brightness(0) invert(1);
+        }
+
+        #confirmationModal .btn-close:hover {
+            opacity: 1;
+        }
+
+        /* Prevent body shift */
+        body.modal-open {
+            overflow-y: hidden !important;
+            padding-right: 0 !important;
+        }
+
+        /* Ensure content doesn't shift */
+        #page-content-wrapper {
+            padding-right: 0 !important;
+        }
+
+        /* Modal backdrop fix */
+        .modal-backdrop.show {
+            opacity: 0.5;
+        }
+
+        /* Multiple modal fix */
+        body.modal-open .modal-backdrop + .modal-backdrop {
+            opacity: 0.6;
+        }
+
+        /* Simple Confirmation Dialog */
+        .confirm-dialog-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .confirm-dialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 0;
+            border-radius: 12px;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 400px;
+            z-index: 2001;
+        }
+
+        .confirm-dialog-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 12px 12px 0 0;
+            font-weight: 500;
+        }
+
+        .confirm-dialog-body {
+            padding: 1.5rem;
+            color: #333;
+        }
+
+        .confirm-dialog-footer {
+            padding: 1rem 1.5rem;
+            background: #f8f9fa;
+            border-radius: 0 0 12px 12px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        .sidebar-toggle {
+            display: none;
+            position: absolute;
+            top: 50%;
+            right: -32px;
+            transform: translateY(-50%);
+            background: var(--secondary-color);
+            color: var(--text-light);
+            border: none;
+            border-radius: 0 8px 8px 0;
+            padding: 0.75rem 0.5rem;
+            width: 32px;
+            height: 48px;
+            z-index: 1060;
+            box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .sidebar-toggle:hover {
+            background: var(--bg-dark);
+        }
+
+        .sidebar-toggle:focus {
+            outline: none;
+            box-shadow: 4px 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar-toggle .material-icons {
+            font-size: 1.25rem;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-toggle.active .material-icons {
+            transform: rotate(180deg);
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            #sidebar-wrapper {
+                margin-left: -280px;
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                z-index: 1050;
+                box-shadow: none;
+                transition: all 0.3s ease-in-out;
+            }
+
+            #sidebar-wrapper.active {
+                margin-left: 0;
+                box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+            }
+
+            #page-content-wrapper {
+                margin-left: 0;
+                width: 100%;
+                padding-left: 0 !important;
+                transition: all 0.3s ease-in-out;
+            }
+
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 1040;
+                opacity: 0;
+                transition: opacity 0.3s ease-in-out;
+            }
+
+            .sidebar-overlay.active {
+                display: block;
+                opacity: 1;
+            }
+        }
+
+        /* Submenu Styles */
+        .submenu-toggle {
+            display: flex !important;
+            align-items: center;
+            justify-content: flex-start;
+            width: 100%;
+            text-align: left;
+            border: none;
+            background: transparent;
+            padding: 0.75rem 1rem;
+            color: var(--text-light);
+            transition: all 0.3s ease;
+        }
+
+        .submenu-toggle:hover {
+            background: rgba(37, 99, 235, 0.3) !important;
+            color: #fff !important;
+            transform: translateX(5px);
+        }
+
+        .submenu-toggle.active {
+            background: #2563eb !important;
+            color: #fff !important;
+            font-weight: 500;
+        }
+
+        .submenu-icon {
+            margin-left: auto;
+            transition: transform 0.3s ease;
+            font-size: 1.25rem;
+        }
+
+        .submenu-toggle[aria-expanded="true"] .submenu-icon {
+            transform: rotate(180deg);
+        }
+
+        .submenu-item {
+            padding-left: 2.5rem !important;
+            font-size: 0.9rem;
+        }
+
+        .submenu-item .material-icons {
+            font-size: 1.1rem !important;
+        }
+
+        /* Adjust sidebar content height for better scrolling */
+        .sidebar-content {
+            height: calc(100vh - 220px);
+            overflow-y: auto;
+            padding-bottom: 2rem;
+        }
+
+        /* Smooth collapse animation */
+        .collapse {
+            transition: all 0.3s ease-in-out;
+        }
+
+        .list-group-item {
+            border: none;
+            margin: 0.25rem 0;
+        }
+
+        /* Table Layout System */
+        .table-system {
+            width: 100% !important;
+            margin-bottom: 0 !important;
+            table-layout: fixed !important;
+        }
+
+        .table-system td {
+            padding: 1rem 0.75rem !important;
+            vertical-align: middle !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+        }
+
+        .table-system th {
+            font-weight: 600 !important;
+            color: #6b7280 !important;
+            font-size: 0.875rem !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.025em !important;
+            padding: 1rem 0.75rem !important;
+            background-color: #f8f9fa !important;
+            border-bottom: 2px solid #e9ecef !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+        }
+
+        /* Table Container */
+        .table-container {
+            position: relative !important;
+            width: 100% !important;
+            margin: 0 !important;
+            overflow: hidden !important;
+        }
+
+        .table-responsive {
+            margin: 0 !important;
+            overflow-x: auto !important;
+            position: relative !important;
+            max-height: calc(100vh - 300px) !important;
+        }
+
+        /* Profile Layout in Tables */
+        .table-profile {
+            display: flex !important;
+            align-items: center !important;
+            gap: 1rem !important;
+            width: 100% !important;
+        }
+
+        .avatar-container {
+            flex-shrink: 0 !important;
+            width: 40px !important;
+            height: 40px !important;
+            position: relative !important;
+        }
+
+        .avatar-container img,
+        .avatar-placeholder {
+            width: 40px !important;
+            height: 40px !important;
+            object-fit: cover !important;
+            border-radius: 50% !important;
+        }
+
+        .avatar-placeholder {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            background-color: var(--primary-color) !important;
+            color: white !important;
+            font-weight: 500 !important;
+        }
+
+        .user-info-container {
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+            overflow: hidden !important;
+        }
+
+        .user-info-container h6,
+        .user-info-container small {
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            margin-bottom: 0 !important;
+        }
+
+        /* Table Action Buttons */
+        .action-buttons {
+            display: flex !important;
+            gap: 0.5rem !important;
+            justify-content: flex-end !important;
+            min-width: 120px !important;
+        }
+
+        .btn-action {
+            width: 36px !important;
+            height: 36px !important;
+            padding: 0 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 8px !important;
+            border: 1px solid #e5e7eb !important;
+            background-color: white !important;
+            color: #6b7280 !important;
+            transition: all 0.2s ease !important;
+            position: relative !important;
+        }
+
+        .btn-action:hover {
+            background-color: #f8fafc !important;
+            border-color: #cbd5e1 !important;
+            color: var(--primary-color) !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+        }
+
+        .btn-action:active {
+            transform: translateY(0) !important;
+        }
+
+        .btn-action .material-icons {
+            font-size: 1.25rem !important;
+        }
+
+        /* Action Button Variants */
+        .btn-action.btn-view {
+            color: #3b82f6 !important;
+            border-color: #bfdbfe !important;
+            background-color: #eff6ff !important;
+        }
+
+        .btn-action.btn-view:hover {
+            color: #2563eb !important;
+            border-color: #93c5fd !important;
+            background-color: #dbeafe !important;
+        }
+
+        .btn-action.btn-edit {
+            color: #10b981 !important;
+            border-color: #a7f3d0 !important;
+            background-color: #ecfdf5 !important;
+        }
+
+        .btn-action.btn-edit:hover {
+            color: #059669 !important;
+            border-color: #6ee7b7 !important;
+            background-color: #d1fae5 !important;
+        }
+
+        .btn-action.btn-delete {
+            color: #ef4444 !important;
+            border-color: #fecaca !important;
+            background-color: #fef2f2 !important;
+        }
+
+        .btn-action.btn-delete:hover {
+            color: #dc2626 !important;
+            border-color: #fca5a5 !important;
+            background-color: #fee2e2 !important;
+        }
+
+        .btn-action.btn-print {
+            color: #8b5cf6 !important;
+            border-color: #ddd6fe !important;
+            background-color: #f5f3ff !important;
+        }
+
+        .btn-action.btn-print:hover {
+            color: #7c3aed !important;
+            border-color: #c4b5fd !important;
+            background-color: #ede9fe !important;
+        }
+
+        /* Tooltip styles */
+        .btn-action[title] {
+            position: relative !important;
+        }
+
+        .btn-action[title]::before {
+            content: attr(title) !important;
+            position: absolute !important;
+            bottom: calc(100% + 5px) !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            padding: 0.25rem 0.5rem !important;
+            background-color: #1f2937 !important;
+            color: white !important;
+            font-size: 0.75rem !important;
+            border-radius: 4px !important;
+            white-space: nowrap !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            transition: all 0.2s ease !important;
+            z-index: 1000 !important;
+        }
+
+        .btn-action[title]::after {
+            content: "" !important;
+            position: absolute !important;
+            bottom: calc(100% + 3px) !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            border-width: 5px !important;
+            border-style: solid !important;
+            border-color: #1f2937 transparent transparent transparent !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            transition: all 0.2s ease !important;
+            z-index: 1000 !important;
+        }
+
+        .btn-action[title]:hover::before,
+        .btn-action[title]:hover::after {
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+
+        /* Status and Role Badges */
+        .status-badge,
+        .role-badge {
+            padding: 0.4rem 0.75rem !important;
+            border-radius: 6px !important;
+            font-size: 0.875rem !important;
+            font-weight: 500 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+        }
+
+        .status-badge .status-dot {
+            width: 6px !important;
+            height: 6px !important;
+            border-radius: 50% !important;
+            margin-right: 6px !important;
+        }
+
+        /* Status Colors */
+        .status-active {
+            background-color: #ecfdf5 !important;
+            color: #059669 !important;
+        }
+
+        .status-active .status-dot {
+            background-color: #059669 !important;
+        }
+
+        .status-inactive {
+            background-color: #fef2f2 !important;
+            color: #dc2626 !important;
+        }
+
+        .status-inactive .status-dot {
+            background-color: #dc2626 !important;
+        }
+
+        /* Role Colors */
+        .role-admin {
+            background-color: #ecfdf5 !important;
+            color: #059669 !important;
+        }
+
+        .role-enforcer {
+            background-color: #fff7ed !important;
+            color: #c2410c !important;
+        }
+
+        .role-supervisor {
+            background-color: #f5f3ff !important;
+            color: #6d28d9 !important;
+        }
+
+        .role-treasurer {
+            background-color: #eff6ff !important;
+            color: #1d4ed8 !important;
+        }
+
+        /* Category Badge Styles */
+        .category-badge {
+            padding: 0.4rem 0.75rem !important;
+            border-radius: 6px !important;
+            font-size: 0.875rem !important;
+            font-weight: 500 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+        }
+
+        .category-general { background-color: #e7f5ff !important; color: #3699ff !important; }
+        .category-violation { background-color: #fff4de !important; color: #ffa800 !important; }
+        .category-user { background-color: #e8fff3 !important; color: #0bb783 !important; }
+        .category-payment { background-color: #eee5ff !important; color: #8950fc !important; }
+        .category-system { background-color: #ffe2e5 !important; color: #f64e60 !important; }
+
+        /* Fixed Column Widths */
+        .table-system th:nth-child(1),
+        .table-system td:nth-child(1) {
+            width: 35% !important;
+            min-width: 250px !important;
+        }
+
+        .table-system th:nth-child(2),
+        .table-system td:nth-child(2) {
+            width: 15% !important;
+            min-width: 120px !important;
+        }
+
+        .table-system th:nth-child(3),
+        .table-system td:nth-child(3) {
+            width: 15% !important;
+            min-width: 120px !important;
+        }
+
+        .table-system th:nth-child(4),
+        .table-system td:nth-child(4) {
+            width: 20% !important;
+            min-width: 150px !important;
+        }
+
+        .table-system th:nth-child(5),
+        .table-system td:nth-child(5) {
+            width: 15% !important;
+            min-width: 120px !important;
+        }
+
+        /* Prevent Content Jump */
+        html {
+            overflow-y: scroll !important;
+            width: 100vw !important;
+        }
+
+        /* Container Width Fix */
+        .container-fluid {
+            width: 100% !important;
+            max-width: 100% !important;
+            padding-right: 1rem !important;
+            padding-left: 1rem !important;
+        }
+
+        /* Search Input Styles */
+        .search-input {
+            position: relative;
+            width: 100%;
+            margin-bottom: 0;
+        }
+
+        .search-input .material-icons {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6b7280;
+            font-size: 20px;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .search-input .form-control,
+        .search-input .form-select {
+            padding-left: 40px;
+            height: 42px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            color: #1f2937;
+            width: 100%;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .search-input .form-control:focus,
+        .search-input .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.1);
+            outline: none;
+        }
+
+        .search-input .form-control::placeholder {
+            color: #9ca3af;
+            opacity: 0.8;
+        }
+
+        /* Search Form Layout */
+        .search-form {
+            display: flex;
+            gap: 1rem;
+            align-items: stretch;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-form .btn-primary {
+            height: 42px;
+            padding: 0 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            border-radius: 6px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        /* Mobile Responsiveness for Search */
+        @media (max-width: 768px) {
+            .search-form {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .search-input .form-control,
+            .search-input .form-select {
+                height: 38px;
+                font-size: 0.875rem;
+            }
+
+            .search-form .btn-primary {
+                height: 38px;
+                width: 100%;
+            }
+        }
+
+        /* Icon Circle */
+        .icon-circle {
+            width: 48px !important;
+            height: 48px !important;
+            border-radius: 50% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+
+        .icon-circle .material-icons {
+            font-size: 24px !important;
+        }
+
+        /* DataTables Customization */
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            padding: 0.5rem 1rem !important;
+            margin: 0 2px !important;
+            border-radius: 6px !important;
+            border: none !important;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            background: var(--primary-color) !important;
+            color: white !important;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background: #f3f4f6 !important;
+            border: none !important;
+        }
+
+        .dataTables_wrapper .dataTables_info {
+            padding-top: 1rem !important;
+            font-size: 0.875rem !important;
+            color: #6b7280 !important;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .table-system td,
+            .table-system th {
+                padding: 0.75rem !important;
+            }
+
+            .btn-action {
+                width: 28px !important;
+                height: 28px !important;
+            }
+
+            .btn-action .material-icons {
+                font-size: 1rem !important;
+            }
+
+            .search-input {
+                min-width: auto !important;
+            }
+        }
+
+        /* Global Layout Fixes */
+        html, body {
+            overflow-x: hidden;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background-color: var(--bg-light);
+        }
+
+        #wrapper {
+            flex: 1;
+            display: flex;
+            width: 100%;
+            position: relative;
+        }
+
+        #page-content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 1.5rem;
+            transition: all 0.3s;
+            margin-left: var(--sidebar-width);
+            width: calc(100% - var(--sidebar-width));
+            overflow-x: hidden;
+        }
+
+        .container-fluid {
+            max-width: 100%;
+            padding: 0;
+            margin: 0;
+            height: 100%;
+        }
+
+        /* Card Layout Fixes */
+        .card {
+            height: fit-content;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        /* Button Alignment */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            height: 42px;
+            padding: 0 1.25rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+            border-radius: 6px;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            min-width: 120px;
+        }
+
+        .btn .material-icons {
+            font-size: 20px;
+        }
+
+        /* Table Container Fixes */
+        .table-responsive {
+            margin: 0;
+            overflow-x: auto;
+            overflow-y: hidden;
+            border-radius: 8px;
+        }
+
+        .table {
+            margin-bottom: 0;
+        }
+
+        /* Search Form Layout */
+        .search-form {
+            display: flex;
+            gap: 1rem;
+            align-items: stretch;
+            margin: 1.5rem 0;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            #page-content-wrapper {
+                margin-left: 0;
+                width: 100%;
+                padding: 1rem;
+            }
+
+            .btn {
+                height: 38px;
+                padding: 0 1rem;
+                font-size: 0.875rem;
+            }
+
+            .btn .material-icons {
+                font-size: 18px;
+            }
+
+            .search-form {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            .card-body {
+                padding: 1rem;
+            }
+        }
+
+        /* Header Section Alignment */
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        /* Pagination Alignment */
+        .pagination-container {
+            padding: 1rem;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Sidebar Content Adjustments */
+        .sidebar-content {
+            height: calc(100vh - 180px);
+            overflow-y: hidden;
+            padding: 0.5rem 0;
+        }
+
+        /* Adjust spacing between menu items */
+        .list-group-item {
+            padding: 0.5rem 1rem;
+            margin: 0.125rem 0;
+        }
+
+        .submenu-item {
+            padding: 0.5rem 0.75rem 0.5rem 2.5rem !important;
+            font-size: 0.9rem;
+        }
+
+        /* Adjust section spacing */
+        .sidebar-section {
+            margin-bottom: 0.5rem;
+            padding: 0 0.75rem;
+        }
+
+        .sidebar-section-title {
+            padding: 0.375rem 0.75rem;
+            margin-bottom: 0.25rem;
+        }
+
+        /* Adjust user profile section */
+        .user-profile {
+            padding: 0.75rem;
+        }
+
+        .user-info {
+            padding: 0.375rem;
+            margin-bottom: 0.375rem;
+        }
+
+        /* Adjust submenu toggle spacing */
+        .submenu-toggle {
+            padding: 0.5rem 0.75rem;
+        }
+
+        /* Ensure content fits without scrollbar */
+        #sidebar-wrapper {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 1rem;
+            flex-shrink: 0;
+        }
+
+        .sidebar-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-profile {
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+    {% if user.is_authenticated and not request.path == '/login/' %}
+    <div id="wrapper">
+        <!-- Sidebar -->
+        <div id="sidebar-wrapper">
+            <!-- Keep only one toggle button inside sidebar -->
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <span class="material-icons">chevron_right</span>
+            </button>
+            
+            <div class="sidebar-header">
+                <a href="/" class="sidebar-brand">
+                    <img src="{% static 'admin/img/logo.ico' %}" alt="Logo">
+                    <span>CTTMO TVMS</span>
+                </a>
+            </div>
+
+            <div class="sidebar-content">
+                {% with role=user.userprofile.role %}
+                    <!-- Main Navigation -->
+                    <div class="sidebar-section">
+                        <div class="sidebar-section-title">Main</div>
+                        <div class="list-group list-group-flush">
+                            <a href="{% url 'admin_dashboard' %}" class="list-group-item {% if request.path == '/' %}active{% endif %}">
+                                <span class="material-icons">dashboard</span>Dashboard
+                            </a>
+                            
+                            <!-- Violations Submenu -->
+                            <div class="submenu">
+                                <button class="list-group-item submenu-toggle {% if 'violations' in request.path or 'ncap' in request.path or 'adjudication' in request.path %}active{% endif %}" data-bs-toggle="collapse" data-bs-target="#violationsSubmenu">
+                                    <span class="material-icons">gavel</span>
+                                    <span class="flex-grow-1">Violations</span>
+                                    <span class="material-icons submenu-icon">expand_more</span>
+                                </button>
+                                <div class="collapse {% if 'violations' in request.path or 'ncap' in request.path or 'adjudication' in request.path %}show{% endif %}" id="violationsSubmenu">
+                                    <a href="{% url 'violations_list' %}" class="list-group-item submenu-item {% if 'violations' in request.path and 'ncap' not in request.path %}active{% endif %}">
+                                        <span class="material-icons">list</span>Traffic Violations
+                                    </a>
+                                    <a href="{% url 'ncap_violations_list' %}" class="list-group-item submenu-item {% if 'ncap-violations' in request.path %}active{% endif %}">
+                                        <span class="material-icons">photo_camera</span>NCAP Violations
+                                    </a>
+                                    <a href="{% url 'adjudication_list' %}" class="list-group-item submenu-item {% if 'adjudication' in request.path %}active{% endif %}">
+                                        <span class="material-icons">balance</span>Adjudication
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Processing Submenu -->
+                            {% if user.userprofile.role == 'SUPERVISOR' or user.userprofile.role == 'TREASURER' or user.userprofile.role == 'ADMIN' %}
+                            <div class="submenu">
+                                <button class="list-group-item submenu-toggle {% if 'pending-approvals' in request.path or 'payment-processing' in request.path %}active{% endif %}" data-bs-toggle="collapse" data-bs-target="#processingSubmenu">
+                                    <span class="material-icons">pending_actions</span>
+                                    <span class="flex-grow-1">Processing</span>
+                                    <span class="material-icons submenu-icon">expand_more</span>
+                                </button>
+                                <div class="collapse {% if 'pending-approvals' in request.path or 'payment-processing' in request.path %}show{% endif %}" id="processingSubmenu">
+                                    {% if user.userprofile.role == 'SUPERVISOR' or user.userprofile.role == 'ADMIN' %}
+                                    <a href="{% url 'pending_approvals' %}" class="list-group-item submenu-item {% if 'pending-approvals' in request.path %}active{% endif %}">
+                                        <span class="material-icons">pending_actions</span>Pending Approvals
+                                    </a>
+                                    {% endif %}
+                                    {% if user.userprofile.role == 'TREASURER' or user.userprofile.role == 'ADMIN' %}
+                                    <a href="{% url 'payment_processing' %}" class="list-group-item submenu-item {% if 'payment-processing' in request.path %}active{% endif %}">
+                                        <span class="material-icons">payments</span>Payment Processing
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% if user.userprofile.role == 'ADMIN' or user.userprofile.role == 'SUPERVISOR' or user.userprofile.role == 'ENFORCER' %}
+                            <a href="{% url 'enforcer_map' %}" class="list-group-item {% if 'enforcer-map' in request.path %}active{% endif %}">
+                                <span class="material-icons">location_on</span>Enforcer Map
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Actions Section -->
+                    <div class="sidebar-section">
+                        <div class="sidebar-section-title">Actions</div>
+                        <div class="list-group list-group-flush">
+                            <div class="submenu">
+                                <button class="list-group-item submenu-toggle {% if 'issue-ticket' in request.path or 'upload-violation' in request.path %}active{% endif %}" data-bs-toggle="collapse" data-bs-target="#ticketingSubmenu">
+                                    <span class="material-icons">receipt</span>
+                                    <span class="flex-grow-1">Ticketing</span>
+                                    <span class="material-icons submenu-icon">expand_more</span>
+                                </button>
+                                <div class="collapse {% if 'issue-ticket' in request.path or 'upload-violation' in request.path %}show{% endif %}" id="ticketingSubmenu">
+                                    <a href="{% url 'issue_ticket' %}" class="list-group-item submenu-item {% if 'issue-ticket' in request.path %}active{% endif %}">
+                                        <span class="material-icons">receipt</span>Issue Ticket
+                                    </a>
+                                    <a href="{% url 'upload_violation' %}" class="list-group-item submenu-item {% if 'upload-violation' in request.path %}active{% endif %}">
+                                        <span class="material-icons">photo_camera</span>NCAP Upload
+                                    </a>
+                                </div>
+                            </div>
+
+                            {% if user.userprofile.role in 'ADMIN,SUPERVISOR,TREASURER' %}
+                            <a href="{% url 'payment_records' %}" class="list-group-item {% if 'payments' in request.path %}active{% endif %}">
+                                <span class="material-icons">receipt_long</span>
+                                Payment Records
+                            </a>
+                            {% endif %}
+                            <a href="{% url 'announcements_list' %}" class="list-group-item {% if 'announcements' in request.path %}active{% endif %}">
+                                <span class="material-icons">campaign</span>Announcements
+                            </a>
+                        </div>
+                    </div>
+
+                    {% if role == 'ADMIN' %}
+                    <!-- Management Section -->
+                    <div class="sidebar-section">
+                        <div class="sidebar-section-title">Management</div>
+                        <div class="list-group list-group-flush">
+                            <a href="{% url 'users_list' %}" class="list-group-item {% if 'users' in request.path %}active{% endif %}">
+                                <span class="material-icons">group</span>Users
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- User Menu Items -->
+                    {% if user.is_authenticated and user.userprofile.role == 'USER' %}
+                    <div class="sidebar-section">
+                        <div class="sidebar-section-title">Menu</div>
+                        <div class="list-group list-group-flush">
+                            <a href="{% url 'edit_user_profile' %}" class="list-group-item {% if 'profile' in request.path %}active{% endif %}">
+                                <span class="material-icons">person</span>Profile
+                            </a>
+                            <a href="{% url 'user_violations' %}" class="list-group-item {% if 'violations' in request.path %}active{% endif %}">
+                                <span class="material-icons">gavel</span>Violations
+                            </a>
+                            <a href="{% url 'user_reports' %}" class="list-group-item {% if 'reports' in request.path %}active{% endif %}">
+                                <span class="material-icons">description</span>Report Filing
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endwith %}
+            </div>
+
+            <!-- User Profile Section -->
+            <div class="user-profile">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        {% if user.userprofile.avatar %}
+                            <img src="{{ user.userprofile.avatar.url }}" alt="Profile">
+                        {% else %}
+                            <span class="material-icons">account_circle</span>
+                        {% endif %}
+                    </div>
+                    <div class="user-details">
+                        <p class="user-name">{{ user.get_full_name }}</p>
+                        <p class="user-role">{{ user.userprofile.get_role_display }}</p>
+                    </div>
+                </div>
+                <div class="user-actions">
+                    <a href="{% url 'profile' %}" class="user-action-btn" title="Profile">
+                        <span class="material-icons">person</span>
+                    </a>
+                    <a href="{% url 'activity_history' %}" class="user-action-btn" title="Activity">
+                        <span class="material-icons">history</span>
+                    </a>
+                    <form method="post" action="{% url 'logout' %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="user-action-btn" title="Logout">
+                            <span class="material-icons">logout</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Overlay -->
+        <div class="sidebar-overlay"></div>
+
+        <!-- Page Content -->
+        <div id="page-content-wrapper">
+            <!-- Simple Confirmation Dialog -->
+            <div class="confirm-dialog-overlay" id="confirmDialogOverlay">
+                <div class="confirm-dialog">
+                    <div class="confirm-dialog-header" id="confirmTitle">
+                        Confirm Action
+                    </div>
+                    <div class="confirm-dialog-body" id="confirmMessage">
+                        Are you sure you want to proceed?
+                    </div>
+                    <div class="confirm-dialog-footer">
+                        <button class="btn btn-light" id="cancelButton">Cancel</button>
+                        <button class="btn btn-primary" id="confirmActionButton">Confirm</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages Section -->
+            {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% block content %}
+            {% endblock %}
+        </div>
+    </div>
+    {% else %}
+        {% block content_no_sidebar %}
+        {% endblock %}
+    {% endif %}
+
+    <!-- JavaScript Dependencies -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Updated sidebar toggle functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebarWrapper = document.getElementById('sidebar-wrapper');
+            const sidebarOverlay = document.querySelector('.sidebar-overlay');
+            const body = document.body;
+
+            function toggleSidebar(e) {
+                if (e) {
+                    e.preventDefault(); // Only prevent default for the toggle button
+                    e.stopPropagation();
+                }
+                sidebarWrapper.classList.toggle('active');
+                sidebarOverlay.classList.toggle('active');
+                sidebarToggle.classList.toggle('active');
+                body.classList.toggle('sidebar-open');
+            }
+
+            // Toggle sidebar on button click
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', toggleSidebar);
+            }
+
+            // Close sidebar when clicking overlay
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener('click', toggleSidebar);
+            }
+
+            // Close sidebar when pressing escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && sidebarWrapper.classList.contains('active')) {
+                    toggleSidebar();
+                }
+            });
+
+            // Handle window resize
+            let resizeTimer;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(function() {
+                    if (window.innerWidth >= 992 && sidebarWrapper.classList.contains('active')) {
+                        sidebarWrapper.classList.remove('active');
+                        sidebarOverlay.classList.remove('active');
+                        sidebarToggle.classList.remove('active');
+                        body.classList.remove('sidebar-open');
+                    }
+                }, 250);
+            });
+
+            // Close sidebar when clicking a link (for mobile)
+            const sidebarLinks = sidebarWrapper.querySelectorAll('a');
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    if (window.innerWidth < 992 && sidebarWrapper.classList.contains('active')) {
+                        // Don't prevent default here, let the link navigate
+                        setTimeout(() => {
+                            toggleSidebar();
+                        }, 150);
+                    }
+                });
+            });
+        });
+
+        // Message handling
+        document.addEventListener('DOMContentLoaded', function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                // Add slide-in animation
+                alert.classList.add('show');
+                
+                // Auto-dismiss after 5 seconds
+                setTimeout(() => {
+                    // Add slide-out animation
+                    alert.classList.add('hide');
+                    
+                    // Remove alert after animation
+                    setTimeout(() => {
+                        alert.remove();
+                    }, 300); // Match animation duration
+                }, 5000);
+            });
+        });
+
+        // Simple confirmation dialog utility
+        const confirmAction = (title, message, callback) => {
+            const overlay = document.getElementById('confirmDialogOverlay');
+            const titleEl = document.getElementById('confirmTitle');
+            const messageEl = document.getElementById('confirmMessage');
+            const confirmBtn = document.getElementById('confirmActionButton');
+            const cancelBtn = document.getElementById('cancelButton');
+
+            // Set content
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+
+            // Show dialog
+            overlay.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+
+            // Handle confirm
+            const handleConfirm = () => {
+                overlay.style.display = 'none';
+                document.body.style.overflow = '';
+                confirmBtn.removeEventListener('click', handleConfirm);
+                cancelBtn.removeEventListener('click', handleCancel);
+                overlay.removeEventListener('click', handleOverlayClick);
+                document.removeEventListener('keydown', handleKeydown);
+                callback();
+            };
+
+            // Handle cancel
+            const handleCancel = () => {
+                overlay.style.display = 'none';
+                document.body.style.overflow = '';
+                confirmBtn.removeEventListener('click', handleConfirm);
+                cancelBtn.removeEventListener('click', handleCancel);
+                overlay.removeEventListener('click', handleOverlayClick);
+                document.removeEventListener('keydown', handleKeydown);
+            };
+
+            // Handle overlay click
+            const handleOverlayClick = (e) => {
+                if (e.target === overlay) {
+                    handleCancel();
+                }
+            };
+
+            // Handle escape key
+            const handleKeydown = (e) => {
+                if (e.key === 'Escape') {
+                    handleCancel();
+                }
+            };
+
+            // Add event listeners
+            confirmBtn.addEventListener('click', handleConfirm);
+            cancelBtn.addEventListener('click', handleCancel);
+            overlay.addEventListener('click', handleOverlayClick);
+            document.addEventListener('keydown', handleKeydown);
+        };
+        
+        // Prevent scrollbar jump
+        document.addEventListener('DOMContentLoaded', () => {
+            const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+            document.documentElement.style.setProperty('--scrollbar-width', `${scrollbarWidth}px`);
+        });
+
+        // Location tracking for enforcers
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function updateLocation(position) {
+            const data = {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+                speed: position.coords.speed || null,
+                heading: position.coords.heading || null,
+                is_active: true
+            };
+
+            fetch('{% url "update_location" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    console.log('Location updated:', data);
+                } else {
+                    console.error('Error updating location:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error updating location:', error);
+                // Retry after 5 seconds on failure
+                setTimeout(trackLocation, 5000);
+            });
+        }
+
+        function handleLocationError(error) {
+            console.error('Error getting location:', error);
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    console.error("Location permission denied");
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    console.error("Location information unavailable");
+                    break;
+                case error.TIMEOUT:
+                    console.error("Location request timed out");
+                    // Retry with different options
+                    navigator.geolocation.getCurrentPosition(updateLocation, handleLocationError, {
+                        enableHighAccuracy: false,
+                        timeout: 10000,
+                        maximumAge: 30000
+                    });
+                    break;
+            }
+        }
+
+        function trackLocation() {
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(updateLocation, handleLocationError, {
+                    enableHighAccuracy: true,
+                    timeout: 5000,
+                    maximumAge: 0
+                });
+            } else {
+                console.error('Geolocation is not supported by this browser');
+            }
+        }
+
+        // Update location more frequently (every 30 seconds)
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initial location update
+            trackLocation();
+            
+            // Set up periodic updates
+            setInterval(trackLocation, 30000);
+
+            // Update location when tab becomes visible
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden) {
+                    trackLocation();
+                }
+            });
+        });
+
+        // Initialize all tooltips
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Bootstrap tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+                new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+
+            // Add active class to parent submenu when child is active
+            const activeSubmenuItem = document.querySelector('.submenu-item.active');
+            if (activeSubmenuItem) {
+                const parentSubmenu = activeSubmenuItem.closest('.submenu');
+                if (parentSubmenu) {
+                    const parentToggle = parentSubmenu.querySelector('.submenu-toggle');
+                    parentToggle.classList.add('active');
+                }
+            }
+        });
+    </script>
+
+    {% block extra_js %}
+    {% endblock %}
+
+    {% if user.is_authenticated and user.userprofile.role == 'ENFORCER' %}
+    <script>
+        // Location tracking for enforcers
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function updateLocation(position) {
+            const data = {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+                speed: position.coords.speed || null,
+                heading: position.coords.heading || null,
+                is_active: true
+            };
+
+            fetch('{% url "update_location" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    console.log('Location updated:', data);
+                } else {
+                    console.error('Error updating location:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error updating location:', error);
+                // Retry after 5 seconds on failure
+                setTimeout(trackLocation, 5000);
+            });
+        }
+
+        function handleLocationError(error) {
+            console.error('Error getting location:', error);
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    console.error("Location permission denied");
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    console.error("Location information unavailable");
+                    break;
+                case error.TIMEOUT:
+                    console.error("Location request timed out");
+                    // Retry with different options
+                    navigator.geolocation.getCurrentPosition(updateLocation, handleLocationError, {
+                        enableHighAccuracy: false,
+                        timeout: 10000,
+                        maximumAge: 30000
+                    });
+                    break;
+            }
+        }
+
+        function trackLocation() {
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(updateLocation, handleLocationError, {
+                    enableHighAccuracy: true,
+                    timeout: 5000,
+                    maximumAge: 0
+                });
+            } else {
+                console.error('Geolocation is not supported by this browser');
+            }
+        }
+
+        // Update location more frequently (every 30 seconds)
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initial location update
+            trackLocation();
+            
+            // Set up periodic updates
+            setInterval(trackLocation, 30000);
+
+            // Update location when tab becomes visible
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden) {
+                    trackLocation();
+                }
+            });
+        });
+    </script>
+    {% endif %}
+</body>
+</html>

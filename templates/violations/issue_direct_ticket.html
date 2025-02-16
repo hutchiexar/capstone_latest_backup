@@ -1,0 +1,1257 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Progress Steps -->
+    <div class="progress-container mb-4">
+        <div class="progress">
+            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+        </div>
+        <div class="steps-container">
+            <div class="step active" data-step="1">
+                <div class="step-circle">1</div>
+                <div class="step-label">Violator Info</div>
+            </div>
+            <div class="step" data-step="2">
+                <div class="step-circle">2</div>
+                <div class="step-label">Violation Details</div>
+            </div>
+            <div class="step" data-step="3">
+                <div class="step-circle">3</div>
+                <div class="step-label">Signature</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Container -->
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-header bg-white py-3">
+            <div class="d-flex align-items-center">
+                <span class="material-icons me-2" style="color: var(--primary-color)">gavel</span>
+                <h4 class="m-0">Issue Violation Ticket</h4>
+            </div>
+        </div>
+
+        <div class="card-body p-4">
+            <form method="POST" id="ticketForm" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                <!-- Step 1: Violator Information -->
+                <div class="form-step active" id="step1">
+                    <div class="row g-4">
+                        <div class="col-lg-4">
+                            <div class="info-card">
+                                <h5 class="section-title">License Information</h5>
+                                
+                                <!-- Add unlicensed driver option -->
+                                <div class="form-check mb-3">
+                                    <input type="checkbox" class="form-check-input" id="noLicense" name="no_license">
+                                    <label class="form-check-label" for="noLicense">
+                                        Driver has no license
+                                    </label>
+                                </div>
+
+                                <div id="licenseInputGroup">
+                                    <div class="form-floating mb-3">
+                                        <input type="text" class="form-control" id="license_number" name="license_number" 
+                                               pattern="[A-Z0-9]{3}-[0-9]{2}-[0-9]{6}" title="Format: XXX-XX-XXXXXX">
+                                        <label for="license_number">License Number</label>
+                                        <div class="form-text">Format: XXX-XX-XXXXXX (e.g., G12-24-001899)</div>
+                                    </div>
+
+                                    <!-- Add camera scanner button -->
+                                    <button type="button" id="scanLicense" class="btn btn-primary mb-3 w-100 d-flex align-items-center justify-content-center gap-2">
+                                        <span class="material-icons">camera_alt</span>
+                                        <span>Scan License</span>
+                                    </button>
+
+                                    <!-- Add camera feed modal -->
+                                    <div class="modal fade" id="cameraModal" tabindex="-1">
+                                        <div class="modal-dialog modal-dialog-centered modal-lg">
+                                            <div class="modal-content">
+                                                <div class="modal-header bg-primary text-white">
+                                                    <h5 class="modal-title">
+                                                        <span class="material-icons align-middle me-2">camera_alt</span>
+                                                        <span id="scannerTitle">Document Scanner</span>
+                                                    </h5>
+                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body p-0">
+                                                    <div class="camera-container position-relative">
+                                                        <!-- Scanning overlay -->
+                                                        <div id="scanningOverlay" class="scanning-overlay" style="display: none;">
+                                                            <div class="scanning-line"></div>
+                                                            <div class="corner-markers">
+                                                                <div class="corner-marker top-left"></div>
+                                                                <div class="corner-marker top-right"></div>
+                                                                <div class="corner-marker bottom-left"></div>
+                                                                <div class="corner-marker bottom-right"></div>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <!-- Camera elements -->
+                                                        <video id="cameraFeed" class="w-100" style="display: none;"></video>
+                                                        <canvas id="cameraCanvas" class="w-100" style="display: none;"></canvas>
+                                                        
+                                                        <!-- Status messages -->
+                                                        <div id="cameraPermissionMsg" class="camera-message text-center py-4">
+                                                            <span class="material-icons" style="font-size: 48px;">camera_alt</span>
+                                                            <p class="mt-2">Please allow camera access to scan the document.</p>
+                                                        </div>
+                                                        
+                                                        <div id="scanningMsg" class="camera-message text-center py-4" style="display: none;">
+                                                            <div class="spinner-border text-primary mb-2" role="status">
+                                                                <span class="visually-hidden">Processing...</span>
+                                                            </div>
+                                                            <p class="scanning-text">Processing document...</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                        <span class="material-icons align-middle me-2">close</span>
+                                                        Cancel
+                                                    </button>
+                                                    <button type="button" class="btn btn-primary" id="captureImage">
+                                                        <span class="material-icons align-middle me-2">photo_camera</span>
+                                                        Capture
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-8">
+                            <div class="info-card">
+                                <h5 class="section-title">Personal Information</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="first_name" name="first_name" required>
+                                            <label for="first_name">First Name</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="last_name" name="last_name" required>
+                                            <label for="last_name">Last Name</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="tel" class="form-control" id="phone_number" name="phone_number" required
+                                                   pattern="[0-9]{11}" title="Please enter a valid 11-digit phone number">
+                                            <label for="phone_number">Phone Number</label>
+                                            <div class="form-text">11-digit number (e.g., 09123456789)</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-floating">
+                                            <textarea class="form-control" id="address" name="address" style="height: 100px" required></textarea>
+                                            <label for="address">Complete Address</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Violation Details -->
+                <div class="form-step" id="step2" style="display: none;">
+                    <div class="row g-4">
+                        <div class="col-lg-4">
+                            <div class="info-card">
+                                <h5 class="section-title">Violation Type</h5>
+                                <div class="violations-list">
+                                    {% for code, label in violation_choices %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" 
+                                               name="violation_type[]" 
+                                               value="{{ label }}" 
+                                               id="violation_{{ code }}">
+                                        <label class="form-check-label" for="violation_{{ code }}">
+                                            {{ label }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-8">
+                            <div class="info-card">
+                                <h5 class="section-title">Vehicle Information</h5>
+                                <!-- Add camera scanner button for vehicle info -->
+                                <button type="button" id="scanVehicle" class="btn btn-primary mb-3 w-100 d-flex align-items-center justify-content-center gap-2">
+                                    <span class="material-icons">camera_alt</span>
+                                    <span>Scan Vehicle Registration</span>
+                                </button>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="vehicle_type" name="vehicle_type" required>
+                                            <label for="vehicle_type">Type/Make of Vehicle</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <select class="form-select" id="classification" name="classification" required>
+                                                <option value="">Select classification</option>
+                                                {% for code, label in vehicle_classifications %}
+                                                <option value="{{ code }}">{{ label }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <label for="classification">Classification</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="plate_number" name="plate_number" required>
+                                            <label for="plate_number">Plate Number</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="color" name="color" required>
+                                            <label for="color">Vehicle Color</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="registration_number" name="registration_number" required>
+                                            <label for="registration_number">Registration Number</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="date" class="form-control" id="registration_date" name="registration_date" required>
+                                            <label for="registration_date">Registration Date</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <h5 class="section-title mt-4">Vehicle Owner</h5>
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="vehicle_owner" name="vehicle_owner" required>
+                                            <label for="vehicle_owner">Vehicle Owner</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-floating">
+                                            <textarea class="form-control" id="vehicle_owner_address" name="vehicle_owner_address" style="height: 100px" required></textarea>
+                                            <label for="vehicle_owner_address">Vehicle Owner Address</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <h5 class="section-title mt-4">Violation Details</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-8">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="location" name="location" required>
+                                            <label for="location">Location of Violation</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-floating">
+                                            <input type="number" class="form-control" id="fine_amount" name="fine_amount" required min="0">
+                                            <label for="fine_amount">Fine Amount (₱)</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Signature -->
+                <div class="form-step" id="step3" style="display: none;">
+                    <div class="row g-4">
+                        <div class="col-lg-4">
+                            <div class="info-card">
+                                <h5 class="section-title">Signature Options</h5>
+                                <div class="form-check mb-4">
+                                    <input class="form-check-input" type="checkbox" id="noSignature" name="no_signature">
+                                    <label class="form-check-label" for="noSignature">
+                                        <i class="fas fa-exclamation-circle text-warning me-2"></i>
+                                        Violator refused to sign
+                                    </label>
+                                </div>
+                                <div id="refusalNoteArea" style="display: none;">
+                                    <div class="form-floating">
+                                        <textarea class="form-control" id="refusalNote" name="refusal_note" 
+                                                style="height: 100px"></textarea>
+                                        <label for="refusalNote">Reason for Signature Refusal</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-8">
+                            <div class="info-card">
+                                <h5 class="section-title">Violator's Signature</h5>
+                                <div id="signatureArea">
+                                    <div class="signature-pad-container">
+                                        <canvas id="signatureCanvas"></canvas>
+                                    </div>
+                                    <div class="mt-3">
+                                        <button type="button" class="btn btn-outline-secondary" onclick="clearSignature()">
+                                            <i class="fas fa-eraser me-2"></i>Clear
+                                        </button>
+                                    </div>
+                                    <input type="hidden" name="signature_data" id="signatureData">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Buttons -->
+                <div class="d-flex justify-content-between mt-4 pt-3 border-top">
+                    <button type="button" class="btn btn-outline-secondary prev-step" style="display: none;">
+                        <span class="material-icons me-2">arrow_back</span>Previous
+                    </button>
+                    <button type="button" class="btn btn-primary next-step">
+                        Next<span class="material-icons ms-2">arrow_forward</span>
+                    </button>
+                    <button type="submit" class="btn btn-success submit-btn" style="display: none;">
+                        <span class="material-icons me-2">gavel</span>Issue Ticket
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Progress Steps */
+.progress-container {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+}
+
+.progress {
+    height: 4px;
+    background-color: #e9ecef;
+}
+
+.progress-bar {
+    background-color: var(--primary-color);
+    transition: width 0.3s ease;
+}
+
+.steps-container {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+    position: relative;
+}
+
+.step {
+    text-align: center;
+    flex: 1;
+}
+
+.step-circle {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 0.5rem;
+    font-weight: 600;
+    color: #6c757d;
+}
+
+.step.active .step-circle {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.step.completed .step-circle {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.step-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.step.active .step-label {
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+/* Cards */
+.info-card {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    height: 100%;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+}
+
+.section-title {
+    color: var(--text-dark);
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+/* Form Controls */
+.form-floating {
+    margin-bottom: 1rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.25);
+}
+
+.violations-list {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.form-check {
+    margin-bottom: 0.75rem;
+    padding: 0.5rem;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.form-check:hover {
+    background-color: #e9ecef;
+}
+
+/* Signature Pad */
+.signature-pad-container {
+    width: 100%;
+    height: 200px;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+    touch-action: none;
+}
+
+#signatureCanvas {
+    width: 100%;
+    height: 100%;
+    background-color: white;
+}
+
+/* Buttons */
+.btn {
+    padding: 0.5rem 1.5rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .info-card {
+        margin-bottom: 1.5rem;
+    }
+
+    .step-label {
+        font-size: 0.75rem;
+    }
+
+    #scanLicense {
+        display: flex !important;
+    }
+}
+
+/* Camera Modal Styles */
+.camera-container {
+    position: relative;
+    background: #000;
+    min-height: 300px;
+    max-height: 70vh;
+    overflow: hidden;
+}
+
+.camera-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+    z-index: 10;
+}
+
+/* Scanning Animation */
+.scanning-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.scanning-line {
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    background: rgba(0, 123, 255, 0.5);
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.8);
+    animation: scan 2s linear infinite;
+}
+
+@keyframes scan {
+    0% {
+        top: 0;
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        top: 100%;
+        opacity: 1;
+    }
+}
+
+/* Corner Markers */
+.corner-markers {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.corner-marker {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #00ff00;
+}
+
+.top-left {
+    top: 10px;
+    left: 10px;
+    border-right: none;
+    border-bottom: none;
+}
+
+.top-right {
+    top: 10px;
+    right: 10px;
+    border-left: none;
+    border-bottom: none;
+}
+
+.bottom-left {
+    bottom: 10px;
+    left: 10px;
+    border-right: none;
+    border-top: none;
+}
+
+.bottom-right {
+    bottom: 10px;
+    right: 10px;
+    border-left: none;
+    border-top: none;
+}
+
+/* Camera Feed */
+#cameraFeed, #cameraCanvas {
+    background: #000;
+    max-height: 70vh;
+    object-fit: cover;
+}
+
+/* Processing Animation */
+.scanning-text {
+    margin-top: 10px;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+/* Modal Enhancements */
+.modal-content {
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.modal-header {
+    border-bottom: none;
+    padding: 1rem 1.5rem;
+}
+
+.modal-footer {
+    border-top: 1px solid rgba(0,0,0,0.1);
+    padding: 1rem 1.5rem;
+}
+
+.camera-instructions {
+    color: #6c757d;
+}
+</style>
+
+<script>
+// Form steps handling
+let currentStep = 0;
+const steps = document.querySelectorAll('.form-step');
+const progressBar = document.querySelector('.progress-bar');
+const stepIndicators = document.querySelectorAll('.step');
+const prevBtn = document.querySelector('.prev-step');
+const nextBtn = document.querySelector('.next-step');
+const submitBtn = document.querySelector('.submit-btn');
+
+function updateStep(step) {
+    steps.forEach(s => s.style.display = 'none');
+    steps[step].style.display = 'block';
+    
+    // Update progress bar
+    progressBar.style.width = `${((step + 1) / steps.length) * 100}%`;
+    
+    // Update step indicators
+    stepIndicators.forEach((s, i) => {
+        s.classList.remove('active', 'completed');
+        if (i === step) s.classList.add('active');
+        if (i < step) s.classList.add('completed');
+    });
+    
+    // Update buttons
+    prevBtn.style.display = step === 0 ? 'none' : 'flex';
+    nextBtn.style.display = step === steps.length - 1 ? 'none' : 'flex';
+    submitBtn.style.display = step === steps.length - 1 ? 'flex' : 'none';
+}
+
+function validateStep(step) {
+    const currentStepEl = steps[step];
+    const inputs = currentStepEl.querySelectorAll('input[required], select[required], textarea[required]');
+    let isValid = true;
+
+    inputs.forEach(input => {
+        if (!input.value) {
+            isValid = false;
+            input.classList.add('is-invalid');
+        } else {
+            input.classList.remove('is-invalid');
+        }
+    });
+
+    // Special validation for step 2 (violations)
+    if (step === 1) {
+        const selectedViolations = document.querySelectorAll('input[name="violation_type[]"]:checked');
+        if (selectedViolations.length === 0) {
+            isValid = false;
+            alert('Please select at least one violation type');
+        }
+    }
+
+    return isValid;
+}
+
+// Add event listeners for navigation buttons
+nextBtn.addEventListener('click', () => {
+    if (validateStep(currentStep)) {
+        currentStep++;
+        updateStep(currentStep);
+    }
+});
+
+prevBtn.addEventListener('click', () => {
+    currentStep--;
+    updateStep(currentStep);
+});
+
+// Signature pad initialization
+const canvas = document.getElementById('signatureCanvas');
+const ctx = canvas.getContext('2d');
+let isDrawing = false;
+let lastX = 0;
+let lastY = 0;
+
+function initializeCanvas() {
+    canvas.width = canvas.offsetWidth * 2;
+    canvas.height = canvas.offsetHeight * 2;
+    ctx.scale(2, 2);
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+}
+
+function getCoordinates(event) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    if (event.type.includes('touch')) {
+        return {
+            x: (event.touches[0].clientX - rect.left) * (scaleX / 2),
+            y: (event.touches[0].clientY - rect.top) * (scaleY / 2)
+        };
+    }
+    return {
+        x: (event.clientX - rect.left) * (scaleX / 2),
+        y: (event.clientY - rect.top) * (scaleY / 2)
+    };
+}
+
+function startDrawing(event) {
+    event.preventDefault();
+    isDrawing = true;
+    const coords = getCoordinates(event);
+    lastX = coords.x;
+    lastY = coords.y;
+}
+
+function draw(event) {
+    if (!isDrawing) return;
+    event.preventDefault();
+
+    const coords = getCoordinates(event);
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(coords.x, coords.y);
+    ctx.stroke();
+    lastX = coords.x;
+    lastY = coords.y;
+}
+
+function stopDrawing() {
+    if (!isDrawing) return;
+    isDrawing = false;
+    saveSignature();
+}
+
+function clearSignature() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    document.getElementById('signatureData').value = '';
+}
+
+function saveSignature() {
+    const dataUrl = canvas.toDataURL('image/png');
+    document.getElementById('signatureData').value = dataUrl;
+}
+
+// Initialize canvas
+initializeCanvas();
+
+// Event Listeners for signature pad
+canvas.addEventListener('mousedown', startDrawing);
+canvas.addEventListener('mousemove', draw);
+canvas.addEventListener('mouseup', stopDrawing);
+canvas.addEventListener('mouseout', stopDrawing);
+
+canvas.addEventListener('touchstart', startDrawing);
+canvas.addEventListener('touchmove', draw);
+canvas.addEventListener('touchend', stopDrawing);
+canvas.addEventListener('touchcancel', stopDrawing);
+
+// Handle window resize
+window.addEventListener('resize', initializeCanvas);
+
+// Handle signature refusal
+document.getElementById('noSignature').addEventListener('change', function() {
+    const signatureArea = document.getElementById('signatureArea');
+    const refusalNoteArea = document.getElementById('refusalNoteArea');
+    
+    if (this.checked) {
+        signatureArea.style.display = 'none';
+        refusalNoteArea.style.display = 'block';
+    } else {
+        signatureArea.style.display = 'block';
+        refusalNoteArea.style.display = 'none';
+    }
+});
+
+// Form submission handling
+document.getElementById('ticketForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Check if at least one violation is selected
+    const selectedViolations = document.querySelectorAll('input[name="violation_type[]"]:checked');
+    if (selectedViolations.length === 0) {
+        alert('Please select at least one violation type');
+        return;
+    }
+
+    // Get signature data if signature is required
+    if (!document.getElementById('noSignature').checked) {
+        const signatureData = document.getElementById('signatureData').value;
+        if (!signatureData) {
+            alert('Please provide violator signature or check "Violator refused to sign"');
+            return;
+        }
+    }
+
+    // Submit the form
+    this.submit();
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const scanButton = document.getElementById('scanLicense');
+    const scanVehicleButton = document.getElementById('scanVehicle');
+    const cameraModal = new bootstrap.Modal(document.getElementById('cameraModal'));
+    const cameraFeed = document.getElementById('cameraFeed');
+    const cameraCanvas = document.getElementById('cameraCanvas');
+    const captureButton = document.getElementById('captureImage');
+    const permissionMsg = document.getElementById('cameraPermissionMsg');
+    let stream = null;
+    let currentScanMode = null; // 'license' or 'vehicle'
+
+    // Handle scan button clicks
+    scanButton.addEventListener('click', () => {
+        currentScanMode = 'license';
+        initializeCamera();
+    });
+
+    scanVehicleButton.addEventListener('click', () => {
+        currentScanMode = 'vehicle';
+        initializeCamera();
+    });
+
+    async function initializeCamera() {
+        try {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error('Your browser does not support camera access');
+            }
+
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: 'environment',
+                    width: { min: 640, ideal: 1920, max: 1920 },
+                    height: { min: 480, ideal: 1080, max: 1080 }
+                }
+            });
+            
+            cameraModal.show();
+            updateScannerTitle(currentScanMode);
+            
+            cameraFeed.srcObject = stream;
+            await cameraFeed.play();
+            
+            cameraFeed.style.display = 'block';
+            captureButton.style.display = 'block';
+            permissionMsg.style.display = 'none';
+            showScanningOverlay();
+            
+        } catch (err) {
+            handleCameraError(err);
+        }
+    }
+
+    function handleCameraError(err) {
+        console.error('Camera access error:', err);
+        let errorMessage = 'Unable to access camera. ';
+        
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+            errorMessage += 'Please allow camera access in your browser settings.';
+        } else if (err.name === 'NotFoundError') {
+            errorMessage += 'No camera found on your device.';
+        } else if (err.name === 'NotReadableError' || err.name === 'AbortError') {
+            errorMessage += 'Camera may be in use by another application.';
+        } else {
+            errorMessage += err.message || 'Please check your camera permissions and try again.';
+        }
+        
+        alert(errorMessage);
+        
+        permissionMsg.innerHTML = `
+            <span class="material-icons text-danger" style="font-size: 48px;">error</span>
+            <p class="mt-2 text-danger">${errorMessage}</p>
+        `;
+        
+        if (cameraModal._isShown) {
+            cameraFeed.style.display = 'none';
+            captureButton.style.display = 'none';
+            permissionMsg.style.display = 'block';
+        }
+    }
+
+    // Add preview modal HTML after the camera modal
+    const previewModalHTML = `
+        <div class="modal fade" id="previewModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            <span class="material-icons align-middle me-2">preview</span>
+                            Review Captured Image
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="preview-container">
+                            <img id="previewImage" class="img-fluid rounded" style="width: 100%; max-height: 70vh; object-fit: contain;">
+                            <div class="mt-3">
+                                <div class="alert alert-info">
+                                    <h6 class="mb-2"><span class="material-icons align-middle me-2">check_circle</span>Please verify:</h6>
+                                    <ul class="mb-0">
+                                        <li>The entire document is visible</li>
+                                        <li>Text is clear and readable</li>
+                                        <li>No glare or shadows</li>
+                                        <li>Document is properly aligned</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="retakeButton">
+                            <span class="material-icons align-middle me-2">camera_alt</span>
+                            Retake Photo
+                        </button>
+                        <button type="button" class="btn btn-primary" id="proceedButton">
+                            <span class="material-icons align-middle me-2">check</span>
+                            Proceed with this Image
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add the preview modal to the document
+    document.body.insertAdjacentHTML('beforeend', previewModalHTML);
+    
+    // Initialize the preview modal
+    const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
+    let capturedImageData = null;
+
+    // Modify the capture button click handler
+    captureButton.addEventListener('click', async () => {
+        hideScanningOverlay();
+        
+        const context = cameraCanvas.getContext('2d');
+        cameraCanvas.width = cameraFeed.videoWidth;
+        cameraCanvas.height = cameraFeed.videoHeight;
+        context.drawImage(cameraFeed, 0, 0, cameraCanvas.width, cameraCanvas.height);
+        
+        // Store the captured image data
+        capturedImageData = cameraCanvas.toDataURL('image/jpeg');
+        
+        // Show preview
+        document.getElementById('previewImage').src = capturedImageData;
+        cameraModal.hide();
+        previewModal.show();
+    });
+
+    // Handle retake button
+    document.getElementById('retakeButton').addEventListener('click', () => {
+        previewModal.hide();
+        capturedImageData = null;
+        cameraModal.show();
+        cameraFeed.style.display = 'block';
+        cameraCanvas.style.display = 'none';
+        showScanningOverlay();
+    });
+
+    // Handle proceed button
+    document.getElementById('proceedButton').addEventListener('click', async () => {
+        if (!capturedImageData) {
+            alert('No image captured. Please try again.');
+            return;
+        }
+
+        previewModal.hide();
+        const scanningMsg = document.getElementById('scanningMsg');
+        scanningMsg.style.display = 'block';
+        scanningMsg.querySelector('.scanning-text').textContent = 'Processing document...';
+        
+        try {
+            // Convert base64 to blob
+            const base64Response = await fetch(capturedImageData);
+            const blob = await base64Response.blob();
+
+            // Create form data
+            const formData = new FormData();
+            formData.append('image', blob, 'document.jpg');
+            formData.append('scan_type', currentScanMode);
+            
+            // Get CSRF token
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
+            // Show scanning message
+            scanningMsg.style.display = 'block';
+            
+            console.log('Sending scan request...', {
+                mode: currentScanMode,
+                imageSize: blob.size
+            });
+
+            const response = await fetch('/scan-document/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': csrfToken
+                }
+            });
+
+            console.log('Response status:', response.status);
+            const data = await response.json();
+            console.log('Response data:', data);
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to process document');
+            }
+            
+            if (data.success) {
+                console.log('Document processed successfully:', data);
+                if (currentScanMode === 'license') {
+                    // Fill license form fields
+                    const licenseNumber = document.getElementById('license_number');
+                    const firstName = document.getElementById('first_name');
+                    const lastName = document.getElementById('last_name');
+                    const address = document.getElementById('address');
+                    const phoneNumber = document.getElementById('phone_number');
+
+                    // Set values and trigger change event for validation
+                    if (data.license_number) {
+                        licenseNumber.value = data.license_number;
+                        licenseNumber.dispatchEvent(new Event('input'));
+                    }
+                    if (data.first_name) {
+                        firstName.value = data.first_name;
+                        firstName.dispatchEvent(new Event('change'));
+                    }
+                    if (data.last_name) {
+                        lastName.value = data.last_name;
+                        lastName.dispatchEvent(new Event('change'));
+                    }
+                    if (data.address) {
+                        address.value = data.address;
+                        address.dispatchEvent(new Event('change'));
+                    }
+                    if (data.phone_number) {
+                        phoneNumber.value = data.phone_number;
+                        phoneNumber.dispatchEvent(new Event('input'));
+                    }
+                } else if (currentScanMode === 'vehicle') {
+                    // Fill vehicle form fields
+                    const plateNumber = document.getElementById('plate_number');
+                    const vehicleType = document.getElementById('vehicle_type');
+                    const color = document.getElementById('color');
+                    const registrationNumber = document.getElementById('registration_number');
+                    const ownerName = document.getElementById('vehicle_owner');
+                    const ownerAddress = document.getElementById('vehicle_owner_address');
+
+                    // Set values and trigger change event for validation
+                    if (data.plate_number) {
+                        plateNumber.value = data.plate_number;
+                        plateNumber.dispatchEvent(new Event('change'));
+                    }
+                    if (data.vehicle_type) {
+                        vehicleType.value = data.vehicle_type;
+                        vehicleType.dispatchEvent(new Event('change'));
+                    }
+                    if (data.color) {
+                        color.value = data.color;
+                        color.dispatchEvent(new Event('change'));
+                    }
+                    if (data.registration_number) {
+                        registrationNumber.value = data.registration_number;
+                        registrationNumber.dispatchEvent(new Event('change'));
+                    }
+                    if (data.owner_name) {
+                        ownerName.value = data.owner_name;
+                        ownerName.dispatchEvent(new Event('change'));
+                    }
+                    if (data.owner_address) {
+                        ownerAddress.value = data.owner_address;
+                        ownerAddress.dispatchEvent(new Event('change'));
+                    }
+                }
+                
+                // Close the modal
+                cameraModal.hide();
+                
+                // Show success message
+                const successMessage = document.createElement('div');
+                successMessage.className = 'alert alert-success alert-dismissible fade show mt-3';
+                successMessage.innerHTML = `
+                    <strong>Success!</strong> Document scanned successfully.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.querySelector('.camera-container').insertAdjacentElement('afterend', successMessage);
+                
+                // Remove the message after 5 seconds
+                setTimeout(() => {
+                    successMessage.remove();
+                }, 5000);
+            } else {
+                throw new Error(data.message || 'Failed to extract information from document');
+            }
+
+        } catch (err) {
+            console.error('Error processing image:', err);
+            const retake = confirm(
+                'Error processing document: ' + err.message + '\n\n' +
+                'Would you like to retake the photo?\n\n' +
+                'If the problem persists, you can enter the details manually.'
+            );
+            
+            if (retake) {
+                cleanup();
+                cameraModal.show();
+                cameraFeed.style.display = 'block';
+                cameraCanvas.style.display = 'none';
+                showScanningOverlay();
+            }
+        } finally {
+            cleanup();
+            scanningMsg.style.display = 'none';
+            capturedImageData = null;
+        }
+    });
+
+    // Add cleanup for preview modal
+    document.getElementById('previewModal').addEventListener('hidden.bs.modal', () => {
+        if (!document.getElementById('cameraModal')._isShown) {
+            cleanup();
+        }
+    });
+
+    // Handle no license checkbox
+    document.getElementById('noLicense').addEventListener('change', function() {
+        const licenseInputGroup = document.getElementById('licenseInputGroup');
+        licenseInputGroup.style.display = this.checked ? 'none' : 'block';
+        
+        if (this.checked) {
+            document.getElementById('license_number').value = '';
+            document.getElementById('license_number').required = false;
+        } else {
+            document.getElementById('license_number').required = true;
+        }
+    });
+
+    function showScanningOverlay() {
+        const overlay = document.getElementById('scanningOverlay');
+        overlay.style.display = 'block';
+    }
+
+    function hideScanningOverlay() {
+        const overlay = document.getElementById('scanningOverlay');
+        overlay.style.display = 'none';
+    }
+
+    function updateScannerTitle(mode) {
+        const title = document.getElementById('scannerTitle');
+        if (mode === 'license') {
+            title.textContent = 'License Scanner';
+        } else if (mode === 'vehicle') {
+            title.textContent = 'Vehicle Registration Scanner';
+        }
+    }
+
+    // Add a helper function to validate license format
+    function validateLicenseFormat(license) {
+        const formatRegex = /^[A-Z0-9]{3}-[0-9]{2}-[0-9]{6}$/;
+        return formatRegex.test(license.toUpperCase());
+    }
+
+    // Add event listener for license input validation
+    const licenseInput = document.getElementById('license_number');
+    licenseInput.addEventListener('input', function() {
+        let value = this.value.toUpperCase();
+        
+        // Auto-format as user types
+        value = value.replace(/[^A-Z0-9-]/g, ''); // Remove invalid characters
+        if (value.length >= 3 && value.charAt(3) !== '-') {
+            value = value.slice(0, 3) + '-' + value.slice(3);
+        }
+        if (value.length >= 6 && value.charAt(6) !== '-') {
+            value = value.slice(0, 6) + '-' + value.slice(6);
+        }
+        
+        this.value = value;
+        
+        // Validate format
+        if (value && !validateLicenseFormat(value)) {
+            this.setCustomValidity('Please enter a valid license number in format XXX-XX-XXXXXX');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+
+    // Update camera instructions
+    const cameraInstructions = document.querySelector('.camera-instructions small');
+    cameraInstructions.innerHTML = `
+        <span class="material-icons align-middle me-1" style="font-size: 16px;">info</span>
+        Position document within frame, ensure good lighting and no glare
+    `;
+
+    // Add helper text under the scan button
+    const scanLicenseBtn = document.getElementById('scanLicense');
+    const helperText = document.createElement('div');
+    helperText.className = 'text-muted small mt-2';
+    helperText.innerHTML = `
+        <span class="material-icons align-middle me-1" style="font-size: 14px;">tips_and_updates</span>
+        Tips: Good lighting, no glare, entire document visible
+    `;
+    scanLicenseBtn.parentNode.insertBefore(helperText, scanLicenseBtn.nextSibling);
+
+    // Add cleanup function definition
+    function cleanup() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+        }
+        cameraFeed.srcObject = null;
+        cameraFeed.style.display = 'none';
+        captureButton.style.display = 'none';
+        permissionMsg.style.display = 'block';
+        hideScanningOverlay();
+    }
+
+    // Modify modal event listeners to properly manage focus
+    document.getElementById('cameraModal').addEventListener('hidden.bs.modal', function(e) {
+        cleanup();
+        // Return focus to the button that opened the modal
+        const openButton = document.querySelector('[data-bs-target="#cameraModal"]');
+        if (openButton) {
+            openButton.focus();
+        }
+    });
+
+    document.getElementById('previewModal').addEventListener('hidden.bs.modal', function(e) {
+        if (!document.getElementById('cameraModal')._isShown) {
+            cleanup();
+        }
+        // Return focus to the button that opened the modal
+        const openButton = document.querySelector('[data-bs-target="#previewModal"]');
+        if (openButton) {
+            openButton.focus();
+        }
+    });
+});
+</script>
+{% endblock %}

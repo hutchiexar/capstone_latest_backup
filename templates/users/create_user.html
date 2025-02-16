@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-header bg-white py-3">
+            <div class="d-flex align-items-center">
+                <span class="material-icons me-2" style="color: var(--primary-color)">person_add</span>
+                <h4 class="m-0">Create New User</h4>
+            </div>
+        </div>
+        
+        <div class="card-body p-4">
+            <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                <div class="row g-4">
+                    <!-- Left Column: Profile Picture and Role -->
+                    <div class="col-lg-4">
+                        <div class="profile-card">
+                            <div class="profile-image-container mb-4">
+                                <div class="default-avatar" id="imagePreview">
+                                    <span class="material-icons">account_circle</span>
+                                </div>
+                            </div>
+                            <div class="upload-button mb-4">
+                                <label for="avatar" class="btn btn-outline-primary btn-sm w-100">
+                                    <span class="material-icons me-2">add_a_photo</span>Upload Photo
+                                </label>
+                                <input type="file" id="avatar" name="avatar" accept="image/*" class="d-none">
+                            </div>
+
+                            <!-- Role Selection -->
+                            <div class="id-card">
+                                <div class="id-card-header mb-3">
+                                    <div class="enforcer-id-label">User Role</div>
+                                </div>
+                                <div class="id-card-body">
+                                    <select class="form-select form-select-lg" name="role" required>
+                                        <option value="">Select role</option>
+                                        {% for code, label in roles %}
+                                        <option value="{{ code }}">{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: User Information -->
+                    <div class="col-lg-8">
+                        <div class="info-card">
+                            <!-- Account Information -->
+                            <div class="section mb-4">
+                                <h5 class="section-title">Account Information</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="username" name="username" required>
+                                            <label for="username">Username</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="password" class="form-control" id="password" name="password" required>
+                                            <label for="password">Password</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Personal Information -->
+                            <div class="section mb-4">
+                                <h5 class="section-title">Personal Information</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="first_name" name="first_name" required>
+                                            <label for="first_name">First Name</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="last_name" name="last_name" required>
+                                            <label for="last_name">Last Name</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Contact Information -->
+                            <div class="section mb-4">
+                                <h5 class="section-title">Contact Information</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="email" class="form-control" id="email" name="email" required>
+                                            <label for="email">Email Address</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="tel" class="form-control" id="phone_number" name="phone_number" required>
+                                            <label for="phone_number">Phone Number</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-floating">
+                                            <textarea class="form-control" id="address" name="address" 
+                                                      style="height: 100px" required></textarea>
+                                            <label for="address">Complete Address</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                                <a href="{% url 'users_list' %}" class="btn btn-outline-secondary">
+                                    <span class="material-icons me-2">arrow_back</span>Cancel
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <span class="material-icons me-2">person_add</span>Create User
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.profile-card {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+}
+
+.profile-image-container {
+    width: 150px;
+    height: 150px;
+    margin: 0 auto;
+    position: relative;
+}
+
+.profile-image-container img,
+.default-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #fff;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+}
+
+.default-avatar {
+    background-color: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.default-avatar .material-icons {
+    font-size: 80px;
+    color: #adb5bd;
+}
+
+.id-card {
+    background: linear-gradient(145deg, #f8f9fa, #ffffff);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+}
+
+.id-card-header {
+    text-align: center;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.enforcer-id-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+.id-card-body {
+    padding-top: 1rem;
+}
+
+.info-card {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+}
+
+.section-title {
+    color: var(--text-dark);
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.form-floating {
+    margin-bottom: 1rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.25);
+}
+
+.form-select {
+    height: 3rem;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+}
+
+.form-select-lg {
+    height: 3.5rem;
+    font-size: 1.1rem;
+}
+
+.btn {
+    padding: 0.5rem 1.5rem;
+    font-weight: 500;
+}
+
+@media (max-width: 992px) {
+    .profile-card {
+        margin-bottom: 2rem;
+    }
+}
+</style>
+
+<script>
+// Image preview functionality
+document.getElementById('avatar').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const imagePreview = document.getElementById('imagePreview');
+            imagePreview.innerHTML = `<img src="${e.target.result}" alt="Profile Preview" style="width: 100%; height: 100%; object-fit: cover;">`;
+        }
+        reader.readAsDataURL(file);
+    }
+});
+
+// Form validation
+(function () {
+    'use strict'
+    const forms = document.querySelectorAll('.needs-validation')
+    Array.from(forms).forEach(form => {
+        form.addEventListener('submit', event => {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+</script>
+{% endblock %} 

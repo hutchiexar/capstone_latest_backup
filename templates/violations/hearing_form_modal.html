@@ -1,0 +1,668 @@
+<div class="modal-content-inner">
+    <div class="modal-header-banner">
+        <div class="header-icon">
+            <i class="fas fa-gavel"></i>
+        </div>
+        <h4>Adjudication Form</h4>
+        <p class="text-muted mb-0">Citation #{{ violation.id }}</p>
+    </div>
+    <form id="hearingForm" method="POST" action="{% url 'schedule_hearing' violation.id %}">
+        {% csrf_token %}
+        <div class="row g-4">
+            <!-- Left Column: Violation Info -->
+            <div class="col-lg-6">
+                <div class="info-card">
+                    <h5 class="section-title">
+                        <i class="fas fa-file-alt me-2"></i>Violation Details
+                    </h5>
+                    <div class="info-grid">
+                        <div class="info-item autofilled">
+                            <label>Citation Number</label>
+                            <p class="citation-number">{{ violation.id }}</p>
+                            <input type="hidden" name="citation_number" value="{{ violation.id }}">
+                        </div>
+
+                        <div class="info-item autofilled">
+                            <label>Date of Violation</label>
+                            <p>{{ violation.violation_date|date:"F d, Y" }}</p>
+                            <input type="hidden" name="date_issued" value="{{ violation.violation_date|date:'Y-m-d' }}">
+                        </div>
+
+                        <div class="info-item autofilled">
+                            <label>Apprehending Officer</label>
+                            <p>{{ violation.enforcer.get_full_name }}</p>
+                            <small>ID: {{ violation.enforcer.userprofile.enforcer_id }}</small>
+                            <input type="hidden" name="enforcer_id" value="{{ violation.enforcer.id }}">
+                        </div>
+
+                        <div class="info-item autofilled">
+                            <label>Violations Committed</label>
+                            <ul class="violations-list">
+                                {% for type in violation.get_violation_types %}
+                                <li>{{ type }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="col-lg-6">
+                <div class="info-card">
+                    <h5 class="section-title">
+                        <i class="fas fa-user me-2"></i>Violator Information
+                    </h5>
+                    <div class="info-grid">
+                        <div class="info-item autofilled">
+                            <label>Name</label>
+                            <p>{{ violation.violator.first_name }} {{ violation.violator.last_name }}</p>
+                            <input type="hidden" name="violator_name" value="{{ violation.violator.first_name }} {{ violation.violator.last_name }}">
+                        </div>
+
+                        <div class="info-item autofilled">
+                            <label>Address</label>
+                            <p>{{ violation.violator.address }}</p>
+                            <input type="hidden" name="violator_address" value="{{ violation.violator.address }}">
+                        </div>
+                    </div>
+
+                    <h5 class="section-title mt-4">
+                        <i class="fas fa-gavel me-2"></i>Adjudication Decision
+                    </h5>
+                    <div class="info-grid">
+                        <div class="info-item autofilled">
+                            <label>Adjudicating Officer</label>
+                            <p>{{ user.get_full_name }}</p>
+                            <small>ID: {{ user.userprofile.enforcer_id }}</small>
+                            <input type="hidden" name="adjudicator" value="{{ user.id }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="totalPenalty">Total Penalty</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₱</span>
+                                <input type="number" class="form-control" id="totalPenalty" 
+                                       name="total_penalty" min="0" step="0.01" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="remarks">Decision/Remarks</label>
+                            <textarea class="form-control" id="remarks" name="remarks" rows="4" 
+                                     placeholder="Enter your decision and any additional remarks..." required></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                <i class="fas fa-times me-2"></i>Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-gavel me-2"></i>Submit Decision
+            </button>
+        </div>
+    </form>
+</div>
+
+<style>
+/* Base Styles */
+.modal-content-inner {
+    padding: 1.5rem;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* Cards and Sections */
+.info-card {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    height: 100%;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+}
+
+.section-title {
+    color: var(--text-dark);
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+/* Grid Layout */
+.info-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+/* Autofilled Items Styling */
+.info-item.autofilled {
+    background-color: #f8f9fa;  /* Light gray background */
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    position: relative;
+}
+
+.info-item.autofilled label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.info-item.autofilled p {
+    margin: 0;
+    font-weight: 500;
+    color: #333;
+}
+
+.info-item.autofilled small {
+    color: #777;
+    display: block;
+    margin-top: 0.25rem;
+}
+
+/* Violations List Styling */
+.violations-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.violations-list li {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    color: #333;
+    font-size: 0.9rem;
+}
+
+.violations-list li:last-child {
+    margin-bottom: 0;
+}
+
+/* Form Controls */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-control {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 0.75rem;
+}
+
+.input-group-text {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #dee2e6;
+}
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Citation Number Styling */
+.citation-number {
+    font-family: monospace;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .modal-content-inner {
+        padding: 1rem;
+    }
+
+    .info-card {
+        padding: 1rem;
+    }
+
+    .info-item.autofilled {
+        padding: 0.75rem;
+    }
+
+    .violations-list li {
+        padding: 0.4rem;
+        font-size: 0.85rem;
+    }
+
+    .action-buttons {
+        position: sticky;
+        bottom: 0;
+        background: white;
+        padding: 1rem;
+        margin: 0;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    }
+
+    .btn {
+        flex: 1;
+    }
+}
+
+/* Input group styling */
+.input-group {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.input-group-text {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    color: #495057;
+    font-weight: 500;
+}
+
+.form-control {
+    border: 1px solid #dee2e6;
+    padding: 0.75rem;
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.25);
+}
+
+/* Enhanced Modal Styling */
+.modal-content-inner {
+    padding: 0;  /* Remove default padding */
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* Header Banner */
+.modal-header-banner {
+    background: linear-gradient(45deg, var(--primary-color), #1d4ed8);
+    padding: 2rem 1.5rem;
+    text-align: center;
+    color: white;
+    border-radius: 8px 8px 0 0;
+    margin-bottom: 2rem;
+}
+
+.header-icon {
+    width: 64px;
+    height: 64px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 1.8rem;
+}
+
+/* Enhanced Card Styling */
+.info-card {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    height: 100%;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+    transition: transform 0.2s ease;
+}
+
+.info-card:hover {
+    transform: translateY(-2px);
+}
+
+/* Enhanced Section Titles */
+.section-title {
+    color: var(--text-dark);
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--primary-color);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.section-title i {
+    color: var(--primary-color);
+}
+
+/* Enhanced Form Controls */
+.form-control {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.15);
+    transform: translateY(-1px);
+}
+
+/* Enhanced Input Groups */
+.input-group {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.input-group-text {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    color: #495057;
+    font-weight: 500;
+    padding: 0.75rem 1rem;
+}
+
+/* Enhanced Autofilled Items */
+.info-item.autofilled {
+    background-color: #f8f9fa;
+    padding: 1.25rem;
+    border-radius: 12px;
+    border: 1px solid #e0e0e0;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.info-item.autofilled:hover {
+    background-color: #f3f4f6;
+    border-color: #d1d5db;
+}
+
+/* Enhanced Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 0 0 8px 8px;
+}
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    border: none;
+}
+
+.btn-primary:hover {
+    background: #1d4ed8;
+}
+
+/* Enhanced Violations List */
+.violations-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.violations-list li {
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    color: #333;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.violations-list li:hover {
+    background-color: #f8f9fa;
+    border-color: #d1d5db;
+    transform: translateX(2px);
+}
+
+/* Scrollbar Styling */
+.modal-content-inner::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-content-inner::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.modal-content-inner::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.modal-content-inner::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Loading Animation */
+@keyframes shimmer {
+    0% {
+        background-position: -468px 0;
+    }
+    100% {
+        background-position: 468px 0;
+    }
+}
+
+.loading {
+    animation: shimmer 1s linear infinite forwards;
+    background: linear-gradient(to right, #f6f7f8 8%, #edeef1 18%, #f6f7f8 33%);
+    background-size: 800px 104px;
+}
+
+/* Modal specific fixes */
+.modal-content-inner {
+    padding: 0;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative; /* Ensure modal content stays above table */
+    z-index: 1051; /* Higher than table z-index */
+}
+
+/* Prevent modal from affecting parent container */
+.modal-dialog {
+    margin: 1.75rem auto !important;
+    padding: 0 !important;
+}
+
+.modal-content {
+    border: none !important;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5) !important;
+}
+
+/* Ensure modal backdrop doesn't affect table */
+.modal-backdrop {
+    z-index: 1050 !important;
+}
+
+/* Lock form dimensions */
+.info-card {
+    margin-bottom: 1rem !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+}
+
+/* Prevent content shift */
+.row {
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+}
+
+.col-lg-6 {
+    padding-right: 15px !important;
+    padding-left: 15px !important;
+}
+
+/* Critical modal fixes */
+.modal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    z-index: 1055 !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    outline: 0 !important;
+}
+
+.modal-dialog {
+    position: relative !important;
+    width: auto !important;
+    margin: 1.75rem auto !important;
+    pointer-events: none !important;
+}
+
+.modal-content {
+    position: relative !important;
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    pointer-events: auto !important;
+    background-color: #fff !important;
+    outline: 0 !important;
+}
+
+.modal-content-inner {
+    position: relative !important;
+    padding: 0 !important;
+    max-height: calc(100vh - 3.5rem) !important;
+    overflow-y: auto !important;
+}
+
+/* Prevent content shift */
+.info-card {
+    margin: 1rem !important;
+    width: auto !important;
+}
+
+.row {
+    margin: 0 !important;
+}
+
+.col-lg-6 {
+    padding: 0.5rem !important;
+}
+</style>
+
+<script>
+// Form validation
+document.getElementById('hearingForm').addEventListener('submit', function(e) {
+    const totalPenalty = document.getElementById('totalPenalty').value;
+
+    if (!totalPenalty) {
+        e.preventDefault();
+        alert('Please enter the total penalty amount');
+        return;
+    }
+
+    if (parseFloat(totalPenalty) <= 0) {
+        e.preventDefault();
+        alert('Total penalty must be greater than 0');
+        return;
+    }
+});
+
+// Format total penalty input
+document.getElementById('totalPenalty').addEventListener('input', function(e) {
+    if (this.value < 0) {
+        this.value = 0;
+    }
+});
+
+// Prevent body scroll when modal is scrolled
+document.querySelector('.modal-content-inner').addEventListener('touchmove', function(e) {
+    e.stopPropagation();
+}, { passive: true });
+
+// Add loading state to form submission
+document.getElementById('hearingForm').addEventListener('submit', function(e) {
+    if (this.checkValidity()) {
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `
+            <span class="spinner-border spinner-border-sm me-2"></span>
+            Processing...
+        `;
+    }
+});
+
+// Smooth scroll to form sections
+document.querySelectorAll('.section-title').forEach(title => {
+    title.addEventListener('click', () => {
+        title.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+});
+
+// Add hover effect to autofilled items
+document.querySelectorAll('.info-item.autofilled').forEach(item => {
+    item.addEventListener('mouseenter', () => {
+        item.style.transform = 'translateY(-2px)';
+    });
+    item.addEventListener('mouseleave', () => {
+        item.style.transform = 'translateY(0)';
+    });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Prevent modal from affecting page layout
+    const modal = document.querySelector('.modal');
+    if (modal) {
+        modal.addEventListener('show.bs.modal', function(e) {
+            document.body.style.overflow = 'hidden';
+            document.body.style.paddingRight = '0';
+        });
+
+        modal.addEventListener('shown.bs.modal', function(e) {
+            document.body.style.overflow = 'hidden';
+            document.body.style.paddingRight = '0';
+        });
+
+        modal.addEventListener('hide.bs.modal', function(e) {
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '0';
+        });
+
+        modal.addEventListener('hidden.bs.modal', function(e) {
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '0';
+            // Force table redraw without changing dimensions
+            const table = $('#adjudicationTable').DataTable();
+            table.columns.adjust().draw(false);
+        });
+    }
+});
+</script> 

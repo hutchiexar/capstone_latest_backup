@@ -1,0 +1,125 @@
+<!-- Search Form -->
+<form method="GET" class="search-form" action="">
+    <div class="input-group">
+        <input type="text" 
+               name="search" 
+               class="form-control search-input" 
+               placeholder="{{ placeholder|default:'Search...' }}"
+               value="{{ request.GET.search|default:'' }}"
+               autocomplete="off"
+               aria-label="Search"
+               id="searchInput">
+        {% if request.GET.search %}
+        <a href="{{ request.path }}" class="btn btn-outline-secondary clear-search" aria-label="Clear search">
+            <i class="fas fa-times"></i>
+        </a>
+        {% endif %}
+        <button class="btn btn-primary" type="submit" aria-label="Submit search">
+            <i class="fas fa-search"></i>
+        </button>
+    </div>
+</form>
+
+<style>
+.search-form {
+    max-width: 1200px;
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.search-input {
+    border-radius: 8px 0 0 8px !important;
+    border: 1px solid #e9ecef;
+    padding: 0.75rem 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    font-size: 0.875rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.search-input::placeholder {
+    font-size: 0.8rem;
+    color: #6c757d;
+    opacity: 0.8;
+}
+
+.search-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.15);
+    outline: none;
+}
+
+.clear-search {
+    border: 1px solid #e9ecef;
+    border-left: none;
+    padding: 0.75rem;
+    background: white;
+    transition: all 0.2s ease-in-out;
+}
+
+.clear-search:hover {
+    background: #f8f9fa;
+    color: var(--danger);
+}
+
+.btn-primary {
+    border-radius: 0 8px 8px 0 !important;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.input-group {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .search-form {
+        margin-bottom: 0.5rem;
+    }
+    
+    .search-input {
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .clear-search,
+    .btn-primary {
+        padding: 0.5rem 1rem;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchForm = document.querySelector('.search-form');
+    const searchInput = document.querySelector('.search-input');
+    const clearButton = document.querySelector('.clear-search');
+    let searchTimeout;
+
+    // Handle instant search with debounce
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            searchForm.submit();
+        }, 500);
+    });
+
+    // Clear search and submit form when clear button is clicked
+    if (clearButton) {
+        clearButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            searchInput.value = '';
+            searchForm.submit();
+        });
+    }
+
+    // Prevent form submission on enter if value hasn't changed
+    searchForm.addEventListener('submit', function(e) {
+        const currentValue = searchInput.value;
+        const previousValue = new URLSearchParams(window.location.search).get('search') || '';
+        
+        if (currentValue === previousValue) {
+            e.preventDefault();
+        }
+    });
+});
+</script> 

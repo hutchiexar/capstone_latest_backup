@@ -1,0 +1,310 @@
+{% extends 'base_landing.html' %}
+{% load static %}
+
+{% block title %}Contact Us - CTTMO Portal{% endblock %}
+
+{% block content %}
+<!-- Contact Hero Section -->
+<section class="contact-hero">
+    <div class="container">
+        <div class="text-center">
+            <h1 class="contact-title">Contact Us</h1>
+            <p class="contact-subtitle">Get in touch with us for any inquiries or assistance</p>
+        </div>
+    </div>
+</section>
+
+<!-- Contact Content -->
+<section class="contact-content">
+    <div class="container">
+        <div class="row g-4">
+            <!-- Contact Information -->
+            <div class="col-lg-4">
+                <div class="contact-info">
+                    <h2>Get In Touch</h2>
+                    <p class="mb-4">Have questions? We're here to help and answer any question you might have.</p>
+                    
+                    <div class="info-item">
+                        <span class="material-icons">location_on</span>
+                        <div>
+                            <h3>Visit Us</h3>
+                            <p>123 Main Street<br>Bayawan City<br>Negros Oriental, Philippines</p>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <span class="material-icons">phone</span>
+                        <div>
+                            <h3>Call Us</h3>
+                            <p>+63 123 456 7890<br>+63 234 567 8901</p>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <span class="material-icons">email</span>
+                        <div>
+                            <h3>Email Us</h3>
+                            <p>info@cttmo.bayawan.gov.ph<br>support@cttmo.bayawan.gov.ph</p>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <span class="material-icons">schedule</span>
+                        <div>
+                            <h3>Office Hours</h3>
+                            <p>Monday - Friday: 8:00 AM - 5:00 PM<br>Saturday: 8:00 AM - 12:00 PM<br>Sunday: Closed</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Form -->
+            <div class="col-lg-8">
+                <div class="contact-form-card">
+                    <h2>Send Us a Message</h2>
+                    <p class="mb-4">Fill out the form below and we'll get back to you as soon as possible.</p>
+
+                    <form method="post" class="contact-form">
+                        {% csrf_token %}
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="name">Full Name</label>
+                                    <input type="text" class="form-control" id="name" name="name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="email">Email Address</label>
+                                    <input type="email" class="form-control" id="email" name="email" required>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label for="subject">Subject</label>
+                                    <input type="text" class="form-control" id="subject" name="subject" required>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label for="message">Message</label>
+                                    <textarea class="form-control" id="message" name="message" rows="5" required></textarea>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <span class="material-icons">send</span>
+                                    Send Message
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Map Section -->
+<section class="map-section">
+    <div class="container">
+        <div class="map-container">
+            <iframe 
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3935.6613367467847!2d122.79711731478559!3d9.362750593284683!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x33ab5244580012d5%3A0x7ceeb5275ab985f0!2sBayawan%20City%20Hall!5e0!3m2!1sen!2sph!4v1629436943619!5m2!1sen!2sph"
+                width="100%" 
+                height="450" 
+                style="border:0;" 
+                allowfullscreen="" 
+                loading="lazy">
+            </iframe>
+        </div>
+    </div>
+</section>
+
+<style>
+    /* Hero Section */
+    .contact-hero {
+        padding: 5rem 0;
+        background: linear-gradient(135deg, var(--primary-color) 0%, #001a4d 100%);
+        color: white;
+        text-align: center;
+    }
+
+    .contact-title {
+        font-size: 3.5rem;
+        font-weight: 800;
+        margin-bottom: 1.5rem;
+    }
+
+    .contact-subtitle {
+        font-size: 1.25rem;
+        opacity: 0.9;
+    }
+
+    /* Contact Content */
+    .contact-content {
+        padding: 5rem 0;
+        background-color: #f8f9fa;
+    }
+
+    /* Contact Information */
+    .contact-info {
+        background: #fff;
+        padding: 2.5rem;
+        border-radius: 1rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        height: 100%;
+    }
+
+    .contact-info h2 {
+        color: var(--primary-color);
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+
+    .info-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .info-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .info-item .material-icons {
+        font-size: 2rem;
+        color: var(--primary-color);
+    }
+
+    .info-item h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .info-item p {
+        color: #6c757d;
+        margin-bottom: 0;
+        line-height: 1.6;
+    }
+
+    /* Contact Form */
+    .contact-form-card {
+        background: #fff;
+        padding: 2.5rem;
+        border-radius: 1rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    }
+
+    .contact-form-card h2 {
+        color: var(--primary-color);
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        color: #495057;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control {
+        padding: 0.75rem 1rem;
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(0, 35, 102, 0.25);
+    }
+
+    textarea.form-control {
+        resize: vertical;
+    }
+
+    .btn-primary {
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-primary .material-icons {
+        font-size: 1.25rem;
+    }
+
+    /* Map Section */
+    .map-section {
+        padding: 5rem 0;
+        background-color: #fff;
+    }
+
+    .map-container {
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 992px) {
+        .contact-title {
+            font-size: 2.75rem;
+        }
+
+        .contact-info {
+            margin-bottom: 2rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .contact-hero {
+            padding: 3rem 0;
+        }
+
+        .contact-content {
+            padding: 3rem 0;
+        }
+
+        .contact-form-card,
+        .contact-info {
+            padding: 1.5rem;
+        }
+
+        .map-section {
+            padding: 3rem 0;
+        }
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('.contact-form');
+    
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Here you would typically handle the form submission
+        // For now, we'll just show a success message
+        const formData = new FormData(form);
+        
+        // You can add your form submission logic here
+        // For demonstration, we'll just show an alert
+        alert('Thank you for your message! We will get back to you soon.');
+        form.reset();
+    });
+});
+</script>
+{% endblock %} 

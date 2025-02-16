@@ -1,0 +1,753 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-3">
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <span class="material-icons me-2" style="color: var(--primary-color); font-size: 2rem;">location_on</span>
+                        <div>
+                            <h4 class="mb-0">Enforcer Location Tracking</h4>
+                            <p class="text-muted mb-0 small">Monitor enforcers' real-time locations</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <!-- Map Column -->
+        <div class="col-lg-9">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-0 position-relative">
+                    <div id="map" style="height: calc(100vh - 12rem); width: 100%; border-radius: 4px;"></div>
+                    <!-- Focus Button -->
+                    <button id="focusMyLocation" class="btn btn-light shadow-sm position-absolute" style="bottom: 20px; right: 10px; z-index: 1000;">
+                        <span class="material-icons">my_location</span>
+                    </button>
+                            </div>
+                        </div>
+                    </div>
+
+        <!-- Enforcers List Column -->
+        <div class="col-lg-3">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h5 class="mb-1">Enforcers List</h5>
+                            <p class="text-muted mb-0 small">Track active and inactive enforcers</p>
+                </div>
+                        <div class="d-flex gap-2">
+                            <div class="status-legend">
+                                <span class="status-dot active"></span>
+                                <small>Active</small>
+            </div>
+                            <div class="status-legend">
+                                <span class="status-dot inactive"></span>
+                                <small>Inactive</small>
+        </div>
+                        </div>
+                    </div>
+
+                    <!-- Search Box -->
+                    <div class="input-group mb-3">
+                        <span class="input-group-text border-0 bg-light">
+                            <span class="material-icons" style="font-size: 1.2rem;">search</span>
+                        </span>
+                        <input type="text" id="searchEnforcer" class="form-control border-0 bg-light" placeholder="Search enforcer...">
+            </div>
+
+                    <!-- Enforcers List -->
+                    <div id="enforcersList" class="enforcer-list" style="height: calc(100vh - 20rem); overflow-y: auto;">
+                        <div id="noEnforcersMessage" class="text-center p-4 d-none">
+                            <div class="text-muted">
+                                <span class="material-icons d-block mb-2" style="font-size: 2.5rem; opacity: 0.5;">person_off</span>
+                                <p class="mb-0">No online enforcers</p>
+        </div>
+                    </div>
+                </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- Mapbox GL JS -->
+<script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
+<link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet'>
+<!-- Supercluster for marker clustering -->
+<script src="https://unpkg.com/supercluster@7.1.5/dist/supercluster.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize map
+    mapboxgl.accessToken = 'pk.eyJ1IjoiaHV0Y2hpZWpuIiwiYSI6ImNtNTU4c2Q4bDJ0NWUyc3E3ODZ3NDE4OHMifQ.QCNNzPpqWTN--G08-S71pQ';
+    const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: [125.6089, 7.0707],
+        zoom: 13,
+        maxZoom: 20
+    });
+
+    // Initialize variables
+    let markers = {};
+    let enforcerData = {};
+    let updateInterval;
+    const supercluster = new Supercluster({
+        radius: 40,
+        maxZoom: 16
+    });
+
+    // Custom marker element creator
+    function createMarkerElement(enforcer) {
+        const el = document.createElement('div');
+        el.className = 'enforcer-marker';
+        el.innerHTML = `
+            <div class="marker-container ${enforcer.is_active ? 'active' : 'inactive'}">
+                <div class="marker-label">${enforcer.name.split(' ')[0]}</div>
+                <div class="marker-icon">
+                    <span class="material-icons">person_pin</span>
+                    <span class="pulse-ring"></span>
+                </div>
+            </div>
+        `;
+        return el;
+    }
+
+    // Update enforcers list
+    function updateEnforcersList(locations) {
+        const listContainer = document.getElementById('enforcersList');
+        const noEnforcersMessage = document.getElementById('noEnforcersMessage');
+        const searchTerm = document.getElementById('searchEnforcer').value.toLowerCase();
+        
+        // Sort enforcers: active first, then by name
+        const sortedLocations = [...locations].sort((a, b) => {
+            if (a.is_active !== b.is_active) return b.is_active - a.is_active;
+            return a.name.localeCompare(b.name);
+        });
+
+        let html = '';
+        sortedLocations.forEach(enforcer => {
+            if (!searchTerm || enforcer.name.toLowerCase().includes(searchTerm) || 
+                enforcer.enforcer_id.toLowerCase().includes(searchTerm)) {
+                html += `
+                    <div class="enforcer-item ${enforcer.is_active ? 'active' : 'inactive'}" 
+                         data-id="${enforcer.id}" onclick="focusEnforcer(${enforcer.id})">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="avatar-container">
+                                <img src="${enforcer.avatar_url || generateAvatarSvg(enforcer.name)}" 
+                                     alt="${enforcer.name}" class="rounded-circle">
+                                <span class="status-badge ${enforcer.is_active ? 'active' : 'inactive'}"></span>
+                            </div>
+                            <div class="enforcer-details">
+                                <h6 class="mb-1 text-truncate">${enforcer.name}</h6>
+                                <div class="d-flex align-items-center gap-2">
+                                    <small class="text-muted">${enforcer.enforcer_id}</small>
+                                    <small class="text-muted">•</small>
+                                    <small class="text-muted">${new Date(enforcer.last_update).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+
+        // Show/hide no enforcers message
+        if (locations.length === 0) {
+            noEnforcersMessage.classList.remove('d-none');
+            html = '';
+        } else {
+            noEnforcersMessage.classList.add('d-none');
+        }
+
+        listContainer.innerHTML = html + noEnforcersMessage.outerHTML;
+    }
+
+    // Focus on enforcer
+    window.focusEnforcer = function(id) {
+        const enforcer = enforcerData[id];
+        if (enforcer) {
+            map.flyTo({
+                center: [enforcer.longitude, enforcer.latitude],
+                zoom: 16,
+                duration: 1000,
+                essential: true
+            });
+            
+            // Highlight the marker
+            const marker = markers[id];
+            if (marker) {
+                marker.getElement().classList.add('highlighted');
+                setTimeout(() => {
+                    marker.getElement().classList.remove('highlighted');
+                }, 2000);
+            }
+        }
+    };
+
+    // Update markers on the map
+    function updateMarkers(locations) {
+        // Remove old markers
+        Object.values(markers).forEach(marker => marker.remove());
+        markers = {};
+
+        // Update enforcer data and list
+        locations.forEach(enforcer => {
+            enforcerData[enforcer.id] = enforcer;
+        });
+        updateEnforcersList(locations);
+
+        // Create GeoJSON features for clustering
+        const features = locations.map(enforcer => ({
+            type: 'Feature',
+            geometry: {
+                type: 'Point',
+                coordinates: [enforcer.longitude, enforcer.latitude]
+            },
+            properties: { id: enforcer.id }
+        }));
+
+        // Update clusters
+        supercluster.load(features);
+        const bounds = map.getBounds();
+        const zoom = Math.floor(map.getZoom());
+        const clusters = supercluster.getClusters(
+            [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()],
+            zoom
+        );
+
+        // Add markers for clusters and individual enforcers
+        clusters.forEach(cluster => {
+            if (cluster.properties.cluster) {
+                // Create cluster marker
+        const el = document.createElement('div');
+                el.className = 'cluster-marker';
+                el.innerHTML = `<div>${cluster.properties.point_count}</div>`;
+                
+                markers[cluster.id] = new mapboxgl.Marker(el)
+                    .setLngLat(cluster.geometry.coordinates)
+                    .addTo(map);
+            } else {
+                // Create individual enforcer marker
+                const enforcer = enforcerData[cluster.properties.id];
+                const el = createMarkerElement(enforcer);
+                
+                // Add click event for marker only
+                const popup = new mapboxgl.Popup({
+                    closeButton: false,
+                    closeOnClick: true,
+                    offset: [0, -30],
+                    className: 'enforcer-popup'
+                })
+                .setHTML(`
+                    <div class="enforcer-info">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <div class="status-dot ${enforcer.is_active ? 'active' : 'inactive'}"></div>
+                            <div class="enforcer-name">${enforcer.name}</div>
+                        </div>
+                        <div class="info-details">
+                            <div class="info-item">
+                                <span class="material-icons">location_on</span>
+                                <span>${enforcer.latitude.toFixed(4)}, ${enforcer.longitude.toFixed(4)}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="material-icons">schedule</span>
+                                <span>${new Date(enforcer.last_update).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                        </div>
+                    </div>
+                `);
+
+                markers[enforcer.id] = new mapboxgl.Marker(el)
+                    .setLngLat([enforcer.longitude, enforcer.latitude])
+                    .setPopup(popup)
+                    .addTo(map);
+            }
+        });
+    }
+
+    // Fetch enforcer locations
+    async function fetchLocations() {
+        try {
+            const response = await fetch('{% url "get_enforcer_locations" %}');
+            const data = await response.json();
+            if (data.status === 'success') {
+                updateMarkers(data.locations);
+            }
+        } catch (error) {
+            console.error('Error fetching locations:', error);
+        }
+    }
+
+    // Initialize map controls
+    map.addControl(new mapboxgl.NavigationControl(), 'top-left');
+    map.addControl(new mapboxgl.ScaleControl(), 'bottom-left');
+
+    // Set up auto-refresh
+    map.on('load', () => {
+        fetchLocations();
+        updateInterval = setInterval(fetchLocations, 10000); // Update every 10 seconds
+    });
+
+    // Clean up on page unload
+    window.addEventListener('beforeunload', () => {
+        clearInterval(updateInterval);
+    });
+
+    // Search functionality
+    document.getElementById('searchEnforcer').addEventListener('input', function() {
+        const locations = Object.values(enforcerData);
+        updateEnforcersList(locations);
+    });
+
+    // Update markers on map move/zoom
+    map.on('moveend', fetchLocations);
+
+    // Add user location tracking
+    let userLocation = null;
+    let userMarker = null;
+    const focusButton = document.getElementById('focusMyLocation');
+
+    // Create user marker element
+    function createUserMarkerElement() {
+        const el = document.createElement('div');
+        el.className = 'user-marker';
+        el.innerHTML = `
+            <div class="user-marker-container">
+                <span class="material-icons">person_pin_circle</span>
+                <span class="accuracy-ring"></span>
+                    </div>
+        `;
+        return el;
+    }
+
+    // Update user marker
+    function updateUserMarker(position) {
+        const { latitude, longitude } = position.coords;
+        userLocation = [longitude, latitude];
+
+        if (!userMarker) {
+            const el = createUserMarkerElement();
+            userMarker = new mapboxgl.Marker(el)
+                .setLngLat(userLocation)
+                .addTo(map);
+            } else {
+            userMarker.setLngLat(userLocation);
+        }
+    }
+
+    // Focus on user location
+    function focusUserLocation() {
+        if (userLocation) {
+                    map.flyTo({
+                center: userLocation,
+                zoom: 16,
+                duration: 1000,
+                essential: true
+            });
+        } else {
+            // Request location if not available
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    updateUserMarker(position);
+                    map.flyTo({
+                        center: [position.coords.longitude, position.coords.latitude],
+                        zoom: 16,
+                        duration: 1000,
+                        essential: true
+                    });
+                },
+                (error) => {
+                    console.error('Error getting location:', error);
+                    alert('Unable to get your location. Please enable location services.');
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 5000,
+                    maximumAge: 0
+                }
+            );
+        }
+    }
+
+    // Watch user position
+    if ("geolocation" in navigator) {
+        navigator.geolocation.watchPosition(
+            updateUserMarker,
+            (error) => console.error('Error watching position:', error),
+            {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 0
+            }
+        );
+    }
+
+    // Add click handler for focus button
+    focusButton.addEventListener('click', focusUserLocation);
+
+    function generateAvatarSvg(name) {
+        const colors = [
+            '#f87171', '#fb923c', '#fbbf24', '#34d399', '#60a5fa',
+            '#818cf8', '#a78bfa', '#f472b6'
+        ];
+        const initials = name.split(' ')
+            .map(n => n[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2);
+        const colorIndex = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+        const bgColor = colors[colorIndex];
+        
+        return `data:image/svg+xml,${encodeURIComponent(`
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="50" fill="${bgColor}"/>
+                <text x="50" y="50" dy="0.35em" 
+                    font-family="Arial" font-size="40" fill="white" 
+                    text-anchor="middle" dominant-baseline="middle"
+                    font-weight="bold">${initials}</text>
+            </svg>
+        `)}`;
+    }
+});
+</script>
+
+<style>
+.enforcer-marker {
+        cursor: pointer;
+}
+
+.marker-container {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.marker-container .marker-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+.marker-container .material-icons {
+    font-size: 3.5rem;
+    color: var(--primary-color);
+    position: relative;
+    z-index: 2;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+.marker-container .marker-label {
+    position: absolute;
+    top: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    z-index: 3;
+    white-space: nowrap;
+}
+
+.marker-container.active .pulse-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    background: var(--primary-color);
+    border-radius: 50%;
+    opacity: 0.3;
+    animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.marker-container.inactive .material-icons {
+    color: #9ca3af;
+}
+
+.marker-container.inactive .marker-label {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.cluster-marker {
+    background: var(--primary-color);
+    border-radius: 50%;
+    color: white;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.enforcer-marker.highlighted .marker-container {
+    transform: scale(1.2);
+    transition: transform 0.3s ease;
+}
+
+.status-badge {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid white;
+}
+
+.status-badge.active {
+    background: #22c55e;
+}
+
+.status-badge.inactive {
+    background: #9ca3af;
+}
+
+/* Enforcer List Styles */
+.enforcer-list {
+    padding: 0.75rem;
+    margin: -0.5rem;
+}
+
+.enforcer-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.enforcer-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.enforcer-list::-webkit-scrollbar-thumb {
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 3px;
+}
+
+.enforcer-item {
+    padding: 1rem;
+    border-radius: 12px;
+    margin-bottom: 0.75rem;
+    background: #f8fafc;
+    border: 1px solid rgba(0,0,0,0.05);
+    transition: all 0.2s ease;
+}
+
+.enforcer-item:hover {
+    background: #f1f5f9;
+    transform: translateX(4px);
+    border-color: rgba(0,0,0,0.08);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.enforcer-item.active {
+    background: linear-gradient(to right, #f0fdf4, #f8fafc);
+    border-left: 3px solid #22c55e;
+}
+
+.enforcer-item.inactive {
+    background: linear-gradient(to right, #f8fafc, #f8fafc);
+    border-left: 3px solid #9ca3af;
+    opacity: 0.8;
+}
+
+.enforcer-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.status-legend {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: #f8fafc;
+    border-radius: 6px;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.status-legend small {
+    color: #6b7280;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.status-dot.active {
+    background: #22c55e;
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+}
+
+.status-dot.inactive {
+    background: #9ca3af;
+    box-shadow: 0 0 0 2px rgba(156, 163, 175, 0.2);
+}
+
+.avatar-container {
+    position: relative;
+    width: 45px;
+    height: 45px;
+    flex-shrink: 0;
+}
+
+.avatar-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.status-badge {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* User Location Marker Styles */
+.user-marker {
+    cursor: default;
+}
+
+.user-marker-container {
+    position: relative;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-marker-container .material-icons {
+    font-size: 3rem;
+    color: #2563eb;
+    position: relative;
+    z-index: 2;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+.user-marker-container .accuracy-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: rgba(37, 99, 235, 0.2);
+    border-radius: 50%;
+    animation: accuracy-pulse 2s infinite;
+}
+
+#focusMyLocation {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+#focusMyLocation:hover {
+    transform: scale(1.1);
+    background: white;
+}
+
+#focusMyLocation .material-icons {
+    font-size: 1.5rem;
+    color: #1f2937;
+}
+
+@keyframes accuracy-pulse {
+    0% {
+        transform: scale(0.8);
+        opacity: 0.8;
+    }
+    70% {
+        transform: scale(2);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+/* Popup styles */
+.enforcer-popup {
+    font-family: inherit;
+}
+
+.mapboxgl-popup-content {
+    padding: 12px 15px;
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    font-size: 13px;
+    min-width: 240px;
+    backdrop-filter: blur(8px);
+    background: rgba(255, 255, 255, 0.95);
+}
+
+.mapboxgl-popup-tip {
+    display: none;
+}
+
+.enforcer-info {
+    color: #1f2937;
+}
+
+.enforcer-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: #1f2937;
+}
+
+.info-details {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-left: 20px;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #6b7280;
+    font-size: 12px;
+}
+
+.info-item .material-icons {
+    font-size: 14px;
+    color: #9ca3af;
+}
+</style>
+{% endblock %} 

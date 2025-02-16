@@ -1,0 +1,412 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <div class="icon-circle bg-primary text-white me-3">
+                        <span class="material-icons">receipt_long</span>
+                    </div>
+                    <div>
+                        <h4 class="mb-0">Payment Records</h4>
+                        <p class="text-muted mb-0 small">Total Records: {{ total_count }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Form -->
+            <form method="get" class="mt-4">
+                <div class="row g-2">
+                    <div class="col-md-10">
+                        <div class="search-input">
+                            <span class="material-icons">search</span>
+                            <input type="text" 
+                                   name="search" 
+                                   class="form-control" 
+                                   placeholder="Search payment records..."
+                                   value="{{ search_query|default:'' }}">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100 h-100 d-flex align-items-center justify-content-center">
+                            <span class="material-icons me-2">search</span>
+                            Search
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Payment Records Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="paymentsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Receipt #</th>
+                        <th>Date</th>
+                        <th>Violation #</th>
+                        <th>Violator</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for violation in paid_violations %}
+                    <tr>
+                        <td class="ps-4">
+                            <span class="badge bg-secondary">{{ violation.receipt_number }}</span>
+                        </td>
+                        <td>{{ violation.receipt_date|date:"M d, Y" }}</td>
+                        <td>
+                            <a href="#" onclick="showViolationDetail('{{ violation.id }}')" class="text-decoration-none text-dark">
+                                #{{ violation.id }}
+                            </a>
+                        </td>
+                        <td class="text-dark">{{ violation.violator.get_full_name }}</td>
+                        <td>
+                            <span class="fw-bold text-dark">₱{{ violation.fine_amount|floatformat:2 }}</span>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <span class="material-icons text-success me-2">check_circle</span>
+                                <span class="text-success">Paid</span>
+                            </div>
+                        </td>
+                        <td class="text-end">
+                            <div class="action-buttons">
+                                <button type="button" 
+                                        class="btn btn-action btn-view" 
+                                        data-bs-toggle="tooltip" 
+                                        data-bs-placement="top" 
+                                        title="View Details"
+                                        onclick="showViolationDetail({{ violation.id }})">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <a href="{% url 'print_receipt' violation.id %}" 
+                                   class="btn btn-action btn-print"
+                                   data-bs-toggle="tooltip"
+                                   data-bs-placement="top"
+                                   title="Print Receipt"
+                                   target="_blank">
+                                    <i class="fas fa-print"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <div class="text-muted">
+                                <span class="material-icons d-block mb-2" style="font-size: 2.5rem; opacity: 0.5;">search_off</span>
+                                <p class="mb-0">No payment records found</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if paid_violations.has_other_pages %}
+        <div class="card-footer bg-white py-3">
+            {% include 'includes/pagination.html' with page_obj=paid_violations %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Violation Detail Modal -->
+<div class="modal fade" id="violationDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="material-icons align-middle me-2" style="font-size: 1.3rem;">receipt_long</i>
+                    Violation Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Icon Circle */
+.icon-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-circle .material-icons {
+    font-size: 24px;
+}
+
+/* Search Input */
+.search-input {
+    position: relative;
+    width: 100%;
+}
+
+.search-input .material-icons {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6b7280;
+    font-size: 20px;
+    z-index: 1;
+}
+
+.search-input .form-control {
+    padding-left: 40px;
+    height: 42px;
+    border-color: #e5e7eb;
+    border-radius: 6px;
+}
+
+.search-input .form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.1);
+}
+
+/* Table Styles */
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    background-color: var(--bg-light);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+    padding: 1rem;
+    white-space: nowrap;
+}
+
+.table td {
+    padding: 1rem;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.table tbody tr:hover {
+    background-color: var(--bg-light);
+}
+
+/* Badge Styles */
+.badge {
+    padding: 0.5rem 0.75rem;
+    font-weight: 500;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+.btn-action {
+    width: 35px;
+    height: 35px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+/* View Button */
+.btn-view {
+    color: var(--primary-color);
+    border-color: #e9ecef;
+    background-color: #fff;
+}
+
+.btn-view:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+/* Edit Button */
+.btn-edit {
+    color: #ffa800;
+    border-color: #e9ecef;
+    background-color: #fff;
+}
+
+.btn-edit:hover {
+    background-color: #ffa800;
+    border-color: #ffa800;
+    color: white;
+}
+
+/* Empty State */
+.text-muted .material-icons {
+    opacity: 0.5;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .search-box {
+        width: 100%;
+    }
+    
+    .table td, 
+    .table th {
+        padding: 0.75rem;
+    }
+    
+    .btn-action {
+        width: 32px;
+        height: 32px;
+    }
+}
+
+/* Table Container Styles */
+.table-responsive {
+    border-radius: 8px;
+    overflow: hidden;
+    max-height: calc(100vh - 280px);
+    overflow-y: auto;
+}
+
+/* Table Styles */
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    background-color: var(--bg-light);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+    padding: 1rem;
+    white-space: nowrap;
+}
+
+.table td {
+    padding: 1rem;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+/* Keep table header visible */
+.table thead th {
+    position: sticky;
+    top: 0;
+    background-color: #f8f9fa;
+    z-index: 1;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Remove conflicting padding reset */
+.card-body {
+    padding: 1.5rem !important;
+}
+
+/* Only apply padding: 0 to the table card */
+.card .table-responsive {
+    padding: 0;
+}
+
+/* Custom scrollbar styles */
+.table-responsive::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+</style>
+
+<script>
+// Initialize DataTable
+$(document).ready(function() {
+    const table = $('#paymentsTable').DataTable({
+        pageLength: 10,
+        order: [[1, "desc"]],
+        dom: 'rt<"bottom d-flex justify-content-between align-items-center pt-3"ip>',
+        responsive: true,
+        language: {
+            search: "",
+            searchPlaceholder: "Search records...",
+            zeroRecords: "No matching records found",
+            info: "Showing _START_ to _END_ of _TOTAL_ records",
+            infoEmpty: "No records available",
+            infoFiltered: "(filtered from _MAX_ total records)"
+        }
+    });
+
+    // Custom search functionality
+    $('#searchInput').on('keyup', function() {
+        table.search($(this).val()).draw();
+    });
+});
+
+function showViolationDetail(violationId) {
+    const modalBody = document.querySelector('#violationDetailModal .modal-body');
+    const modal = new bootstrap.Modal(document.getElementById('violationDetailModal'));
+    
+    modalBody.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    `;
+    
+    modal.show();
+
+    fetch(`/violation/${violationId}/modal/`)
+        .then(response => response.text())
+        .then(html => {
+            modalBody.innerHTML = html;
+        })
+        .catch(error => {
+            modalBody.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="material-icons me-2">error</i>
+                    Error loading violation details: ${error.message}
+                </div>
+            `;
+        });
+}
+
+function printReceipt(violationId) {
+    window.open(`/violation/${violationId}/print-receipt/`, '_blank');
+}
+</script>
+{% endblock %} 

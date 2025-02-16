@@ -1,0 +1,342 @@
+{% extends 'base_landing.html' %}
+{% load static %}
+
+{% block title %}Our Services - CTTMO Portal{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="services-hero">
+    <div class="container">
+        <div class="text-center">
+            <h1 class="services-title">Our Services</h1>
+            <p class="services-subtitle">Comprehensive traffic management solutions for Bayawan City</p>
+        </div>
+    </div>
+</section>
+
+<!-- Main Services Section -->
+<section class="main-services">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="service-card">
+                    <div class="service-icon">
+                        <span class="material-icons">gavel</span>
+                    </div>
+                    <h3>Traffic Violation Management</h3>
+                    <ul class="service-features">
+                        <li>Online violation ticket processing</li>
+                        <li>Digital records management</li>
+                        <li>Real-time violation status tracking</li>
+                        <li>Automated notification system</li>
+                    </ul>
+                    <a href="{% url 'login' %}" class="btn btn-primary">Access Service</a>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="service-card">
+                    <div class="service-icon">
+                        <span class="material-icons">payments</span>
+                    </div>
+                    <h3>Payment Processing</h3>
+                    <ul class="service-features">
+                        <li>Secure online payment options</li>
+                        <li>Multiple payment methods</li>
+                        <li>Real-time payment confirmation</li>
+                        <li>Digital receipt generation</li>
+                    </ul>
+                    <a href="{% url 'login' %}" class="btn btn-primary">Access Service</a>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="service-card">
+                    <div class="service-icon">
+                        <span class="material-icons">support_agent</span>
+                    </div>
+                    <h3>Customer Support</h3>
+                    <ul class="service-features">
+                        <li>24/7 online assistance</li>
+                        <li>Query resolution system</li>
+                        <li>Live chat support</li>
+                        <li>Feedback management</li>
+                    </ul>
+                    <a href="{% url 'login' %}" class="btn btn-primary">Access Service</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Additional Services -->
+<section class="additional-services">
+    <div class="container">
+        <h2 class="section-title text-center">Additional Services</h2>
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="additional-card">
+                    <span class="material-icons">school</span>
+                    <h4>Traffic Education Programs</h4>
+                    <p>Comprehensive training and awareness programs for road safety and traffic regulations.</p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="additional-card">
+                    <span class="material-icons">description</span>
+                    <h4>Documentation Services</h4>
+                    <p>Assistance with traffic-related documentation and permit applications.</p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="additional-card">
+                    <span class="material-icons">analytics</span>
+                    <h4>Traffic Analysis</h4>
+                    <p>Data-driven insights and reports on traffic patterns and violations.</p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="additional-card">
+                    <span class="material-icons">campaign</span>
+                    <h4>Public Information</h4>
+                    <p>Regular updates on traffic conditions, regulations, and announcements.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Process Section -->
+<section class="process">
+    <div class="container">
+        <h2 class="section-title text-center">How It Works</h2>
+        <div class="row g-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="process-step">
+                    <div class="step-number">1</div>
+                    <span class="material-icons">login</span>
+                    <h4>Register/Login</h4>
+                    <p>Create an account or login to access our services</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="process-step">
+                    <div class="step-number">2</div>
+                    <span class="material-icons">search</span>
+                    <h4>Select Service</h4>
+                    <p>Choose from our range of available services</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="process-step">
+                    <div class="step-number">3</div>
+                    <span class="material-icons">edit_document</span>
+                    <h4>Submit Details</h4>
+                    <p>Provide necessary information and documentation</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="process-step">
+                    <div class="step-number">4</div>
+                    <span class="material-icons">check_circle</span>
+                    <h4>Complete Process</h4>
+                    <p>Receive confirmation and track your request</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    /* Hero Section */
+    .services-hero {
+        padding: 5rem 0;
+        background: linear-gradient(135deg, var(--primary-color) 0%, #001a4d 100%);
+        color: white;
+        text-align: center;
+    }
+
+    .services-title {
+        font-size: 3.5rem;
+        font-weight: 800;
+        margin-bottom: 1.5rem;
+    }
+
+    .services-subtitle {
+        font-size: 1.25rem;
+        opacity: 0.9;
+    }
+
+    /* Main Services Section */
+    .main-services {
+        padding: 5rem 0;
+        background-color: #fff;
+    }
+
+    .service-card {
+        background: #fff;
+        border-radius: 1rem;
+        padding: 2.5rem;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        height: 100%;
+        transition: all 0.3s ease;
+    }
+
+    .service-card:hover {
+        transform: translateY(-10px);
+    }
+
+    .service-icon {
+        width: 80px;
+        height: 80px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+    }
+
+    .service-icon .material-icons {
+        font-size: 2.5rem;
+        color: white;
+    }
+
+    .service-card h3 {
+        color: var(--primary-color);
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+    }
+
+    .service-features {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 1.5rem;
+        text-align: left;
+    }
+
+    .service-features li {
+        padding: 0.5rem 0;
+        color: #6c757d;
+        position: relative;
+        padding-left: 1.5rem;
+    }
+
+    .service-features li:before {
+        content: "•";
+        color: var(--primary-color);
+        position: absolute;
+        left: 0;
+        font-weight: bold;
+    }
+
+    /* Additional Services */
+    .additional-services {
+        padding: 5rem 0;
+        background-color: #f8f9fa;
+    }
+
+    .additional-card {
+        background: #fff;
+        border-radius: 1rem;
+        padding: 2rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 1.5rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+    }
+
+    .additional-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .additional-card .material-icons {
+        font-size: 2.5rem;
+        color: var(--primary-color);
+    }
+
+    .additional-card h4 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 0.75rem;
+    }
+
+    .additional-card p {
+        color: #6c757d;
+        margin-bottom: 0;
+    }
+
+    /* Process Section */
+    .process {
+        padding: 5rem 0;
+        background-color: #fff;
+    }
+
+    .process-step {
+        text-align: center;
+        padding: 2rem;
+        position: relative;
+    }
+
+    .step-number {
+        width: 40px;
+        height: 40px;
+        background: var(--primary-color);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        position: absolute;
+        top: 0;
+        right: 2rem;
+    }
+
+    .process-step .material-icons {
+        font-size: 3rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+    }
+
+    .process-step h4 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 0.75rem;
+    }
+
+    .process-step p {
+        color: #6c757d;
+        margin-bottom: 0;
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 992px) {
+        .services-title {
+            font-size: 2.75rem;
+        }
+
+        .service-card,
+        .additional-card {
+            margin-bottom: 1.5rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .services-hero {
+            padding: 3rem 0;
+        }
+
+        .section-title {
+            font-size: 2rem;
+        }
+
+        .process-step {
+            margin-bottom: 2rem;
+        }
+    }
+</style>
+{% endblock %} 

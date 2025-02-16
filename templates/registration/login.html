@@ -1,0 +1,389 @@
+{% extends 'base_auth.html' %}
+{% load static %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="d-flex justify-content-end mb-4">
+        </div>
+        <div class="text-center mb-5">
+            <img src="{% static 'admin/img/logo.png' %}" alt="CTTMO Logo" class="auth-logo mb-4">
+            <h1 class="auth-title">CTTMO Bayawan City</h1>
+            <div class="auth-subtitle-wrapper">
+                <p class="auth-subtitle">City Transportation and Traffic Management Office</p>
+                <div class="auth-divider"></div>
+                <p class="auth-welcome">Welcome back! Please login to your account.</p>
+            </div>
+        </div>
+
+        <form method="post" class="auth-form">
+            {% csrf_token %}
+            
+            <div class="form-group mb-4">
+                <label class="form-label">Username</label>
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <span class="material-icons">person</span>
+                    </span>
+                    <input type="text" name="username" class="form-control" placeholder="Enter your username" required>
+                </div>
+            </div>
+
+            <div class="form-group mb-4">
+                <label class="form-label">Password</label>
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <span class="material-icons">lock</span>
+                    </span>
+                    <input type="password" name="password" class="form-control" placeholder="Enter your password" required>
+                    <button type="button" class="btn btn-outline-secondary toggle-password" tabindex="-1">
+                        <span class="material-icons">visibility_off</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-check mb-4">
+                <input type="checkbox" class="form-check-input" id="rememberMe" name="remember">
+                <label class="form-check-label" for="rememberMe">Remember Username</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">
+                <span class="material-icons me-2">login</span>
+                Sign In
+            </button>
+        </form>
+
+        {% if messages %}
+        <div class="auth-messages mt-4">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                <div class="d-flex align-items-center">
+                    <span class="material-icons me-2">
+                        {% if message.tags == 'success' %}check_circle
+                        {% elif message.tags == 'error' %}error
+                        {% elif message.tags == 'warning' %}warning
+                        {% else %}info{% endif %}
+                    </span>
+                    <div>{{ message }}</div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.auth-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 2rem;
+}
+
+.auth-card {
+    background: white;
+    border-radius: 16px;
+    padding: 3rem;
+    width: 100%;
+    max-width: 520px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+}
+
+.auth-logo {
+    width: 180px;
+    height: auto;
+    margin-bottom: 2rem;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.auth-title {
+    color: #0d6efd;
+    font-size: 2.25rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    letter-spacing: -0.5px;
+}
+
+.auth-subtitle-wrapper {
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.auth-subtitle {
+    color: #4b5563;
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+}
+
+.auth-divider {
+    height: 2px;
+    background: linear-gradient(90deg, transparent 0%, #e5e7eb 50%, transparent 100%);
+    margin: 1.5rem 0;
+}
+
+.auth-welcome {
+    color: #6b7280;
+    font-size: 0.95rem;
+}
+
+.auth-form {
+    margin-top: 2rem;
+}
+
+.form-label {
+    color: #374151;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.input-group {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.input-group:focus-within {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.1);
+}
+
+.auth-form .input-group-text {
+    background-color: white;
+    border: none;
+    padding-right: 0;
+}
+
+.auth-form .form-control {
+    border: none;
+    padding: 0.75rem 1rem;
+    height: 52px;
+    font-size: 1rem;
+    color: #1f2937;
+}
+
+.auth-form .form-control::placeholder {
+    color: #9ca3af;
+}
+
+.auth-form .input-group-text .material-icons {
+    color: #9ca3af;
+    font-size: 1.5rem;
+}
+
+.toggle-password {
+    border: none;
+    background: transparent;
+    height: 52px;
+    color: #9ca3af;
+    padding: 0 1rem;
+}
+
+.toggle-password:hover {
+    color: #6b7280;
+    background: transparent;
+}
+
+.form-check-label {
+    color: #6b7280;
+    font-size: 0.95rem;
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-primary {
+    background-color: #0d6efd;
+    border: none;
+    padding: 0.75rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    height: 52px;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.btn-primary .material-icons {
+    font-size: 1.25rem;
+}
+
+/* Alert styling */
+.alert {
+    border: none;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.alert-success {
+    background-color: #f0fdf4;
+    color: #16a34a;
+}
+
+.alert-danger {
+    background-color: #fef2f2;
+    color: #dc2626;
+}
+
+.alert-warning {
+    background-color: #fffbeb;
+    color: #d97706;
+}
+
+.alert-info {
+    background-color: #eff6ff;
+    color: #2563eb;
+}
+
+.alert .material-icons {
+    font-size: 1.25rem;
+}
+
+@media (max-width: 576px) {
+    .auth-container {
+        padding: 1rem;
+    }
+
+    .auth-card {
+        padding: 2rem;
+        border-radius: 12px;
+    }
+
+    .auth-logo {
+        width: 140px;
+    }
+
+    .auth-title {
+        font-size: 1.75rem;
+    }
+
+    .auth-subtitle {
+        font-size: 1rem;
+    }
+
+    .auth-form .form-control,
+    .toggle-password,
+    .btn-primary {
+        height: 48px;
+    }
+}
+
+.search-container {
+    width: 300px;
+}
+
+.search-container .input-group {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background-color: white;
+    transition: all 0.2s;
+}
+
+.search-container .input-group:focus-within {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.1);
+}
+
+.search-container .input-group-text {
+    background-color: transparent;
+    border: none;
+    padding-right: 0;
+}
+
+.search-container .form-control {
+    border: none;
+    padding: 0.75rem 1rem;
+    height: 44px;
+    font-size: 0.95rem;
+    color: #1f2937;
+    background-color: transparent;
+}
+
+.search-container .form-control::placeholder {
+    color: #9ca3af;
+}
+
+.search-container .input-group-text .material-icons {
+    color: #9ca3af;
+    font-size: 1.25rem;
+}
+
+@media (max-width: 576px) {
+    .search-container {
+        width: 100%;
+    }
+    
+    .search-container .form-control {
+        height: 40px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle password visibility
+    const togglePassword = document.querySelector('.toggle-password');
+    const passwordInput = document.querySelector('input[name="password"]');
+    const visibilityIcon = togglePassword.querySelector('.material-icons');
+
+    togglePassword.addEventListener('click', function() {
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        visibilityIcon.textContent = type === 'password' ? 'visibility_off' : 'visibility';
+    });
+
+    // Remember username functionality
+    const rememberCheckbox = document.getElementById('rememberMe');
+    const usernameInput = document.querySelector('input[name="username"]');
+
+    // Load saved username if exists
+    const savedUsername = localStorage.getItem('rememberedUsername');
+    if (savedUsername) {
+        usernameInput.value = savedUsername;
+        rememberCheckbox.checked = true;
+    }
+
+    // Save username when form is submitted
+    document.querySelector('form').addEventListener('submit', function() {
+        if (rememberCheckbox.checked) {
+            localStorage.setItem('rememberedUsername', usernameInput.value);
+        } else {
+            localStorage.removeItem('rememberedUsername');
+        }
+    });
+
+    // Auto-dismiss alerts
+    const alerts = document.querySelectorAll('.alert');
+    alerts.forEach(alert => {
+        setTimeout(() => {
+            const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+            bsAlert.close();
+        }, 5000);
+    });
+});
+</script>
+{% endblock %}

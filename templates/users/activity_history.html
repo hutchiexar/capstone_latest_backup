@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <div class="icon-circle bg-primary text-white me-3">
+                        <span class="material-icons">history</span>
+                    </div>
+                    <h4 class="mb-0">Activity History</h4>
+                </div>
+                <div class="search-input">
+                    <span class="material-icons">search</span>
+                    <input type="text" id="searchInput" class="form-control" placeholder="Search activities...">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Card -->
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-body p-0">
+            <!-- Table Container -->
+            <div class="table-responsive">
+                <table class="table table-system table-hover align-middle mb-0" id="activityTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="border-0 ps-4">Date/Time</th>
+                            <th class="border-0">User</th>
+                            <th class="border-0">Category</th>
+                            <th class="border-0">Action</th>
+                            <th class="border-0 pe-4">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for activity in activities %}
+                        <tr>
+                            <td class="ps-4">{{ activity.timestamp|date:"M d, Y H:i" }}</td>
+                            <td>
+                                <div class="table-profile">
+                                    <div class="avatar-container">
+                                        {% if activity.user.userprofile.avatar %}
+                                        <img src="{{ activity.user.userprofile.avatar.url }}" alt="{{ activity.user.get_full_name }}" class="rounded-circle">
+                                        {% else %}
+                                        <div class="avatar-placeholder">{{ activity.user.get_initials }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="user-info-container">
+                                        <h6 class="mb-0">{{ activity.user.get_full_name }}</h6>
+                                        <small class="text-muted">{{ activity.user.userprofile.get_role_display }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="category-badge category-{{ activity.category|lower }}">
+                                    {{ activity.category|title }}
+                                </span>
+                            </td>
+                            <td>{{ activity.action }}</td>
+                            <td class="pe-4">{{ activity.details }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if activities %}
+            <div class="p-3 border-top">
+                {% include 'includes/pagination.html' %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const table = $('#activityTable').DataTable({
+        order: [[0, 'desc']],
+        pageLength: 25,
+        dom: 'rt<"bottom d-flex justify-content-between align-items-center pt-3"ip>',
+        language: {
+            search: "_INPUT_",
+            searchPlaceholder: "Search activities..."
+        },
+        scrollY: false,
+        scrollX: false,
+        autoWidth: false
+    });
+
+    // Custom search functionality
+    $('#searchInput').on('keyup', function() {
+        table.search($(this).val()).draw();
+    });
+
+    // Ensure table layout remains consistent
+    const tableContainer = document.querySelector('.table-responsive');
+    if (tableContainer) {
+        const resizeObserver = new ResizeObserver(entries => {
+            for (let entry of entries) {
+                const table = entry.target.querySelector('.table');
+                if (table) {
+                    table.style.width = `${entry.contentRect.width}px`;
+                }
+            }
+        });
+        resizeObserver.observe(tableContainer);
+    }
+});
+</script>
+{% endblock %} 

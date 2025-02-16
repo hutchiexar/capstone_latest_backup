@@ -1,0 +1,241 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Edit Announcement Form -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <!-- Header Section -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="d-flex align-items-center">
+                            <span class="material-icons me-2" style="color: var(--primary-color); font-size: 2rem;">campaign</span>
+                            <div>
+                                <h4 class="mb-0">Edit Announcement</h4>
+                                <p class="text-muted mb-0 small">Modify the existing announcement details</p>
+                            </div>
+                        </div>
+                        <a href="{% url 'announcements_list' %}" class="btn btn-outline-secondary rounded-3">
+                            <i class="material-icons me-2">arrow_back</i>Back to List
+                        </a>
+                    </div>
+
+                    <form method="post" id="announcementForm">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-lg-8 mb-4">
+                                <label for="title" class="form-label">Title</label>
+                                <input type="text" class="form-control form-control-lg" id="title" name="title" 
+                                       value="{{ announcement.title }}" required
+                                       placeholder="Enter announcement title">
+                                <div class="form-text">Choose a clear and concise title for your announcement</div>
+                            </div>
+                            <div class="col-lg-4 mb-4">
+                                <label for="priority" class="form-label">Priority Level</label>
+                                <select class="form-select form-select-lg" id="priority" name="priority">
+                                    <option value="LOW" {% if announcement.priority == 'LOW' %}selected{% endif %}>Low Priority</option>
+                                    <option value="MEDIUM" {% if announcement.priority == 'MEDIUM' %}selected{% endif %}>Medium Priority</option>
+                                    <option value="HIGH" {% if announcement.priority == 'HIGH' %}selected{% endif %}>High Priority</option>
+                                </select>
+                                <div class="form-text">Select the importance level of this announcement</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="content" class="form-label">Content</label>
+                            <textarea class="form-control" id="content" name="content" rows="12" required
+                                      placeholder="Write your announcement content here...">{{ announcement.content }}</textarea>
+                            <div class="form-text">Provide detailed information about your announcement</div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-lg-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="is_active" name="is_active" 
+                                           {% if announcement.is_active %}checked{% endif %}>
+                                    <label class="form-check-label" for="is_active">
+                                        Active Status
+                                    </label>
+                                </div>
+                                <div class="form-text">Toggle to control the visibility of this announcement</div>
+                            </div>
+                            <div class="col-lg-6 text-lg-end">
+                                <div class="text-muted small">
+                                    <span class="material-icons me-1" style="font-size: 0.9rem;">schedule</span>
+                                    Last updated: {{ announcement.updated_at|date:"F d, Y H:i" }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'announcements_list' %}" class="btn btn-light rounded-3 px-4">Cancel</a>
+                            <button type="submit" class="btn btn-primary rounded-3 px-4">
+                                <i class="material-icons me-2">save</i>Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-control, .form-select {
+    border-color: #e9ecef;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.1);
+}
+
+.form-control-lg {
+    font-size: 1.1rem;
+}
+
+.form-select-lg {
+    font-size: 1.1rem;
+    padding: 0.75rem 1rem;
+    height: calc(3.5rem + 2px);
+}
+
+.form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: var(--text-dark);
+}
+
+.form-text {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+.btn {
+    padding: 0.6rem 1.2rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.btn-light {
+    background-color: #f8f9fa;
+    border-color: #e9ecef;
+}
+
+.btn-light:hover {
+    background-color: #e9ecef;
+    border-color: #dde0e3;
+}
+
+.material-icons {
+    font-size: 1.1rem;
+}
+
+/* Form validation styles */
+.form-control:invalid:not(:placeholder-shown),
+.form-select:invalid:not(:placeholder-shown) {
+    border-color: var(--danger);
+}
+
+.form-control:invalid:not(:placeholder-shown):focus,
+.form-select:invalid:not(:placeholder-shown):focus {
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+/* Priority select custom styles */
+#priority {
+    padding-right: 2rem;
+}
+
+#priority option[value="HIGH"] {
+    color: var(--danger);
+}
+
+#priority option[value="MEDIUM"] {
+    color: var(--warning);
+}
+
+#priority option[value="LOW"] {
+    color: var(--success);
+}
+
+/* Form switch styling */
+.form-switch {
+    padding-left: 2.5rem;
+}
+
+.form-check-input {
+    width: 2.5rem;
+    height: 1.25rem;
+    margin-left: -2.5rem;
+}
+
+.form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.form-check-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.1);
+}
+
+@media (max-width: 992px) {
+    .text-lg-end {
+        text-align: left !important;
+        margin-top: 1rem;
+    }
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: #1d4ed8;
+    border-color: #1d4ed8;
+}
+
+.btn-outline-secondary {
+    border-color: #e9ecef;
+    color: var(--text-dark);
+}
+
+.btn-outline-secondary:hover {
+    background-color: #f8f9fa;
+    border-color: #e9ecef;
+    color: var(--text-dark);
+}
+</style>
+
+<script>
+document.getElementById('announcementForm').addEventListener('submit', function(e) {
+    const title = document.getElementById('title').value.trim();
+    const content = document.getElementById('content').value.trim();
+    
+    if (!title || !content) {
+        e.preventDefault();
+        alert('Please fill in all required fields.');
+        return false;
+    }
+    
+    return true;
+});
+</script>
+{% endblock %} 

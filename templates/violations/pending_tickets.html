@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Pending Tickets</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="pendingTicketsTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Date</th>
+                            <th>License Number</th>
+                            <th>Location</th>
+                            <th>Violation Type</th>
+                            <th>Fine Amount</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in pending_tickets %}
+                        <tr>
+                            <td>{{ ticket.id }}</td>
+                            <td>{{ ticket.violation_date|date:"M d, Y" }}</td>
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <span class="fw-medium">{{ ticket.violator.first_name }} {{ ticket.violator.last_name }}</span>
+                                    <small class="text-muted">{{ ticket.violator.license_number }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="violation-types">
+                                    {% for type in ticket.get_violation_types %}
+                                    <span class="violation-type">{{ type }}</span>
+                                    {% if not forloop.last %}<span class="separator">•</span>{% endif %}
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td>₱{{ ticket.fine_amount }}</td>
+                            <td>
+                                {% include 'includes/status_badge.html' with status=ticket.status display_text=ticket.get_status_display %}
+                            </td>
+                            <td class="text-end">
+                                <div class="action-buttons">
+                                    <button type="button" 
+                                            class="btn btn-action btn-view" 
+                                            data-bs-toggle="tooltip" 
+                                            data-bs-placement="top" 
+                                            title="View Details"
+                                            onclick="showTicketDetail({{ ticket.id }})">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                <div class="text-muted">
+                                    <span class="material-icons d-block mb-2" style="font-size: 2.5rem; opacity: 0.5;">search_off</span>
+                                    <p class="mb-0">No pending tickets found</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    $('#pendingTicketsTable').DataTable({
+        "order": [[1, "desc"]]
+    });
+});
+</script>
+{% endblock %}

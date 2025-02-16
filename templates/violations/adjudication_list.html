@@ -1,0 +1,415 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <span class="material-icons me-2" style="color: var(--primary-color)">balance_scale</span>
+                    <h4 class="mb-0">Adjudication Cases</h4>
+                </div>
+                <div class="d-flex align-items-center">
+                    {% include 'includes/search_form.html' with placeholder="Search by name, license number..." %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Card -->
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-body p-4">
+            <!-- Table Container -->
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="adjudicationTable">
+                    <thead>
+                        <tr>
+                            <th>Case ID</th>
+                            <th>Date Filed</th>
+                            <th>Violator</th>
+                            <th>Violation Type</th>
+                            <th>Fine Amount</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for violation in violations %}
+                        <tr>
+                            <td>{{ violation.id }}</td>
+                            <td>{{ violation.violation_date|date:"M d, Y" }}</td>
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <span class="fw-medium">{{ violation.violator.first_name }} {{ violation.violator.last_name }}</span>
+                                    <small class="text-muted">{{ violation.violator.license_number }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="violation-types">
+                                    {% for type in violation.get_violation_types %}
+                                    <span class="violation-type">{{ type }}</span>
+                                    {% if not forloop.last %}<span class="separator">•</span>{% endif %}
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td>₱{{ violation.fine_amount }}</td>
+                            <td>
+                                {% include 'includes/status_badge.html' with status=violation.status display_text=violation.get_status_display %}
+                            </td>
+                            <td class="text-end">
+                                <div class="action-buttons">
+                                    <button type="button" class="btn btn-action btn-view" data-bs-toggle="tooltip" data-bs-placement="top" title="View Details" onclick="showViolationDetail({{ violation.id }})">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <a href="{% url 'adjudication_form' violation.id %}" 
+                                       class="btn btn-action btn-adjudicate"
+                                       data-bs-toggle="tooltip"
+                                       data-bs-placement="top"
+                                       title="Adjudicate Case">
+                                        <i class="fas fa-balance-scale"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                <div class="text-muted">
+                                    <span class="material-icons d-block mb-2" style="font-size: 2.5rem; opacity: 0.5;">search_off</span>
+                                    <p class="mb-0">No violations found</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Violation Detail Modal -->
+<div class="modal fade" id="violationDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Violation Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Content will be loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Table Styles */
+.table-responsive {
+    max-height: 70vh;
+    overflow-y: auto;
+    border-radius: 8px;
+}
+
+.table {
+    font-size: 0.95rem;
+    min-width: 800px; /* Ensure horizontal scroll on mobile */
+}
+
+.table th {
+    font-weight: 600;
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #e9ecef;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+/* Custom Scrollbar */
+.table-responsive::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color-dark);
+}
+
+/* Modal Enhancements */
+.modal-dialog {
+    margin: 0.5rem;
+    max-width: calc(100% - 1rem);
+}
+
+.modal-content {
+    max-height: calc(100vh - 2rem);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Mobile Responsive Adjustments */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 1rem !important;
+    }
+
+    .table td {
+        padding: 0.75rem;
+    }
+
+    .action-buttons {
+        flex-wrap: nowrap;
+    }
+
+    .btn-action {
+        width: 32px;
+        height: 32px;
+    }
+
+    .btn-action i {
+        font-size: 1rem;
+    }
+
+    /* Header Adjustments */
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .d-flex.align-items-center {
+        width: 100%;
+    }
+
+    /* Search Form Adjustments */
+    .search-form {
+        width: 100%;
+    }
+
+    .search-form .input-group {
+        width: 100%;
+    }
+
+    /* Modal Adjustments */
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+
+    .modal-content {
+        border-radius: 8px;
+    }
+
+    .modal-body {
+        padding: 1rem;
+    }
+}
+
+/* Tablet Adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .modal-dialog {
+        max-width: 90%;
+        margin: 1rem auto;
+    }
+}
+
+/* Ensure modal scrolling works on iOS */
+.modal {
+    -webkit-overflow-scrolling: touch;
+}
+
+.modal-body {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Add swipe hint for mobile */
+@media (max-width: 768px) {
+    .table-responsive::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 30px;
+        background: linear-gradient(to right, transparent, rgba(255,255,255,0.9));
+        pointer-events: none;
+        opacity: 0;
+        animation: swipeHint 1.5s ease-in-out infinite;
+    }
+
+    @keyframes swipeHint {
+        0%, 100% { opacity: 0; }
+        50% { opacity: 1; }
+    }
+}
+
+/* Action Buttons */
+.btn-action {
+    width: 35px;
+    height: 35px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.btn-action i {
+    font-size: 1.1rem;
+}
+
+/* View Button */
+.btn-view {
+    color: var(--primary-color);
+    border-color: #e9ecef;
+    background-color: #fff;
+}
+
+.btn-view:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* Adjudicate Button */
+.btn-adjudicate {
+    color: #8950fc;
+    border-color: #e9ecef;
+    background-color: #fff;
+}
+
+.btn-adjudicate:hover {
+    background-color: #8950fc;
+    border-color: #8950fc;
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* Action buttons container */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+/* Violation Types Styles */
+.violation-types {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.violation-type {
+    font-size: 0.9rem;
+    color: var(--text-dark);
+}
+
+.separator {
+    color: #9ca3af;
+    font-size: 0.8rem;
+}
+
+/* Adjust the violation type column width */
+.table th:nth-child(4), .table td:nth-child(4) { 
+    min-width: 300px;
+    max-width: 400px;
+    white-space: normal;
+}
+</style>
+
+<script>
+// Keep only the search functionality and tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Custom search functionality
+    const searchInput = document.getElementById('searchInput');
+    const tableRows = document.querySelectorAll('#adjudicationTable tbody tr');
+
+    searchInput.addEventListener('keyup', function() {
+        const searchTerm = this.value.toLowerCase();
+        
+        tableRows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(searchTerm) ? '' : 'none';
+        });
+    });
+});
+
+function showViolationDetail(violationId) {
+    const modalBody = document.querySelector('#violationDetailModal .modal-body');
+    const modal = new bootstrap.Modal(document.getElementById('violationDetailModal'));
+    
+    modalBody.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    `;
+    
+    modal.show();
+
+    fetch(`/violation/${violationId}/modal/`)
+        .then(response => response.text())
+        .then(html => {
+            modalBody.innerHTML = html;
+        })
+        .catch(error => {
+            modalBody.innerHTML = `
+                <div class="alert alert-danger">
+                    Error loading violation details: ${error.message}
+                </div>
+            `;
+        });
+}
+
+// Add touch scroll handling for modal
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('violationDetailModal');
+    
+    modal.addEventListener('shown.bs.modal', function() {
+        document.body.style.overflow = 'hidden';
+        document.body.style.position = 'fixed';
+        document.body.style.width = '100%';
+    });
+
+    modal.addEventListener('hidden.bs.modal', function() {
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.width = '';
+    });
+
+    // Handle modal scroll on iOS
+    if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+        modal.querySelector('.modal-body').addEventListener('touchmove', function(e) {
+            e.stopPropagation();
+        });
+    }
+});
+</script>
+
+{% include 'includes/pagination.html' %}
+{% endblock %} 

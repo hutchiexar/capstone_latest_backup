@@ -1,0 +1,295 @@
+{% extends 'user_portal/base_user.html' %}
+{% load static %}
+
+{% block title %}File Report - CTTMO User Portal{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <span class="material-icons me-3" style="font-size: 2.5rem; color: var(--primary-color);">
+                            report
+                        </span>
+                        <div>
+                            <h1 class="mb-1">File a Report</h1>
+                            <p class="text-muted mb-0">Submit a traffic-related report or inquiry</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Form -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data" class="report-form">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Report Type</label>
+                            <div class="report-type-grid">
+                                {% for type_code, type_label in report_types %}
+                                <div class="form-check report-type-option">
+                                    <input class="form-check-input" 
+                                           type="radio" 
+                                           name="type" 
+                                           id="type_{{ type_code }}" 
+                                           value="{{ type_code }}"
+                                           required>
+                                    <label class="form-check-label" for="type_{{ type_code }}">
+                                        <span class="material-icons">
+                                            {% if type_code == 'COMPLAINT' %}warning
+                                            {% elif type_code == 'SUGGESTION' %}lightbulb
+                                            {% elif type_code == 'INQUIRY' %}help
+                                            {% else %}gavel{% endif %}
+                                        </span>
+                                        <span class="type-label">{{ type_label }}</span>
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="subject" class="form-label">Subject</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="subject" 
+                                   name="subject" 
+                                   placeholder="Enter the subject of your report"
+                                   required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" 
+                                      id="description" 
+                                      name="description" 
+                                      rows="5" 
+                                      placeholder="Provide detailed information about your report"
+                                      required></textarea>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="location" class="form-label">Location</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="location" 
+                                       name="location" 
+                                       placeholder="Enter the location">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="incident_date" class="form-label">Incident Date</label>
+                                <input type="datetime-local" 
+                                       class="form-control" 
+                                       id="incident_date" 
+                                       name="incident_date">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="attachment" class="form-label">Attachment</label>
+                            <input type="file" 
+                                   class="form-control" 
+                                   id="attachment" 
+                                   name="attachment"
+                                   accept="image/*,.pdf,.doc,.docx">
+                            <div class="form-text">
+                                Supported formats: Images, PDF, Word documents (Max size: 5MB)
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-outline-secondary" onclick="history.back()">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <span class="material-icons me-2">send</span>
+                                Submit Report
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Guidelines Sidebar -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-4">Reporting Guidelines</h5>
+                    <div class="guidelines-list">
+                        <div class="guideline-item">
+                            <span class="material-icons">check_circle</span>
+                            <p>Be specific and provide accurate details about the incident</p>
+                        </div>
+                        <div class="guideline-item">
+                            <span class="material-icons">schedule</span>
+                            <p>Submit reports as soon as possible after the incident</p>
+                        </div>
+                        <div class="guideline-item">
+                            <span class="material-icons">image</span>
+                            <p>Include relevant photos or documents if available</p>
+                        </div>
+                        <div class="guideline-item">
+                            <span class="material-icons">location_on</span>
+                            <p>Provide exact location details for better assistance</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-4">Need Help?</h5>
+                    <p class="text-muted mb-4">If you need assistance with filing a report, please contact our support team:</p>
+                    <div class="contact-info">
+                        <div class="contact-item">
+                            <span class="material-icons">phone</span>
+                            <p>+63 123 456 7890</p>
+                        </div>
+                        <div class="contact-item">
+                            <span class="material-icons">email</span>
+                            <p>support@cttmo.bayawan.gov.ph</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .report-type-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 0.5rem;
+    }
+
+    .report-type-option {
+        position: relative;
+        padding: 0;
+        margin: 0;
+    }
+
+    .report-type-option input {
+        position: absolute;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+    }
+
+    .report-type-option label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+        background-color: #f8f9fa;
+        border: 2px solid #e9ecef;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .report-type-option input:checked + label {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+    }
+
+    .report-type-option label .material-icons {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .report-type-option input:checked + label .material-icons {
+        color: white;
+    }
+
+    .type-label {
+        font-weight: 500;
+        text-align: center;
+    }
+
+    .guidelines-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .guideline-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .guideline-item .material-icons {
+        color: var(--primary-color);
+        font-size: 1.25rem;
+    }
+
+    .guideline-item p {
+        margin: 0;
+        color: var(--text-dark);
+    }
+
+    .contact-info {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .contact-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .contact-item .material-icons {
+        color: var(--primary-color);
+    }
+
+    .contact-item p {
+        margin: 0;
+        color: var(--text-dark);
+    }
+
+    @media (max-width: 768px) {
+        .report-type-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // File size validation
+    const attachmentInput = document.getElementById('attachment');
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+
+    attachmentInput.addEventListener('change', function() {
+        if (this.files[0] && this.files[0].size > maxSize) {
+            alert('File size exceeds 5MB limit. Please choose a smaller file.');
+            this.value = '';
+        }
+    });
+
+    // Set max date for incident date
+    const incidentDateInput = document.getElementById('incident_date');
+    const today = new Date();
+    today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+    incidentDateInput.max = today.toISOString().slice(0, 16);
+});
+</script>
+{% endblock %} 

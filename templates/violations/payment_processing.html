@@ -1,0 +1,396 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <span class="material-icons me-2" style="color: var(--primary-color)">payments</span>
+                    <h4 class="mb-0">Payment Processing</h4>
+                </div>
+                <div class="d-flex align-items-center">
+                    {% include 'includes/search_form.html' with placeholder="Search by name, license number..." %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Card -->
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-body p-4">
+            <!-- Table Container -->
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="paymentProcessingTable">
+                    <thead>
+                        <tr>
+                            <th>Case ID</th>
+                            <th>Date Filed</th>
+                            <th>Violator</th>
+                            <th>Violation Type</th>
+                            <th>Fine Amount</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for violation in violations %}
+                        <tr>
+                            <td>{{ violation.id }}</td>
+                            <td>{{ violation.violation_date|date:"M d, Y" }}</td>
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <span class="fw-medium">{{ violation.violator.first_name }} {{ violation.violator.last_name }}</span>
+                                    <small class="text-muted">{{ violation.violator.license_number }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="violation-types">
+                                    {% for type in violation.get_violation_types %}
+                                    <span class="violation-type">{{ type }}</span>
+                                    {% if not forloop.last %}<span class="separator">•</span>{% endif %}
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td>₱{{ violation.fine_amount }}</td>
+                            <td>
+                                {% include 'includes/status_badge.html' with status=violation.status display_text=violation.get_status_display %}
+                            </td>
+                            <td class="text-end">
+                                <div class="action-buttons">
+                                    <button type="button" 
+                                            class="btn btn-action btn-view" 
+                                            data-bs-toggle="tooltip" 
+                                            data-bs-placement="top" 
+                                            title="View Details"
+                                            onclick="showViolationDetail({{ violation.id }})">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <a href="{% url 'record_payment' violation.id %}" 
+                                       class="btn btn-action btn-payment"
+                                       data-bs-toggle="tooltip"
+                                       data-bs-placement="top"
+                                       title="Record Payment">
+                                        <i class="fas fa-money-bill-wave"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                <div class="text-muted">
+                                    <span class="material-icons d-block mb-2" style="font-size: 2.5rem; opacity: 0.5;">search_off</span>
+                                    <p class="mb-0">No payments pending</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Violation Detail Modal -->
+<div class="modal fade" id="violationDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Violation Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Content will be loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Record Payment</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="paymentForm">
+                    <div class="mb-3">
+                        <label for="receiptNumber" class="form-label">Receipt Number</label>
+                        <input type="text" class="form-control" id="receiptNumber" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="paymentAmount" class="form-label">Payment Amount</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₱</span>
+                            <input type="number" class="form-control" id="paymentAmount" required min="0" step="0.01">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="paymentRemarks" class="form-label">Remarks</label>
+                        <textarea class="form-control" id="paymentRemarks" rows="2"></textarea>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">Submit Payment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Table Styles */
+.table-responsive {
+    border-radius: 8px;
+    overflow: hidden;
+    max-height: calc(100vh - 330px);
+    overflow-y: auto;
+}
+
+/* Custom scrollbar styles */
+.table-responsive::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+/* Keep table header visible */
+.table thead th {
+    position: sticky;
+    top: 0;
+    background-color: #f8f9fa;
+    z-index: 1;
+}
+
+/* Ensure proper spacing */
+.card-body {
+    padding: 1rem !important;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+/* Table header shadow for visual separation */
+.table thead th {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.table {
+    font-size: 0.95rem;
+    min-width: 800px;
+}
+
+.table th {
+    font-weight: 600;
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #e9ecef;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+/* Action Buttons */
+.btn-action {
+    width: 35px;
+    height: 35px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.btn-action i {
+    font-size: 1.1rem;
+}
+
+/* View Button */
+.btn-view {
+    color: var(--primary-color);
+    border-color: #e9ecef;
+    background-color: #fff;
+}
+
+.btn-view:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+/* Payment Button */
+.btn-payment {
+    color: #0bb783;
+    border-color: #e9ecef;
+    background-color: #fff;
+}
+
+.btn-payment:hover {
+    background-color: #0bb783;
+    border-color: #0bb783;
+    color: white;
+}
+
+/* Action buttons container */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+/* Violation Types Styles */
+.violation-types {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.violation-type {
+    font-size: 0.9rem;
+    color: var(--text-dark);
+}
+
+.separator {
+    color: #9ca3af;
+    font-size: 0.8rem;
+}
+
+/* Pagination container */
+.pagination-container {
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    background: #fff;
+    border-top: 1px solid #e9ecef;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Custom search functionality
+    const searchInput = document.getElementById('searchInput');
+    const tableRows = document.querySelectorAll('#paymentProcessingTable tbody tr');
+
+    searchInput.addEventListener('keyup', function() {
+        const searchTerm = this.value.toLowerCase();
+        
+        tableRows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(searchTerm) ? '' : 'none';
+        });
+    });
+});
+
+function showViolationDetail(violationId) {
+    const modalBody = document.querySelector('#violationDetailModal .modal-body');
+    const modal = new bootstrap.Modal(document.getElementById('violationDetailModal'));
+    
+    modalBody.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    `;
+    
+    modal.show();
+
+    fetch(`/violation/${violationId}/modal/`)
+        .then(response => response.text())
+        .then(html => {
+            modalBody.innerHTML = html;
+        })
+        .catch(error => {
+            modalBody.innerHTML = `
+                <div class="alert alert-danger">
+                    Error loading violation details: ${error.message}
+                </div>
+            `;
+        });
+}
+
+let currentViolationId = null;
+
+function showPaymentModal(violationId) {
+    currentViolationId = violationId;
+    const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
+    modal.show();
+}
+
+document.getElementById('paymentForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const data = {
+        receipt_number: document.getElementById('receiptNumber').value,
+        payment_amount: document.getElementById('paymentAmount').value,
+        remarks: document.getElementById('paymentRemarks').value
+    };
+    
+    fetch(`/violation/${currentViolationId}/record-payment/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error recording payment: ' + error.message);
+    });
+    
+    bootstrap.Modal.getInstance(document.getElementById('paymentModal')).hide();
+});
+
+// Helper function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+
+{% include 'includes/pagination.html' %}
+{% endblock %} 

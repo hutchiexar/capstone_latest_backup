@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-header bg-white py-3">
+            <div class="d-flex align-items-center">
+                <span class="material-icons me-2" style="color: var(--primary-color)">person</span>
+                <h4 class="m-0">My Profile</h4>
+            </div>
+        </div>
+        
+        <div class="card-body p-4">
+            <div class="row g-4">
+                <!-- Left Column: Profile Picture and Role -->
+                <div class="col-lg-4">
+                    <div class="profile-card">
+                        <div class="profile-image-container mb-4">
+                            {% if user.userprofile.avatar %}
+                                <img src="{{ user.userprofile.avatar.url }}" class="profile-image" alt="Profile Picture">
+                            {% else %}
+                                <div class="default-avatar">
+                                    <span class="material-icons">account_circle</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- ID Card Style Section -->
+                        <div class="id-card">
+                            <div class="id-card-header mb-3">
+                                <div class="enforcer-id-label">Enforcer ID</div>
+                                <div class="enforcer-id-number">{{ user.userprofile.enforcer_id }}</div>
+                            </div>
+                            <div class="id-card-body">
+                                <label class="form-label">Role</label>
+                                <div class="role-display">
+                                    <span class="badge bg-primary">{{ user.userprofile.get_role_display }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="quick-actions mt-4">
+                            <div class="d-grid gap-2">
+                                <a href="{% url 'edit_profile' %}" class="btn btn-primary">
+                                    <span class="material-icons me-2">edit</span>Edit Profile
+                                </a>
+                                <a href="{% url 'activity_history' %}" class="btn btn-outline-secondary">
+                                    <span class="material-icons me-2">history</span>View Activity
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: User Information -->
+                <div class="col-lg-8">
+                    <div class="info-card">
+                        <!-- Personal Information -->
+                        <div class="section mb-4">
+                            <h5 class="section-title">Personal Information</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="info-item">
+                                        <label class="text-muted">First Name</label>
+                                        <p>{{ user.first_name }}</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="info-item">
+                                        <label class="text-muted">Last Name</label>
+                                        <p>{{ user.last_name }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contact Information -->
+                        <div class="section mb-4">
+                            <h5 class="section-title">Contact Information</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="info-item">
+                                        <label class="text-muted">Email</label>
+                                        <p>{{ user.email }}</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="info-item">
+                                        <label class="text-muted">Phone Number</label>
+                                        <p>{{ user.userprofile.phone_number }}</p>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="info-item">
+                                        <label class="text-muted">Address</label>
+                                        <p>{{ user.userprofile.address }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Role Permissions -->
+                        <div class="section">
+                            <h5 class="section-title">Role Permissions</h5>
+                            <div class="permissions-grid">
+                                {% for permission in user.userprofile.get_permissions %}
+                                <div class="permission-item">
+                                    <span class="material-icons text-success me-2">check_circle</span>
+                                    {{ permission }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.profile-card {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+}
+
+.profile-image-container {
+    width: 250px;
+    height: 250px;
+    margin: 0 auto 1rem;
+    position: relative;
+}
+
+.profile-image,
+.default-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #fff;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+}
+
+.default-avatar {
+    background-color: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.default-avatar .material-icons {
+    font-size: 150px;
+    color: #adb5bd;
+}
+
+.id-card {
+    background: linear-gradient(145deg, #f8f9fa, #ffffff);
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+}
+
+.id-card-header {
+    text-align: center;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.enforcer-id-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+.enforcer-id-number {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.id-card-body {
+    padding-top: 1rem;
+    text-align: center;
+}
+
+.role-display {
+    margin-top: 0.5rem;
+}
+
+.role-display .badge {
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+}
+
+.quick-actions .btn {
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.info-card {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    height: 100%;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+}
+
+.section-title {
+    color: var(--text-dark);
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.info-item {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    height: 100%;
+}
+
+.info-item label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+    display: block;
+}
+
+.info-item p {
+    margin: 0;
+    font-weight: 500;
+    color: var(--text-dark);
+}
+
+.permissions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+}
+
+.permission-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    font-size: 0.875rem;
+}
+
+@media (max-width: 992px) {
+    .profile-card {
+        margin-bottom: 2rem;
+    }
+}
+</style>
+
+<script>
+// Auto-dismiss alerts after 3 seconds
+document.addEventListener('DOMContentLoaded', function() {
+    const alerts = document.querySelectorAll('.alert');
+    alerts.forEach(alert => {
+        setTimeout(() => {
+            const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+            bsAlert.close();
+        }, 3000);
+    });
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Issue Violation Ticket</h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="ticketForm">
+                        {% csrf_token %}
+                        
+                        <!-- Violation Details -->
+                        <div class="mb-4">
+                            <h5>Violation Details</h5>
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <tr>
+                                        <th>Date/Time:</th>
+                                        <td>{{ violation.violation_date }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Location:</th>
+                                        <td>{{ violation.location }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Violation Type:</th>
+                                        <td>{{ violation.violation_type }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Fine Amount:</th>
+                                        <td>${{ violation.fine_amount }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Enforcer's Signature -->
+                        <div class="mb-4">
+                            <h5>Enforcer's Signature</h5>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="enforcerConfirm" required>
+                                <label class="form-check-label" for="enforcerConfirm">
+                                    I confirm this violation with ID: <input type="text" id="enforcerId" name="enforcer_id" 
+                                           class="form-control d-inline-block w-auto mx-2" required>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Violator's Signature -->
+                        <div class="mb-4">
+                            <h5>Violator's Signature</h5>
+                            <div class="border rounded p-3">
+                                <canvas id="signatureCanvas" class="border w-100" height="200"></canvas>
+                                <div class="mt-2">
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="clearSignature()">Clear Signature</button>
+                                </div>
+                                <input type="hidden" name="signature_data" id="signatureData">
+                            </div>
+                        </div>
+
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary">Issue Ticket</button>
+                            <a href="{% url 'violation_detail' violation.id %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let canvas = document.getElementById('signatureCanvas');
+let ctx = canvas.getContext('2d');
+let drawing = false;
+let points = [];
+
+// Set canvas size based on container
+function resizeCanvas() {
+    let container = canvas.parentElement;
+    canvas.width = container.offsetWidth - 20;
+    canvas.height = 200;
+}
+
+// Initialize
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+// Touch and mouse event handlers
+function startDrawing(e) {
+    drawing = true;
+    points = [];
+    addPoint(e);
+}
+
+function stopDrawing() {
+    if (drawing) {
+        drawing = false;
+        saveSignature();
+    }
+}
+
+function draw(e) {
+    if (!drawing) return;
+    addPoint(e);
+    
+    if (points.length < 2) return;
+    
+    ctx.beginPath();
+    ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+    ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+    ctx.stroke();
+}
+
+function addPoint(e) {
+    let rect = canvas.getBoundingClientRect();
+    let x, y;
+    
+    if (e.type.includes('touch')) {
+        x = e.touches[0].clientX - rect.left;
+        y = e.touches[0].clientY - rect.top;
+    } else {
+        x = e.clientX - rect.left;
+        y = e.clientY - rect.top;
+    }
+    
+    points.push({x, y});
+}
+
+function clearSignature() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    points = [];
+}
+
+function saveSignature() {
+    let signatureData = canvas.toDataURL();
+    document.getElementById('signatureData').value = signatureData;
+}
+
+// Event listeners
+canvas.addEventListener('mousedown', startDrawing);
+canvas.addEventListener('mousemove', draw);
+canvas.addEventListener('mouseup', stopDrawing);
+canvas.addEventListener('mouseleave', stopDrawing);
+
+// Touch events
+canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    startDrawing(e);
+});
+canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    draw(e);
+});
+canvas.addEventListener('touchend', stopDrawing);
+
+// Style the signature line
+ctx.strokeStyle = '#000';
+ctx.lineWidth = 2;
+ctx.lineCap = 'round';
+
+// Form submission
+document.getElementById('ticketForm').addEventListener('submit', function(e) {
+    if (!document.getElementById('enforcerConfirm').checked) {
+        e.preventDefault();
+        alert('Please confirm the violation with your enforcer ID');
+        return;
+    }
+    if (points.length === 0) {
+        e.preventDefault();
+        alert('Please provide violator\'s signature');
+        return;
+    }
+    saveSignature();
+});
+
+// Add error handling for canvas initialization
+try {
+    let canvas = document.getElementById('signatureCanvas');
+    let ctx = canvas.getContext('2d');
+    if (!ctx) {
+        throw new Error('Canvas context not supported');
+    }
+} catch (error) {
+    console.error('Error initializing canvas:', error);
+    alert('Your browser does not support canvas signatures. Please try a different browser.');
+}
+
+// Add validation for enforcer ID format
+document.getElementById('enforcerId').addEventListener('input', function(e) {
+    const enforcerIdRegex = /^[A-Z]{2}\d{4}$/;
+    if (!enforcerIdRegex.test(this.value)) {
+        this.setCustomValidity('Enforcer ID must be in format: XX0000');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+</script>
+{% endblock %}

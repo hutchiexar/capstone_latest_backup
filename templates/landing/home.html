@@ -1,0 +1,383 @@
+{% extends 'base_landing.html' %}
+{% load static %}
+
+{% block title %}Welcome to CTTMO Bayawan City{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="hero-title">Welcome to CTTMO - Bayawan City</h1>
+                <p class="hero-subtitle">Ensuring Safer and Smarter Roads</p>
+                <p class="hero-text">Your partner in creating an organized, efficient, and safe traffic system for our growing city.</p>
+                <div class="hero-buttons">
+                    <a href="#services" class="btn btn-primary btn-lg me-3">Learn More</a>
+                    <a href="{% url 'login' %}" class="btn btn-outline-primary btn-lg">Report Traffic Concern</a>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="hero-image">
+                    <img src="{% static 'admin/img/hero-image.jpg' %}" alt="Bayawan City Traffic" class="img-fluid rounded-4 shadow-lg">
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Key Features Section -->
+<section class="features" id="services">
+    <div class="container">
+        <h2 class="section-title text-center">Our Services</h2>
+        <div class="row g-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="feature-card">
+                    <span class="material-icons">traffic</span>
+                    <h3>Traffic Regulation</h3>
+                    <p>Professional management of traffic flow and enforcement of traffic rules for safer roads.</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="feature-card">
+                    <span class="material-icons">school</span>
+                    <h3>Road Safety Education</h3>
+                    <p>Comprehensive programs to educate the public about road safety and traffic regulations.</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="feature-card">
+                    <span class="material-icons">report_problem</span>
+                    <h3>Violation Reporting</h3>
+                    <p>Efficient system for reporting and managing traffic violations and concerns.</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="feature-card">
+                    <span class="material-icons">route</span>
+                    <h3>Transport Management</h3>
+                    <p>Strategic planning and implementation of transport systems for better mobility.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- About Us Section -->
+<section class="about-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <img src="{% static 'admin/img/office-building.jpg' %}" alt="CTTMO Office" class="img-fluid rounded-4 shadow-lg">
+            </div>
+            <div class="col-lg-6">
+                <h2 class="section-title">About CTTMO</h2>
+                <p class="section-text">The City Traffic and Transportation Management Office (CTTMO) of Bayawan City is dedicated to providing efficient and effective traffic management services. We work tirelessly to ensure the safety and convenience of all road users through professional enforcement, modern technology, and community engagement.</p>
+                <div class="mission-vision">
+                    <div class="mission mb-4">
+                        <h4><span class="material-icons">stars</span> Our Mission</h4>
+                        <p>To create and maintain a safe, efficient, and organized traffic system that serves the needs of our growing community.</p>
+                    </div>
+                    <div class="vision">
+                        <h4><span class="material-icons">visibility</span> Our Vision</h4>
+                        <p>To be the leading traffic management office in the region, setting standards for excellence in public service and road safety.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- News and Updates Section -->
+<section class="news-section">
+    <div class="container">
+        <h2 class="section-title text-center">Latest Updates</h2>
+        <div class="row g-4">
+            <div class="col-lg-4 col-md-6">
+                <div class="news-card">
+                    <img src="{% static 'admin/img/news1.jpg' %}" alt="Traffic Update" class="card-img-top">
+                    <div class="card-body">
+                        <h5 class="card-title">New Traffic Signal System</h5>
+                        <p class="card-text">Implementation of smart traffic signals at major intersections to improve traffic flow.</p>
+                        <a href="#" class="btn btn-link">Read More →</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="news-card">
+                    <img src="{% static 'admin/img/news2.jpg' %}" alt="Safety Campaign" class="card-img-top">
+                    <div class="card-body">
+                        <h5 class="card-title">Road Safety Campaign</h5>
+                        <p class="card-text">Launching our annual road safety awareness campaign for schools and communities.</p>
+                        <a href="#" class="btn btn-link">Read More →</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="news-card">
+                    <img src="{% static 'admin/img/news3.jpg' %}" alt="Traffic Advisory" class="card-img-top">
+                    <div class="card-body">
+                        <h5 class="card-title">Traffic Advisory</h5>
+                        <p class="card-text">Updated guidelines for public transportation and traffic regulations.</p>
+                        <a href="#" class="btn btn-link">Read More →</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Contact Section -->
+<section class="contact-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6">
+                <h2 class="section-title">Contact Us</h2>
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <span class="material-icons">location_on</span>
+                        <div>
+                            <h5>Our Office</h5>
+                            <p>123 Main Street, Bayawan City<br>Negros Oriental, Philippines</p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <span class="material-icons">schedule</span>
+                        <div>
+                            <h5>Office Hours</h5>
+                            <p>Monday - Friday: 8:00 AM - 5:00 PM<br>Saturday: 8:00 AM - 12:00 PM</p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <span class="material-icons">phone</span>
+                        <div>
+                            <h5>Phone</h5>
+                            <p>+63 123 456 7890</p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <span class="material-icons">email</span>
+                        <div>
+                            <h5>Email</h5>
+                            <p>info@cttmo.bayawan.gov.ph</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="map-container">
+                    <iframe
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3935.5455669040396!2d122.80000001441091!3d9.362700793284527!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x33ab5244580012d7%3A0x7cebd1c12306dfe8!2sBayawan%20City%20Hall!5e0!3m2!1sen!2sph!4v1645437891234!5m2!1sen!2sph"
+                        width="100%"
+                        height="450"
+                        style="border:0;"
+                        allowfullscreen=""
+                        loading="lazy">
+                    </iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    /* Hero Section */
+    .hero {
+        padding: 6rem 0;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hero-title {
+        font-size: 3.5rem;
+        font-weight: 800;
+        color: var(--primary-color);
+        margin-bottom: 1.5rem;
+        line-height: 1.2;
+    }
+
+    .hero-subtitle {
+        font-size: 1.5rem;
+        color: var(--secondary-color);
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+
+    .hero-text {
+        font-size: 1.1rem;
+        color: var(--text-light);
+        margin-bottom: 2rem;
+    }
+
+    .hero-image img {
+        border-radius: 1rem;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Features Section */
+    .features {
+        padding: 5rem 0;
+        background-color: #fff;
+    }
+
+    .feature-card {
+        text-align: center;
+        padding: 2.5rem 1.5rem;
+        background: #fff;
+        border-radius: 1rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        height: 100%;
+        transition: all 0.3s ease;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .feature-card .material-icons {
+        font-size: 3rem;
+        color: var(--primary-color);
+        margin-bottom: 1.5rem;
+    }
+
+    .feature-card h3 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 1rem;
+    }
+
+    .feature-card p {
+        color: var(--text-light);
+        margin-bottom: 0;
+    }
+
+    /* About Section */
+    .about-section {
+        padding: 5rem 0;
+        background-color: #f8f9fa;
+    }
+
+    .mission-vision h4 {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+    }
+
+    .mission-vision .material-icons {
+        font-size: 1.5rem;
+        color: var(--accent-color);
+    }
+
+    /* News Section */
+    .news-section {
+        padding: 5rem 0;
+        background-color: #fff;
+    }
+
+    .news-card {
+        background: #fff;
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        height: 100%;
+        transition: all 0.3s ease;
+    }
+
+    .news-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .news-card img {
+        height: 200px;
+        object-fit: cover;
+    }
+
+    .news-card .card-body {
+        padding: 1.5rem;
+    }
+
+    .news-card .card-title {
+        color: var(--text-dark);
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    .news-card .btn-link {
+        color: var(--primary-color);
+        padding: 0;
+        text-decoration: none;
+    }
+
+    .news-card .btn-link:hover {
+        text-decoration: underline;
+    }
+
+    /* Contact Section */
+    .contact-section {
+        padding: 5rem 0;
+        background-color: #f8f9fa;
+    }
+
+    .contact-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .contact-item .material-icons {
+        font-size: 2rem;
+        color: var(--primary-color);
+    }
+
+    .contact-item h5 {
+        color: var(--text-dark);
+        margin-bottom: 0.5rem;
+    }
+
+    .contact-item p {
+        color: var(--text-light);
+        margin-bottom: 0;
+    }
+
+    .map-container {
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 991.98px) {
+        .hero {
+            padding: 4rem 0;
+        }
+
+        .hero-title {
+            font-size: 2.5rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+        }
+
+        .hero-image {
+            margin-top: 2rem;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .feature-card,
+        .news-card {
+            margin-bottom: 1.5rem;
+        }
+
+        .contact-info {
+            margin-bottom: 2rem;
+        }
+    }
+</style>
+{% endblock %} 

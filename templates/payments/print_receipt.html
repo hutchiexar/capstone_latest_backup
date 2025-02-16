@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Receipt #{{ violation.receipt_number }}</title>
+    <style>
+        @page {
+            size: 80mm 297mm;
+            margin: 0;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 10mm;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        .receipt-header {
+            text-align: center;
+            margin-bottom: 5mm;
+        }
+        
+        .receipt-header h1 {
+            font-size: 16px;
+            margin: 0 0 2mm 0;
+        }
+        
+        .receipt-header p {
+            margin: 0;
+            font-size: 12px;
+        }
+        
+        .receipt-details {
+            margin: 5mm 0;
+            border-top: 1px dashed #000;
+            border-bottom: 1px dashed #000;
+            padding: 3mm 0;
+        }
+        
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 2mm 0;
+        }
+        
+        .detail-label {
+            font-weight: bold;
+        }
+        
+        .amount {
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 5mm;
+            font-size: 10px;
+        }
+        
+        @media print {
+            body {
+                width: 80mm;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt-header">
+        <h1>CTTMO TVMS</h1>
+        <p>City Transport and Traffic Management Office</p>
+        <p>Traffic Violation Management System</p>
+    </div>
+    
+    <div class="receipt-details">
+        <div class="detail-row">
+            <span class="detail-label">Receipt No:</span>
+            <span>{{ violation.receipt_number }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Date:</span>
+            <span>{{ violation.receipt_date|date:"F d, Y" }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Violation #:</span>
+            <span>{{ violation.id }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Violator:</span>
+            <span>{{ violation.violator.get_full_name }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">License No:</span>
+            <span>{{ violation.violator.license_number }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Violation Type:</span>
+            <span>{{ violation.violation_type }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Amount Paid:</span>
+            <span class="amount">₱{{ violation.fine_amount|floatformat:2 }}</span>
+        </div>
+    </div>
+    
+    <div class="detail-row">
+        <span class="detail-label">Enforcer:</span>
+        <span>{{ violation.enforcer.get_full_name }}</span>
+    </div>
+    
+    <div class="detail-row">
+        <span class="detail-label">Enforcer ID:</span>
+        <span>{{ violation.enforcer.userprofile.enforcer_id }}</span>
+    </div>
+    
+    <div class="footer">
+        <p>This is your official receipt. Please keep for your records.</p>
+        <p>Thank you for your payment.</p>
+    </div>
+    
+    <script>
+        window.onload = function() {
+            window.print();
+        }
+    </script>
+</body>
+</html> 

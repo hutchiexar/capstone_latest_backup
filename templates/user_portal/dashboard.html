@@ -1,0 +1,213 @@
+{% extends 'user_portal/base_user.html' %}
+{% load static %}
+
+{% block title %}Dashboard - CTTMO User Portal{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Welcome Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="welcome-icon me-4">
+                            <span class="material-icons" style="font-size: 3rem; color: var(--primary-color);">
+                                waving_hand
+                            </span>
+                        </div>
+                        <div>
+                            <h1 class="mb-2">Welcome, {{ request.user.get_full_name }}</h1>
+                            <p class="text-muted mb-0">Here's an overview of your traffic records and activities</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="material-icons me-2" style="color: #dc3545;">gavel</span>
+                        <h5 class="card-title mb-0">Active Violations</h5>
+                    </div>
+                    <h2 class="mb-0">{{ active_violations_count }}</h2>
+                    <p class="text-muted small mb-0">Pending or unpaid violations</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="material-icons me-2" style="color: #198754;">payments</span>
+                        <h5 class="card-title mb-0">Total Paid</h5>
+                    </div>
+                    <h2 class="mb-0">₱{{ total_paid }}</h2>
+                    <p class="text-muted small mb-0">Amount paid for violations</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="material-icons me-2" style="color: #ffc107;">warning</span>
+                        <h5 class="card-title mb-0">Due Soon</h5>
+                    </div>
+                    <h2 class="mb-0">{{ due_soon_count }}</h2>
+                    <p class="text-muted small mb-0">Violations due within 7 days</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Violations -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Recent Violations</h5>
+                        <a href="{% url 'user_portal:user_violations' %}" class="btn btn-primary btn-sm">View All</a>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="ps-4">Date</th>
+                                    <th>Violation Type</th>
+                                    <th>Location</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th class="text-end pe-4">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for violation in recent_violations %}
+                                <tr>
+                                    <td class="ps-4">{{ violation.violation_date|date:"M d, Y" }}</td>
+                                    <td>{{ violation.violation_type }}</td>
+                                    <td>{{ violation.location }}</td>
+                                    <td>₱{{ violation.fine_amount }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ violation.get_status_color }}">
+                                            {{ violation.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <a href="{% url 'user_portal:violation_detail' violation.id %}" class="btn btn-sm btn-outline-primary">
+                                            View Details
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4">
+                                        <div class="text-muted">
+                                            <span class="material-icons d-block mb-2" style="font-size: 2rem;">check_circle</span>
+                                            <p class="mb-0">No recent violations found</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-4">Quick Actions</h5>
+                    <div class="d-grid gap-3">
+                        <a href="{% url 'user_portal:file_report' %}" class="btn btn-outline-primary">
+                            <span class="material-icons me-2">report</span>
+                            File a Report
+                        </a>
+                        <a href="{% url 'user_portal:user_profile' %}" class="btn btn-outline-primary">
+                            <span class="material-icons me-2">person</span>
+                            Update Profile
+                        </a>
+                        <a href="#" class="btn btn-outline-primary">
+                            <span class="material-icons me-2">help</span>
+                            Get Help
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-4">Recent Notifications</h5>
+                    <div class="notifications-list">
+                        {% for notification in recent_notifications %}
+                        <div class="notification-item d-flex align-items-start mb-3">
+                            <span class="material-icons me-3" style="color: {{ notification.get_icon_color }}">
+                                {{ notification.get_icon }}
+                            </span>
+                            <div>
+                                <p class="mb-1">{{ notification.message }}</p>
+                                <small class="text-muted">{{ notification.created_at|timesince }} ago</small>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center text-muted py-4">
+                            <span class="material-icons d-block mb-2" style="font-size: 2rem;">notifications_none</span>
+                            <p class="mb-0">No new notifications</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .welcome-icon {
+        width: 64px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 16px;
+        background-color: var(--bg-light);
+    }
+
+    .card {
+        border-radius: 1rem;
+        transition: transform 0.2s ease;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+    }
+
+    .notifications-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .notification-item:last-child {
+        margin-bottom: 0 !important;
+    }
+
+    .badge {
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+    }
+</style>
+{% endblock %} 

@@ -1,0 +1,226 @@
+{% extends 'user_portal/base_user.html' %}
+{% load static %}
+
+{% block title %}My Violations - CTTMO User Portal{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <span class="material-icons me-3" style="font-size: 2.5rem; color: var(--primary-color);">
+                                gavel
+                            </span>
+                            <div>
+                                <h1 class="mb-1">My Violations</h1>
+                                <p class="text-muted mb-0">View and manage your traffic violations</p>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <div class="dropdown">
+                                <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <span class="material-icons me-2">filter_list</span>
+                                    {% if current_status %}
+                                        {{ current_status|title }}
+                                    {% else %}
+                                        All Status
+                                    {% endif %}
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a class="dropdown-item {% if not current_status %}active{% endif %}" href="{% url 'user_portal:user_violations' %}">
+                                            All Status
+                                        </a>
+                                    </li>
+                                    {% for status_code, status_label in status_choices %}
+                                    <li>
+                                        <a class="dropdown-item {% if current_status == status_code %}active{% endif %}" 
+                                           href="{% url 'user_portal:user_violations' %}?status={{ status_code }}">
+                                            {{ status_label }}
+                                        </a>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            <form class="search-form" method="get">
+                                <div class="input-group">
+                                    <input type="text" 
+                                           class="form-control" 
+                                           placeholder="Search violations..." 
+                                           name="search" 
+                                           value="{{ request.GET.search }}">
+                                    <button class="btn btn-primary" type="submit">
+                                        <span class="material-icons">search</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Violations List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="ps-4">Date</th>
+                                    <th>Violation Type</th>
+                                    <th>Location</th>
+                                    <th>Amount</th>
+                                    <th>Due Date</th>
+                                    <th>Status</th>
+                                    <th class="text-end pe-4">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for violation in violations %}
+                                <tr>
+                                    <td class="ps-4">{{ violation.violation_date|date:"M d, Y" }}</td>
+                                    <td>{{ violation.violation_type }}</td>
+                                    <td>{{ violation.location }}</td>
+                                    <td>₱{{ violation.fine_amount }}</td>
+                                    <td>{{ violation.payment_due_date|date:"M d, Y" }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ violation.get_status_color }}">
+                                            {{ violation.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <a href="{% url 'user_portal:violation_detail' violation.id %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            View Details
+                                        </a>
+                                        {% if violation.status == 'APPROVED' %}
+                                        <a href="{% url 'process_payment' violation.id %}" 
+                                           class="btn btn-sm btn-success ms-2">
+                                            Pay Now
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        <div class="text-muted">
+                                            <span class="material-icons d-block mb-2" style="font-size: 2rem;">check_circle</span>
+                                            <p class="mb-0">No violations found</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if violations.has_other_pages %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <nav>
+                <ul class="pagination justify-content-center">
+                    {% if violations.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ violations.previous_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                            Previous
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Previous</span>
+                    </li>
+                    {% endif %}
+
+                    {% for num in violations.paginator.page_range %}
+                    <li class="page-item {% if violations.number == num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}{% if current_status %}&status={{ current_status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                            {{ num }}
+                        </a>
+                    </li>
+                    {% endfor %}
+
+                    {% if violations.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ violations.next_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                            Next
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Next</span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .search-form .form-control {
+        border-right: none;
+        padding-right: 0;
+    }
+
+    .search-form .btn {
+        border-left: none;
+        padding-left: 1rem;
+    }
+
+    .badge {
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+    }
+
+    .dropdown-menu {
+        border: none;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border-radius: 0.5rem;
+        padding: 0.5rem;
+    }
+
+    .dropdown-item {
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+    }
+
+    .dropdown-item.active {
+        background-color: var(--primary-color);
+        color: white;
+    }
+
+    .page-link {
+        border: none;
+        padding: 0.5rem 1rem;
+        color: var(--primary-color);
+        border-radius: 0.25rem;
+        margin: 0 0.25rem;
+    }
+
+    .page-item.active .page-link {
+        background-color: var(--primary-color);
+        color: white;
+    }
+
+    .page-item.disabled .page-link {
+        background-color: #f8f9fa;
+        color: #6c757d;
+    }
+</style>
+{% endblock %} 

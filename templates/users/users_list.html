@@ -1,0 +1,876 @@
+    {% extends 'base.html' %}
+
+    {% block content %}
+    <div class="container-fluid">
+        <!-- Header Section -->
+        <div class="card shadow-sm border-0 rounded-3">
+            <div class="card-body">
+                <div class="header-section">
+                    <div class="header-title">
+                        <div class="icon-circle bg-primary text-white">
+                            <span class="material-icons">manage_accounts</span>
+                        </div>
+                        <div>
+                            <h4 class="mb-0">User Management</h4>
+                            <p class="text-muted mb-0 small">Total Users: {{ user_profiles.count }}</p>
+                        </div>
+                    </div>
+                    {% if user.userprofile.role in 'ADMIN,SUPERVISOR' %}
+                    <div class="header-actions">
+                        <a href="{% url 'create_user' %}" class="btn btn-primary">
+                            <span class="material-icons">person_add</span>
+                            <span class="d-none d-sm-inline">Create User</span>
+                            <span class="d-inline d-sm-none">Add</span>
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Search Form -->
+                <form method="get" class="search-form mb-1">
+                    <div class="col-md-4">
+                        <div class="search-input">
+                            <span class="material-icons">search</span>
+                            <input type="text" 
+                                name="search" 
+                                id="userSearch"
+                                class="form-control" 
+                                placeholder="Search by name, email, or ID..."
+                                value="{{ request.GET.search|default:'' }}">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="search-input">
+                            <span class="material-icons">badge</span>
+                            <select name="role" class="form-select">
+                                <option value="">All Roles</option>
+                                <option value="ADMIN" {% if request.GET.role == 'ADMIN' %}selected{% endif %}>Admin</option>
+                                <option value="ENFORCER" {% if request.GET.role == 'ENFORCER' %}selected{% endif %}>Enforcer</option>
+                                <option value="SUPERVISOR" {% if request.GET.role == 'SUPERVISOR' %}selected{% endif %}>Supervisor</option>
+                                <option value="TREASURER" {% if request.GET.role == 'TREASURER' %}selected{% endif %}>Treasurer</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="search-input">
+                            <span class="material-icons">check_circle</span>
+                            <select name="status" class="form-select">
+                                <option value="">All Status</option>
+                                <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                                <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-primary px-5">
+                            <span class="material-icons">search</span>
+                            <span class="d-none d-sm-inline ms-1">Search</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Main Content Card -->
+        <div class="card shadow-sm border-0 rounded-3">
+            <div class="card-body p-0">
+                <!-- Table Container -->
+                <div class="table-responsive">
+                    <table class="table table-system table-hover align-middle mb-0" id="usersTable">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="border-0 ps-4">User</th>
+                                <th class="border-0">Role</th>
+                                <th class="border-0">Status</th>
+                                <th class="border-0">Last Login</th>
+                                <th class="border-0 text-end pe-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in user_profiles %}
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="table-profile">
+                                        <div class="avatar-container">
+                                            {% if user.avatar %}
+                                            <img src="{{ user.avatar.url }}" alt="{{ user.user.get_full_name }}" class="rounded-circle">
+                                            {% else %}
+                                            <div class="avatar-placeholder">
+                                                {{ user.user.get_full_name|make_list|first|upper }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="user-info-container">
+                                            <h6 class="mb-0">{{ user.user.get_full_name }}</h6>
+                                            <div class="small text-muted d-flex align-items-center">
+                                                <span class="material-icons me-1" style="font-size: 0.9rem;">badge</span>
+                                                {{ user.enforcer_id }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="role-badge role-{{ user.role|lower }}">
+                                        {{ user.get_role_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="status-badge status-{{ user.user.is_active|yesno:'active,inactive' }}">
+                                        <span class="status-dot"></span>
+                                        {{ user.user.is_active|yesno:'Active,Inactive' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="small text-muted">
+                                        {% if user.user.last_login %}
+                                        {{ user.user.last_login|date:"M d, Y H:i" }}
+                                        {% else %}
+                                        Never logged in
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <div class="action-buttons">
+                                        <button type="button" 
+                                                class="btn btn-action btn-view"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#userDetailModal"
+                                                data-user-id="{{ user.id }}"
+                                                title="View Details">
+                                            <span class="material-icons">visibility</span>
+                                        </button>
+                                        <a href="{% url 'edit_user' user.id %}" 
+                                        class="btn btn-action btn-edit"
+                                        title="Edit User">
+                                            <span class="material-icons">edit</span>
+                                        </a>
+                                        {% if user.user.username != request.user.username %}
+                                        <button type="button"
+                                                class="btn btn-action btn-toggle-status"
+                                                onclick="toggleUserStatus({{ user.id }}, '{{ user.user.is_active|yesno:'deactivate,activate' }}')"
+                                                title="{{ user.user.is_active|yesno:'Deactivate,Activate' }} User">
+                                            <span class="material-icons">{{ user.user.is_active|yesno:'block,check_circle' }}</span>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-5">
+                                    <div class="text-muted">
+                                        <span class="material-icons d-block mb-3" style="font-size: 3rem; opacity: 0.5;">person_search</span>
+                                        <h6 class="mb-1">No Users Found</h6>
+                                        <p class="mb-0 small">Try adjusting your search criteria</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if user_profiles %}
+                <div class="pagination-container">
+                    {% include 'includes/pagination.html' %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- User Detail Modal -->
+    <div class="modal fade" id="userDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header border-0 bg-light">
+                    <h5 class="modal-title">User Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0"></div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+    /* Add these new styles at the beginning of your style section */
+    .icon-circle {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .icon-circle .material-icons {
+        font-size: 24px;
+    }
+
+    .search-input {
+        position: relative;
+        width: 100%;
+    }
+
+    .search-input .material-icons {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6b7280;
+        font-size: 20px;
+        z-index: 1;
+    }
+
+    .search-input .form-control,
+    .search-input .form-select {
+        padding-left: 40px;
+        height: 42px;
+        border-color: #e5e7eb;
+        border-radius: 6px;
+    }
+
+    .search-input .form-control:focus,
+    .search-input .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.1);
+    }
+
+    .btn-primary {
+        height: 42px;
+        padding: 0.5rem 1.5rem;
+        font-size: 0.95rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border-radius: 6px;
+        white-space: nowrap;
+        transition: all 0.2s ease;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+    }
+
+    .btn-primary .material-icons {
+        font-size: 20px;
+    }
+
+    /* Table Styles */
+    .table {
+        font-size: 0.95rem;
+        margin-bottom: 0;
+    }
+
+    .table th {
+        font-weight: 600;
+        color: #6b7280;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+    }
+
+    .table td {
+        padding: 1rem 0.75rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #f3f4f6;
+    }
+
+    /* Role Badge Styles */
+    .role-badge {
+        padding: 0.4rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .role-admin {
+        background-color: #ecfdf5;
+        color: #059669;
+    }
+
+    .role-enforcer {
+        background-color: #fff7ed;
+        color: #c2410c;
+    }
+
+    .role-supervisor {
+        background-color: #f5f3ff;
+        color: #6d28d9;
+    }
+
+    .role-treasurer {
+        background-color: #eff6ff;
+        color: #1d4ed8;
+    }
+
+    /* Status Badge Styles */
+    .status-badge {
+        padding: 0.4rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        margin-right: 6px;
+    }
+
+    .status-active {
+        background-color: #ecfdf5;
+        color: #059669;
+    }
+
+    .status-active .status-dot {
+        background-color: #059669;
+    }
+
+    .status-inactive {
+        background-color: #fef2f2;
+        color: #dc2626;
+    }
+
+    .status-inactive .status-dot {
+        background-color: #dc2626;
+    }
+
+    /* Action Buttons */
+    .btn-action {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        border: 1px solid #e5e7eb;
+        background-color: white;
+        color: #6b7280;
+        transition: all 0.2s ease;
+        margin-left: 0.5rem;
+    }
+
+    .btn-action:hover {
+        background-color: #f3f4f6;
+        border-color: #d1d5db;
+        color: #374151;
+    }
+
+    .btn-action .material-icons {
+        font-size: 1.25rem;
+    }
+
+    /* Search Input Styles */
+    .input-group-text {
+        color: #6b7280;
+    }
+
+    .form-control-lg {
+        height: 3rem;
+    }
+
+    .form-control:focus {
+        box-shadow: none;
+        border-color: var(--primary-color);
+    }
+
+    /* Avatar Styles */
+    .avatar-container {
+        position: relative;
+    }
+
+    .avatar-container img,
+    .avatar-placeholder {
+        width: 40px;
+        height: 40px;
+        object-fit: cover;
+    }
+
+    /* Responsive Styles */
+    @media (max-width: 768px) {
+        .card-body {
+            padding: 1rem;
+        }
+        
+        .table td {
+            padding: 0.75rem;
+        }
+        
+        .btn-action {
+            width: 28px;
+            height: 28px;
+        }
+        
+        .btn-action .material-icons {
+            font-size: 1rem;
+        }
+    }
+
+    /* Add these new styles */
+    .btn-toggle-status {
+        transition: all 0.2s ease;
+    }
+
+    .btn-toggle-status:hover {
+        transform: scale(1.1);
+    }
+
+    .btn-toggle-status .material-icons {
+        font-size: 1.25rem;
+    }
+
+    /* Status colors */
+    .btn-toggle-status[title*="Activate"] {
+        color: var(--success);
+    }
+
+    .btn-toggle-status[title*="Deactivate"] {
+        color: var(--danger);
+    }
+
+    /* Toast notification styles */
+    .alert {
+        z-index: 1060;
+    }
+
+    .alert-success {
+        background-color: var(--success);
+        color: white;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+    }
+
+    .alert .material-icons {
+        vertical-align: middle;
+        font-size: 1.1rem;
+    }
+
+    .modal {
+        padding: 0 !important;
+    }
+
+    .modal-open {
+        overflow-y: auto !important;
+        padding-right: 0 !important;
+    }
+
+    .modal-open .modal {
+        overflow-x: hidden;
+        overflow-y: auto;
+        padding-right: 0 !important;
+    }
+
+    .modal-dialog {
+        margin: 1.75rem auto;
+        max-width: 800px;
+    }
+
+    .modal-content {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Prevent table row spacing changes */
+    .table {
+        width: 100% !important;
+        margin-bottom: 0 !important;
+        table-layout: fixed !important;
+    }
+
+    .table td {
+        padding: 1rem 0.75rem !important;
+        vertical-align: middle !important;
+    }
+
+    /* Ensure consistent widths */
+    .table-responsive {
+        width: 100% !important;
+        margin: 0 !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        position: relative !important;
+        padding-right: 0 !important;
+    }
+
+    /* Fixed Table Layout */
+    .table {
+        width: 100% !important;
+        margin: 0 !important;
+        table-layout: fixed !important;
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+    }
+
+    /* Fixed Column Widths */
+    .table th:nth-child(1),
+    .table td:nth-child(1) {
+        width: 35% !important;
+        min-width: 250px !important;
+        max-width: 35% !important;
+    }
+
+    .table th:nth-child(2),
+    .table td:nth-child(2) {
+        width: 15% !important;
+        min-width: 120px !important;
+        max-width: 15% !important;
+    }
+
+    .table th:nth-child(3),
+    .table td:nth-child(3) {
+        width: 15% !important;
+        min-width: 120px !important;
+        max-width: 15% !important;
+    }
+
+    .table th:nth-child(4),
+    .table td:nth-child(4) {
+        width: 20% !important;
+        min-width: 150px !important;
+        max-width: 20% !important;
+    }
+
+    .table th:nth-child(5),
+    .table td:nth-child(5) {
+        width: 15% !important;
+        min-width: 120px !important;
+        max-width: 15% !important;
+    }
+
+    /* Fixed Cell Content */
+    .table th,
+    .table td {
+        padding: 1rem 0.75rem !important;
+        vertical-align: middle !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        position: relative !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Profile Layout Fixes */
+    .d-flex {
+        display: flex !important;
+        align-items: center !important;
+        gap: 1rem !important;
+        width: 100% !important;
+        position: relative !important;
+    }
+
+    .avatar-container {
+        flex-shrink: 0 !important;
+        width: 40px !important;
+        height: 40px !important;
+        position: relative !important;
+    }
+
+    /* Modal Fixes */
+    .modal {
+        padding: 0 !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+        overflow-y: hidden !important;
+    }
+
+    .modal-open {
+        overflow: hidden !important;
+        padding-right: 0 !important;
+        width: 100% !important;
+        position: fixed !important;
+        height: 100% !important;
+    }
+
+    .modal-dialog {
+        margin: 1.75rem auto !important;
+        max-width: 800px !important;
+        width: calc(100% - 2rem) !important;
+        position: relative !important;
+    }
+
+    .modal-content {
+        border: none !important;
+        border-radius: 12px !important;
+        box-shadow: 0 2px 20px rgba(0, 0, 0, 0.15) !important;
+        max-height: calc(100vh - 3.5rem) !important;
+        overflow-y: auto !important;
+        position: relative !important;
+    }
+
+    .modal-body {
+        padding: 0 !important;
+        overflow-y: auto !important;
+        position: relative !important;
+    }
+
+    /* Prevent Body Scroll Lock */
+    body.modal-open {
+        position: fixed !important;
+        width: 100% !important;
+        height: 100% !important;
+        padding-right: 0 !important;
+    }
+
+    /* Card Fixes */
+    .card {
+        position: relative !important;
+        width: 100% !important;
+        margin-bottom: 1rem !important;
+    }
+
+    .card-body {
+        position: relative !important;
+        width: 100% !important;
+    }
+
+    /* Action Buttons Container */
+    .action-buttons {
+        display: flex !important;
+        gap: 0.5rem !important;
+        justify-content: flex-end !important;
+        min-width: 120px !important;
+        position: relative !important;
+        flex-shrink: 0 !important;
+    }
+
+    /* Prevent Content Jump */
+    html {
+        overflow-y: scroll !important;
+        width: 100vw !important;
+        position: relative !important;
+    }
+
+    /* Container Width Fix */
+    .container-fluid {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding-right: 1rem !important;
+        padding-left: 1rem !important;
+        position: relative !important;
+    }
+
+    /* Wrapper Fix */
+    #wrapper {
+        width: 100% !important;
+        position: relative !important;
+        overflow-x: hidden !important;
+    }
+
+    /* Page Content Fix */
+    #page-content-wrapper {
+        width: 100% !important;
+        position: relative !important;
+        overflow-x: hidden !important;
+    }
+
+    /* Profile and Avatar Container Fixes */
+    .d-flex.align-items-center {
+        display: flex !important;
+        align-items: center !important;
+        gap: 1rem !important;
+        width: 100% !important;
+        min-height: 48px !important;
+    }
+
+    /* Avatar Container */
+    .avatar-container {
+        flex: 0 0 40px !important;
+        width: 40px !important;
+        height: 40px !important;
+        position: relative !important;
+        margin-right: 1rem !important;
+    }
+
+    .avatar-container img,
+    .avatar-placeholder {
+        width: 40px !important;
+        height: 40px !important;
+        object-fit: cover !important;
+        flex-shrink: 0 !important;
+    }
+
+    /* User Info Container */
+    .user-info-container {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+        overflow: hidden !important;
+    }
+
+    .user-info-container h6 {
+        margin: 0 !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+
+    .user-info-container .small {
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+
+    /* Ensure consistent spacing */
+    .table td:first-child {
+        padding-left: 1.5rem !important;
+    }
+
+    /* Prevent text wrapping in cells */
+    .table td > * {
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+
+    /* Fix avatar placeholder */
+    .avatar-placeholder {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background-color: var(--primary-color) !important;
+        color: white !important;
+        font-weight: 500 !important;
+        border-radius: 50% !important;
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width: 576px) {
+        .btn-primary {
+            height: 38px;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+        
+        .btn-primary .material-icons {
+            font-size: 18px;
+        }
+    }
+    </style>
+
+    <script>
+    // Function to show user details in modal
+    function showUserDetail(userId) {
+        const modalBody = document.querySelector('#userDetailModal .modal-body');
+        modalBody.innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        `;
+        
+        fetch(`/users/${userId}/modal/`)
+            .then(response => response.text())
+            .then(html => {
+                modalBody.innerHTML = html;
+            })
+            .catch(error => {
+                modalBody.innerHTML = `
+                    <div class="alert alert-danger m-3">
+                        <span class="material-icons me-2">error_outline</span>
+                        Error loading user details: ${error.message}
+                    </div>
+                `;
+            });
+    }
+
+    // Function to toggle user status
+    function toggleUserStatus(userId, action) {
+        if (!confirm(`Are you sure you want to ${action} this user?`)) {
+            return;
+        }
+
+        const button = event.target.closest('button');
+        const originalHtml = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+        fetch(`/users/${userId}/toggle-status/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Use the global showToast function from base template
+                if (typeof showToast === 'function') {
+                    showToast('success', data.message);
+                }
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                if (typeof showToast === 'function') {
+                    showToast('error', data.error || 'Error updating user status');
+                } else {
+                    alert(data.error || 'Error updating user status');
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            if (typeof showToast === 'function') {
+                showToast('error', 'Failed to update user status. Please try again.');
+            } else {
+                alert('Failed to update user status. Please try again.');
+            }
+        })
+        .finally(() => {
+            button.disabled = false;
+            button.innerHTML = originalHtml;
+        });
+    }
+
+    // Initialize modal functionality when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        const userDetailModal = document.getElementById('userDetailModal');
+        if (userDetailModal) {
+            // Load user details when modal is shown
+            userDetailModal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                const userId = button.getAttribute('data-user-id');
+                showUserDetail(userId);
+                
+                // Prevent layout shifts
+                const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+                document.documentElement.style.setProperty('--scrollbar-width', `${scrollbarWidth}px`);
+                document.body.style.paddingRight = '0';
+                document.body.style.overflow = 'hidden';
+            });
+
+            // After modal is hidden
+            userDetailModal.addEventListener('hidden.bs.modal', function() {
+                document.body.style.paddingRight = '0';
+                document.body.style.overflow = '';
+                document.body.classList.remove('modal-open');
+                document.documentElement.style.removeProperty('--scrollbar-width');
+            });
+        }
+        
+        // Ensure table layout remains consistent
+        const tableContainer = document.querySelector('.table-responsive');
+        if (tableContainer) {
+            const resizeObserver = new ResizeObserver(entries => {
+                for (let entry of entries) {
+                    const table = entry.target.querySelector('.table');
+                    if (table) {
+                        table.style.width = `${entry.contentRect.width}px`;
+                    }
+                }
+            });
+            resizeObserver.observe(tableContainer);
+        }
+    });
+
+    // Make toggleUserStatus available globally
+    window.toggleUserStatus = toggleUserStatus;
+    </script>
+    {% endblock %} 
