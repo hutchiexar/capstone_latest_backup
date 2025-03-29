@@ -1,0 +1,336 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-header bg-white py-3">
+            <div class="d-flex align-items-center">
+                <span class="material-icons me-2" style="color: var(--primary-color)">photo_camera</span>
+                <h4 class="m-0">{{ title|default:"Create NCAP Violation" }}</h4>
+            </div>
+        </div>
+        
+        <div class="card-body p-4">
+            {% if messages %}
+            <div class="messages mb-4">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <form method="POST" enctype="multipart/form-data" class="needs-validation" novalidate action="{% url 'save_ncap_violation' %}">
+                {% csrf_token %}
+                
+                <div class="row g-4">
+                    <!-- Left Column: Image Upload -->
+                    <div class="col-lg-4">
+                        <div class="upload-card">
+                            <div class="image-preview-container mb-4">
+                                <div class="image-preview" id="imagePreview">
+                                    <span class="material-icons">add_photo_alternate</span>
+                                    <p class="text-muted">Click to upload violation image</p>
+                                </div>
+                                {{ form.image.errors }}
+                                {{ form.image }}
+                            </div>
+                            
+                            <div class="upload-info">
+                                <h6 class="mb-3">Image Requirements</h6>
+                                <ul class="requirements-list">
+                                    <li><span class="material-icons">check_circle</span> Clear and visible license plate</li>
+                                    <li><span class="material-icons">check_circle</span> Good lighting conditions</li>
+                                    <li><span class="material-icons">check_circle</span> JPG, JPEG, or PNG format</li>
+                                    <li><span class="material-icons">check_circle</span> Max file size: 5MB</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Violation Details -->
+                    <div class="col-lg-8">
+                        <div class="info-card">
+                            <!-- Violator Information -->
+                            <div class="section mb-4">
+                                <h5 class="section-title">Violator Information</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            {{ form.license_number }}
+                                            <label for="{{ form.license_number.id_for_label }}">License Number</label>
+                                            {{ form.license_number.errors }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            {{ form.first_name }}
+                                            <label for="{{ form.first_name.id_for_label }}">First Name</label>
+                                            {{ form.first_name.errors }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            {{ form.last_name }}
+                                            <label for="{{ form.last_name.id_for_label }}">Last Name</label>
+                                            {{ form.last_name.errors }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Vehicle Information -->
+                            <div class="section mb-4">
+                                <h5 class="section-title">Vehicle Information</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            {{ form.plate_number }}
+                                            <label for="{{ form.plate_number.id_for_label }}">Plate Number</label>
+                                            {{ form.plate_number.errors }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            {{ form.vehicle_type }}
+                                            <label for="{{ form.vehicle_type.id_for_label }}">Vehicle Type</label>
+                                            {{ form.vehicle_type.errors }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            {{ form.color }}
+                                            <label for="{{ form.color.id_for_label }}">Color</label>
+                                            {{ form.color.errors }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            {{ form.classification }}
+                                            <label for="{{ form.classification.id_for_label }}">Classification</label>
+                                            {{ form.classification.errors }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Violation Details -->
+                            <div class="section mb-4">
+                                <h5 class="section-title">Violation Details</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-12">
+                                        <div class="form-floating">
+                                            {{ form.location }}
+                                            <label for="{{ form.location.id_for_label }}">Location</label>
+                                            {{ form.location.errors }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            {{ form.violation_date }}
+                                            <label for="{{ form.violation_date.id_for_label }}">Violation Date</label>
+                                            {{ form.violation_date.errors }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            {{ form.violation_type }}
+                                            <label for="{{ form.violation_type.id_for_label }}">Violation Type</label>
+                                            {{ form.violation_type.errors }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            {{ form.fine_amount }}
+                                            <label for="{{ form.fine_amount.id_for_label }}">Fine Amount (₱)</label>
+                                            {{ form.fine_amount.errors }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                                <a href="{% url 'ncap_violations_list' %}" class="btn btn-outline-secondary">
+                                    <span class="material-icons me-2">arrow_back</span>Cancel
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <span class="material-icons me-2">save</span>{{ button_text|default:"Record Violation" }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.upload-card {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+}
+
+.image-preview-container {
+    width: 100%;
+    aspect-ratio: 4/3;
+    border: 2px dashed #dee2e6;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.image-preview-container:hover {
+    border-color: var(--primary-color);
+}
+
+.image-preview {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fa;
+}
+
+.image-preview .material-icons {
+    font-size: 48px;
+    color: #adb5bd;
+    margin-bottom: 1rem;
+}
+
+.image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.upload-info {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 12px;
+}
+
+.requirements-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.requirements-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+}
+
+.requirements-list .material-icons {
+    font-size: 1rem;
+    color: var(--accent-teal);
+}
+
+.info-card {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+}
+
+.section-title {
+    color: var(--text-dark);
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.form-floating {
+    margin-bottom: 1rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.25);
+}
+
+.form-select {
+    height: 3.5rem;
+}
+
+.btn {
+    padding: 0.5rem 1.5rem;
+    font-weight: 500;
+}
+
+@media (max-width: 992px) {
+    .upload-card {
+        margin-bottom: 2rem;
+    }
+}
+
+/* Error styling */
+.errorlist {
+    color: #dc3545;
+    font-size: 0.875rem;
+    list-style-type: none;
+    padding-left: 0;
+    margin-top: 0.25rem;
+}
+
+/* Hide the default file input and replace with our custom one */
+#id_image {
+    display: none;
+}
+</style>
+
+<script>
+// Image preview functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const imagePreview = document.getElementById('imagePreview');
+    const imageInput = document.getElementById('id_image');
+    
+    // Hide the default file input
+    imageInput.classList.add('d-none');
+    
+    imagePreview.addEventListener('click', () => {
+        imageInput.click();
+    });
+    
+    imageInput.addEventListener('change', function(e) {
+        if (this.files && this.files[0]) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                imagePreview.innerHTML = `<img src="${e.target.result}" alt="Violation Preview">`;
+            }
+            
+            reader.readAsDataURL(this.files[0]);
+        }
+    });
+    
+    // Form validation
+    const forms = document.querySelectorAll('.needs-validation');
+    Array.from(forms).forEach(form => {
+        form.addEventListener('submit', event => {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            form.classList.add('was-validated');
+        }, false);
+    });
+});
+</script>
+{% endblock %} 

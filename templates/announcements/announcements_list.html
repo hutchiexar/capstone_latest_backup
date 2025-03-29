@@ -28,8 +28,8 @@
 
             <!-- Search Form -->
             <form method="get" class="search-form mb-0">
-                <div class="col-md-8">
-                    <div class="search-input">
+                <div class="search-form-wrapper">
+                    <div class="search-input-group">
                         <span class="material-icons">search</span>
                         <input type="text" 
                                name="search" 
@@ -37,51 +37,133 @@
                                placeholder="Search announcements..."
                                value="{{ search_query|default:'' }}">
                     </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="search-input">
+                    <div class="search-input-group">
+                        <span class="material-icons">category</span>
+                        <select name="category" class="form-select">
+                            <option value="">All Categories</option>
+                            {% for cat_key, cat_name in categories %}
+                            <option value="{{ cat_key }}" {% if category_filter == cat_key %}selected{% endif %}>{{ cat_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="search-input-group">
                         <span class="material-icons">priority_high</span>
                         <select name="priority" class="form-select">
                             <option value="">All Priorities</option>
-                            <option value="HIGH" {% if request.GET.priority == 'HIGH' %}selected{% endif %}>High</option>
-                            <option value="MEDIUM" {% if request.GET.priority == 'MEDIUM' %}selected{% endif %}>Medium</option>
-                            <option value="LOW" {% if request.GET.priority == 'LOW' %}selected{% endif %}>Low</option>
+                            {% for pri_key, pri_name in priorities %}
+                            <option value="{{ pri_key }}" {% if priority_filter == pri_key %}selected{% endif %}>{{ pri_name }}</option>
+                            {% endfor %}
                         </select>
                     </div>
-                </div>
-                <div class="col-auto">
-                    <button type="submit" class="btn btn-primary px-3">
-                        <span class="material-icons">search</span>
-                        <span class="d-none d-sm-inline ms-1">Search</span>
-                    </button>
+                    <div class="search-button-group">
+                        <button type="submit" class="btn btn-primary">
+                            <span class="material-icons">search</span>
+                            <span class="d-none d-sm-inline ms-1">Search</span>
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Loading Skeleton (shown during data fetch) -->
+    <div id="loading-skeleton" class="d-none">
+        <div class="row g-4 mt-3">
+            {% for i in '123456'|make_list %}
+            <div class="col-md-6">
+                <div class="card shadow-sm border-0 rounded-3 skeleton-card">
+                    <div class="card-body">
+                        <div class="skeleton-title"></div>
+                        <div class="skeleton-badges"></div>
+                        <div class="skeleton-content"></div>
+                        <div class="skeleton-footer"></div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
     <!-- Announcements Grid -->
-    <div class="row g-4">
+    <div class="row g-4" id="announcements-container">
         {% if announcements %}
         {% for announcement in announcements %}
-        <div class="col-md-6">
-            <div class="card shadow-sm border-0 rounded-3 h-100">
+        <div class="col-md-6 announcement-card-wrapper">
+            <div class="card shadow-sm border-0 rounded-3 h-100 announcement-card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <h5 class="card-title mb-0">{{ announcement.title }}</h5>
-                        <span class="badge bg-{{ announcement.priority|lower }}-subtle text-{{ announcement.priority|lower }}">
-                            {{ announcement.priority }}
-                        </span>
+                        <div class="badge-container">
+                            {% if announcement.is_popup %}
+                            <span class="badge bg-info-subtle text-info me-2" title="Appears as a popup to users">
+                                <span class="material-icons" style="font-size: 0.8rem;">open_in_new</span> Popup
+                            </span>
+                            {% endif %}
+                            {% if announcement.requires_acknowledgment|default:False %}
+                            <span class="badge bg-primary-subtle text-primary me-2" title="Requires user acknowledgment">
+                                <span class="material-icons" style="font-size: 0.8rem;">verified</span> Acknowledgment
+                            </span>
+                            {% endif %}
+                            <span class="badge bg-{{ announcement.priority|lower }}-subtle text-{{ announcement.priority|lower }}">
+                                {{ announcement.priority }}
+                            </span>
+                        </div>
                     </div>
+                    
+                    {% if announcement.category or announcement.target_audience or announcement.geographic_area %}
+                    <div class="announcement-metadata mb-3">
+                        {% if announcement.category %}
+                        <span class="badge bg-secondary-subtle text-secondary me-2">
+                            {{ announcement.get_category_display }}
+                        </span>
+                        {% endif %}
+                        {% if announcement.target_audience and announcement.target_audience != 'ALL' %}
+                        <span class="badge bg-dark-subtle text-dark me-2" title="Only visible to specific users">
+                            {{ announcement.get_target_audience_display }}
+                        </span>
+                        {% endif %}
+                        {% if announcement.geographic_area %}
+                        <span class="badge bg-success-subtle text-success">
+                            <span class="material-icons" style="font-size: 0.8rem;">location_on</span>
+                            {{ announcement.geographic_area }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
                     <p class="card-text">{{ announcement.content }}</p>
+                    
                     <div class="d-flex justify-content-between align-items-center mt-3">
-                        <div class="small text-muted">
+                        <div class="small text-muted date-info">
                             <span class="material-icons me-1" style="font-size: 0.9rem;">schedule</span>
                             {{ announcement.created_at|date:"M d, Y H:i" }}
+                            
+                            {% if announcement.publish_date %}
+                            <span class="ms-2 publish-date" title="Scheduled publication date">
+                                <span class="material-icons" style="font-size: 0.9rem;">event</span>
+                                <span class="date-label">Publish:</span> {{ announcement.publish_date|date:"M d, Y" }}
+                            </span>
+                            {% endif %}
+                            
+                            {% if announcement.expiration_date %}
+                            <span class="ms-2 expiry-date" title="Expiration date">
+                                <span class="material-icons" style="font-size: 0.9rem;">event_busy</span>
+                                <span class="date-label">Expires:</span> {{ announcement.expiration_date|date:"M d, Y" }}
+                            </span>
+                            {% endif %}
                         </div>
                         {% if user.userprofile.role in 'ADMIN,SUPERVISOR' %}
                         <div class="action-buttons">
                             <a href="{% url 'edit_announcement' announcement.id %}" class="btn-action btn-edit" title="Edit">
                                 <span class="material-icons">edit</span>
+                            </a>
+                            {% if announcement.is_popup %}
+                            <a href="{% url 'reset_popup_announcement' announcement.id %}" class="btn-action btn-reset" title="Reset Popup">
+                                <span class="material-icons">restart_alt</span>
+                            </a>
+                            {% endif %}
+                            <a href="{% url 'resend_announcement_notification' announcement.id %}" class="btn-action btn-notification" title="Send as Notification">
+                                <span class="material-icons">notifications</span>
                             </a>
                             <button type="button" class="btn-action btn-delete" data-bs-toggle="modal" data-bs-target="#deleteModal" data-id="{{ announcement.id }}" title="Delete">
                                 <span class="material-icons">delete</span>
@@ -96,13 +178,12 @@
         {% else %}
         <div class="col-12">
             <div class="card shadow-sm border-0 rounded-3">
-                <div class="card-body p-4">
-                    <div class="text-center">
-                        <div class="empty-state">
-                            <span class="material-icons">campaign_off</span>
-                            <h6>No Announcements Found</h6>
-                            <p class="text-muted">Try adjusting your search criteria or check back later for new announcements.</p>
-                        </div>
+                <div class="card-body p-4 empty-state-container">
+                    <div class="text-center empty-state">
+                        <img src="/static/images/no-announcements.svg" alt="No announcements" class="empty-state-image">
+                        <span class="material-icons">campaign_off</span>
+                        <h6>No Announcements Found</h6>
+                        <p class="text-muted">Try adjusting your search criteria or check back later for new announcements.</p>
                     </div>
                 </div>
             </div>
@@ -140,18 +221,56 @@
 </div>
 
 <script>
-$(document).ready(function() {
+document.addEventListener('DOMContentLoaded', function() {
     // Handle delete modal
-    $('#deleteModal').on('show.bs.modal', function(event) {
-        const button = $(event.relatedTarget);
-        const id = button.data('id');
-        const form = $('#deleteForm');
-        form.attr('action', `/announcements/${id}/delete/`);
+    const deleteModal = document.getElementById('deleteModal');
+    if (deleteModal) {
+        deleteModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const id = button.getAttribute('data-id');
+            const form = document.getElementById('deleteForm');
+            form.setAttribute('action', `/announcements/delete/${id}/`);
+        });
+    }
+    
+    // Simulating loading state (for demonstration purposes)
+    const showLoadingState = () => {
+        document.getElementById('announcements-container').classList.add('d-none');
+        document.getElementById('loading-skeleton').classList.remove('d-none');
+        
+        // Simulate loading time
+        setTimeout(() => {
+            document.getElementById('loading-skeleton').classList.add('d-none');
+            document.getElementById('announcements-container').classList.remove('d-none');
+        }, 800);
+    };
+    
+    // Add micro-interactions to action buttons
+    const actionButtons = document.querySelectorAll('.btn-action');
+    actionButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            this.classList.add('btn-pulse');
+            setTimeout(() => {
+                this.classList.remove('btn-pulse');
+            }, 300);
+        });
+    });
+    
+    // Add hover effects for announcement cards
+    const cards = document.querySelectorAll('.announcement-card');
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.classList.add('card-hover');
+        });
+        card.addEventListener('mouseleave', function() {
+            this.classList.remove('card-hover');
+        });
     });
 });
 </script>
 
 <style>
+/* Base styles */
 .empty-state {
     padding: 1.5rem 1rem;
 }
@@ -173,6 +292,372 @@ $(document).ready(function() {
     font-size: 0.9rem;
     max-width: 300px;
     margin: 0 auto;
+}
+
+.empty-state-image {
+    width: 120px;
+    height: auto;
+    margin-bottom: 1rem;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.btn-reset {
+    color: var(--info);
+    background-color: rgba(13, 110, 253, 0.1);
+}
+
+.btn-reset:hover {
+    background-color: rgba(13, 110, 253, 0.2);
+}
+
+.btn-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.btn-action:hover {
+    background-color: var(--bg-light);
+    transform: scale(1.05);
+}
+
+.btn-action .material-icons {
+    font-size: 16px;
+    color: #495057;
+}
+
+.btn-edit:hover {
+    background-color: #cfe2ff;
+    border-color: #9ec5fe;
+}
+
+.btn-edit:hover .material-icons {
+    color: #0d6efd;
+}
+
+.btn-notification:hover {
+    background-color: #e8f6fe;
+    border-color: #9fdbff;
+}
+
+.btn-notification:hover .material-icons {
+    color: #0dcaf0;
+}
+
+.btn-reset:hover {
+    background-color: #d1e7dd;
+    border-color: #a3cfbb;
+}
+
+.btn-reset:hover .material-icons {
+    color: #198754;
+}
+
+.btn-delete:hover {
+    background-color: #f8d7da;
+    border-color: #f1aeb5;
+}
+
+.btn-delete:hover .material-icons {
+    color: #dc3545;
+}
+
+/* Skeleton loading styles */
+.skeleton-card {
+    min-height: 250px;
+}
+
+.skeleton-title {
+    height: 24px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    width: 70%;
+}
+
+.skeleton-badges {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.skeleton-badges::before, 
+.skeleton-badges::after {
+    content: "";
+    height: 20px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+}
+
+.skeleton-badges::before {
+    width: 80px;
+}
+
+.skeleton-badges::after {
+    width: 100px;
+}
+
+.skeleton-content {
+    height: 100px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.skeleton-footer {
+    display: flex;
+    justify-content: space-between;
+}
+
+.skeleton-footer::before, 
+.skeleton-footer::after {
+    content: "";
+    height: 20px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+}
+
+.skeleton-footer::before {
+    width: 130px;
+}
+
+.skeleton-footer::after {
+    width: 80px;
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Card hover effect */
+.card-hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Action button pulse animation */
+.btn-pulse {
+    animation: pulse 0.3s ease-in-out;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Search form styles */
+.search-form-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.search-input-group {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    overflow: hidden;
+    flex: 1;
+    min-width: 180px;
+}
+
+.search-input-group .material-icons {
+    padding: 0 10px;
+    color: #6c757d;
+}
+
+.search-input-group .form-control,
+.search-input-group .form-select {
+    border: none;
+    box-shadow: none;
+    padding: 10px 15px 10px 5px;
+    font-size: 14px;
+    background-color: transparent;
+}
+
+.search-button-group {
+    display: flex;
+}
+
+.announcement-card {
+    transition: all 0.25s ease;
+    border: 1px solid transparent !important;
+}
+
+.announcement-card:hover {
+    border-color: var(--primary-color) !important;
+}
+
+.announcement-metadata {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.75rem;
+    padding: 0.35em 0.65em;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.badge:hover {
+    transform: scale(1.05);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .search-form-wrapper {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .search-input-group {
+        width: 100%;
+        min-width: 100%;
+    }
+    
+    .search-button-group {
+        width: 100%;
+    }
+    
+    .search-button-group .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .announcement-card {
+        transform: scale(0.98);
+    }
+    
+    .announcement-card-wrapper {
+        margin-bottom: -10px;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .badge {
+        font-size: 0.7rem;
+        padding: 0.25em 0.5em;
+    }
+    
+    .btn-action {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .btn-action .material-icons {
+        font-size: 14px;
+    }
+    
+    .card-title {
+        font-size: 1rem;
+    }
+    
+    .card-text {
+        font-size: 0.85rem;
+    }
+    
+    .date-info {
+        font-size: 0.7rem;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .publish-date, .expiry-date {
+        margin-left: 0 !important;
+        margin-top: 4px;
+    }
+    
+    .date-label {
+        font-weight: 600;
+    }
+    
+    .action-buttons {
+        gap: 4px;
+    }
+    
+    .empty-state-image {
+        width: 80px;
+    }
+    
+    .empty-state .material-icons {
+        font-size: 2rem;
+    }
+    
+    .empty-state h6 {
+        font-size: 1rem;
+    }
+    
+    .empty-state p {
+        font-size: 0.8rem;
+        max-width: 250px;
+    }
+    
+    .badge-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        justify-content: flex-end;
+    }
+}
+
+@media (max-width: 576px) {
+    .header-section {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .header-actions {
+        width: 100%;
+    }
+    
+    .header-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
 }
 </style>
 {% endblock %} 

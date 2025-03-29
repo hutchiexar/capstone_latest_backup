@@ -212,22 +212,27 @@
 
         /* Updated Sidebar Styling */
         #sidebar-wrapper {
-            min-height: 100vh;
-            width: 280px;
-            background: var(--secondary-color);
+            display: flex !important;
+            flex-direction: column !important;
+            height: 100vh !important;
+            overflow: hidden !important;
             position: fixed;
-            left: 0;
             top: 0;
-            z-index: 1000;
+            left: 0;
+            z-index: 999;
+            background: var(--secondary-color);
+            color: var(--text-light);
             transition: all 0.3s;
+            box-shadow: 3px 0 15px rgba(0, 0, 0, 0.1);
         }
 
         .sidebar-header {
-            padding: 1.5rem;
+            flex-shrink: 0 !important;
+            padding: 1.5rem 1rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .sidebar-brand {
@@ -251,9 +256,72 @@
         }
 
         .sidebar-content {
-            padding: 1rem 0;
-            overflow-y: auto;
-            height: calc(100vh - 180px);
+            flex: 1 !important;
+            overflow-y: auto !important;
+            display: flex !important;
+            flex-direction: column !important;
+            height: auto !important;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 0 !important;
+        }
+
+        .sidebar-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        /* Scroll Buttons */
+        .scroll-button {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--secondary-color);
+            color: var(--text-light);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 10;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .scroll-button:hover {
+            background: var(--bg-dark);
+        }
+
+        .scroll-button.visible {
+            opacity: 1;
+        }
+
+        .scroll-up {
+            top: 10px;
+        }
+
+        .scroll-down {
+            bottom: 10px;
+        }
+
+        .scroll-button .material-icons {
+            font-size: 20px;
+        }
+
+        /* Hide scroll buttons when content fits */
+        .sidebar-content.no-overflow .scroll-button {
+            display: none;
         }
 
         .sidebar-section {
@@ -313,12 +381,29 @@
 
         /* User Profile Section */
         .user-profile {
-            padding: 1rem;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            position: fixed;
-            bottom: 0;
-            width: 280px;
-            background: var(--secondary-color);
+            flex-shrink: 0 !important;
+            margin-top: auto !important;
+            background-color: var(--secondary-color) !important;
+            border-top: 1px solid rgba(255,255,255,0.1) !important;
+            z-index: 5 !important;
+            position: relative !important;
+            bottom: auto !important;
+            left: auto !important;
+            width: 100% !important;
+            padding: 1rem !important;
+        }
+
+        .user-info-link {
+            text-decoration: none;
+            display: block;
+            color: inherit;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+        }
+
+        .user-info-link:hover .user-info {
+            background: rgba(255,255,255,0.1);
         }
 
         .user-info {
@@ -328,19 +413,32 @@
             padding: 0.5rem;
             border-radius: 8px;
             margin-bottom: 0.5rem;
+            transition: all 0.3s ease;
         }
 
         .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            overflow: hidden;
+            width: 40px !important;
+            height: 40px !important;
+            min-width: 40px !important;
+            min-height: 40px !important;
+            border-radius: 50% !important;
+            overflow: hidden !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            background-color: rgba(255,255,255,0.1) !important;
         }
 
         .user-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            border-radius: 50% !important;
+        }
+
+        .user-avatar .material-icons {
+            font-size: 32px !important;
+            color: var(--text-light) !important;
         }
 
         .user-details {
@@ -387,8 +485,34 @@
             margin-left: 280px;
             width: calc(100% - 280px);
             min-height: 100vh;
-            padding: 2rem;
             transition: all 0.3s;
+            background-color: var(--bg-light);
+            display: flex;
+            flex-direction: column;
+        }
+
+        #page-content-wrapper .container-fluid {
+            width: 100%;
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+        }
+
+        /* Main content area below header */
+        .content-area {
+            padding: 1.5rem;
+            flex: 1;
+        }
+
+        @media (max-width: 992px) {
+            #page-content-wrapper {
+                margin-left: 0;
+                width: 100%;
+            }
+            
+            .sidebar-toggled #page-content-wrapper {
+                margin-left: 70px;
+                width: calc(100% - 70px);
+            }
         }
 
         /* Mobile Responsiveness */
@@ -488,6 +612,46 @@
         @media (max-width: 768px) {
             #page-content-wrapper {
                 padding-left: 60px;
+            }
+            
+            /* Mobile Toggle Button Styling */
+            #mobile-toggle {
+                display: block !important;
+                position: fixed;
+                top: 50%;
+                left: 0;
+                transform: translateY(-50%);
+                z-index: 1060;
+                background-color: var(--primary-color);
+                color: white;
+                border: none;
+                border-radius: 0 4px 4px 0;
+                width: 30px;
+                height: 60px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+
+            #mobile-toggle:hover {
+                background-color: var(--accent-color);
+            }
+
+            #mobile-toggle:active {
+                transform: translateY(-50%) scale(0.95);
+            }
+
+            #mobile-toggle .material-icons {
+                font-size: 24px;
+            }
+            
+            /* Hide mobile toggle when sidebar is open */
+            #mobile-toggle.hidden {
+                left: -30px;
+                opacity: 0;
             }
         }
 
@@ -924,7 +1088,7 @@
         /* Prevent layout shifts when modal opens */
         body.modal-open {
             overflow-y: scroll !important;
-            padding-right: 0 !important;
+            padding-right: var(--scrollbar-width, 0) !important;
         }
 
         /* Table container styles */
@@ -950,7 +1114,7 @@
 
         /* Modal styles */
         .modal {
-            padding-right: 0 !important;
+            padding-right: var(--scrollbar-width, 0) !important;
         }
 
         .modal-open .modal {
@@ -958,8 +1122,10 @@
         }
 
         .modal-dialog {
-            margin: 1.75rem auto;
-            max-width: 800px;
+            margin-right: auto !important;
+            margin-left: auto !important;
+            width: auto;
+            max-width: 100%;
         }
 
         @media (max-width: 768px) {
@@ -2006,8 +2172,70 @@
         /* Sidebar Content Adjustments */
         .sidebar-content {
             height: calc(100vh - 180px);
-            overflow-y: hidden;
+            overflow-y: auto;
             padding: 0.5rem 0;
+            position: relative;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+        }
+
+        .sidebar-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        /* Scroll Buttons */
+        .scroll-button {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--secondary-color);
+            color: var(--text-light);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 10;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .scroll-button:hover {
+            background: var(--bg-dark);
+        }
+
+        .scroll-button.visible {
+            opacity: 1;
+        }
+
+        .scroll-up {
+            top: 10px;
+        }
+
+        .scroll-down {
+            bottom: 10px;
+        }
+
+        .scroll-button .material-icons {
+            font-size: 20px;
+        }
+
+        /* Hide scroll buttons when content fits */
+        .sidebar-content.no-overflow .scroll-button {
+            display: none;
         }
 
         /* Adjust spacing between menu items */
@@ -2067,10 +2295,436 @@
         .user-profile {
             flex-shrink: 0;
         }
+
+        /* Fix for modals to not affect the sidebar and profile */
+        body.modal-open #sidebar-wrapper {
+            left: 0 !important;
+            position: fixed !important;
+        }
+
+        body.modal-open .user-profile {
+            position: relative !important;
+        }
+
+        /* Override any modal styles that affect the avatar */
+        .modal-open .user-avatar,
+        .modal-open .user-avatar img,
+        .modal-open .user-profile,
+        .modal-open .user-info {
+            border-radius: 50% !important;
+        }
+
+        .modal-open .user-avatar {
+            width: 40px !important;
+            height: 40px !important;
+        }
+
+        @media (max-width: 992px) {
+            .sidebar-toggled .user-profile {
+                padding: 0.75rem !important;
+            }
+            
+            .sidebar-toggled .user-avatar {
+                width: 36px !important;
+                height: 36px !important;
+                min-width: 36px !important;
+                min-height: 36px !important;
+            }
+        }
+
+        /* Page Header Styles - Enhanced */
+        .page-header {
+            background-color: #ffffff;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            padding: 0.75rem 0;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-radius: 8px;
+        }
+
+        .page-header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 0.75rem;
+        }
+
+        .page-header-title {
+            display: flex;
+            align-items: center;
+        }
+
+        .page-header-title::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 24px;
+            background: var(--primary-color);
+            margin-right: 12px;
+            border-radius: 4px;
+        }
+
+        .page-header-title h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+            color: var(--text-dark);
+            letter-spacing: -0.02em;
+            position: relative;
+            padding-bottom: 2px;
+        }
+
+        .page-header-title h1::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 0;
+            width: 40px;
+            height: 2px;
+            background-color: var(--primary-color);
+            border-radius: 1px;
+        }
+
+        /* Profile Dropdown Styles - Enhanced */
+        .profile-dropdown-container {
+            position: relative;
+        }
+
+        .profile-dropdown-toggle {
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.02);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .profile-dropdown-toggle:hover {
+            background-color: rgba(0, 0, 0, 0.04);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .profile-dropdown-toggle .user-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--primary-color);
+            margin-right: 0.75rem;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            border: 2px solid white;
+        }
+
+        .profile-dropdown-toggle .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-dropdown-toggle .user-avatar .material-icons {
+            color: white;
+            font-size: 24px;
+        }
+
+        .profile-dropdown-toggle .user-name {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-right: 0.75rem;
+            color: var(--text-dark);
+        }
+
+        .profile-dropdown-toggle .dropdown-arrow {
+            font-size: 20px;
+            color: var(--primary-color);
+            opacity: 0.8;
+            transition: transform 0.2s ease;
+        }
+
+        .dropdown.show .profile-dropdown-toggle .dropdown-arrow {
+            transform: rotate(180deg);
+        }
+
+        /* Improve container padding */
+        #page-content-wrapper .container-fluid {
+            width: 100%;
+            padding-left: 2rem;
+            padding-right: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .page-header {
+                padding: 0.5rem 0;
+                margin-bottom: 0.75rem;
+            }
+            
+            .page-header-title h1 {
+                font-size: 1.25rem;
+            }
+            
+            .profile-dropdown-toggle {
+                padding: 0.4rem 0.75rem;
+            }
+            
+            .profile-dropdown-toggle .user-name {
+                display: none;
+            }
+            
+            .profile-dropdown-toggle .user-avatar {
+                margin-right: 0.5rem;
+                width: 34px;
+                height: 34px;
+            }
+            
+            #page-content-wrapper .container-fluid {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            
+            .page-header-title::before {
+                height: 20px;
+                width: 3px;
+                margin-right: 10px;
+            }
+        }
+
+        /* Dropdown Menu Styling */
+        .dropdown-menu {
+            padding: 0.5rem 0;
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            min-width: 220px;
+        }
+
+        .dropdown-item {
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            color: var(--text-dark);
+            transition: all 0.2s ease;
+        }
+
+        .dropdown-item .material-icons {
+            margin-right: 0.75rem;
+            font-size: 20px;
+            color: var(--text-dark);
+            opacity: 0.8;
+        }
+
+        .dropdown-item:hover {
+            background-color: rgba(0, 0, 0, 0.04);
+        }
+
+        .dropdown-item-form {
+            width: 100%;
+        }
+
+        .dropdown-item-form .dropdown-item {
+            background: none;
+            border: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .dropdown-divider {
+            margin: 0.25rem 0;
+        }
+
+        /* Sidebar User Profile */
+        .sidebar-user-profile {
+            flex-shrink: 0;
+            margin-top: 0.5rem;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 0.5rem 1rem;
+        }
+
+        .sidebar-user-info {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .sidebar-user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            overflow: hidden;
+            background-color: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar-user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .sidebar-user-avatar .material-icons {
+            font-size: 36px;
+            color: var(--text-light);
+        }
+
+        .sidebar-user-details {
+            flex: 1;
+        }
+
+        .sidebar-user-name {
+            color: var(--text-light);
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin: 0 0 0.25rem;
+            line-height: 1.2;
+        }
+
+        .sidebar-user-role, .sidebar-user-id {
+            color: var(--text-light);
+            opacity: 0.75;
+            font-size: 0.8rem;
+            margin: 0 0 0.25rem;
+            line-height: 1.2;
+        }
+
+        .sidebar-user-actions {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+        }
+
+        .sidebar-user-action-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem;
+            background-color: rgba(255, 255, 255, 0.08);
+            color: var(--text-light);
+            border-radius: 6px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+            font-size: 0.75rem;
+        }
+
+        .sidebar-user-action-btn:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+            color: var(--text-light);
+        }
+
+        .sidebar-user-action-btn .material-icons {
+            font-size: 1.2rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .sidebar-user-action-btn.logout-btn {
+            color: #ffcccc;
+        }
+
+        .sidebar-user-action-btn.logout-btn:hover {
+            background-color: rgba(255, 59, 59, 0.2);
+        }
+
+        .sidebar-logout-form {
+            margin: 0;
+        }
+
+        #wrapper {
+            display: flex;
+            width: 100%;
+        }
+
+        #mobile-toggle {
+            display: none !important;
+        }
+
+        .sidebar-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Hide mobile toggle on larger screens */
+        @media (min-width: 769px) {
+            #mobile-toggle {
+                display: none !important;
+            }
+        }
+
+        /* Adjust content padding when toggle is visible */
+        @media (max-width: 768px) {
+            #page-content-wrapper {
+                padding-left: 60px;
+            }
+            
+            /* Mobile Toggle Button Styling */
+            #mobile-toggle {
+                display: block !important;
+                position: fixed;
+                top: 50%;
+                left: 0;
+                transform: translateY(-50%);
+                z-index: 1060;
+                background-color: var(--primary-color);
+                color: white;
+                border: none;
+                border-radius: 0 4px 4px 0;
+                width: 30px;
+                height: 60px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+
+            #mobile-toggle:hover {
+                background-color: var(--accent-color);
+            }
+
+            #mobile-toggle:active {
+                transform: translateY(-50%) scale(0.95);
+            }
+
+            #mobile-toggle .material-icons {
+                font-size: 24px;
+            }
+            
+            /* Hide mobile toggle when sidebar is open */
+            #mobile-toggle.hidden {
+                left: -30px;
+                opacity: 0;
+            }
+        }
     </style>
 </head>
-<body>
-    {% if user.is_authenticated and not request.path == '/login/' %}
+<body {% if user.is_authenticated and user.userprofile.role == 'ENFORCER' %}data-role="ENFORCER"{% endif %} data-update-location-url="{% url 'update_location' %}">
+    {% if user.is_authenticated %}
+    <!-- Mobile Toggle Button -->
+    <button id="mobile-toggle" aria-label="Toggle Navigation">
+        <span class="material-icons">chevron_right</span>
+    </button>
+    
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay"></div>
+    
+    <!-- Sidebar and Main Content Wrapper -->
     <div id="wrapper">
         <!-- Sidebar -->
         <div id="sidebar-wrapper">
@@ -2087,6 +2741,12 @@
             </div>
 
             <div class="sidebar-content">
+                <button class="scroll-button scroll-up" id="scrollUp">
+                    <span class="material-icons">keyboard_arrow_up</span>
+                </button>
+                <button class="scroll-button scroll-down" id="scrollDown">
+                    <span class="material-icons">keyboard_arrow_down</span>
+                </button>
                 {% with role=user.userprofile.role %}
                     <!-- Main Navigation -->
                     <div class="sidebar-section">
@@ -2167,6 +2827,12 @@
                                 </div>
                             </div>
 
+                            {% if user.userprofile.role == 'ADMIN' %}
+                            <a href="{% url 'admin_reports_dashboard' %}" class="list-group-item {% if 'reports/dashboard' in request.path %}active{% endif %}">
+                                <span class="material-icons">report</span>Submitted Reports
+                            </a>
+                            {% endif %}
+
                             {% if user.userprofile.role in 'ADMIN,SUPERVISOR,TREASURER' %}
                             <a href="{% url 'payment_records' %}" class="list-group-item {% if 'payments' in request.path %}active{% endif %}">
                                 <span class="material-icons">receipt_long</span>
@@ -2187,60 +2853,106 @@
                             <a href="{% url 'users_list' %}" class="list-group-item {% if 'users' in request.path %}active{% endif %}">
                                 <span class="material-icons">group</span>Users
                             </a>
+                            <a href="{% url 'user_portal:user_management' %}" class="list-group-item {% if 'user-management' in request.path %}active{% endif %}">
+                                <span class="material-icons">directions_bike</span>Riders & Vehicles
+                            </a>
+                            <div class="submenu">
+                                <button class="list-group-item submenu-toggle {% if 'operators' in request.path %}active{% endif %}" data-bs-toggle="collapse" data-bs-target="#operatorsSubmenu">
+                                    <span class="material-icons">commute</span>
+                                    <span class="flex-grow-1">Operators</span>
+                                    <span class="material-icons submenu-icon">expand_more</span>
+                                </button>
+                                <div class="collapse {% if 'operators' in request.path or 'driver' in request.path %}show{% endif %}" id="operatorsSubmenu">
+                                    <a href="{% url 'operator_list' %}" class="list-group-item submenu-item {% if 'operators' in request.path and not 'types' in request.path and not 'applications' in request.path %}active{% endif %}">
+                                        <span class="material-icons">people</span>Manage Operators
+                                    </a>
+                                    <a href="{% url 'operator_applications_manage' %}" class="list-group-item submenu-item {% if 'operator/applications/manage' in request.path %}active{% endif %}">
+                                        <span class="material-icons">approval</span>Applications
+                                    </a>
+                                    <a href="{% url 'driver_list' %}" class="list-group-item submenu-item {% if 'driver' in request.path %}active{% endif %}">
+                                        <span class="material-icons">person</span>Drivers
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     {% endif %}
-
+                    
+                    {% if role == 'ADMIN' %}
+                    <!-- User Management Section -->
+                    <div class="sidebar-section">
+                        <div class="sidebar-section-title">Management</div>
+                        <div class="list-group list-group-flush">
+                            <!-- Management menu items will go here -->
+                        </div>
+                    </div>
+                    {% endif %}
+                    
                     <!-- User Menu Items -->
                     {% if user.is_authenticated and user.userprofile.role == 'USER' %}
                     <div class="sidebar-section">
                         <div class="sidebar-section-title">Menu</div>
                         <div class="list-group list-group-flush">
-                            <a href="{% url 'edit_user_profile' %}" class="list-group-item {% if 'profile' in request.path %}active{% endif %}">
+                            <a href="{% url 'edit_profile' %}" class="list-group-item {% if 'profile' in request.path %}active{% endif %}">
                                 <span class="material-icons">person</span>Profile
                             </a>
-                            <a href="{% url 'user_violations' %}" class="list-group-item {% if 'violations' in request.path %}active{% endif %}">
+                            <a href="{% url 'user_portal:user_violations' %}" class="list-group-item {% if 'violations' in request.path %}active{% endif %}">
                                 <span class="material-icons">gavel</span>Violations
                             </a>
-                            <a href="{% url 'user_reports' %}" class="list-group-item {% if 'reports' in request.path %}active{% endif %}">
+                            <a href="{% url 'user_portal:file_report' %}" class="list-group-item {% if 'reports' in request.path %}active{% endif %}">
                                 <span class="material-icons">description</span>Report Filing
                             </a>
+                            {% if not user.userprofile.is_operator %}
+                            <a href="{% url 'operator_apply' %}" class="list-group-item {% if 'operator/apply' in request.path %}active{% endif %}">
+                                <span class="material-icons">commute</span>Apply as Operator
+                            </a>
+                            {% else %}
+                            <a href="{% url 'operator_dashboard' %}" class="list-group-item {% if 'operator/dashboard' in request.path %}active{% endif %}">
+                                <span class="material-icons">dashboard</span>Operator Dashboard
+                            </a>
+                            {% endif %}
                         </div>
                     </div>
                     {% endif %}
                 {% endwith %}
+                
+                <!-- User Profile Section in Sidebar -->
+                <div class="sidebar-user-profile">
+                    <div class="sidebar-user-info">
+                        <div class="sidebar-user-avatar">
+                            {% if user.userprofile.avatar %}
+                                <img src="{{ user.userprofile.avatar.url }}" alt="Profile">
+                            {% else %}
+                                <span class="material-icons">account_circle</span>
+                            {% endif %}
+                        </div>
+                        <div class="sidebar-user-details">
+                            <h5 class="sidebar-user-name">{{ user.get_full_name }}</h5>
+                            <p class="sidebar-user-role">{{ user.userprofile.get_role_display }}</p>
+                            <p class="sidebar-user-id">ID: {{ user.userprofile.enforcer_id }}</p>
+                        </div>
+                    </div>
+                    <div class="sidebar-user-actions">
+                        <a href="{% url 'profile' %}" class="sidebar-user-action-btn">
+                            <span class="material-icons">person</span>
+                            <span>Profile</span>
+                        </a>
+                        <a href="{% url 'activity_history' %}" class="sidebar-user-action-btn">
+                            <span class="material-icons">history</span>
+                            <span>Activity</span>
+                        </a>
+                        <form method="post" action="{% url 'logout' %}" class="sidebar-logout-form">
+                            {% csrf_token %}
+                            <button type="submit" class="sidebar-user-action-btn logout-btn">
+                                <span class="material-icons">logout</span>
+                                <span>Logout</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </div>
 
-            <!-- User Profile Section -->
-            <div class="user-profile">
-                <div class="user-info">
-                    <div class="user-avatar">
-                        {% if user.userprofile.avatar %}
-                            <img src="{{ user.userprofile.avatar.url }}" alt="Profile">
-                        {% else %}
-                            <span class="material-icons">account_circle</span>
-                        {% endif %}
-                    </div>
-                    <div class="user-details">
-                        <p class="user-name">{{ user.get_full_name }}</p>
-                        <p class="user-role">{{ user.userprofile.get_role_display }}</p>
-                    </div>
-                </div>
-                <div class="user-actions">
-                    <a href="{% url 'profile' %}" class="user-action-btn" title="Profile">
-                        <span class="material-icons">person</span>
-                    </a>
-                    <a href="{% url 'activity_history' %}" class="user-action-btn" title="Activity">
-                        <span class="material-icons">history</span>
-                    </a>
-                    <form method="post" action="{% url 'logout' %}" class="d-inline">
-                        {% csrf_token %}
-                        <button type="submit" class="user-action-btn" title="Logout">
-                            <span class="material-icons">logout</span>
-                        </button>
-                    </form>
-                </div>
-            </div>
+            <!-- User Profile Section has been moved to the sidebar -->
         </div>
 
         <!-- Sidebar Overlay -->
@@ -2248,6 +2960,8 @@
 
         <!-- Page Content -->
         <div id="page-content-wrapper">
+            <!-- Page Header - removed as requested -->
+
             <!-- Simple Confirmation Dialog -->
             <div class="confirm-dialog-overlay" id="confirmDialogOverlay">
                 <div class="confirm-dialog">
@@ -2276,8 +2990,11 @@
             </div>
             {% endif %}
 
-            {% block content %}
-            {% endblock %}
+            <!-- Content Area -->
+            <div class="content-area">
+                {% block content %}
+                {% endblock %}
+            </div>
         </div>
     </div>
     {% else %}
@@ -2290,9 +3007,50 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
+        // Set page title based on current page/section
+        document.addEventListener('DOMContentLoaded', function() {
+            const pageTitle = document.getElementById('currentPageTitle');
+            if (pageTitle) {
+                // Try to determine title from breadcrumb or page header
+                let title = '';
+                
+                // Check for h1, h2, h3 in the main content area
+                const contentHeaders = document.querySelector('#page-content-wrapper')?.querySelectorAll('h1, h2, h3');
+                if (contentHeaders && contentHeaders.length > 0) {
+                    title = contentHeaders[0].textContent.trim();
+                }
+                
+                // If no header found, try to determine from URL
+                if (!title) {
+                    const path = window.location.pathname;
+                    
+                    if (path === '/' || path.includes('dashboard')) {
+                        title = 'Admin Page';
+                    } else if (path.includes('violation')) {
+                        title = 'Violations';
+                    } else if (path.includes('user')) {
+                        title = 'User Management';
+                    } else if (path.includes('profile')) {
+                        title = 'Profile';
+                    } else if (path.includes('payment')) {
+                        title = 'Payments';
+                    } else if (path.includes('announcement')) {
+                        title = 'Announcements';
+                    } else {
+                        // Default to document title without site name
+                        title = document.title.replace(' | Traffic Violation System', '');
+                    }
+                }
+                
+                // Set the title
+                pageTitle.textContent = title;
+            }
+        });
+
         // Updated sidebar toggle functionality
         document.addEventListener('DOMContentLoaded', function() {
             const sidebarToggle = document.getElementById('sidebarToggle');
+            const mobileToggle = document.getElementById('mobile-toggle');
             const sidebarWrapper = document.getElementById('sidebar-wrapper');
             const sidebarOverlay = document.querySelector('.sidebar-overlay');
             const body = document.body;
@@ -2304,13 +3062,34 @@
                 }
                 sidebarWrapper.classList.toggle('active');
                 sidebarOverlay.classList.toggle('active');
-                sidebarToggle.classList.toggle('active');
+                if (sidebarToggle) sidebarToggle.classList.toggle('active');
                 body.classList.toggle('sidebar-open');
+                
+                // Update mobile toggle icon
+                if (mobileToggle) {
+                    const icon = mobileToggle.querySelector('.material-icons');
+                    if (icon) {
+                        if (sidebarWrapper.classList.contains('active')) {
+                            icon.textContent = 'chevron_left';
+                            // Hide toggle when sidebar is open
+                            mobileToggle.classList.add('hidden');
+                        } else {
+                            icon.textContent = 'chevron_right';
+                            // Show toggle when sidebar is closed
+                            mobileToggle.classList.remove('hidden');
+                        }
+                    }
+                }
             }
 
             // Toggle sidebar on button click
             if (sidebarToggle) {
                 sidebarToggle.addEventListener('click', toggleSidebar);
+            }
+            
+            // Toggle sidebar on mobile button click
+            if (mobileToggle) {
+                mobileToggle.addEventListener('click', toggleSidebar);
             }
 
             // Close sidebar when clicking overlay
@@ -2349,6 +3128,58 @@
                             toggleSidebar();
                         }, 150);
                     }
+                });
+            });
+
+            // Scroll functionality
+            const sidebarContent = document.querySelector('.sidebar-content');
+            const scrollUpBtn = document.getElementById('scrollUp');
+            const scrollDownBtn = document.getElementById('scrollDown');
+            const scrollAmount = 100; // Amount to scroll in pixels
+
+            function updateScrollButtonsVisibility() {
+                const hasOverflow = sidebarContent.scrollHeight > sidebarContent.clientHeight;
+                sidebarContent.classList.toggle('no-overflow', !hasOverflow);
+                
+                if (hasOverflow) {
+                    // Show/hide up button based on scroll position
+                    scrollUpBtn.classList.toggle('visible', sidebarContent.scrollTop > 20);
+                    // Show/hide down button based on remaining scroll
+                    scrollDownBtn.classList.toggle('visible', 
+                        sidebarContent.scrollHeight - sidebarContent.scrollTop - sidebarContent.clientHeight > 20);
+                }
+            }
+
+            // Initial check for overflow
+            updateScrollButtonsVisibility();
+
+            // Update on scroll
+            sidebarContent.addEventListener('scroll', updateScrollButtonsVisibility);
+
+            // Update on window resize
+            window.addEventListener('resize', updateScrollButtonsVisibility);
+
+            // Scroll up button click handler
+            scrollUpBtn.addEventListener('click', () => {
+                sidebarContent.scrollBy({
+                    top: -scrollAmount,
+                    behavior: 'smooth'
+                });
+            });
+
+            // Scroll down button click handler
+            scrollDownBtn.addEventListener('click', () => {
+                sidebarContent.scrollBy({
+                    top: scrollAmount,
+                    behavior: 'smooth'
+                });
+            });
+
+            // Update scroll buttons when submenu is toggled
+            const submenuToggles = document.querySelectorAll('.submenu-toggle');
+            submenuToggles.forEach(toggle => {
+                toggle.addEventListener('click', () => {
+                    setTimeout(updateScrollButtonsVisibility, 300); // Wait for collapse animation
                 });
             });
         });
@@ -2553,6 +3384,40 @@
                 }
             }
         });
+
+        // Set page title based on URL path
+        function setPageTitleByUrl() {
+            let path = window.location.pathname;
+            let title = 'Traffic Violation System';
+            
+            if (path.includes('dashboard')) {
+                title = 'Dashboard';
+            } else if (path.includes('violations')) {
+                title = 'Violations';
+            } else if (path.includes('processing')) {
+                title = 'Processing';
+            } else if (path.includes('enforcer-map')) {
+                title = 'Enforcer Map';
+            } else if (path.includes('ticketing')) {
+                title = 'Ticketing';
+            } else if (path.includes('payment')) {
+                title = 'Payment Records';
+            } else if (path.includes('announcements')) {
+                title = 'Announcements';
+            } else if (path.includes('users')) {
+                title = 'Users';
+            } else if (path.includes('riders')) {
+                title = 'Riders & Vehicles';
+            } else if (path.includes('operators')) {
+                title = 'Operators';
+            } else if (path.includes('profile')) {
+                title = 'Profile';
+            } else if (path.includes('reports')) {
+                title = 'Reports';
+            }
+            
+            document.title = title + ' | TVMS';
+        }
     </script>
 
     {% block extra_js %}
@@ -2659,5 +3524,459 @@
         });
     </script>
     {% endif %}
+
+    <!-- Popup Announcement Modal -->
+    <div class="modal fade" id="popupAnnouncementModal" tabindex="-1" aria-labelledby="popupAnnouncementModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0">
+                <div class="modal-header border-0">
+                    <div>
+                        <h5 class="modal-title" id="popupAnnouncementTitle"></h5>
+                        <span class="badge" id="popupAnnouncementCategory"></span>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="popupAnnouncementContent">
+                </div>
+                <div class="modal-footer border-0">
+                    <div class="small text-muted me-auto" id="popupAnnouncementMeta"></div>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="closeAnnouncement">Close</button>
+                    <button type="button" class="btn btn-primary" id="acknowledgeAnnouncement">Acknowledge</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Popup Announcement Script -->
+    <script>
+        // Function to check for popup announcements
+        function checkForPopupAnnouncements() {
+            console.log("Checking for popup announcements..."); // Debug logging
+            
+            fetch('/api/announcements/popup/')
+                .then(response => {
+                    console.log("Got response from popup API:", response.status); // Debug logging
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok: ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Announcement response:", data); // Debug logging
+                    
+                    if (data.status !== 'no_announcements') {
+                        console.log("Showing announcement:", data.title);
+                        
+                        // Set announcement content
+                        document.getElementById('popupAnnouncementTitle').innerText = data.title || 'Announcement';
+                        
+                        // Use rich content if available
+                        const contentEl = document.getElementById('popupAnnouncementContent');
+                        if (data.content && data.content.includes('<')) {
+                            contentEl.innerHTML = data.content; // Use HTML content
+                        } else {
+                            contentEl.innerText = data.content || ''; // Use plain text
+                        }
+                        
+                        // Set category badge
+                        const categoryEl = document.getElementById('popupAnnouncementCategory');
+                        if (data.category) {
+                            categoryEl.innerText = data.category;
+                            categoryEl.classList.add('bg-secondary');
+                            categoryEl.style.display = 'inline-flex';
+                        } else {
+                            categoryEl.style.display = 'none';
+                        }
+                        
+                        document.getElementById('popupAnnouncementMeta').innerText = 
+                            `Posted by ${data.created_by || 'Administrator'} on ${new Date(data.created_at || new Date()).toLocaleString()}`;
+                        
+                        // Add priority-based styling
+                        const modal = document.querySelector('#popupAnnouncementModal .modal-content');
+                        modal.classList.remove('border-warning', 'border-danger');
+                        
+                        if (data.priority === 'HIGH') {
+                            modal.classList.add('border-danger');
+                            modal.style.borderLeft = '5px solid var(--bs-danger, red)';
+                        } else if (data.priority === 'MEDIUM') {
+                            modal.classList.add('border-warning');
+                            modal.style.borderLeft = '5px solid var(--bs-warning, orange)';
+                        } else {
+                            modal.style.borderLeft = '5px solid var(--bs-primary, blue)';
+                        }
+                        
+                        // Set up acknowledgment button
+                        const acknowledgeBtn = document.getElementById('acknowledgeAnnouncement');
+                        const closeBtn = document.getElementById('closeAnnouncement');
+                        
+                        if (data.requires_acknowledgment) {
+                            // Show acknowledgment button for required acknowledgments
+                            acknowledgeBtn.style.display = 'block';
+                            closeBtn.style.display = 'none';
+                            
+                            // Set up acknowledgment function
+                            acknowledgeBtn.onclick = function() {
+                                acknowledgeAnnouncement(data.id);
+                            };
+                        } else {
+                            // Show close button for normal announcements
+                            acknowledgeBtn.style.display = 'none';
+                            closeBtn.style.display = 'block';
+                        }
+                        
+                        try {
+                            // Show the modal
+                            console.log("Showing modal...");
+                            const modalElement = document.getElementById('popupAnnouncementModal');
+                            if (!modalElement) {
+                                console.error("Modal element not found!");
+                                return;
+                            }
+                            
+                            const announcementModal = new bootstrap.Modal(modalElement);
+                            announcementModal.show();
+                            console.log("Modal shown!");
+                        } catch (err) {
+                            console.error("Error showing modal:", err);
+                        }
+                    } else {
+                        console.log("No announcements to show");
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching popup announcements:', error);
+                });
+        }
+
+        // Function to acknowledge an announcement
+        function acknowledgeAnnouncement(announcementId) {
+            // Get CSRF token safely
+            const csrfToken = getCsrfToken();
+            
+            if (!csrfToken) {
+                console.error("No CSRF token found, cannot acknowledge announcement");
+                return;
+            }
+            
+            console.log("Acknowledging announcement:", announcementId);
+                              
+            fetch(`/api/announcements/${announcementId}/acknowledge/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok: ' + response.statusText);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("Acknowledgment successful:", data);
+                // Close the modal after acknowledgment
+                const modal = bootstrap.Modal.getInstance(document.getElementById('popupAnnouncementModal'));
+                if (modal) {
+                    modal.hide();
+                    console.log("Modal closed");
+                }
+            })
+            .catch(error => {
+                console.error('Error acknowledging announcement:', error);
+            });
+        }
+
+        // Helper function to get CSRF token from cookies if not in form
+        function getCsrfToken() {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, 'csrftoken='.length) === 'csrftoken=') {
+                        cookieValue = decodeURIComponent(cookie.substring('csrftoken='.length));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Check for popup announcements when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(checkForPopupAnnouncements, 1000); // Slight delay to ensure page is fully loaded
+        });
+    </script>
+
+    <!-- Location Tracking Script -->
+    <script>
+        // Function to check if user is an enforcer and only enable location tracking if so
+        document.addEventListener('DOMContentLoaded', function() {
+            /* Django template tags are handled server-side */
+            {% if user.is_authenticated and user.userprofile.role == 'ENFORCER' %}
+                // Only enable tracking for enforcers
+                initLocationTracking();
+            {% endif %}
+        });
+
+        function initLocationTracking() {
+            // Function to get CSRF token
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+
+            function updateLocation(position) {
+                const data = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    accuracy: position.coords.accuracy,
+                    speed: position.coords.speed || null,
+                    heading: position.coords.heading || null,
+                    is_active: true
+                };
+
+                fetch('{% url "update_location" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        console.log('Location updated:', data);
+                    } else {
+                        console.error('Error updating location:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating location:', error);
+                    // Retry after 5 seconds on failure
+                    setTimeout(trackLocation, 5000);
+                });
+            }
+
+            function handleLocationError(error) {
+                console.error('Error getting location:', error);
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        console.error("Location permission denied");
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        console.error("Location information unavailable");
+                        break;
+                    case error.TIMEOUT:
+                        console.error("Location request timed out");
+                        // Retry with different options
+                        navigator.geolocation.getCurrentPosition(updateLocation, handleLocationError, {
+                            enableHighAccuracy: false,
+                            timeout: 10000,
+                            maximumAge: 30000
+                        });
+                        break;
+                }
+            }
+
+            function trackLocation() {
+                if ("geolocation" in navigator) {
+                    navigator.geolocation.getCurrentPosition(updateLocation, handleLocationError, {
+                        enableHighAccuracy: true,
+                        timeout: 5000,
+                        maximumAge: 0
+                    });
+                } else {
+                    console.error('Geolocation is not supported by this browser');
+                }
+            }
+
+            // Update location more frequently (every 30 seconds)
+            // Initial location update
+            trackLocation();
+            
+            // Set up periodic updates
+            setInterval(trackLocation, 30000);
+
+            // Update location when tab becomes visible
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden) {
+                    trackLocation();
+                }
+            });
+        }
+    </script>
+
+    <!-- Initialize all tooltips -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Bootstrap tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+                new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+
+            // Add active class to parent submenu when child is active
+            const activeSubmenuItem = document.querySelector('.submenu-item.active');
+            if (activeSubmenuItem) {
+                const parentSubmenu = activeSubmenuItem.closest('.submenu');
+                if (parentSubmenu) {
+                    const parentToggle = parentSubmenu.querySelector('.submenu-toggle');
+                    parentToggle.classList.add('active');
+                }
+            }
+        });
+    </script>
+
+    <!-- Sidebar Link Handling for Regular Users -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Apply to all users to ensure consistent navigation
+            // Get all sidebar menu links that aren't submenu toggles
+            const sidebarLinks = document.querySelectorAll('#sidebar-wrapper .list-group-item:not(.submenu-toggle)');
+            
+            // Mark active link based on current path
+            sidebarLinks.forEach(link => {
+                if (link.getAttribute('href') && window.location.pathname.includes(link.getAttribute('href').split('?')[0])) {
+                    link.classList.add('active');
+                    
+                    // If this link is in a submenu, expand the submenu
+                    const parentSubmenu = link.closest('.submenu');
+                    if (parentSubmenu) {
+                        const submenuToggle = parentSubmenu.querySelector('.submenu-toggle');
+                        const submenuContent = parentSubmenu.querySelector('.collapse');
+                        if (submenuToggle && submenuContent) {
+                            submenuToggle.classList.add('active');
+                            submenuContent.classList.add('show');
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+
+    <script>
+        // Set page title based on current page/section - removed since the title element was removed
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is an enforcer by reading the data attribute
+            const userRole = document.body.getAttribute('data-role');
+            if (userRole === 'ENFORCER') {
+                initLocationTracking();
+            }
+        });
+
+        function initLocationTracking() {
+            // Get the update location URL from data attribute
+            const locationUpdateUrl = document.body.getAttribute('data-update-location-url');
+            
+            // Function to get CSRF token
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+
+            function updateLocation(position) {
+                const data = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    accuracy: position.coords.accuracy,
+                    speed: position.coords.speed || null,
+                    heading: position.coords.heading || null,
+                    is_active: true
+                };
+
+                fetch(locationUpdateUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        console.log('Location updated:', data);
+                    } else {
+                        console.error('Error updating location:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating location:', error);
+                    // Retry after 5 seconds on failure
+                    setTimeout(trackLocation, 5000);
+                });
+            }
+
+            function handleLocationError(error) {
+                console.error('Error getting location:', error);
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        console.error("Location permission denied");
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        console.error("Location information unavailable");
+                        break;
+                    case error.TIMEOUT:
+                        console.error("Location request timed out");
+                        // Retry with different options
+                        navigator.geolocation.getCurrentPosition(updateLocation, handleLocationError, {
+                            enableHighAccuracy: false,
+                            timeout: 10000,
+                            maximumAge: 30000
+                        });
+                        break;
+                }
+            }
+
+            function trackLocation() {
+                if ("geolocation" in navigator) {
+                    navigator.geolocation.getCurrentPosition(updateLocation, handleLocationError, {
+                        enableHighAccuracy: true,
+                        timeout: 5000,
+                        maximumAge: 0
+                    });
+                } else {
+                    console.error('Geolocation is not supported by this browser');
+                }
+            }
+
+            // Update location more frequently (every 30 seconds)
+            // Initial location update
+            trackLocation();
+            
+            // Set up periodic updates
+            setInterval(trackLocation, 30000);
+
+            // Update location when tab becomes visible
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden) {
+                    trackLocation();
+                }
+            });
+        }
+    </script>
 </body>
 </html>

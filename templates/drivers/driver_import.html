@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Import Drivers{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="d-flex align-items-center">
+                        <span class="material-icons me-2" style="color: var(--primary-color)">upload_file</span>
+                        <h4 class="mb-0">Import Drivers</h4>
+                    </div>
+                    <p class="text-muted mt-2 mb-0">Upload drivers data from Excel or CSV file</p>
+                </div>
+                <div>
+                    <a href="{% url 'driver_list' %}" class="btn btn-outline-secondary d-flex align-items-center px-4 py-2">
+                        <span class="material-icons fs-5 me-2">arrow_back</span> Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Card -->
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-header bg-transparent border-0 py-3">
+            <div class="d-flex align-items-center">
+                <span class="material-icons me-2" style="color: var(--primary-color)">cloud_upload</span>
+                <h5 class="mb-0">File Upload</h5>
+            </div>
+        </div>
+
+        <div class="card-body p-4">
+            <div class="alert alert-info d-flex mb-4">
+                <span class="material-icons me-2 mt-1">info</span>
+                <div>
+                    <strong>Note:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>Your Excel file should have a worksheet for <strong>Drivers</strong></li>
+                        <li><strong>Drivers Worksheet:</strong> Columns must include Last Name, First Name, M.I., Address, Old PD No., New PD No.</li>
+                        <li>PD Numbers are plain numbers without any letters or prefixes</li>
+                        <li>Drivers can be operators (matched by name and address) or can lease from operators</li>
+                        <li>You will be able to preview and confirm the data before importing</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div class="mb-4">
+                    <label for="{{ form.file.id_for_label }}" class="form-label d-flex align-items-center">
+                        <span class="material-icons me-2">file_upload</span> Select File to Import
+                    </label>
+                    <div class="input-group">
+                        {{ form.file }}
+                    </div>
+                    <div class="form-text">{{ form.file.help_text }}</div>
+                    {% if form.file.errors %}
+                    <div class="text-danger mt-1">
+                        {% for error in form.file.errors %}
+                        {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-4">
+                    <div class="form-check">
+                        {{ form.skip_header }}
+                        <label class="form-check-label" for="{{ form.skip_header.id_for_label }}">
+                            Skip the first row (header row)
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Sample File Download -->
+                <div class="mb-4">
+                    <div class="form-text d-flex align-items-center">
+                        <span class="material-icons me-2">download</span>
+                        <a href="{% url 'driver_export_excel' %}" target="_blank">Download sample template</a> to see the expected format.
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-end">
+                    <a href="{% url 'driver_list' %}" class="btn btn-outline-secondary d-flex align-items-center px-4 py-2 me-2">
+                        <span class="material-icons fs-5 me-2">close</span> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary d-flex align-items-center px-4 py-2">
+                        <span class="material-icons fs-5 me-2">cloud_upload</span> Upload and Preview
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

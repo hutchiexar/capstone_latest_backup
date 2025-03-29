@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if operator %}Update Operator{% else %}Create Operator{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="page-header">
+        <div class="row align-items-center">
+            <div class="col">
+                <h1 class="page-header-title">{% if operator %}Update Operator{% else %}Create Operator{% endif %}</h1>
+                <p class="page-header-text">{% if operator %}Update the information for {{ operator.last_name }}, {{ operator.first_name }}{% else %}Add a new operator to the system{% endif %}</p>
+            </div>
+            <div class="col-auto">
+                <a href="{% url 'operator_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to List
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4 class="card-header-title">Operator Information</h4>
+        </div>
+
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="row">
+                    <!-- Last Name -->
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ form.last_name.id_for_label }}" class="form-label">Last Name <span class="text-danger">*</span></label>
+                        {{ form.last_name }}
+                        {% if form.last_name.errors %}
+                        <div class="text-danger mt-1">
+                            {% for error in form.last_name.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- First Name -->
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ form.first_name.id_for_label }}" class="form-label">First Name <span class="text-danger">*</span></label>
+                        {{ form.first_name }}
+                        {% if form.first_name.errors %}
+                        <div class="text-danger mt-1">
+                            {% for error in form.first_name.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Middle Initial -->
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ form.middle_initial.id_for_label }}" class="form-label">Middle Initial</label>
+                        {{ form.middle_initial }}
+                        {% if form.middle_initial.errors %}
+                        <div class="text-danger mt-1">
+                            {% for error in form.middle_initial.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Address -->
+                <div class="mb-3">
+                    <label for="{{ form.address.id_for_label }}" class="form-label">Address <span class="text-danger">*</span></label>
+                    {{ form.address }}
+                    {% if form.address.errors %}
+                    <div class="text-danger mt-1">
+                        {% for error in form.address.errors %}
+                        {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="row">
+                    <!-- Old P.D. Number -->
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.old_pd_number.id_for_label }}" class="form-label">Old P.D. Number</label>
+                        {{ form.old_pd_number }}
+                        {% if form.old_pd_number.errors %}
+                        <div class="text-danger mt-1">
+                            {% for error in form.old_pd_number.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- New P.D. Number -->
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.new_pd_number.id_for_label }}" class="form-label">New P.D. Number <span class="text-danger">*</span></label>
+                        {{ form.new_pd_number }}
+                        {% if form.new_pd_number.errors %}
+                        <div class="text-danger mt-1">
+                            {% for error in form.new_pd_number.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="mt-4 d-flex justify-content-end">
+                    <a href="{% url 'operator_list' %}" class="btn btn-outline-secondary me-2">Cancel</a>
+                    <button type="submit" class="btn btn-primary">{% if operator %}Update{% else %}Create{% endif %} Operator</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

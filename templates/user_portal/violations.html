@@ -3,27 +3,408 @@
 
 {% block title %}My Violations - CTTMO User Portal{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Modern Color Palette */
+    :root {
+        --primary-color: #3563E9;
+        --primary-light: #EEF3FF;
+        --success-color: #0CAA1D;
+        --danger-color: #F53D3D;
+        --warning-color: #FFB800;
+        --info-color: #4DA7FF;
+        --dark-blue: #0F1C3F;
+        --neutral-gray: #737791;
+        --light-gray: #F6F7F9;
+        --white: #FFFFFF;
+    }
+
+    /* Common Utility Classes */
+    .shadow-lg { box-shadow: 0 10px 20px rgba(0,0,0,0.08); }
+    .shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .rounded-xl { border-radius: 1rem; }
+    .rounded-lg { border-radius: 0.75rem; }
+    .transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 300ms; }
+    
+    /* Animation */
+    @keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+    }
+    
+    @keyframes spinner {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Container */
+    .violations-container {
+        animation: fadeIn 0.5s ease-out;
+    }
+    
+    /* Card Design */
+    .violations-card {
+        transition: all 0.3s ease;
+        border: none;
+        height: 100%;
+    }
+    
+    /* Header Icon */
+    .header-icon {
+        width: 64px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 16px;
+        background-color: var(--primary-light);
+        margin-right: 1.5rem;
+        flex-shrink: 0;
+    }
+    
+    /* Table Container */
+    .table-container {
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+    
+    .violations-table {
+        margin-bottom: 0;
+    }
+    
+    .violations-table thead {
+        background-color: var(--light-gray);
+    }
+    
+    .violations-table th {
+        font-weight: 600;
+        color: var(--dark-blue);
+        padding: 1rem 1.5rem;
+        white-space: nowrap;
+    }
+    
+    .violations-table td {
+        padding: 1rem 1.5rem;
+        vertical-align: middle;
+    }
+    
+    /* Status Badge */
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 2rem;
+        font-weight: 500;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    .status-badge-pending {
+        background-color: #FFF4DE;
+        color: #FF8A00;
+    }
+    
+    .status-badge-paid {
+        background-color: #E6F7EE;
+        color: var(--success-color);
+    }
+    
+    .status-badge-approved {
+        background-color: #DCFCE7;
+        color: #15803D;
+    }
+    
+    .status-badge-adjudicated {
+        background-color: #DBEAFE;
+        color: #1D4ED8;
+    }
+    
+    /* Empty States */
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 4rem 1rem;
+    }
+    
+    .empty-state-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background-color: #EEF3FF;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Search and Filter */
+    .filter-dropdown .btn {
+        height: 44px;
+        border-radius: 0.75rem;
+        font-weight: 500;
+        background-color: var(--white);
+        border-color: #E2E8F0;
+        color: var(--dark-blue);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 1.25rem;
+    }
+    
+    .filter-dropdown .btn:hover {
+        background-color: var(--primary-light);
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+    }
+    
+    .dropdown-menu {
+        border: none;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        border-radius: 0.75rem;
+        padding: 0.75rem;
+        min-width: 200px;
+    }
+    
+    .dropdown-item {
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 0.25rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .dropdown-item:last-child {
+        margin-bottom: 0;
+    }
+    
+    .dropdown-item:hover {
+        background-color: var(--primary-light);
+        color: var(--primary-color);
+    }
+    
+    .dropdown-item.active {
+        background-color: var(--primary-color);
+        color: white;
+    }
+    
+    .search-form {
+        position: relative;
+    }
+    
+    .search-form .form-control {
+        height: 44px;
+        border-radius: 0.75rem;
+        padding-left: 1rem;
+        padding-right: 3.5rem;
+        background-color: white;
+        border-color: #E2E8F0;
+        box-shadow: none;
+    }
+    
+    .search-form .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(53, 99, 233, 0.1);
+    }
+    
+    .search-form .btn {
+        position: absolute;
+        right: 0;
+        top: 0;
+        height: 44px;
+        width: 50px;
+        border-radius: 0 0.75rem 0.75rem 0;
+        background-color: var(--primary-color);
+        border: none;
+        z-index: 5;
+    }
+    
+    /* Action Buttons */
+    .btn-view-details, .btn-pay-now {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+    }
+    
+    .btn-pay-now {
+        background-color: var(--success-color);
+        border-color: var(--success-color);
+    }
+    
+    .btn-pay-now:hover {
+        background-color: #099218;
+        border-color: #099218;
+    }
+    
+    /* Pagination */
+    .pagination {
+        margin-top: 2rem;
+    }
+    
+    .page-link {
+        min-width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        padding: 0;
+        margin: 0 0.25rem;
+        border-radius: 0.5rem;
+        color: var(--dark-blue);
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .page-link:hover {
+        background-color: var(--primary-light);
+        color: var(--primary-color);
+    }
+    
+    .page-item.active .page-link {
+        background-color: var(--primary-color);
+        color: white;
+    }
+    
+    .page-item.disabled .page-link {
+        background-color: var(--light-gray);
+        color: var(--neutral-gray);
+    }
+    
+    /* Loading skeleton */
+    .text-skeleton { 
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); 
+        background-size: 200% 100%; 
+        animation: shimmer 1.5s infinite; 
+        height: 1rem; 
+        margin-bottom: 0.5rem; 
+        border-radius: 0.25rem; 
+    }
+    
+    /* Responsive Adjustments */
+    @media (max-width: 992px) {
+        .header-section {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .header-controls {
+            flex-direction: column;
+            width: 100%;
+            margin-top: 1rem;
+        }
+        
+        .filter-dropdown, .search-form {
+            width: 100%;
+            margin-bottom: 0.75rem;
+        }
+        
+        .filter-dropdown:last-child, .search-form:last-child {
+            margin-bottom: 0;
+        }
+    }
+    
+    @media (max-width: 767px) {
+        .violations-table th,
+        .violations-table td {
+            padding: 0.75rem;
+            font-size: 0.875rem;
+        }
+        
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .action-buttons .btn {
+            margin-bottom: 0.5rem;
+            width: 100%;
+        }
+        
+        .action-buttons .btn:last-child {
+            margin-bottom: 0;
+            margin-left: 0 !important;
+        }
+        
+        .table-container {
+            border-radius: 0.75rem;
+        }
+        
+        .header-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            margin-right: 1rem;
+        }
+        
+        .header-title h1 {
+            font-size: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container">
-    <!-- Header Section -->
+<div class="container py-3 py-md-5 violations-container">
+    <!-- Loading Skeleton (hidden when data is loaded) -->
+    <div id="violations-skeleton" style="display: none;">
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card border-0 shadow-sm">
+                <div class="card shadow-lg rounded-xl">
                 <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center">
                         <div class="d-flex align-items-center">
-                            <span class="material-icons me-3" style="font-size: 2.5rem; color: var(--primary-color);">
-                                gavel
-                            </span>
+                            <div class="text-skeleton rounded-lg me-3" style="width: 64px; height: 64px;"></div>
                             <div>
-                                <h1 class="mb-1">My Violations</h1>
-                                <p class="text-muted mb-0">View and manage your traffic violations</p>
+                                <div class="text-skeleton" style="width: 200px; height: 28px;"></div>
+                                <div class="text-skeleton mt-2" style="width: 300px;"></div>
                             </div>
                         </div>
-                        <div class="d-flex gap-2">
-                            <div class="dropdown">
-                                <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                    <span class="material-icons me-2">filter_list</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-lg rounded-xl">
+                    <div class="card-body p-0">
+                        <div class="text-skeleton" style="width: 100%; height: 300px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Violations Content -->
+    <div id="violations-content">
+        <!-- Header Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card violations-card shadow-lg rounded-xl">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center header-section">
+                            <div class="d-flex align-items-center">
+                                <div class="header-icon">
+                                    <span class="material-icons" style="font-size: 32px; color: var(--primary-color);">
+                                        gavel
+                                    </span>
+                                </div>
+                                <div class="header-title">
+                                    <h1 class="mb-1 fw-bold">My Violations</h1>
+                                    <p class="text-muted mb-0">View and manage your traffic violations</p>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-3 header-controls">
+                                <div class="filter-dropdown">
+                                    <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <span class="material-icons me-2" style="font-size: 20px;">filter_list</span>
                                     {% if current_status %}
                                         {{ current_status|title }}
                                     {% else %}
@@ -47,14 +428,14 @@
                                 </ul>
                             </div>
                             <form class="search-form" method="get">
-                                <div class="input-group">
+                                    <div class="position-relative">
                                     <input type="text" 
                                            class="form-control" 
                                            placeholder="Search violations..." 
                                            name="search" 
                                            value="{{ request.GET.search }}">
-                                    <button class="btn btn-primary" type="submit">
-                                        <span class="material-icons">search</span>
+                                        <button class="btn" type="submit">
+                                            <span class="material-icons" style="color: white;">search</span>
                                     </button>
                                 </div>
                             </form>
@@ -68,53 +449,68 @@
     <!-- Violations List -->
     <div class="row">
         <div class="col-12">
-            <div class="card border-0 shadow-sm">
+                <div class="card violations-card shadow-lg rounded-xl">
                 <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="bg-light">
-                                <tr>
-                                    <th class="ps-4">Date</th>
+                        <div class="table-responsive table-container">
+                            <table class="table violations-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
                                     <th>Violation Type</th>
                                     <th>Location</th>
                                     <th>Amount</th>
                                     <th>Due Date</th>
                                     <th>Status</th>
-                                    <th class="text-end pe-4">Action</th>
+                                        <th class="text-end">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for violation in violations %}
                                 <tr>
-                                    <td class="ps-4">{{ violation.violation_date|date:"M d, Y" }}</td>
-                                    <td>{{ violation.violation_type }}</td>
+                                        <td>{{ violation.violation_date|date:"M d, Y" }}</td>
+                                    <td>
+                                        {% if violation.get_violation_types %}
+                                            {% for type in violation.get_violation_types %}
+                                                {{ type }}{% if not forloop.last %}, {% endif %}
+                                            {% endfor %}
+                                        {% elif violation.violation_type %}
+                                            {{ violation.get_violation_type_display|default:violation.violation_type }}
+                                        {% else %}
+                                            <span class="text-muted">No type specified</span>
+                                        {% endif %}
+                                    </td>
                                     <td>{{ violation.location }}</td>
                                     <td>₱{{ violation.fine_amount }}</td>
                                     <td>{{ violation.payment_due_date|date:"M d, Y" }}</td>
                                     <td>
-                                        <span class="badge bg-{{ violation.get_status_color }}">
+                                            <span class="status-badge status-badge-{{ violation.status|lower }}">
                                             {{ violation.get_status_display }}
                                         </span>
                                     </td>
-                                    <td class="text-end pe-4">
+                                        <td class="text-end">
+                                            <div class="action-buttons">
                                         <a href="{% url 'user_portal:violation_detail' violation.id %}" 
-                                           class="btn btn-sm btn-outline-primary">
+                                                class="btn btn-sm btn-outline-primary btn-view-details">
                                             View Details
                                         </a>
                                         {% if violation.status == 'APPROVED' %}
                                         <a href="{% url 'process_payment' violation.id %}" 
-                                           class="btn btn-sm btn-success ms-2">
+                                                class="btn btn-sm btn-success btn-pay-now ms-2">
                                             Pay Now
                                         </a>
                                         {% endif %}
+                                            </div>
                                     </td>
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="7" class="text-center py-4">
-                                        <div class="text-muted">
-                                            <span class="material-icons d-block mb-2" style="font-size: 2rem;">check_circle</span>
-                                            <p class="mb-0">No violations found</p>
+                                        <td colspan="7">
+                                            <div class="empty-state">
+                                                <div class="empty-state-icon">
+                                                    <span class="material-icons" style="font-size: 32px; color: var(--primary-color);">check_circle</span>
+                                                </div>
+                                                <h6 class="mb-1 fw-bold" style="font-size: 1.1rem;">No Violations Found</h6>
+                                                <p class="text-muted mb-0">You don't have any recorded traffic violations</p>
                                         </div>
                                     </td>
                                 </tr>
@@ -129,19 +525,21 @@
 
     <!-- Pagination -->
     {% if violations.has_other_pages %}
-    <div class="row mt-4">
+        <div class="row">
         <div class="col-12">
-            <nav>
+                <nav aria-label="Violations pagination">
                 <ul class="pagination justify-content-center">
                     {% if violations.has_previous %}
                     <li class="page-item">
                         <a class="page-link" href="?page={{ violations.previous_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
-                            Previous
+                                <span class="material-icons" style="font-size: 20px;">chevron_left</span>
                         </a>
                     </li>
                     {% else %}
                     <li class="page-item disabled">
-                        <span class="page-link">Previous</span>
+                            <span class="page-link">
+                                <span class="material-icons" style="font-size: 20px;">chevron_left</span>
+                            </span>
                     </li>
                     {% endif %}
 
@@ -156,12 +554,14 @@
                     {% if violations.has_next %}
                     <li class="page-item">
                         <a class="page-link" href="?page={{ violations.next_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
-                            Next
+                                <span class="material-icons" style="font-size: 20px;">chevron_right</span>
                         </a>
                     </li>
                     {% else %}
                     <li class="page-item disabled">
-                        <span class="page-link">Next</span>
+                            <span class="page-link">
+                                <span class="material-icons" style="font-size: 20px;">chevron_right</span>
+                            </span>
                     </li>
                     {% endif %}
                 </ul>
@@ -169,58 +569,24 @@
         </div>
     </div>
     {% endif %}
+    </div>
 </div>
 
-<style>
-    .search-form .form-control {
-        border-right: none;
-        padding-right: 0;
-    }
-
-    .search-form .btn {
-        border-left: none;
-        padding-left: 1rem;
-    }
-
-    .badge {
-        padding: 0.5rem 1rem;
-        border-radius: 0.5rem;
-        font-weight: 500;
-    }
-
-    .dropdown-menu {
-        border: none;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        border-radius: 0.5rem;
-        padding: 0.5rem;
-    }
-
-    .dropdown-item {
-        padding: 0.5rem 1rem;
-        border-radius: 0.25rem;
-    }
-
-    .dropdown-item.active {
-        background-color: var(--primary-color);
-        color: white;
-    }
-
-    .page-link {
-        border: none;
-        padding: 0.5rem 1rem;
-        color: var(--primary-color);
-        border-radius: 0.25rem;
-        margin: 0 0.25rem;
-    }
-
-    .page-item.active .page-link {
-        background-color: var(--primary-color);
-        color: white;
-    }
-
-    .page-item.disabled .page-link {
-        background-color: #f8f9fa;
-        color: #6c757d;
-    }
-</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Show skeleton loading on page load
+    const violationsSkeleton = document.getElementById('violations-skeleton');
+    const violationsContent = document.getElementById('violations-content');
+    
+    // Simulate loading for demonstration
+    violationsSkeleton.style.display = 'block';
+    violationsContent.style.display = 'none';
+    
+    // After "loading" show the content
+    setTimeout(function() {
+        violationsSkeleton.style.display = 'none';
+        violationsContent.style.display = 'block';
+    }, 800);
+});
+</script>
 {% endblock %} 

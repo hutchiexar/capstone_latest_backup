@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Operators Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="d-flex align-items-center">
+                        <span class="material-icons me-2" style="color: var(--primary-color)">commute</span>
+                        <h4 class="mb-0">Operators Management</h4>
+                    </div>
+                    <p class="text-muted mt-2 mb-0">Manage all types of operators (Potpot, Jeepney, Tricycle, etc.)</p>
+                </div>
+                <div class="d-flex">
+                    {% if user.userprofile.role == 'ADMIN' or user.userprofile.role == 'SUPERVISOR' %}
+                    <div class="btn-group me-3">
+                        <a href="{% url 'operator_create' %}" class="btn btn-primary d-flex align-items-center px-4 py-2">
+                            <span class="material-icons fs-5 me-2">add</span> Add Operator
+                        </a>
+                        <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split px-3" 
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="visually-hidden">Toggle Dropdown</span>
+                        </button>
+                        <ul class="dropdown-menu shadow-sm border-0">
+                            <li><a class="dropdown-item d-flex align-items-center py-2 px-3" href="{% url 'operator_import' %}">
+                                <span class="material-icons fs-5 me-2">upload</span> Import Operators
+                            </a></li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-primary d-flex align-items-center px-3 py-2" 
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="material-icons fs-5 me-2">download</span> Export
+                        </button>
+                        <ul class="dropdown-menu shadow-sm border-0">
+                            <li><a class="dropdown-item d-flex align-items-center py-2 px-3" href="{% url 'operator_export_excel' %}">
+                                <span class="material-icons fs-5 me-2">description</span> Export as Excel
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Card -->
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-header bg-transparent d-flex flex-wrap justify-content-between align-items-center gap-3 px-4 py-3 border-bottom">
+            <div class="d-flex align-items-center">
+                <span class="material-icons me-2" style="color: var(--primary-color); font-size: 24px;">people</span>
+                <h5 class="mb-0 fw-bold">Operators List</h5>
+            </div>
+            <div class="search-container flex-grow-1 flex-md-grow-0" style="max-width: 360px;">
+                <form method="GET" action="{% url 'operator_list' %}" class="d-flex">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="q" placeholder="Search operators..." 
+                               value="{{ query }}" aria-label="Search operators">
+                        <button type="submit" class="btn btn-primary d-flex align-items-center justify-content-center" style="width: 40px; height: 38px;">
+                            <span class="material-icons" style="font-size: 20px;">search</span>
+                        </button>
+                        {% if query %}
+                        <a href="{% url 'operator_list' %}" class="btn btn-outline-secondary d-flex align-items-center justify-content-center" style="width: 40px; height: 38px;">
+                            <span class="material-icons" style="font-size: 20px;">clear</span>
+                        </a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="border-top-0 px-4 py-3 fw-semibold">Last Name</th>
+                            <th class="border-top-0 px-4 py-3 fw-semibold">First Name</th>
+                            <th class="border-top-0 px-4 py-3 fw-semibold">M.I.</th>
+                            <th class="border-top-0 px-4 py-3 fw-semibold">Address</th>
+                            <th class="border-top-0 px-4 py-3 text-end fw-semibold" style="width: 120px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for operator in operators %}
+                        <tr>
+                            <td class="fw-medium px-4 py-3">{{ operator.last_name }}</td>
+                            <td class="px-4 py-3">{{ operator.first_name }}</td>
+                            <td class="px-4 py-3">{% if operator.middle_initial and operator.middle_initial != 'nan' %}{{ operator.middle_initial }}{% else %}none{% endif %}</td>
+                            <td class="px-4 py-3">{{ operator.address }}</td>
+                            <td class="px-4 py-3 text-end">
+                                <div class="d-flex justify-content-end">
+                                    <a href="{% url 'operator_detail' operator.id %}" 
+                                       class="btn btn-sm btn-outline-info d-inline-flex align-items-center justify-content-center rounded me-2" 
+                                       style="width: 36px; height: 36px;" 
+                                       title="View Details"
+                                       data-bs-toggle="tooltip">
+                                        <span class="material-icons" style="font-size: 18px;">visibility</span>
+                                    </a>
+                                    {% if user.userprofile.role == 'ADMIN' or user.userprofile.role == 'SUPERVISOR' %}
+                                    <a href="{% url 'operator_update' operator.id %}" 
+                                       class="btn btn-sm btn-outline-primary d-inline-flex align-items-center justify-content-center rounded me-2" 
+                                       style="width: 36px; height: 36px;" 
+                                       title="Edit Operator"
+                                       data-bs-toggle="tooltip">
+                                        <span class="material-icons" style="font-size: 18px;">edit</span>
+                                    </a>
+                                    {% endif %}
+                                    {% if user.userprofile.role == 'ADMIN' %}
+                                    <a href="{% url 'operator_delete' operator.id %}" 
+                                       class="btn btn-sm btn-outline-danger d-inline-flex align-items-center justify-content-center rounded" 
+                                       style="width: 36px; height: 36px;" 
+                                       title="Delete Operator"
+                                       data-bs-toggle="tooltip">
+                                        <span class="material-icons" style="font-size: 18px;">delete</span>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5">
+                                <div class="d-flex flex-column align-items-center py-4">
+                                    <span class="material-icons" style="font-size: 64px; color: #c0c0c0;">search_off</span>
+                                    <p class="mt-3 mb-0 fs-5">No operators found.</p>
+                                    <p class="text-muted mt-2">{% if query %}Try a different search.{% else %}Add one to get started.{% endif %}</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if operators.has_other_pages %}
+            <div class="card-footer bg-transparent py-4 border-top">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination pagination-sm justify-content-center mb-0 gap-1">
+                        {% if operators.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link rounded d-flex align-items-center justify-content-center" 
+                               href="?page=1{% if query %}&q={{ query }}{% endif %}" 
+                               aria-label="First"
+                               style="width: 32px; height: 32px;">
+                                <span class="material-icons" style="font-size: 18px;">first_page</span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link rounded d-flex align-items-center justify-content-center" 
+                               href="?page={{ operators.previous_page_number }}{% if query %}&q={{ query }}{% endif %}" 
+                               aria-label="Previous"
+                               style="width: 32px; height: 32px;">
+                                <span class="material-icons" style="font-size: 18px;">chevron_left</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <a class="page-link rounded d-flex align-items-center justify-content-center" 
+                               href="#" 
+                               aria-label="First"
+                               style="width: 32px; height: 32px;">
+                                <span class="material-icons" style="font-size: 18px;">first_page</span>
+                            </a>
+                        </li>
+                        <li class="page-item disabled">
+                            <a class="page-link rounded d-flex align-items-center justify-content-center" 
+                               href="#" 
+                               aria-label="Previous"
+                               style="width: 32px; height: 32px;">
+                                <span class="material-icons" style="font-size: 18px;">chevron_left</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for i in operators.paginator.page_range %}
+                            {% if operators.number == i %}
+                            <li class="page-item active">
+                                <a class="page-link rounded d-flex align-items-center justify-content-center" 
+                                   href="#"
+                                   style="width: 32px; height: 32px;">{{ i }}</a>
+                            </li>
+                            {% elif i > operators.number|add:'-3' and i < operators.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link rounded d-flex align-items-center justify-content-center" 
+                                   href="?page={{ i }}{% if query %}&q={{ query }}{% endif %}"
+                                   style="width: 32px; height: 32px;">{{ i }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if operators.has_next %}
+                        <li class="page-item">
+                            <a class="page-link rounded d-flex align-items-center justify-content-center" 
+                               href="?page={{ operators.next_page_number }}{% if query %}&q={{ query }}{% endif %}" 
+                               aria-label="Next"
+                               style="width: 32px; height: 32px;">
+                                <span class="material-icons" style="font-size: 18px;">chevron_right</span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link rounded d-flex align-items-center justify-content-center" 
+                               href="?page={{ operators.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}" 
+                               aria-label="Last"
+                               style="width: 32px; height: 32px;">
+                                <span class="material-icons" style="font-size: 18px;">last_page</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <a class="page-link rounded d-flex align-items-center justify-content-center" 
+                               href="#" 
+                               aria-label="Next"
+                               style="width: 32px; height: 32px;">
+                                <span class="material-icons" style="font-size: 18px;">chevron_right</span>
+                            </a>
+                        </li>
+                        <li class="page-item disabled">
+                            <a class="page-link rounded d-flex align-items-center justify-content-center" 
+                               href="#" 
+                               aria-label="Last"
+                               style="width: 32px; height: 32px;">
+                                <span class="material-icons" style="font-size: 18px;">last_page</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    });
+</script>
+{% endblock %} 

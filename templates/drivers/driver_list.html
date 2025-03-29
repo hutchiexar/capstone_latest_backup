@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Drivers Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div>
+                    <div class="d-flex align-items-center">
+                        <span class="material-icons me-2" style="color: var(--primary-color)">directions_car</span>
+                        <h4 class="mb-0">Drivers Management</h4>
+                    </div>
+                    <p class="text-muted mt-2 mb-0">Manage all drivers in the system</p>
+                </div>
+                <div class="d-flex mt-3 mt-md-0">
+                    <a href="{% url 'driver_export_excel' %}" class="btn btn-outline-primary d-flex align-items-center px-4 py-2 me-2">
+                        <span class="material-icons fs-5 me-2">download</span> Export
+                    </a>
+                    <a href="{% url 'driver_import' %}" class="btn btn-outline-primary d-flex align-items-center px-4 py-2 me-2">
+                        <span class="material-icons fs-5 me-2">upload_file</span> Import
+                    </a>
+                    <a href="{% url 'driver_create' %}" class="btn btn-primary d-flex align-items-center px-4 py-2">
+                        <span class="material-icons fs-5 me-2">add</span> Add Driver
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-body p-4">
+            <form method="get" action="{% url 'driver_list' %}" class="row g-3 align-items-end">
+                <div class="col-md-6">
+                    <label for="searchQuery" class="form-label d-flex align-items-center">
+                        <span class="material-icons me-2">search</span>Search Drivers
+                    </label>
+                    <input type="text" name="q" class="form-control" id="searchQuery" placeholder="Search by name or PD number..." value="{{ query }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100 d-flex align-items-center justify-content-center">
+                        <span class="material-icons me-2">search</span> Search
+                    </button>
+                </div>
+                <div class="col-md-2">
+                    <a href="{% url 'driver_list' %}" class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center">
+                        <span class="material-icons me-2">clear</span> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Drivers List -->
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-header bg-transparent border-0 py-3">
+            <div class="d-flex align-items-center">
+                <span class="material-icons me-2" style="color: var(--primary-color)">people</span>
+                <h5 class="mb-0">Drivers List</h5>
+            </div>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Driver Name</th>
+                        <th scope="col">Address</th>
+                        <th scope="col">Old PD Number</th>
+                        <th scope="col">New PD Number</th>
+                        <th scope="col">Operator</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for driver in drivers %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ driver.last_name }}, {{ driver.first_name }} {% if driver.middle_initial %}{{ driver.middle_initial }}{% endif %}</td>
+                        <td>{{ driver.address }}</td>
+                        <td>{% if driver.old_pd_number and driver.old_pd_number != 'New' %}{{ driver.old_pd_number }}{% else %}none{% endif %}</td>
+                        <td>{{ driver.new_pd_number }}</td>
+                        <td>{{ driver.operator|default:"-" }}</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'driver_update' driver.id %}" class="btn btn-sm btn-outline-primary" title="Edit">
+                                    <span class="material-icons">edit</span>
+                                </a>
+                                <a href="{% url 'driver_delete' driver.id %}" class="btn btn-sm btn-outline-danger" title="Delete">
+                                    <span class="material-icons">delete</span>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <span class="material-icons text-muted d-block mb-3" style="font-size: 3rem;">no_accounts</span>
+                            <p class="text-muted mb-0">No drivers found. {% if query %}Try a different search term or{% endif %} add a new driver.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if drivers.has_other_pages %}
+        <div class="card-footer bg-transparent border-0 py-3">
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if drivers.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if query %}&q={{ query }}{% endif %}" aria-label="First">
+                            <span class="material-icons fs-6">first_page</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ drivers.previous_page_number }}{% if query %}&q={{ query }}{% endif %}" aria-label="Previous">
+                            <span class="material-icons fs-6">chevron_left</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" aria-label="First">
+                            <span class="material-icons fs-6">first_page</span>
+                        </a>
+                    </li>
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" aria-label="Previous">
+                            <span class="material-icons fs-6">chevron_left</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in drivers.paginator.page_range %}
+                        {% if drivers.number == num %}
+                        <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                        {% elif num > drivers.number|add:'-3' and num < drivers.number|add:'3' %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}">{{ num }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if drivers.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ drivers.next_page_number }}{% if query %}&q={{ query }}{% endif %}" aria-label="Next">
+                            <span class="material-icons fs-6">chevron_right</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ drivers.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}" aria-label="Last">
+                            <span class="material-icons fs-6">last_page</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" aria-label="Next">
+                            <span class="material-icons fs-6">chevron_right</span>
+                        </a>
+                    </li>
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" aria-label="Last">
+                            <span class="material-icons fs-6">last_page</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

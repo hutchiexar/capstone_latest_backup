@@ -254,83 +254,159 @@
 }
 
 .profile form {
-    position: absolute;
-    top: 50%;
-    right: 5px;
-    transform: translateY(-50%);
-    min-width: 30px;
-    line-height: 30px;
-    font-size: 16px;
-    text-align: center;
+    position: fixed;
+    width: 60px;
+    left: 0;
+    bottom: 0;
+    padding: 8px 6px;
+    background: var(--secondary-color);
+    transition: all 0.3s ease;
+    overflow: hidden;
 }
 
 .profile form button {
-    background: transparent;
-    border: none;
-    color: #fff;
-    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     width: 30px;
     height: 30px;
-    border-radius: 4px;
-    padding: 0;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    background-color: transparent;
+    color: #ffffff;
+    transition: all 0.3s ease;
 }
 
 .sidebar.open .profile form button {
-    right: 5px;
+    width: 35px;
 }
 
 .profile form button:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.05);
 }
 
-/* Mobile Responsiveness */
+/* Mobile styles */
 @media (max-width: 768px) {
     .sidebar {
-        width: 50px;
-        margin-left: -50px;
+        width: 0;
     }
     .sidebar.active {
-        margin-left: 0;
+        width: 60px;
     }
     .sidebar.open {
-        width: 180px;
+        width: 200px;
     }
     #page-content-wrapper {
         margin-left: 0;
         width: 100%;
-        padding: 1rem;
     }
     .sidebar.active ~ #page-content-wrapper {
-        margin-left: 50px;
-        width: calc(100% - 50px);
+        margin-left: 60px;
+        width: calc(100% - 60px);
     }
     .sidebar.active.open ~ #page-content-wrapper {
-        margin-left: 180px;
-        width: calc(100% - 180px);
+        margin-left: 200px;
+        width: calc(100% - 200px);
     }
     .profile {
-        width: 50px;
+        width: 0;
     }
     .sidebar.open .profile {
-        width: 180px;
+        width: 200px;
     }
     #mobile-toggle {
-        display: block !important;
+        display: block;
     }
     .sidebar-overlay {
-        display: none;
         position: fixed;
         top: 0;
         left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0,0,0,0.5);
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
         z-index: 98;
+        display: none;
+        transition: all 0.3s ease;
     }
     .sidebar-overlay.active {
         display: block;
+    }
+    
+    /* Violation ticket form mobile responsive styles */
+    .container-fluid {
+        width: 100%;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+    
+    /* Form fields and cards */
+    .form-control, 
+    .input-group,
+    .card,
+    .autocomplete-dropdown {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    
+    .form-floating {
+        margin-bottom: 1rem !important;
+    }
+    
+    /* Adjust card padding for better spacing */
+    .info-card {
+        padding: 1rem !important;
+    }
+    
+    /* Auto-suggest dropdown optimization */
+    .autocomplete-dropdown {
+        max-height: 180px !important;
+    }
+    
+    .autocomplete-item {
+        padding: 8px 12px !important;
+        font-size: 0.9rem !important;
+    }
+    
+    .autocomplete-details {
+        font-size: 0.8rem !important;
+    }
+    
+    /* Signature pad container */
+    .signature-pad-container {
+        height: 120px !important;
+    }
+}
+
+@media (min-width: 769px) {
+    #mobile-toggle {
+        display: none;
+    }
+}
+
+/* Additional mobile styles for small devices */
+@media (max-width: 480px) {
+    /* Extra small screens */
+    .progress-container {
+        padding: 1rem !important;
+    }
+    
+    .step-label {
+        font-size: 0.7rem !important;
+    }
+    
+    .step-circle {
+        width: 28px !important;
+        height: 28px !important;
+    }
+    
+    /* Further reduce font size for autocomplete items */
+    .autocomplete-item {
+        padding: 6px 10px !important;
+        font-size: 0.85rem !important;
+    }
+    
+    .source-badge, .license-badge {
+        font-size: 0.65rem !important;
     }
 }

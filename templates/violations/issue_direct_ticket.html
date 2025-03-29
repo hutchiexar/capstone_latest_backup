@@ -36,6 +36,9 @@
         <div class="card-body p-4">
             <form method="POST" id="ticketForm" class="needs-validation" novalidate>
                 {% csrf_token %}
+                <!-- Hidden field to store user ID if violator is a registered user -->
+                <input type="hidden" id="user_account_id" name="user_account_id" value="">
+                <input type="hidden" id="violator_source" name="violator_source" value="">
                 
                 <!-- Step 1: Violator Information -->
                 <div class="form-step active" id="step1">
@@ -54,10 +57,11 @@
 
                                 <div id="licenseInputGroup">
                                     <div class="form-floating mb-3">
-                                        <input type="text" class="form-control" id="license_number" name="license_number" 
+                                        <input type="text" class="form-control autocomplete-input" id="license_number" name="license_number" 
                                                pattern="[A-Z0-9]{3}-[0-9]{2}-[0-9]{6}" title="Format: XXX-XX-XXXXXX">
                                         <label for="license_number">License Number</label>
                                         <div class="form-text">Format: XXX-XX-XXXXXX (e.g., G12-24-001899)</div>
+                                        <div class="autocomplete-dropdown" id="license_dropdown"></div>
                                     </div>
 
                                     <!-- Add camera scanner button -->
@@ -131,14 +135,16 @@
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <div class="form-floating">
-                                            <input type="text" class="form-control" id="first_name" name="first_name" required>
+                                            <input type="text" class="form-control autocomplete-input" id="first_name" name="first_name" required>
                                             <label for="first_name">First Name</label>
+                                            <div class="autocomplete-dropdown" id="first_name_dropdown"></div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-floating">
-                                            <input type="text" class="form-control" id="last_name" name="last_name" required>
+                                            <input type="text" class="form-control autocomplete-input" id="last_name" name="last_name" required>
                                             <label for="last_name">Last Name</label>
+                                            <div class="autocomplete-dropdown" id="last_name_dropdown"></div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -266,6 +272,17 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="row g-3 mt-2">
+                                    <div class="col-12">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="is_tdz_violation" name="is_tdz_violation">
+                                            <label class="form-check-label" for="is_tdz_violation">
+                                                <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                                This violation occurred in a Traffic Discipline Zone (TDZ)
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -291,6 +308,21 @@
                                         <label for="refusalNote">Reason for Signature Refusal</label>
                                     </div>
                                 </div>
+
+                                <!-- Add Enforcer Information Section -->
+                                <h5 class="section-title mt-4">Enforcer Information</h5>
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="enforcer_name" name="enforcer_name" required 
+                                           value="{{ request.user.get_full_name }}" readonly
+                                           data-enforcer-name="{{ request.user.get_full_name }}">
+                                    <label for="enforcer_name">Enforcer Name</label>
+                                </div>
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="enforcer_id" name="enforcer_id" required 
+                                           value="{{ request.user.userprofile.enforcer_id }}" readonly
+                                           data-enforcer-id="{{ request.user.userprofile.enforcer_id }}">
+                                    <label for="enforcer_id">Enforcer ID</label>
+                                </div>
                             </div>
                         </div>
                         
@@ -300,9 +332,10 @@
                                 <div id="signatureArea">
                                     <div class="signature-pad-container">
                                         <canvas id="signatureCanvas"></canvas>
+                                        <div class="signature-pad-message">Please sign inside the box</div>
                                     </div>
                                     <div class="mt-3">
-                                        <button type="button" class="btn btn-outline-secondary" onclick="clearSignature()">
+                                        <button type="button" class="btn btn-outline-secondary" id="clearSignature">
                                             <i class="fas fa-eraser me-2"></i>Clear
                                         </button>
                                     </div>
@@ -450,13 +483,132 @@
     border: 2px solid #dee2e6;
     border-radius: 8px;
     overflow: hidden;
+    position: relative;
     touch-action: none;
+    background-color: white;
+}
+
+.signature-pad-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #adb5bd;
+    font-size: 1rem;
+    pointer-events: none;
+    opacity: 0.7;
+    text-align: center;
+    width: 100%;
+    z-index: 1;
 }
 
 #signatureCanvas {
     width: 100%;
     height: 100%;
+    touch-action: none;
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 2;
+}
+
+@media (max-width: 768px) {
+    .signature-pad-container {
+        height: 150px;
+    }
+    
+    .signature-pad-message {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .signature-pad-container {
+        height: 120px;
+    }
+}
+
+/* Autocomplete styles */
+.autocomplete-input {
+    position: relative;
+}
+
+.autocomplete-dropdown {
+    position: absolute;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
     background-color: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    z-index: 1050;
+    display: none;
+}
+
+.autocomplete-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s;
+}
+
+.autocomplete-item:hover,
+.autocomplete-item.active {
+    background-color: #f8f9fa;
+}
+
+.autocomplete-item .highlight {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.autocomplete-details {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 3px;
+}
+
+.source-badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: 500;
+}
+
+.source-badge.violator {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+.source-badge.user {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.autocomplete-error {
+    background-color: #f8d7da;
+    border-radius: 4px;
+    font-size: 0.875rem;
+}
+
+/* Signature Pad */
+#signatureCanvas {
+    width: 100%;
+    height: 100%;
+    background-color: white;
+    touch-action: none;
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+@media (max-width: 768px) {
+    .signature-pad-container {
+        height: 150px;
+    }
 }
 
 /* Buttons */
@@ -620,7 +772,38 @@
 .camera-instructions {
     color: #6c757d;
 }
+
+.license-badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: 500;
+    margin-right: 5px;
+}
+
+.license-badge.has-license {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.license-badge.no-license {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Add this new style at the end of the CSS block */
+.autocomplete-input-selected {
+    background-color: #f7f9fc;
+}
+
+.autocomplete-dropdown-hidden {
+    display: none !important;
+}
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
 
 <script>
 // Form steps handling
@@ -650,6 +833,12 @@ function updateStep(step) {
     prevBtn.style.display = step === 0 ? 'none' : 'flex';
     nextBtn.style.display = step === steps.length - 1 ? 'none' : 'flex';
     submitBtn.style.display = step === steps.length - 1 ? 'flex' : 'none';
+    
+    // When moving to step 2 (violations), initialize violation calculation
+    if (step === 1 && typeof updateViolationTotal === 'function') {
+        console.log('Step 2 displayed, initializing violation total calculation');
+        setTimeout(updateViolationTotal, 100);
+    }
 }
 
 function validateStep(step) {
@@ -672,6 +861,12 @@ function validateStep(step) {
         if (selectedViolations.length === 0) {
             isValid = false;
             alert('Please select at least one violation type');
+        } else {
+            // Update the violation amount when validating step 2
+            if (typeof updateViolationTotal === 'function') {
+                console.log('Updating violation total during validation');
+                updateViolationTotal();
+            }
         }
     }
 
@@ -683,6 +878,26 @@ nextBtn.addEventListener('click', () => {
     if (validateStep(currentStep)) {
         currentStep++;
         updateStep(currentStep);
+        
+        // If moving to step 2 and "no license" is checked, ensure unlicensed violation is checked
+        if (currentStep === 1 && document.getElementById('noLicense').checked) {
+            const unlicensedCheckbox = Array.from(document.querySelectorAll('input[name="violation_type[]"]'))
+                .find(checkbox => checkbox.value === 'Unlicensed Driver');
+            
+            if (unlicensedCheckbox) {
+                unlicensedCheckbox.checked = true;
+            }
+        }
+
+        // If moving to step 2, check if this is a repeat violator
+        if (currentStep === 1) {
+            checkForRepeatViolator();
+            
+            // Recalculate fine amount in case of pre-selected violations
+            if (typeof updateFineAmount === 'function') {
+                setTimeout(updateFineAmount, 100);
+            }
+        }
     }
 });
 
@@ -691,133 +906,791 @@ prevBtn.addEventListener('click', () => {
     updateStep(currentStep);
 });
 
-// Signature pad initialization
-const canvas = document.getElementById('signatureCanvas');
-const ctx = canvas.getContext('2d');
-let isDrawing = false;
-let lastX = 0;
-let lastY = 0;
-
-function initializeCanvas() {
-    canvas.width = canvas.offsetWidth * 2;
-    canvas.height = canvas.offsetHeight * 2;
-    ctx.scale(2, 2);
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-}
-
-function getCoordinates(event) {
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
-    if (event.type.includes('touch')) {
-        return {
-            x: (event.touches[0].clientX - rect.left) * (scaleX / 2),
-            y: (event.touches[0].clientY - rect.top) * (scaleY / 2)
-        };
+// Function to check for repeat violations
+async function checkForRepeatViolator() {
+    try {
+        const licenseNumber = document.getElementById('license_number').value;
+        const userId = document.getElementById('user_account_id').value;
+        const violatorSource = document.getElementById('violator_source').value;
+        
+        // Only check if we have license number or user ID
+        if (!licenseNumber && !userId) return;
+        
+        // Get CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        // Prepare the request data
+        const formData = new FormData();
+        if (licenseNumber) formData.append('license_number', licenseNumber);
+        if (userId) formData.append('user_id', userId);
+        if (violatorSource) formData.append('source', violatorSource);
+        
+        // Make API request to check for previous violations
+        const response = await fetch('/api/check-repeat-violator/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to check violator history');
+        }
+        
+        const data = await response.json();
+        
+        // If there are unsettled violations, display warning 
+        if (data.is_repeat_violator && data.unsettled_count > 0) {
+            // Create warning alert
+            const alertHTML = `
+                <div class="repeat-violator-alert alert alert-warning alert-dismissible fade show mb-4" role="alert">
+                    <div class="d-flex align-items-center">
+                        <span class="material-icons me-2">warning</span>
+                        <strong>Repeat Violator!</strong> This person has ${data.unsettled_count} unsettled violation(s).
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            
+            // Add to the beginning of step 2
+            const step2Element = document.getElementById('step2');
+            step2Element.insertAdjacentHTML('afterbegin', alertHTML);
+        }
+    } catch (error) {
+        console.error('Error checking for repeat violator:', error);
     }
-    return {
-        x: (event.clientX - rect.left) * (scaleX / 2),
-        y: (event.clientY - rect.top) * (scaleY / 2)
-    };
 }
 
-function startDrawing(event) {
-    event.preventDefault();
-    isDrawing = true;
-    const coords = getCoordinates(event);
-    lastX = coords.x;
-    lastY = coords.y;
-}
+// Remove all previous signature pad code and add this new implementation
+let signaturePadInstance;
 
-function draw(event) {
-    if (!isDrawing) return;
-    event.preventDefault();
-
-    const coords = getCoordinates(event);
-    ctx.beginPath();
-    ctx.moveTo(lastX, lastY);
-    ctx.lineTo(coords.x, coords.y);
-    ctx.stroke();
-    lastX = coords.x;
-    lastY = coords.y;
-}
-
-function stopDrawing() {
-    if (!isDrawing) return;
-    isDrawing = false;
-    saveSignature();
-}
-
-function clearSignature() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    document.getElementById('signatureData').value = '';
-}
-
-function saveSignature() {
-    const dataUrl = canvas.toDataURL('image/png');
-    document.getElementById('signatureData').value = dataUrl;
-}
-
-// Initialize canvas
-initializeCanvas();
-
-// Event Listeners for signature pad
-canvas.addEventListener('mousedown', startDrawing);
-canvas.addEventListener('mousemove', draw);
-canvas.addEventListener('mouseup', stopDrawing);
-canvas.addEventListener('mouseout', stopDrawing);
-
-canvas.addEventListener('touchstart', startDrawing);
-canvas.addEventListener('touchmove', draw);
-canvas.addEventListener('touchend', stopDrawing);
-canvas.addEventListener('touchcancel', stopDrawing);
-
-// Handle window resize
-window.addEventListener('resize', initializeCanvas);
-
-// Handle signature refusal
-document.getElementById('noSignature').addEventListener('change', function() {
-    const signatureArea = document.getElementById('signatureArea');
-    const refusalNoteArea = document.getElementById('refusalNoteArea');
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize signature pad when DOM is loaded
+    setupSignaturePad();
     
-    if (this.checked) {
-        signatureArea.style.display = 'none';
-        refusalNoteArea.style.display = 'block';
-    } else {
-        signatureArea.style.display = 'block';
-        refusalNoteArea.style.display = 'none';
+    // Handle signature refusal checkbox
+    document.getElementById('noSignature').addEventListener('change', function() {
+        const signatureArea = document.getElementById('signatureArea');
+        const refusalNoteArea = document.getElementById('refusalNoteArea');
+        
+        if (this.checked) {
+            signatureArea.style.display = 'none';
+            refusalNoteArea.style.display = 'block';
+        } else {
+            signatureArea.style.display = 'block';
+            refusalNoteArea.style.display = 'none';
+        }
+    });
+    
+    // Reinitialize signature pad whenever step 3 becomes visible
+    document.querySelector('.next-step').addEventListener('click', function() {
+        if (currentStep === 1) { // If moving to step 2, prepare for later showing step 3
+            setTimeout(function() {
+                // Add a mutation observer to detect when step 3 becomes visible
+                const step3 = document.getElementById('step3');
+                if (step3) {
+                    const observer = new MutationObserver(function(mutations) {
+                        mutations.forEach(function(mutation) {
+                            if (mutation.attributeName === 'style' && 
+                                step3.style.display !== 'none') {
+                                setupSignaturePad();
+                                observer.disconnect();
+                            }
+                        });
+                    });
+                    
+                    observer.observe(step3, { attributes: true });
+                }
+            }, 100);
+        }
+    });
+});
+
+// Add window resize handler
+window.addEventListener('resize', function() {
+    if (signaturePadInstance) {
+        resizeSignaturePad();
     }
 });
 
-// Form submission handling
-document.getElementById('ticketForm').addEventListener('submit', function(e) {
-    e.preventDefault();
+// Handle device orientation changes
+window.addEventListener('orientationchange', function() {
+    setTimeout(function() {
+        if (signaturePadInstance) {
+            resizeSignaturePad();
+        }
+    }, 200);
+});
+
+function setupSignaturePad() {
+    console.log('Setting up signature pad');
+    const canvas = document.getElementById('signatureCanvas');
+    const signatureMsg = document.querySelector('.signature-pad-message');
+    const clearBtn = document.getElementById('clearSignature');
     
-    // Check if at least one violation is selected
-    const selectedViolations = document.querySelectorAll('input[name="violation_type[]"]:checked');
-    if (selectedViolations.length === 0) {
-        alert('Please select at least one violation type');
+    if (!canvas || !signatureMsg || !clearBtn) {
+        console.error('Missing required elements for signature pad');
         return;
     }
+    
+    // Set up the signature pad properly for the first time
+    const container = canvas.parentElement;
+    const containerRect = container.getBoundingClientRect();
+    
+    // Set canvas dimensions based on container size
+    canvas.width = containerRect.width;
+    canvas.height = containerRect.height;
+    
+    // Initialize signature pad with conservative settings that work well across devices
+    try {
+        signaturePadInstance = new SignaturePad(canvas, {
+            backgroundColor: 'rgba(255, 255, 255, 0)',
+            penColor: 'black',
+            throttle: 0, // No throttling for responsive drawing
+            minDistance: 0 // No minimum distance for precise drawing
+        });
+        
+        console.log('Signature pad initialized successfully');
+        
+        // Set up clear button
+        clearBtn.addEventListener('click', function() {
+            signaturePadInstance.clear();
+            document.getElementById('signatureData').value = '';
+            signatureMsg.style.display = 'block';
+            console.log('Signature cleared');
+        });
+        
+        // Hide message when drawing starts
+        signaturePadInstance.addEventListener('beginStroke', function() {
+            signatureMsg.style.display = 'none';
+        });
+        
+        // Save signature when stroke ends
+        signaturePadInstance.addEventListener('endStroke', function() {
+            if (!signaturePadInstance.isEmpty()) {
+                const dataUrl = signaturePadInstance.toDataURL('image/png');
+                saveSignatureToServer(dataUrl);
+            }
+        });
+        
+        // Show or hide message based on initial state
+        if (signaturePadInstance.isEmpty()) {
+            signatureMsg.style.display = 'block';
+        } else {
+            signatureMsg.style.display = 'none';
+        }
+    } catch (err) {
+        console.error('Error initializing signature pad:', err);
+    }
+}
 
-    // Get signature data if signature is required
-    if (!document.getElementById('noSignature').checked) {
-        const signatureData = document.getElementById('signatureData').value;
-        if (!signatureData) {
-            alert('Please provide violator signature or check "Violator refused to sign"');
-            return;
+function resizeSignaturePad() {
+    const canvas = document.getElementById('signatureCanvas');
+    if (!canvas || !signaturePadInstance) return;
+    
+    const container = canvas.parentElement;
+    const containerRect = container.getBoundingClientRect();
+    
+    // Get current data before resizing
+    const data = signaturePadInstance.toData();
+    
+    // Resize canvas
+    canvas.width = containerRect.width;
+    canvas.height = containerRect.height;
+    
+    // Restore signature data
+    signaturePadInstance.clear(); // Clearing is necessary after resize
+    if (data && data.length > 0) {
+        signaturePadInstance.fromData(data);
+    }
+}
+
+function saveSignatureToServer(dataUrl) {
+    if (!dataUrl) {
+        document.getElementById('signatureData').value = '';
+        return;
+    }
+    
+    // Create a timestamp for unique filename
+    const timestamp = new Date().getTime();
+    const filename = `signature_${timestamp}.png`;
+    
+    // Convert data URL to blob
+    fetch(dataUrl)
+        .then(res => res.blob())
+        .then(blob => {
+            // Create form data
+            const formData = new FormData();
+            formData.append('signature', blob, filename);
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            
+            // Send to server
+            fetch('/save-signature/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Signature saved successfully:', data.filename);
+                    document.getElementById('signatureData').value = data.filename;
+                } else {
+                    console.error('Failed to save signature:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error saving signature:', error);
+            });
+        });
+}
+
+// In case we need to check if the signature library is loaded
+function isSignaturePadLoaded() {
+    return typeof SignaturePad !== 'undefined';
+}
+
+// Define updateFineAmount globally to make it accessible from other functions
+function updateFineAmount() {
+    const violationCheckboxes = document.querySelectorAll('input[name="violation_type[]"]:checked');
+    const fineAmountEl = document.getElementById('fine_amount');
+    const isTdzViolationEl = document.getElementById('is_tdz_violation');
+
+    console.log('Running updateFineAmount function');
+    console.log('Found checked violations:', violationCheckboxes.length);
+    
+    // Default fine amount for unlisted violations
+    const DEFAULT_FINE = 500;
+    
+    // Default fine amounts for common violation types
+    const fineAmounts = {
+        'Speeding': 500,
+        'Running a Red Light': 800,
+        'Illegal Parking': 300,
+        'No Seat Belt': 250,
+        'Using Phone While Driving': 1000,
+        'Driving Under Influence': 2500,
+        'Unlicensed Driver': 1500,
+        'Reckless Driving': 2000,
+        'Expired Registration': 1000,
+        'No Helmet': 500,
+        'Obstruction': 1000,
+        'Wrong Way Driving': 600,
+        'Invalid Plate': 1000,
+        'No Muffler': 500,
+        'Permitting Hitching/Over Loading Passenger(s)': 800,
+        'Unregistered MV': 1200,
+        'Refusal to convey to proper destination': 600,
+        'Discourteous driver/Conduct': 500,
+        'Others': 500
+    };
+
+    // Calculate total based on all selected violations
+    let totalFine = 0;
+    
+    violationCheckboxes.forEach(checkbox => {
+        const violationType = checkbox.value;
+        const fineAmount = fineAmounts[violationType] !== undefined ? fineAmounts[violationType] : DEFAULT_FINE;
+        console.log(`Violation: ${violationType}, Fine: ${fineAmount}`);
+        totalFine += fineAmount;
+    });
+    
+    console.log('Total fine before TDZ multiplier:', totalFine);
+    
+    // Apply TDZ multiplier if checked
+    if (isTdzViolationEl && isTdzViolationEl.checked) {
+        totalFine *= 2;
+        console.log('Applied TDZ multiplier, new total:', totalFine);
+    }
+    
+    // Update the fine amount field
+    if (fineAmountEl) {
+        fineAmountEl.value = totalFine;
+        console.log('Updated fine amount field to:', totalFine);
+    } else {
+        console.error('Fine amount element not found!');
+    }
+}
+
+function initializeViolationFines() {
+    console.log('Initializing violation fines...');
+    
+    // Get all violation checkboxes and the TDZ checkbox
+    const violationCheckboxes = document.querySelectorAll('input[name="violation_type[]"]');
+    const fineAmountEl = document.getElementById('fine_amount');
+    const isTdzViolationEl = document.getElementById('is_tdz_violation');
+    
+    console.log('Found violation checkboxes:', violationCheckboxes.length);
+    if (fineAmountEl) {
+        console.log('Found fine amount element with ID:', fineAmountEl.id);
+    } else {
+        console.error('Fine amount element not found!');
+    }
+    
+    if (isTdzViolationEl) {
+        console.log('Found TDZ checkbox element with ID:', isTdzViolationEl.id);
+    } else {
+        console.error('TDZ checkbox element not found!');
+    }
+
+    // Set up event listeners for violation checkbox changes
+    if (violationCheckboxes.length > 0) {
+        violationCheckboxes.forEach(checkbox => {
+            console.log('Adding change listener to checkbox:', checkbox.value);
+            checkbox.addEventListener('change', function() {
+                console.log('Checkbox changed:', this.value, 'Checked:', this.checked);
+                updateFineAmount();
+            });
+        });
+
+        // Also check TDZ checkbox change
+        if (isTdzViolationEl) {
+            isTdzViolationEl.addEventListener('change', function() {
+                console.log('TDZ checkbox changed, checked:', this.checked);
+                updateFineAmount();
+            });
         }
     }
 
-    // Submit the form
-    this.submit();
+    // Initial update for any pre-selected violations
+    updateFineAmount();
+}
+
+// Make sure to call initializeViolationFines when DOM is fully loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize existing functions
+    // ...
+    
+    // Make sure to initialize violation fines after the DOM is fully loaded
+    setTimeout(function() {
+        console.log('DOM fully loaded, initializing violation fines');
+        initializeViolationFines();
+    }, 500);
 });
 
+// Form submission handling
+document.getElementById('ticketForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    try {
+        // Create a new FormData object
+        const formData = new FormData(this);
+        
+        // Get all checked violation types and ensure they're added to formData
+        const selectedViolations = document.querySelectorAll('input[name="violation_type[]"]:checked');
+        
+        // Debug log for violation types
+        console.log('Selected violation types:', Array.from(selectedViolations).map(v => v.value));
+        
+        // Remove any existing violation_type[] entries (may not be necessary but just to be safe)
+        // This is because FormData might not properly handle array-like field names
+        formData.delete('violation_type[]');
+        
+        // Explicitly add each selected violation type to formData
+        selectedViolations.forEach(checkbox => {
+            formData.append('violation_type[]', checkbox.value);
+            console.log('Added violation type to formData:', checkbox.value);
+        });
+        
+        // Store enforcer info in sessionStorage for future use
+        const enforcerName = document.getElementById('enforcer_name')?.value;
+        const enforcerId = document.getElementById('enforcer_id')?.value;
+        
+        // Debug logging for form submission
+        console.log('Submitting form with enforcer ID:', enforcerId);
+        console.log('Form data enforcer_id value:', formData.get('enforcer_id'));
+        
+        if (enforcerName) {
+            sessionStorage.setItem('enforcer_name', enforcerName);
+            console.log('Stored enforcer name in sessionStorage:', enforcerName);
+        }
+        if (enforcerId) {
+            sessionStorage.setItem('enforcer_id', enforcerId);
+            console.log('Stored enforcer ID in sessionStorage:', enforcerId);
+        }
+        
+        // Ensure signature data is included in the form data
+        if (!document.getElementById('noSignature').checked) {
+            const signatureData = document.getElementById('signatureData').value;
+            if (signatureData) {
+                formData.set('signature_data', signatureData);
+                console.log('Signature data included in form submission:', signatureData);
+            } else {
+                console.log('No signature data available');
+            }
+        } else {
+            const refusalNote = document.getElementById('refusalNote').value;
+            formData.set('refusal_note', refusalNote);
+            console.log('Signature refusal note included:', refusalNote);
+        }
+        
+        const response = await fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log('Ticket data received:', result.ticket_data);
+            const ticketContent = await generateTicketContent(result.ticket_data);
+            
+            try {
+                // Use a simple approach to trigger RawBT and avoid browser issues
+                // 1. Create the rawbt URL
+                const rawbtUrl = `rawbt://${encodeURIComponent(ticketContent)}`;
+                
+                // 2. Open it in a new window, which will trigger the RawBT app
+                const printWindow = window.open(rawbtUrl, '_blank');
+                
+                // 3. Give some time for RawBT to process (2 seconds)
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // 4. Close the print window if it's still open
+                if (printWindow) {
+                    printWindow.close();
+                }
+                
+                // 5. Show success message
+                const successMessage = document.createElement('div');
+                successMessage.className = 'alert alert-success alert-dismissible fade show mb-4';
+                successMessage.innerHTML = `
+                    <strong>Success!</strong> Ticket issued successfully and sent to printer.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+
+                // Get the form element directly and insert the message at the beginning
+                const formElement = this; // 'this' refers to the form being submitted
+                formElement.parentNode.insertBefore(successMessage, formElement);
+                
+                // 6. Reset form after successful submission
+                this.reset();
+                currentStep = 0;
+                updateStep(currentStep);
+                
+                // 7. Clear signature if exists
+                const signatureCanvas = document.getElementById('signatureCanvas');
+                if (signatureCanvas) {
+                    const ctx = signatureCanvas.getContext('2d');
+                    if (ctx) {
+                        ctx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+                    }
+                }
+            } catch (printError) {
+                console.error('Error printing ticket:', printError);
+                alert('Error printing ticket: ' + printError.message);
+            }
+        } else {
+            throw new Error(result.message || 'Failed to issue ticket');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error submitting form: ' + error.message);
+    }
+});
+
+async function generateTicketContent(ticketData) {
+    // ESC/POS commands for text formatting
+    const ESC = '\x1B';
+    const GS = '\x1D';
+    const FS = '\x1C';
+    
+    // Text alignment
+    const CENTER = `${ESC}a1`;
+    const LEFT = `${ESC}a0`;
+    const RIGHT = `${ESC}a2`;
+    
+    // Font selection and size
+    const FONT_B = `${ESC}M1`; // Font B (smallest)
+    const CHAR_SIZE_SMALLEST = `${GS}!0`; // Character size 1x1
+    const SET_FONT_SIZE = `${ESC}!0`; // Smallest font size
+    
+    // Text modifications
+    const CONDENSED_ON = `${ESC}15`;
+    const CONDENSED_OFF = `${ESC}14`;
+    const DOUBLE_STRIKE_ON = `${ESC}G1`;
+    const DOUBLE_STRIKE_OFF = `${ESC}G0`;
+    const UNDERLINE_ON = `${ESC}-1`;
+    const UNDERLINE_OFF = `${ESC}-0`;
+    
+    // Spacing controls
+    const SPACING_SMALLEST = `${ESC}3${String.fromCharCode(1)}`;
+    const DEFAULT_SPACING = `${ESC}2`;
+    const REDUCE_SPACING = `${ESC}3${String.fromCharCode(0)}`;
+    const LINE_SPACE = `${ESC}3${String.fromCharCode(24)}`; // Increased space between sections
+    
+    // Paper control
+    const FEED_AND_CUT = `${GS}V${String.fromCharCode(1)}`;
+    
+    let content = '';
+    
+    // Initialize with smallest possible font configuration
+    content += FONT_B;
+    content += CHAR_SIZE_SMALLEST;
+    content += SET_FONT_SIZE;
+    content += SPACING_SMALLEST;
+    content += REDUCE_SPACING;
+    content += CONDENSED_ON;
+    
+    // Header
+    content += CENTER;
+    content += DOUBLE_STRIKE_ON;
+    content += 'CITY TRANSPORT AND TRAFFIC MANAGEMENT OFFICE\n';
+    content += 'TRAFFIC VIOLATION MANAGEMENT SYSTEM\n';
+    content += 'VIOLATION TICKET\n';
+    content += DOUBLE_STRIKE_OFF;
+    content += LINE_SPACE;
+    content += `Date: ${ticketData.violation_date}\n`;
+    content += `Ticket No: ${ticketData.id}\n`;
+    content += '-'.repeat(42) + '\n';
+    
+    // Violator Information
+    content += LEFT;
+    content += UNDERLINE_ON;
+    content += 'VIOLATOR INFORMATION\n';
+    content += UNDERLINE_OFF;
+    content += `Name   : ${ticketData.first_name} ${ticketData.last_name}\n`;
+    content += `License : ${ticketData.license_number || 'N/A'}\n`;
+    content += `Phone  : ${ticketData.phone_number}\n`;
+    content += `Address: ${ticketData.address}\n`;
+    content += '-'.repeat(42) + '\n';
+    
+    // Vehicle Information
+    content += UNDERLINE_ON;
+    content += 'VEHICLE INFORMATION\n';
+    content += UNDERLINE_OFF;
+    content += `Type     : ${ticketData.vehicle_type}\n`;
+    content += `Plate No.: ${ticketData.plate_number}\n`;
+    content += `Color    : ${ticketData.color}\n`;
+    content += `Reg. No. : ${ticketData.registration_number}\n`;
+    content += '-'.repeat(42) + '\n';
+    
+    // Violations
+    content += UNDERLINE_ON;
+    content += 'VIOLATIONS:\n';
+    content += UNDERLINE_OFF;
+    ticketData.violations.forEach(violation => {
+        content += `* ${violation}\n`;
+    });
+    content += `\nLocation: ${ticketData.location}\n`;
+    content += DOUBLE_STRIKE_ON;
+    if (ticketData.is_tdz_violation) {
+        content += `Traffic Discipline Zone Violation: Yes (Fine Doubled)\n`;
+    }
+    content += `Amount Due: PHP ${ticketData.fine_amount.toFixed(2)}\n`;
+    content += DOUBLE_STRIKE_OFF;
+    content += '-'.repeat(42) + '\n';
+    
+    // Signature Section
+    content += UNDERLINE_ON;
+    content += 'ACKNOWLEDGEMENT\n';
+    content += UNDERLINE_OFF;
+    
+    if (ticketData.signature_data) {
+        console.log('Processing signature:', ticketData.signature_data);
+        try {
+            // Fetch the signature image
+            const response = await fetch(`/get-signature/${ticketData.signature_data}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch signature');
+            }
+            const blob = await response.blob();
+            
+            // Convert blob to base64
+            const base64 = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.readAsDataURL(blob);
+            });
+            
+            // Create an image element
+            const img = new Image();
+            await new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = reject;
+                img.src = base64;
+            });
+            
+            // Create a canvas to process the image
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size to match printer width (assuming 384px width for standard thermal printer)
+            const printerWidth = 384;
+            // Calculate target dimensions while maintaining aspect ratio
+            const targetWidth = Math.min(printerWidth, img.width);
+            const targetHeight = Math.floor((targetWidth / img.width) * img.height);
+            
+            // Set canvas dimensions
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            
+            // Draw and scale the image with better quality
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            
+            // Convert to monochrome bitmap with improved processing
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const pixels = imageData.data;
+            const widthInBytes = Math.ceil(canvas.width / 8);
+            const bitmap = new Uint8Array(widthInBytes * canvas.height);
+            
+            // Convert to 1-bit monochrome with better threshold and dithering
+            for (let y = 0; y < canvas.height; y++) {
+                for (let x = 0; x < canvas.width; x++) {
+                    const i = (y * canvas.width + x) * 4;
+                    const brightness = (pixels[i] * 0.299 + pixels[i + 1] * 0.587 + pixels[i + 2] * 0.114);
+                    const byteIndex = Math.floor(x / 8) + y * widthInBytes;
+                    const bitIndex = 7 - (x % 8);
+                    
+                    // Apply threshold with slight dithering for better quality
+                    if (brightness < 180 + (Math.random() * 20 - 10)) {
+                        bitmap[byteIndex] |= (1 << bitIndex);
+                    }
+                }
+            }
+            
+            // Add bitmap to ticket content with proper commands
+            content += CENTER;
+            content += LINE_SPACE;
+            
+            // Create command buffer for bitmap printing
+            const cmdBuffer = new Uint8Array([
+                0x1d, 0x76, 0x30, 0x00,                    // GS v 0 0 command
+                widthInBytes & 0xff, widthInBytes >> 8,    // width bytes, little endian
+                canvas.height & 0xff, canvas.height >> 8    // height pixels, little endian
+            ]);
+            
+            // Convert command buffer to string
+            content += String.fromCharCode.apply(null, cmdBuffer);
+            
+            // Add bitmap data
+            const bitmapArray = Array.from(bitmap);
+            content += String.fromCharCode.apply(null, bitmapArray);
+            
+            // Add proper spacing after signature
+            content += '\n';
+            content += LINE_SPACE;
+            content += CENTER;
+            content += 'Violator signature:\n';
+            content += LINE_SPACE;
+            
+            console.log('Signature bitmap processed successfully');
+        } catch (error) {
+            console.error('Error processing signature:', error);
+            content += 'Signature not available\n';
+        }
+    } else if (ticketData.refusal_note) {
+        content += 'Violator refused to sign\n';
+        content += `Reason: ${ticketData.refusal_note}\n`;
+    } else {
+        content += 'No signature provided\n';
+    }
+    
+    content += LINE_SPACE;
+    
+    // Enforcer Information
+    content += UNDERLINE_ON;
+    content += 'ISSUED BY:\n';
+    content += UNDERLINE_OFF;
+    
+    // Get enforcer info from the server-provided data or sessionStorage
+    let enforcerName = ticketData.enforcer_name;
+    let enforcerId = ticketData.enforcer_id;
+    
+    // Debug logging for ticket generation
+    console.log('Ticket Data Enforcer Name:', ticketData.enforcer_name);
+    console.log('Ticket Data Enforcer ID:', ticketData.enforcer_id);
+    console.log('SessionStorage Enforcer Name:', sessionStorage.getItem('enforcer_name'));
+    console.log('SessionStorage Enforcer ID:', sessionStorage.getItem('enforcer_id'));
+    
+    // If not available in ticket data, try to get from sessionStorage
+    if (!enforcerName || enforcerName === '') {
+        enforcerName = sessionStorage.getItem('enforcer_name') || '';
+        console.log('Using enforcer name from sessionStorage:', enforcerName);
+    }
+    if (!enforcerId || enforcerId === '') {
+        enforcerId = sessionStorage.getItem('enforcer_id') || '';
+        console.log('Using enforcer ID from sessionStorage:', enforcerId);
+    }
+    
+    content += `${enforcerName || 'Not specified'}\n`;
+    content += `${enforcerId || 'Not specified'}\n`;
+    content += '-'.repeat(42) + '\n';
+    
+    // Footer
+    content += CENTER;
+    content += LINE_SPACE;
+    content += 'Please settle this violation within 72 hours\n';
+    content += 'at the CTTMO office\n\n';
+    content += `Reference No: ${ticketData.id}\n`;
+    
+    // QR Code for digital verification (if supported)
+    if (ticketData.id) {
+        content += `${GS}k${String.fromCharCode(4)}${ticketData.id}${String.fromCharCode(0)}`;
+    }
+    
+    // Reset printer settings and cut
+    content += DEFAULT_SPACING;
+    content += CONDENSED_OFF;
+    content += FEED_AND_CUT;
+    
+    return content;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Get enforcer info elements
+    const enforcerNameInput = document.getElementById('enforcer_name');
+    const enforcerIdInput = document.getElementById('enforcer_id');
+
+    // Set enforcer info from data attributes or sessionStorage
+    if (enforcerNameInput) {
+        const enforcerName = enforcerNameInput.dataset.enforcerName || sessionStorage.getItem('enforcer_name');
+        if (enforcerName) {
+            enforcerNameInput.value = enforcerName;
+            sessionStorage.setItem('enforcer_name', enforcerName);
+        }
+    }
+
+    if (enforcerIdInput) {
+        const enforcerId = enforcerIdInput.dataset.enforcerId || sessionStorage.getItem('enforcer_id');
+        console.log('Setting enforcer ID from:', enforcerId);
+        if (enforcerId) {
+            enforcerIdInput.value = enforcerId;
+            sessionStorage.setItem('enforcer_id', enforcerId);
+        }
+    }
+
+    // Update camera instructions if the element exists
+    const cameraInstructions = document.querySelector('.camera-instructions small');
+    if (cameraInstructions) {
+        cameraInstructions.innerHTML = `
+            <span class="material-icons align-middle me-1" style="font-size: 16px;">info</span>
+            Position document within frame, ensure good lighting and no glare
+        `;
+    }
+
+    // Add helper text under the scan button if it exists
+    const scanLicenseBtn = document.getElementById('scanLicense');
+    if (scanLicenseBtn) {
+        const helperText = document.createElement('div');
+        helperText.className = 'text-muted small mt-2';
+        helperText.innerHTML = `
+            <span class="material-icons align-middle me-1" style="font-size: 14px;">tips_and_updates</span>
+            Tips: Good lighting, no glare, entire document visible
+        `;
+        scanLicenseBtn.parentNode.insertBefore(helperText, scanLicenseBtn.nextSibling);
+    }
+
     const scanButton = document.getElementById('scanLicense');
     const scanVehicleButton = document.getElementById('scanVehicle');
     const cameraModal = new bootstrap.Modal(document.getElementById('cameraModal'));
@@ -1148,8 +2021,24 @@ document.addEventListener('DOMContentLoaded', function() {
         if (this.checked) {
             document.getElementById('license_number').value = '';
             document.getElementById('license_number').required = false;
+            
+            // Find and check the "Unlicensed Driver" violation checkbox
+            const unlicensedCheckbox = Array.from(document.querySelectorAll('input[name="violation_type[]"]'))
+                .find(checkbox => checkbox.value === 'Unlicensed Driver');
+            
+            if (unlicensedCheckbox) {
+                unlicensedCheckbox.checked = true;
+            }
         } else {
             document.getElementById('license_number').required = true;
+            
+            // Find and uncheck the "Unlicensed Driver" violation checkbox
+            const unlicensedCheckbox = Array.from(document.querySelectorAll('input[name="violation_type[]"]'))
+                .find(checkbox => checkbox.value === 'Unlicensed Driver');
+            
+            if (unlicensedCheckbox) {
+                unlicensedCheckbox.checked = false;
+            }
         }
     });
 
@@ -1179,8 +2068,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Add event listener for license input validation
-    const licenseInput = document.getElementById('license_number');
-    licenseInput.addEventListener('input', function() {
+    const licenseInputField = document.getElementById('license_number');
+    licenseInputField.addEventListener('input', function() {
         let value = this.value.toUpperCase();
         
         // Auto-format as user types
@@ -1201,23 +2090,6 @@ document.addEventListener('DOMContentLoaded', function() {
             this.setCustomValidity('');
         }
     });
-
-    // Update camera instructions
-    const cameraInstructions = document.querySelector('.camera-instructions small');
-    cameraInstructions.innerHTML = `
-        <span class="material-icons align-middle me-1" style="font-size: 16px;">info</span>
-        Position document within frame, ensure good lighting and no glare
-    `;
-
-    // Add helper text under the scan button
-    const scanLicenseBtn = document.getElementById('scanLicense');
-    const helperText = document.createElement('div');
-    helperText.className = 'text-muted small mt-2';
-    helperText.innerHTML = `
-        <span class="material-icons align-middle me-1" style="font-size: 14px;">tips_and_updates</span>
-        Tips: Good lighting, no glare, entire document visible
-    `;
-    scanLicenseBtn.parentNode.insertBefore(helperText, scanLicenseBtn.nextSibling);
 
     // Add cleanup function definition
     function cleanup() {
@@ -1252,6 +2124,573 @@ document.addEventListener('DOMContentLoaded', function() {
             openButton.focus();
         }
     });
+
+    // Autocomplete functionality
+    class Autocomplete {
+        constructor(input, dropdown, options = {}) {
+            this.input = input;
+            this.dropdown = dropdown;
+            this.options = {
+                minChars: options.minChars || 2,
+                debounceTime: options.debounceTime || 300,
+                endpoint: options.endpoint || '/api/search-users/',
+                searchParam: options.searchParam || 'q',
+                onSelect: options.onSelect || this.defaultOnSelect,
+                limit: options.limit || 5,
+                queryParams: options.queryParams || {}
+            };
+            
+            this.activeIndex = -1;
+            this.debounceTimer = null;
+            this.isOpen = false;
+            this.hasSelectedItem = false; // Track if an item has been selected
+            
+            this.init();
+        }
+        
+        init() {
+            // Add event listeners
+            this.input.addEventListener('input', this.onInput.bind(this));
+            this.input.addEventListener('keydown', this.onKeyDown.bind(this));
+            this.input.addEventListener('blur', this.onBlur.bind(this));
+            this.input.addEventListener('focus', this.onFocus.bind(this));
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!this.input.contains(e.target) && !this.dropdown.contains(e.target)) {
+                    this.closeDropdown();
+                }
+            });
+        }
+        
+        onInput(e) {
+            const value = this.input.value.trim();
+            
+            // If input has the 'selected' class, don't show suggestions
+            if (this.input.classList.contains('autocomplete-input-selected')) {
+                this.closeDropdown();
+                return;
+            }
+            
+            // Clear previous timer
+            if (this.debounceTimer) {
+                clearTimeout(this.debounceTimer);
+            }
+            
+            // Close dropdown if input is empty
+            if (value.length < this.options.minChars) {
+                this.closeDropdown();
+                return;
+            }
+            
+            // Debounce search
+            this.debounceTimer = setTimeout(() => {
+                this.search(value);
+            }, this.options.debounceTime);
+        }
+        
+        onFocus(e) {
+            // Don't show dropdown automatically when focusing if an item was already selected
+            if (this.hasSelectedItem) {
+                return;
+            }
+            
+            // Only show dropdown on focus if we have enough characters and no selection yet
+            const value = this.input.value.trim();
+            if (value.length >= this.options.minChars && !this.hasSelectedItem) {
+                this.debounceTimer = setTimeout(() => {
+                    this.search(value);
+                }, this.options.debounceTime);
+            }
+        }
+        
+        onKeyDown(e) {
+            // Handle keyboard navigation
+            if (!this.isOpen) return;
+            
+            switch(e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    this.navigateDropdown(1);
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    this.navigateDropdown(-1);
+                    break;
+                case 'Enter':
+                    e.preventDefault();
+                    if (this.activeIndex >= 0) {
+                        const items = this.dropdown.querySelectorAll('.autocomplete-item');
+                        if (items[this.activeIndex]) {
+                            this.selectItem(items[this.activeIndex]);
+                        }
+                    }
+                    break;
+                case 'Escape':
+                    e.preventDefault();
+                    this.closeDropdown();
+                    break;
+            }
+        }
+        
+        onBlur(e) {
+            // Close dropdown with a small delay to allow clicking on dropdown items
+            setTimeout(() => {
+                if (!this.dropdown.contains(document.activeElement)) {
+                    this.closeDropdown();
+                }
+            }, 200);
+        }
+        
+        async search(query) {
+            // Don't search if an item has been selected
+            if (this.hasSelectedItem) return;
+            
+            try {
+                // Build URL with query parameters
+                const url = new URL(this.options.endpoint, window.location.origin);
+                url.searchParams.append(this.options.searchParam, query);
+                
+                // Add additional query parameters if provided
+                for (const [key, value] of Object.entries(this.options.queryParams)) {
+                    url.searchParams.append(key, value);
+                }
+                
+                url.searchParams.append('limit', this.options.limit);
+                
+                console.log('Searching with URL:', url.toString());
+                
+                // Fetch results
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    credentials: 'same-origin'
+                });
+                
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('API error response:', errorText);
+                    throw new Error(`Search request failed: ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Search results:', data);
+                this.renderResults(data.results || [], query);
+                
+            } catch (error) {
+                console.error('Autocomplete search error:', error);
+                
+                // Show error in dropdown for better visibility
+                this.dropdown.innerHTML = `<div class="autocomplete-error p-3 text-danger">
+                    <small><i class="fas fa-exclamation-circle me-1"></i> Error fetching results: ${error.message}</small>
+                </div>`;
+                this.openDropdown();
+                
+                // Automatically hide after 3 seconds
+                setTimeout(() => {
+                    this.closeDropdown();
+                }, 3000);
+            }
+        }
+        
+        renderResults(results, query) {
+            // Clear dropdown
+            this.dropdown.innerHTML = '';
+            
+            if (!results || results.length === 0) {
+                this.dropdown.innerHTML = `<div class="autocomplete-item text-muted">
+                    <small><i class="fas fa-info-circle me-1"></i> No matching records found</small>
+                </div>`;
+                this.openDropdown();
+                
+                // Hide after 2 seconds if no interaction
+                setTimeout(() => {
+                    if (this.isOpen && this.dropdown.querySelector('.autocomplete-item.active') === null) {
+                        this.closeDropdown();
+                    }
+                }, 2000);
+                
+                return;
+            }
+            
+            // Create result items
+            results.forEach(item => {
+                try {
+                    // Ensure we have valid data
+                    const safeItem = {
+                        id: item.id || '',
+                        first_name: typeof item.first_name === 'string' ? item.first_name : '',
+                        last_name: typeof item.last_name === 'string' ? item.last_name : '',
+                        license_number: typeof item.license_number === 'string' ? item.license_number : '',
+                        phone_number: typeof item.phone_number === 'string' ? item.phone_number : '',
+                        address: typeof item.address === 'string' ? item.address : '',
+                        source: item.source === 'violator' ? 'violator' : 'user',
+                        has_license: !!item.has_license
+                    };
+                    
+                    const element = document.createElement('div');
+                    element.className = 'autocomplete-item';
+                    element.dataset.item = JSON.stringify(safeItem);
+                    
+                    // Highlight matching text
+                    const nameHighlighted = this.highlightMatch(safeItem.first_name + ' ' + safeItem.last_name, query);
+                    const licenseHighlighted = safeItem.license_number ? this.highlightMatch(safeItem.license_number, query) : '';
+                    
+                    const sourceLabel = safeItem.source === 'violator' ? 
+                        '<span class="source-badge violator">Violator</span>' : 
+                        '<span class="source-badge user">User</span>';
+                    
+                    // Add license status badge
+                    const licenseStatusBadge = safeItem.has_license ? 
+                        '<span class="license-badge has-license">Licensed</span>' : 
+                        '<span class="license-badge no-license">No License</span>';
+                    
+                    element.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>${nameHighlighted}</div>
+                            <div class="d-flex gap-1">
+                                ${licenseStatusBadge}
+                                ${sourceLabel}
+                            </div>
+                        </div>
+                        ${licenseHighlighted ? `<div class="autocomplete-details">License: ${licenseHighlighted}</div>` : ''}
+                        ${safeItem.phone_number ? `<div class="autocomplete-details">Phone: ${safeItem.phone_number}</div>` : ''}
+                    `;
+                    
+                    element.addEventListener('click', () => this.selectItem(element));
+                    this.dropdown.appendChild(element);
+                } catch (err) {
+                    console.error('Error rendering result item:', err, item);
+                }
+            });
+            
+            // Show dropdown
+            this.openDropdown();
+        }
+        
+        highlightMatch(text, query) {
+            if (!text) return '';
+            
+            const regex = new RegExp(`(${query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
+            return text.replace(regex, '<span class="highlight">$1</span>');
+        }
+        
+        navigateDropdown(direction) {
+            const items = this.dropdown.querySelectorAll('.autocomplete-item');
+            
+            // Remove active class from current item
+            if (this.activeIndex >= 0 && items[this.activeIndex]) {
+                items[this.activeIndex].classList.remove('active');
+            }
+            
+            // Calculate new index
+            this.activeIndex += direction;
+            
+            // Ensure index is within bounds
+            if (this.activeIndex < 0) {
+                this.activeIndex = items.length - 1;
+            } else if (this.activeIndex >= items.length) {
+                this.activeIndex = 0;
+            }
+            
+            // Add active class to new item and scroll into view
+            if (items[this.activeIndex]) {
+                items[this.activeIndex].classList.add('active');
+                items[this.activeIndex].scrollIntoView({ block: 'nearest' });
+            }
+        }
+        
+        selectItem(element) {
+            try {
+                const item = JSON.parse(element.dataset.item);
+                
+                // Call the onSelect callback with the selected item
+                if (typeof this.options.onSelect === 'function') {
+                    this.options.onSelect(item);
+                } else {
+                    this.defaultOnSelect(item);
+                }
+                
+                // Mark this input and dropdown to prevent showing suggestions again
+                this.input.classList.add('autocomplete-input-selected');
+                this.dropdown.classList.add('autocomplete-dropdown-hidden');
+                
+                // Close dropdown
+                this.closeDropdown();
+                
+                // Mobile optimization: Immediately hide on mobile after selection
+                if (window.innerWidth <= 768) {
+                    this.dropdown.style.display = 'none';
+                    this.isOpen = false;
+                    // Remove focus from input to dismiss mobile keyboard
+                    this.input.blur();
+                }
+                
+            } catch (error) {
+                console.error('Error selecting item:', error);
+            }
+        }
+        
+        defaultOnSelect(item) {
+            // Default behavior: fill first_name, last_name, license_number, etc.
+            const fieldsMap = {
+                'first_name': document.getElementById('first_name'),
+                'last_name': document.getElementById('last_name'),
+                'license_number': document.getElementById('license_number'),
+                'address': document.getElementById('address'),
+                'phone_number': document.getElementById('phone_number')
+            };
+            
+            // Store user ID in hidden field if this is a registered user
+            const userAccountIdField = document.getElementById('user_account_id');
+            const violatorSourceField = document.getElementById('violator_source');
+            
+            if (userAccountIdField && violatorSourceField) {
+                // Store the source (user or violator)
+                violatorSourceField.value = item.source || '';
+                
+                // For registered users, store the ID for linking violation to their account
+                if (item.source === 'user' && item.id) {
+                    userAccountIdField.value = item.id;
+                    console.log('Selected registered user:', item.id);
+                } else {
+                    userAccountIdField.value = '';
+                }
+            }
+            
+            // Fill the form fields with the selected item data
+            for (const [key, field] of Object.entries(fieldsMap)) {
+                if (field && item[key]) {
+                    field.value = item[key];
+                    
+                    // Mark any other autocomplete fields as having selected items
+                    if (field.classList.contains('autocomplete-input')) {
+                        const fieldId = field.id;
+                        const dropdownId = `${fieldId}_dropdown`;
+                        const dropdown = document.getElementById(dropdownId);
+                        
+                        if (dropdown) {
+                            // Find the autocomplete instance for this field
+                            const autocompleteInstances = window._autocompleteInstances || {};
+                            if (autocompleteInstances[fieldId]) {
+                                autocompleteInstances[fieldId].hasSelectedItem = true;
+                            }
+                        }
+                    }
+                    
+                    field.dispatchEvent(new Event('input'));
+                }
+            }
+        }
+        
+        openDropdown() {
+            // Don't open if dropdown has the hidden class
+            if (this.dropdown.classList.contains('autocomplete-dropdown-hidden')) {
+                return;
+            }
+            
+            this.dropdown.style.display = 'block';
+            this.isOpen = true;
+            
+            // Mobile optimization: Adjust dropdown position on small screens
+            if (window.innerWidth <= 768) {
+                const inputRect = this.input.getBoundingClientRect();
+                const dropdownHeight = Math.min(180, this.dropdown.scrollHeight);
+                
+                // If there's not enough space below, show above
+                if (inputRect.bottom + dropdownHeight > window.innerHeight) {
+                    this.dropdown.style.top = 'auto';
+                    this.dropdown.style.bottom = '100%';
+                    this.dropdown.style.maxHeight = '180px';
+                } else {
+                    this.dropdown.style.top = '100%';
+                    this.dropdown.style.bottom = 'auto';
+                }
+            }
+        }
+        
+        closeDropdown() {
+            this.dropdown.style.display = 'none';
+            this.isOpen = false;
+            this.activeIndex = -1;
+        }
+    }
+    
+    // Create a global registry to store autocomplete instances
+    window._autocompleteInstances = {};
+
+    // Initialize autocomplete on inputs if they exist
+    try {
+        // License number autocomplete
+        const licenseAutoField = document.getElementById('license_number');
+        const licenseDropdown = document.getElementById('license_dropdown');
+        
+        if (licenseAutoField && licenseDropdown) {
+            console.log('Initializing license autocomplete');
+            window._autocompleteInstances['license_number'] = new Autocomplete(licenseAutoField, licenseDropdown, {
+                endpoint: '/api/search-users/',
+                searchParam: 'q',
+                debounceTime: 300,
+                minChars: 3,
+                limit: 5,
+                queryParams: { search_by: 'license' }
+            });
+        } else {
+            console.log('License autocomplete elements not found');
+        }
+        
+        // First name autocomplete
+        const firstNameInput = document.getElementById('first_name');
+        const firstNameDropdown = document.getElementById('first_name_dropdown');
+        
+        if (firstNameInput && firstNameDropdown) {
+            console.log('Initializing first name autocomplete');
+            window._autocompleteInstances['first_name'] = new Autocomplete(firstNameInput, firstNameDropdown, {
+                endpoint: '/api/search-users/',
+                searchParam: 'q',
+                queryParams: { search_by: 'name' }
+            });
+        }
+        
+        // Last name autocomplete
+        const lastNameInput = document.getElementById('last_name');
+        const lastNameDropdown = document.getElementById('last_name_dropdown');
+        
+        if (lastNameInput && lastNameDropdown) {
+            console.log('Initializing last name autocomplete');
+            window._autocompleteInstances['last_name'] = new Autocomplete(lastNameInput, lastNameDropdown, {
+                endpoint: '/api/search-users/',
+                searchParam: 'q',
+                queryParams: { search_by: 'name' }
+            });
+        }
+    } catch (error) {
+        console.error('Error initializing autocomplete:', error);
+    }
+
+    // Initialize the canvas
+    const canvas = document.getElementById('signatureCanvas');
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+
+    // Initialize signature drawing functionality
+    initializeSignatureCanvas();
+    
+    // Initialize violation fines
+    initializeViolationFines();
+
+    // Add window resize event listener
+    window.addEventListener('resize', function() {
+        // Re-draw the signature canvas after resize
+        const dataURL = canvas.toDataURL();
+        const img = new Image();
+        img.onload = function() {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        };
+        img.src = dataURL;
+    });
 });
+
+// Add direct event listeners for violation checkboxes and TDZ checkbox as soon as the script loads
+window.addEventListener('load', function() {
+    console.log('Window loaded, attaching direct event listeners');
+    
+    // Attach click listeners to all violation checkboxes
+    document.querySelectorAll('input[name="violation_type[]"]').forEach(checkbox => {
+        checkbox.addEventListener('click', function() {
+            console.log('Violation checkbox clicked:', this.value, 'Checked:', this.checked);
+            updateViolationTotal();
+        });
+    });
+    
+    // Attach click listener to TDZ checkbox
+    const tdzCheckbox = document.getElementById('is_tdz_violation');
+    if (tdzCheckbox) {
+        tdzCheckbox.addEventListener('click', function() {
+            console.log('TDZ checkbox clicked, checked:', this.checked);
+            updateViolationTotal();
+        });
+    }
+    
+    // Check for fine_amount element
+    const fineAmountEl = document.getElementById('fine_amount');
+    if (fineAmountEl) {
+        console.log('Found fine amount element on window load');
+    } else {
+        console.error('Fine amount element not found on window load!');
+    }
+    
+    // Initial calculation
+    updateViolationTotal();
+});
+
+// Alternative implementation to calculate total fine amount
+function updateViolationTotal() {
+    // Default values for fine amounts
+    const fineValues = {
+        'Speeding': 500,
+        'Running a Red Light': 800,
+        'Illegal Parking': 300,
+        'No Seat Belt': 250,
+        'Using Phone While Driving': 1000,
+        'Driving Under Influence': 2500,
+        'Unlicensed Driver': 1500,
+        'Reckless Driving': 2000,
+        'Expired Registration': 1000,
+        'No Helmet': 500,
+        'Obstruction': 1000,
+        'Wrong Way Driving': 600,
+        'Invalid Plate': 1000,
+        'No Muffler': 500,
+        'Permitting Hitching/Over Loading Passenger(s)': 800,
+        'Unregistered MV': 1200,
+        'Refusal to convey to proper destination': 600,
+        'Discourteous driver/Conduct': 500,
+        'Others': 500
+    };
+    
+    // Get all checked violation checkboxes
+    const checkedViolations = document.querySelectorAll('input[name="violation_type[]"]:checked');
+    console.log('Checked violations count:', checkedViolations.length);
+    
+    // Calculate total fine
+    let totalFine = 0;
+    checkedViolations.forEach(function(checkbox) {
+        const violationType = checkbox.value;
+        const amount = fineValues[violationType] || 500; // Use 500 as default if not found
+        console.log(`Adding fine for ${violationType}: ${amount}`);
+        totalFine += amount;
+    });
+    
+    // Apply TDZ multiplier if checked
+    const isTdzViolation = document.getElementById('is_tdz_violation')?.checked || false;
+    if (isTdzViolation) {
+        console.log('TDZ violation checked, doubling fine');
+        totalFine *= 2;
+    }
+    
+    console.log('Final total fine:', totalFine);
+    
+    // Update fine amount field
+    const fineAmountField = document.getElementById('fine_amount');
+    if (fineAmountField) {
+        fineAmountField.value = totalFine;
+        console.log('Updated fine amount field with value:', totalFine);
+        
+        // Trigger a change event on the field to ensure any validation is triggered
+        const event = new Event('change', { bubbles: true });
+        fineAmountField.dispatchEvent(event);
+    } else {
+        console.error('Could not find fine amount field!');
+    }
+}
 </script>
 {% endblock %}

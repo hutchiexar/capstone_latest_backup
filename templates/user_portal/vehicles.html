@@ -1,0 +1,776 @@
+{% extends 'user_portal/base_user.html' %}
+{% load static %}
+
+{% block title %}My Vehicles - CTTMO User Portal{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Modern Color Palette */
+    :root {
+        --primary-color: #3563E9;
+        --primary-light: #EEF3FF;
+        --success-color: #0CAA1D;
+        --danger-color: #F53D3D;
+        --warning-color: #FFB800;
+        --info-color: #4DA7FF;
+        --dark-blue: #0F1C3F;
+        --neutral-gray: #737791;
+        --light-gray: #F6F7F9;
+        --white: #FFFFFF;
+    }
+
+    /* Common Utility Classes */
+    .shadow-lg { box-shadow: 0 10px 20px rgba(0,0,0,0.08); }
+    .shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .rounded-xl { border-radius: 1rem; }
+    .rounded-lg { border-radius: 0.75rem; }
+    .transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 300ms; }
+    
+    /* Animation */
+    @keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+    }
+    
+    @keyframes spinner {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Container */
+    .vehicles-container {
+        animation: fadeIn 0.5s ease-out;
+    }
+    
+    /* Card Design */
+    .vehicles-card {
+        transition: all 0.3s ease;
+        border: none !important;
+        height: 100%;
+    }
+    
+    .vehicles-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important;
+    }
+    
+    /* Header Icon */
+    .header-icon {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        background-color: var(--primary-light);
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+    
+    /* Vehicle Card */
+    .vehicle-card {
+        border: none;
+        border-radius: 1rem;
+        transition: all 0.3s ease;
+        overflow: hidden;
+        height: 100%;
+    }
+    
+    .vehicle-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important;
+    }
+    
+    .vehicle-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        background-color: var(--primary-light);
+        border-radius: 12px;
+        flex-shrink: 0;
+    }
+    
+    .vehicle-info-item {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 0.75rem;
+    }
+    
+    .vehicle-info-item .material-icons {
+        color: var(--primary-color);
+        font-size: 1.25rem;
+        margin-right: 0.75rem;
+        flex-shrink: 0;
+    }
+    
+    .vehicle-info-label {
+        font-size: 0.75rem;
+        color: var(--neutral-gray);
+        margin-bottom: 0.25rem;
+        font-weight: 500;
+    }
+    
+    .vehicle-info-value {
+        font-size: 0.875rem;
+        color: var(--dark-blue);
+        font-weight: 600;
+    }
+    
+    /* Status Badge */
+    .status-badge {
+        padding: 0.35rem 0.75rem;
+        border-radius: 2rem;
+        font-weight: 500;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    .status-badge-active {
+        background-color: rgba(12, 170, 29, 0.1);
+        color: var(--success-color);
+    }
+    
+    .status-badge-inactive {
+        background-color: rgba(245, 61, 61, 0.1);
+        color: var(--danger-color);
+    }
+    
+    /* Empty State */
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem 1rem;
+        background-color: var(--primary-light);
+        border-radius: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .empty-state-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background-color: var(--white);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 8px 16px rgba(53, 99, 233, 0.16);
+    }
+    
+    .empty-state-icon .material-icons {
+        font-size: 40px !important;
+        color: var(--primary-color);
+    }
+    
+    .empty-state-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--dark-blue);
+    }
+    
+    .empty-state-text {
+        font-size: 0.95rem;
+        color: var(--neutral-gray);
+        text-align: center;
+        max-width: 400px;
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Buttons */
+    .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        font-weight: 500;
+        border-radius: 0.75rem;
+        padding: 0.5rem 1rem;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-primary:hover {
+        background-color: #2954D5;
+        border-color: #2954D5;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(53, 99, 233, 0.25);
+    }
+    
+    .btn-primary .material-icons {
+        font-size: 1.25rem;
+        margin-right: 0.25rem;
+    }
+    
+    .btn-outline-primary {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+        font-weight: 500;
+        border-radius: 0.75rem;
+        padding: 0.35rem 0.75rem;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-outline-primary:hover {
+        background-color: var(--primary-color);
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    .btn-outline-primary .material-icons {
+        font-size: 1rem;
+        margin-right: 0.25rem;
+    }
+    
+    /* Modal */
+    .modal-content {
+        border: none;
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+    
+    .modal-header {
+        border-bottom: 1px solid #eee;
+        padding: 1rem 1.5rem;
+    }
+    
+    .modal-body {
+        padding: 1.5rem;
+    }
+    
+    .modal-footer {
+        border-top: 1px solid #eee;
+        padding: 1rem 1.5rem;
+    }
+    
+    .modal-section-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--dark-blue);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .modal-section-title .material-icons {
+        color: var(--primary-color);
+        margin-right: 0.5rem;
+        font-size: 1.25rem;
+    }
+    
+    /* Loading skeleton */
+    .text-skeleton { 
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); 
+        background-size: 200% 100%; 
+        animation: shimmer 1.5s infinite; 
+        height: 1rem; 
+        margin-bottom: 0.5rem; 
+        border-radius: 0.25rem; 
+    }
+    
+    /* Responsive Adjustments */
+    @media (max-width: 992px) {
+        .header-section {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .header-actions {
+            width: 100%;
+            margin-top: 1rem;
+        }
+    }
+    
+    @media (max-width: 767px) {
+        .vehicle-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+        }
+        
+        .vehicle-icon .material-icons {
+            font-size: 1.5rem !important;
+        }
+        
+        .header-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+        }
+        
+        .header-icon .material-icons {
+            font-size: 1.5rem !important;
+        }
+        
+        .header-title h1 {
+            font-size: 1.5rem;
+        }
+        
+        .modal-body {
+            padding: 1rem;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .btn-xs-block {
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header-icon {
+            width: 36px;
+            height: 36px;
+        }
+        
+        .header-icon .material-icons {
+            font-size: 1.25rem !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-3 py-md-5 vehicles-container">
+    <!-- Loading Skeleton (hidden when data is loaded) -->
+    <div id="vehicles-skeleton" style="display: none;">
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-lg rounded-xl">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between">
+                            <div class="d-flex align-items-center">
+                                <div class="text-skeleton rounded-lg me-3" style="width: 48px; height: 48px;"></div>
+                                <div class="text-skeleton" style="width: 180px; height: 28px;"></div>
+                            </div>
+                            <div class="text-skeleton rounded-lg" style="width: 150px; height: 40px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-12 col-md-6">
+                <div class="card shadow-lg rounded-xl">
+                    <div class="card-body p-4">
+                        <div class="d-flex mb-3">
+                            <div class="text-skeleton rounded-lg me-3" style="width: 48px; height: 48px;"></div>
+                            <div>
+                                <div class="text-skeleton" style="width: 120px; height: 24px;"></div>
+                                <div class="text-skeleton mt-1" style="width: 80px; height: 18px;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <div class="text-skeleton" style="width: 80px; height: 16px;"></div>
+                                <div class="text-skeleton mt-1" style="width: 100px; height: 20px;"></div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-skeleton" style="width: 80px; height: 16px;"></div>
+                                <div class="text-skeleton mt-1" style="width: 100px; height: 20px;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <div class="text-skeleton" style="width: 80px; height: 16px;"></div>
+                                <div class="text-skeleton mt-1" style="width: 100px; height: 20px;"></div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-skeleton" style="width: 80px; height: 16px;"></div>
+                                <div class="text-skeleton mt-1" style="width: 100px; height: 20px;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-end mt-3">
+                            <div class="text-skeleton ms-auto" style="width: 120px; height: 36px; border-radius: 0.75rem;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6">
+                <div class="card shadow-lg rounded-xl">
+                    <div class="card-body p-4">
+                        <div class="d-flex mb-3">
+                            <div class="text-skeleton rounded-lg me-3" style="width: 48px; height: 48px;"></div>
+                            <div>
+                                <div class="text-skeleton" style="width: 120px; height: 24px;"></div>
+                                <div class="text-skeleton mt-1" style="width: 80px; height: 18px;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <div class="text-skeleton" style="width: 80px; height: 16px;"></div>
+                                <div class="text-skeleton mt-1" style="width: 100px; height: 20px;"></div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-skeleton" style="width: 80px; height: 16px;"></div>
+                                <div class="text-skeleton mt-1" style="width: 100px; height: 20px;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <div class="text-skeleton" style="width: 80px; height: 16px;"></div>
+                                <div class="text-skeleton mt-1" style="width: 100px; height: 20px;"></div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-skeleton" style="width: 80px; height: 16px;"></div>
+                                <div class="text-skeleton mt-1" style="width: 100px; height: 20px;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-end mt-3">
+                            <div class="text-skeleton ms-auto" style="width: 120px; height: 36px; border-radius: 0.75rem;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vehicles Content -->
+    <div id="vehicles-content">
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card vehicles-card shadow-lg rounded-xl">
+                    <div class="card-body p-4">
+                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center header-section">
+                            <div class="d-flex align-items-center mb-3 mb-sm-0">
+                                <div class="header-icon">
+                                    <span class="material-icons" style="font-size: 28px; color: var(--primary-color)">
+                                        directions_car
+                                    </span>
+                                </div>
+                                <div class="header-title">
+                                    <h1 class="mb-0 fw-bold">My Vehicles</h1>
+                                </div>
+                            </div>
+                            <div class="header-actions">
+                                <a href="{% url 'user_portal:register_vehicle' %}" class="btn btn-primary btn-xs-block">
+                                    <span class="material-icons">add</span>
+                                    Register New Vehicle
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card vehicles-card shadow-lg rounded-xl">
+                    <div class="card-body p-4">
+            {% if vehicles %}
+                        <div class="row g-4">
+                {% for vehicle in vehicles %}
+                <div class="col-12 col-md-6">
+                                <div class="card vehicle-card shadow-sm h-100">
+                                    <div class="card-body p-4">
+                                        <div class="position-absolute end-0 top-0 mt-3 me-3">
+                                            <span class="status-badge {% if vehicle.is_active %}status-badge-active{% else %}status-badge-inactive{% endif %}">
+                                    {% if vehicle.is_active %}
+                                        <span class="material-icons me-1" style="font-size: 0.75rem; vertical-align: middle;">check_circle</span>Active
+                                    {% else %}
+                                        <span class="material-icons me-1" style="font-size: 0.75rem; vertical-align: middle;">cancel</span>Inactive
+                                    {% endif %}
+                                </span>
+                            </div>
+                            
+                                        <div class="d-flex mb-4">
+                                <div class="vehicle-icon me-3">
+                                                <span class="material-icons" style="font-size: 24px; color: var(--primary-color)">
+                                        {% if vehicle.vehicle_type|lower == 'motorcycle' %}
+                                            two_wheeler
+                                        {% elif vehicle.vehicle_type|lower == 'car' %}
+                                            directions_car
+                                        {% elif vehicle.vehicle_type|lower == 'truck' %}
+                                            local_shipping
+                                        {% elif vehicle.vehicle_type|lower == 'bus' %}
+                                            directions_bus
+                                        {% elif vehicle.vehicle_type|lower == 'suv' %}
+                                            directions_car
+                                        {% elif vehicle.vehicle_type|lower == 'van' %}
+                                            airport_shuttle
+                                        {% else %}
+                                            commute
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div>
+                                    <h5 class="mb-0 fw-bold text-break">{{ vehicle.plate_number }}</h5>
+                                    <div class="text-muted small">{{ vehicle.vehicle_type }}</div>
+                                </div>
+                            </div>
+                            
+                                        <div class="row mb-3">
+                                            <div class="col-6">
+                                                <div class="vehicle-info-item">
+                                                    <span class="material-icons">description</span>
+                                        <div>
+                                                        <div class="vehicle-info-label">Make/Model</div>
+                                                        <div class="vehicle-info-value text-break">{{ vehicle.make }} {{ vehicle.model }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                            <div class="col-6">
+                                                <div class="vehicle-info-item">
+                                                    <span class="material-icons">date_range</span>
+                                        <div>
+                                                        <div class="vehicle-info-label">Year</div>
+                                                        <div class="vehicle-info-value">{{ vehicle.year_model }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                                        <div class="row mb-3">
+                                            <div class="col-6">
+                                                <div class="vehicle-info-item">
+                                                    <span class="material-icons">receipt</span>
+                                        <div>
+                                                        <div class="vehicle-info-label">OR Number</div>
+                                                        <div class="vehicle-info-value">{{ vehicle.or_number }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                            <div class="col-6">
+                                                <div class="vehicle-info-item">
+                                                    <span class="material-icons">article</span>
+                                        <div>
+                                                        <div class="vehicle-info-label">CR Number</div>
+                                                        <div class="vehicle-info-value">{{ vehicle.cr_number }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                                        <div class="vehicle-info-item">
+                                            <span class="material-icons">event_available</span>
+                                <div>
+                                                <div class="vehicle-info-label">Valid Until</div>
+                                                <div class="vehicle-info-value">{{ vehicle.expiry_date|date:"F d, Y" }}</div>
+                                </div>
+                            </div>
+                            
+                                        <div class="text-end mt-4">
+                                            <button class="btn btn-outline-primary view-details" data-vehicle-id="{{ vehicle.id }}">
+                                                <span class="material-icons" style="font-size: 1rem;">visibility</span>
+                                                View Details
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+                        <div class="empty-state">
+                            <div class="empty-state-icon">
+                                <span class="material-icons">directions_car</span>
+                            </div>
+                            <h5 class="empty-state-title">No Vehicles Registered</h5>
+                            <p class="empty-state-text">You haven't registered any vehicles yet. Register your vehicle to manage it and receive traffic-related information.</p>
+                            <a href="{% url 'user_portal:register_vehicle' %}" class="btn btn-primary">
+                                <span class="material-icons">add</span>
+                                Register New Vehicle
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Vehicle Details Modal -->
+<div class="modal fade" id="vehicleDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title d-flex align-items-center fw-bold">
+                    <span class="material-icons me-2" style="color: var(--primary-color)">directions_car</span>
+                    Vehicle Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <h6 class="modal-section-title">
+                                <span class="material-icons">photo</span>
+                                OR/CR Document
+                            </h6>
+                            <div id="orCrImageContainer" class="border rounded-lg p-3 text-center bg-light">
+                                <img id="orCrImage" src="" alt="OR/CR Image" class="img-fluid rounded" style="max-height: 250px;">
+                                <div id="noImageMsg" class="py-4 text-muted" style="display: none;">
+                                    <span class="material-icons d-block mb-2" style="font-size: 2.5rem; color: var(--neutral-gray);">image_not_supported</span>
+                                    <p class="mb-0">No document image available</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="modal-section-title">
+                            <span class="material-icons">info</span>
+                            Vehicle Information
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <div class="vehicle-info-label">Plate Number</div>
+                                <div id="plateNumber" class="vehicle-info-value"></div>
+                            </div>
+                            <div class="col-6">
+                                <div class="vehicle-info-label">Vehicle Type</div>
+                                <div id="vehicleType" class="vehicle-info-value"></div>
+                            </div>
+                            <div class="col-6">
+                                <div class="vehicle-info-label">Make/Model</div>
+                                <div id="makeModel" class="vehicle-info-value"></div>
+                            </div>
+                            <div class="col-6">
+                                <div class="vehicle-info-label">Year Model</div>
+                                <div id="yearModel" class="vehicle-info-value"></div>
+                            </div>
+                            <div class="col-6">
+                                <div class="vehicle-info-label">Color</div>
+                                <div id="color" class="vehicle-info-value"></div>
+                            </div>
+                            <div class="col-6">
+                                <div class="vehicle-info-label">Classification</div>
+                                <div id="classification" class="vehicle-info-value"></div>
+                            </div>
+                        </div>
+
+                        <h6 class="modal-section-title mt-4">
+                            <span class="material-icons">description</span>
+                            Registration Details
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <div class="vehicle-info-label">OR Number</div>
+                                <div id="orNumber" class="vehicle-info-value"></div>
+                            </div>
+                            <div class="col-6">
+                                <div class="vehicle-info-label">CR Number</div>
+                                <div id="crNumber" class="vehicle-info-value"></div>
+                            </div>
+                            <div class="col-6">
+                                <div class="vehicle-info-label">Registration Date</div>
+                                <div id="registrationDate" class="vehicle-info-value"></div>
+                            </div>
+                            <div class="col-6">
+                                <div class="vehicle-info-label">Expiry Date</div>
+                                <div id="expiryDate" class="vehicle-info-value"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-dismiss="modal">
+                    <span class="material-icons me-1" style="font-size: 0.875rem;">close</span>Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Show skeleton loading on page load
+    const vehiclesSkeleton = document.getElementById('vehicles-skeleton');
+    const vehiclesContent = document.getElementById('vehicles-content');
+    
+    // Simulate loading for demonstration
+    vehiclesSkeleton.style.display = 'block';
+    vehiclesContent.style.display = 'none';
+    
+    // After "loading" show the content
+    setTimeout(function() {
+        vehiclesSkeleton.style.display = 'none';
+        vehiclesContent.style.display = 'block';
+    }, 800);
+    
+    // Modal functionality
+    const modal = new bootstrap.Modal(document.getElementById('vehicleDetailsModal'));
+    
+    document.querySelectorAll('.view-details').forEach(button => {
+        button.addEventListener('click', async function() {
+            const vehicleId = this.dataset.vehicleId;
+            try {
+                const response = await fetch(`/user/vehicles/${vehicleId}/`);
+                const data = await response.json();
+                
+                // Update modal content
+                document.getElementById('plateNumber').textContent = data.plate_number;
+                document.getElementById('vehicleType').textContent = data.vehicle_type;
+                document.getElementById('makeModel').textContent = `${data.make} ${data.model}`;
+                document.getElementById('yearModel').textContent = data.year_model;
+                document.getElementById('color').textContent = data.color;
+                document.getElementById('classification').textContent = data.classification;
+                document.getElementById('orNumber').textContent = data.or_number;
+                document.getElementById('crNumber').textContent = data.cr_number;
+                document.getElementById('registrationDate').textContent = new Date(data.registration_date).toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'});
+                document.getElementById('expiryDate').textContent = new Date(data.expiry_date).toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'});
+                
+                // Update OR/CR image
+                const orCrImage = document.getElementById('orCrImage');
+                const noImageMsg = document.getElementById('noImageMsg');
+                
+                if (data.or_cr_image_url) {
+                    orCrImage.src = data.or_cr_image_url;
+                    orCrImage.style.display = 'block';
+                    noImageMsg.style.display = 'none';
+                } else {
+                    orCrImage.style.display = 'none';
+                    noImageMsg.style.display = 'block';
+                }
+                
+                // Update modal title icon based on vehicle type
+                const modalTitle = document.querySelector('.modal-title .material-icons');
+                if (data.vehicle_type.toLowerCase() === 'motorcycle') {
+                    modalTitle.textContent = 'two_wheeler';
+                } else if (data.vehicle_type.toLowerCase() === 'truck') {
+                    modalTitle.textContent = 'local_shipping';
+                } else if (data.vehicle_type.toLowerCase() === 'bus') {
+                    modalTitle.textContent = 'directions_bus';
+                } else if (data.vehicle_type.toLowerCase().includes('van')) {
+                    modalTitle.textContent = 'airport_shuttle';
+                } else {
+                    modalTitle.textContent = 'directions_car';
+                }
+                
+                modal.show();
+            } catch (error) {
+                console.error('Error fetching vehicle details:', error);
+                alert('Error loading vehicle details. Please try again.');
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2024-03-20T10:00:00.000Z" agent="AI Assistant" version="21.1.1">
+  <diagram id="traffic-violation-erd" name="Traffic Violation System ERD">
+    <mxGraphModel dx="1200" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        
+        <!-- User -->
+        <mxCell id="2" value="User (Django Auth)" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;" vertex="1" parent="1">
+          <mxGeometry x="400" y="40" width="160" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="3" value="id (PK)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="2">
+          <mxGeometry y="30" width="160" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="4" value="username" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="2">
+          <mxGeometry y="60" width="160" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="5" value="password" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="2">
+          <mxGeometry y="90" width="160" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- UserProfile -->
+        <mxCell id="6" value="UserProfile" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;" vertex="1" parent="1">
+          <mxGeometry x="680" y="40" width="160" height="180" as="geometry"/>
+        </mxCell>
+        <mxCell id="7" value="id (PK)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="6">
+          <mxGeometry y="30" width="160" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="8" value="user_id (FK)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="6">
+          <mxGeometry y="60" width="160" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="9" value="enforcer_id" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="6">
+          <mxGeometry y="90" width="160" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="10" value="role" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="6">
+          <mxGeometry y="120" width="160" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="11" value="phone_number" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="6">
+          <mxGeometry y="150" width="160" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Violator -->
+        <mxCell id="12" value="Violator" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="280" width="160" height="150" as="geometry"/>
+        </mxCell>
+        <mxCell id="13" value="id (PK)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="12">
+          <mxGeometry y="30" width="160" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="14" value="first_name" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="12">
+          <mxGeometry y="60" width="160" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="15" value="last_name" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="12">
+          <mxGeometry y="90" width="160" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="16" value="license_number" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="12">
+          <mxGeometry y="120" width="160" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Violation -->
+        <mxCell id="17" value="Violation" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;" vertex="1" parent="1">
+          <mxGeometry x="280" y="280" width="160" height="270" as="geometry"/>
+        </mxCell>
+        <mxCell id="18" value="id (PK)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="17">
+          <mxGeometry y="30" width="160" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="19" value="violator_id (FK)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="17">
+          <mxGeometry y="60" width="160" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="20" value="enforcer_id (FK)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="17">
+          <mxGeometry y="90" width="160" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="21" value="adjudicated_by_id (FK)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="17">
+          <mxGeometry y="120" width="160" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="22" value="approved_by_id (FK)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="17">
+          <mxGeometry y="150" width="160" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="23" value="violation_type" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="17">
+          <mxGeometry y="180" width="160" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="24" value="fine_amount" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="17">
+          <mxGeometry y="210" width="160" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="25" value="status" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="17">
+          <mxGeometry y="240" width="160" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Payment -->
+        <mxCell id="26" value="Payment" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;" vertex="1" parent="1">
+          <mxGeometry x="520" y="280" width="160" height="150" as="geometry"/>
+        </mxCell>
+        <mxCell id="27" value="id (PK)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="26">
+          <mxGeometry y="30" width="160" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="28" value="violation_id (FK)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="26">
+          <mxGeometry y="60" width="160" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="29" value="amount_paid" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="26">
+          <mxGeometry y="90" width="160" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="30" value="payment_date" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="26">
+          <mxGeometry y="120" width="160" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- UserNotification -->
+        <mxCell id="31" value="UserNotification" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="160" height="150" as="geometry"/>
+        </mxCell>
+        <mxCell id="32" value="id (PK)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="31">
+          <mxGeometry y="30" width="160" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="33" value="user_id (FK)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="31">
+          <mxGeometry y="60" width="160" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="34" value="type" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="31">
+          <mxGeometry y="90" width="160" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="35" value="message" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="31">
+          <mxGeometry y="120" width="160" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- ActivityLog -->
+        <mxCell id="36" value="ActivityLog" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;" vertex="1" parent="1">
+          <mxGeometry x="760" y="280" width="160" height="150" as="geometry"/>
+        </mxCell>
+        <mxCell id="37" value="id (PK)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="36">
+          <mxGeometry y="30" width="160" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="38" value="user_id (FK)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="36">
+          <mxGeometry y="60" width="160" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="39" value="action" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="36">
+          <mxGeometry y="90" width="160" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="40" value="timestamp" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;" vertex="1" parent="36">
+          <mxGeometry y="120" width="160" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Relationships -->
+        <!-- User - UserProfile (1:1) -->
+        <mxCell id="41" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERone;startArrow=ERone;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="3" target="8">
+          <mxGeometry width="100" height="100" relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- User - UserNotification (1:N) -->
+        <mxCell id="42" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERzeroToMany;startArrow=ERone;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="3" target="33">
+          <mxGeometry width="100" height="100" relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- User - ActivityLog (1:N) -->
+        <mxCell id="43" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERzeroToMany;startArrow=ERone;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="3" target="38">
+          <mxGeometry width="100" height="100" relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Violator - Violation (1:N) -->
+        <mxCell id="44" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERzeroToMany;startArrow=ERone;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="13" target="19">
+          <mxGeometry width="100" height="100" relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- User (Enforcer) - Violation (1:N) -->
+        <mxCell id="45" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERzeroToMany;startArrow=ERone;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="3" target="20">
+          <mxGeometry width="100" height="100" relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Violation - Payment (1:1) -->
+        <mxCell id="46" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERone;startArrow=ERone;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="18" target="28">
+          <mxGeometry width="100" height="100" relative="1" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile> 

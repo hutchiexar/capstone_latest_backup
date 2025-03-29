@@ -3,22 +3,493 @@
 
 {% block title %}Dashboard - CTTMO User Portal{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Modern Color Palette */
+    :root {
+        --primary-color: #3563E9;
+        --primary-light: #EEF3FF;
+        --success-color: #0CAA1D;
+        --danger-color: #F53D3D;
+        --warning-color: #FFB800;
+        --info-color: #4DA7FF;
+        --dark-blue: #0F1C3F;
+        --neutral-gray: #737791;
+        --light-gray: #F6F7F9;
+        --white: #FFFFFF;
+    }
+
+    /* Common Utility Classes */
+    .shadow-lg { box-shadow: 0 10px 20px rgba(0,0,0,0.08); }
+    .shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .rounded-xl { border-radius: 1rem; }
+    .rounded-lg { border-radius: 0.75rem; }
+    .transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 300ms; }
+    
+    /* Animation */
+    @keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+    }
+    
+    @keyframes spinner {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Dashboard Container */
+    .dashboard-container {
+        animation: fadeIn 0.5s ease-out;
+    }
+    
+    /* Card Design */
+    .dashboard-card {
+        transition: all 0.3s ease;
+        border: none;
+        height: 100%;
+    }
+    
+    .dashboard-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+    }
+    
+    /* Welcome Section */
+    .welcome-icon {
+        width: 64px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 16px;
+        background-color: var(--primary-light);
+        margin-right: 1.5rem;
+        flex-shrink: 0;
+    }
+    
+    /* Stat Cards */
+    .stat-card {
+        background-color: var(--white);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        height: 100%;
+    }
+    
+    .stat-card-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+    
+    .stat-card-title {
+        font-size: 0.875rem;
+        color: var(--neutral-gray);
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+    
+    .stat-card-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--dark-blue);
+        margin-bottom: 0.25rem;
+    }
+    
+    .stat-card-description {
+        font-size: 0.75rem;
+        color: var(--neutral-gray);
+    }
+    
+    /* Recent Violations Table */
+    .table-container {
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+    
+    .violations-table {
+        margin-bottom: 0;
+    }
+    
+    .violations-table thead {
+        background-color: var(--light-gray);
+    }
+    
+    .violations-table th {
+        font-weight: 600;
+        color: var(--dark-blue);
+        padding: 1rem 1.5rem;
+        white-space: nowrap;
+    }
+    
+    .violations-table td {
+        padding: 1rem 1.5rem;
+        vertical-align: middle;
+    }
+    
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 2rem;
+        font-weight: 500;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    .status-badge-pending {
+        background-color: #FFF4DE;
+        color: #FF8A00;
+    }
+    
+    .status-badge-paid {
+        background-color: #E6F7EE;
+        color: var(--success-color);
+    }
+    
+    .status-badge-approved {
+        background-color: #DCFCE7;
+        color: #15803D;
+    }
+    
+    .status-badge-adjudicated {
+        background-color: #DBEAFE;
+        color: #1D4ED8;
+    }
+    
+    .btn-view-details {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        border-radius: 0.5rem;
+    }
+    
+    /* Empty States */
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem 1rem;
+    }
+    
+    .empty-state-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background-color: var(--light-gray);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+    }
+    
+    .empty-state-violations {
+        padding: 4rem 2rem;
+    }
+    
+    .empty-state-violations .empty-state-icon {
+        width: 80px;
+        height: 80px;
+        background-color: #EEF3FF;
+    }
+    
+    .empty-state-violations h6 {
+        font-size: 1.1rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    /* Quick Actions */
+    .action-btn {
+        display: flex;
+        align-items: center;
+        padding: 1rem 1.25rem;
+        border-radius: 0.75rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        border: 1px solid #E2E8F0;
+        margin-bottom: 1rem;
+    }
+    
+    .action-btn:last-child {
+        margin-bottom: 0;
+    }
+    
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .action-btn-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+    
+    /* Notifications */
+    .notifications-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .notification-item {
+        padding: 1rem;
+        border-radius: 0.75rem;
+        border: 1px solid #E2E8F0;
+        margin-bottom: 0.75rem;
+        transition: all 0.2s ease;
+    }
+    
+    .notification-item:hover {
+        background-color: var(--light-gray);
+    }
+    
+    .notification-item:last-child {
+        margin-bottom: 0;
+    }
+    
+    .notification-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+    
+    .notification-content {
+        flex: 1;
+    }
+    
+    .notification-message {
+        font-size: 0.875rem;
+        color: var(--dark-blue);
+        margin-bottom: 0.25rem;
+    }
+    
+    .notification-time {
+        font-size: 0.75rem;
+        color: var(--neutral-gray);
+    }
+    
+    /* Loading skeleton */
+    .text-skeleton { 
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); 
+        background-size: 200% 100%; 
+        animation: shimmer 1.5s infinite; 
+        height: 1rem; 
+        margin-bottom: 0.5rem; 
+        border-radius: 0.25rem; 
+    }
+    
+    /* Notification colors */
+    .notification-icon-primary {
+        background-color: rgba(53, 99, 233, 0.1);
+    }
+    
+    .notification-icon-primary span {
+        color: var(--primary-color);
+    }
+    
+    .notification-icon-success {
+        background-color: rgba(12, 170, 29, 0.1);
+    }
+    
+    .notification-icon-success span {
+        color: var(--success-color);
+    }
+    
+    .notification-icon-warning {
+        background-color: rgba(255, 184, 0, 0.1);
+    }
+    
+    .notification-icon-warning span {
+        color: var(--warning-color);
+    }
+    
+    .notification-icon-danger {
+        background-color: rgba(245, 61, 61, 0.1);
+    }
+    
+    .notification-icon-danger span {
+        color: var(--danger-color);
+    }
+    
+    .notification-icon-info {
+        background-color: rgba(77, 167, 255, 0.1);
+    }
+    
+    .notification-icon-info span {
+        color: var(--info-color);
+    }
+    
+    .notification-icon-gray {
+        background-color: rgba(115, 119, 145, 0.1);
+    }
+    
+    .notification-icon-gray span {
+        color: var(--neutral-gray);
+    }
+    
+    /* Responsive Adjustments */
+    @media (max-width: 992px) {
+        .welcome-section {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .welcome-icon {
+            margin-bottom: 1rem;
+            margin-right: 0;
+        }
+        
+        .welcome-message h1 {
+            font-size: 1.75rem;
+        }
+    }
+    
+    @media (max-width: 767px) {
+        .stat-card {
+            padding: 1.25rem;
+        }
+        
+        .violations-table th,
+        .violations-table td {
+            padding: 0.75rem;
+        }
+        
+        .table-responsive {
+            border-radius: 1rem;
+        }
+        
+        .action-btn {
+            padding: 0.75rem 1rem;
+        }
+        
+        .action-btn-icon {
+            width: 32px;
+            height: 32px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container">
-    <!-- Welcome Section -->
+<div class="container py-3 py-md-5 dashboard-container">
+    <!-- Loading Skeleton (hidden when data is loaded) -->
+    <div id="dashboard-skeleton" style="display: none;">
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card border-0 shadow-sm">
+                <div class="card shadow-lg rounded-xl">
                 <div class="card-body p-4">
                     <div class="d-flex align-items-center">
-                        <div class="welcome-icon me-4">
-                            <span class="material-icons" style="font-size: 3rem; color: var(--primary-color);">
-                                waving_hand
-                            </span>
+                            <div class="text-skeleton rounded-circle me-3" style="width: 64px; height: 64px;"></div>
+                            <div>
+                                <div class="text-skeleton" style="width: 200px; height: 28px;"></div>
+                                <div class="text-skeleton mt-2" style="width: 300px;"></div>
+                            </div>
                         </div>
-                        <div>
-                            <h1 class="mb-2">Welcome, {{ request.user.get_full_name }}</h1>
-                            <p class="text-muted mb-0">Here's an overview of your traffic records and activities</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row g-4 mb-4">
+            <div class="col-12 col-md-4">
+                <div class="card shadow-lg rounded-xl">
+                    <div class="card-body p-4">
+                        <div class="d-flex">
+                            <div class="text-skeleton rounded-lg me-3" style="width: 48px; height: 48px;"></div>
+                            <div style="flex: 1;">
+                                <div class="text-skeleton" style="width: 120px;"></div>
+                                <div class="text-skeleton mt-3" style="width: 60px; height: 28px;"></div>
+                                <div class="text-skeleton mt-2" style="width: 150px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="card shadow-lg rounded-xl">
+                    <div class="card-body p-4">
+                        <div class="d-flex">
+                            <div class="text-skeleton rounded-lg me-3" style="width: 48px; height: 48px;"></div>
+                            <div style="flex: 1;">
+                                <div class="text-skeleton" style="width: 120px;"></div>
+                                <div class="text-skeleton mt-3" style="width: 60px; height: 28px;"></div>
+                                <div class="text-skeleton mt-2" style="width: 150px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="card shadow-lg rounded-xl">
+                    <div class="card-body p-4">
+                        <div class="d-flex">
+                            <div class="text-skeleton rounded-lg me-3" style="width: 48px; height: 48px;"></div>
+                            <div style="flex: 1;">
+                                <div class="text-skeleton" style="width: 120px;"></div>
+                                <div class="text-skeleton mt-3" style="width: 60px; height: 28px;"></div>
+                                <div class="text-skeleton mt-2" style="width: 150px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-lg rounded-xl">
+                    <div class="card-header bg-white p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="text-skeleton" style="width: 150px;"></div>
+                            <div class="text-skeleton" style="width: 80px;"></div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="text-skeleton" style="width: 100%; height: 200px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-12 col-lg-6">
+                <div class="card shadow-lg rounded-xl">
+                    <div class="card-body p-4">
+                        <div class="text-skeleton" style="width: 120px;"></div>
+                        <div class="mt-4">
+                            <div class="text-skeleton" style="width: 100%; height: 50px; margin-bottom: 1rem;"></div>
+                            <div class="text-skeleton" style="width: 100%; height: 50px; margin-bottom: 1rem;"></div>
+                            <div class="text-skeleton" style="width: 100%; height: 50px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-6">
+                <div class="card shadow-lg rounded-xl">
+                    <div class="card-body p-4">
+                        <div class="text-skeleton" style="width: 180px;"></div>
+                        <div class="mt-4">
+                            <div class="text-skeleton" style="width: 100%; height: 80px; margin-bottom: 1rem;"></div>
+                            <div class="text-skeleton" style="width: 100%; height: 80px;"></div>
                         </div>
                     </div>
                 </div>
@@ -26,41 +497,76 @@
         </div>
     </div>
 
-    <!-- Statistics Cards -->
-    <div class="row g-4 mb-4">
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm">
+    <!-- Dashboard Content -->
+    <div id="dashboard-content">
+        <!-- Welcome Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card dashboard-card shadow-lg rounded-xl">
                 <div class="card-body p-4">
-                    <div class="d-flex align-items-center mb-3">
-                        <span class="material-icons me-2" style="color: #dc3545;">gavel</span>
-                        <h5 class="card-title mb-0">Active Violations</h5>
+                        <div class="d-flex welcome-section align-items-center">
+                            <div class="welcome-icon">
+                                <span class="material-icons" style="font-size: 32px; color: var(--primary-color);">
+                                    waving_hand
+                                </span>
+                            </div>
+                            <div class="welcome-message">
+                                <h1 class="mb-2 fw-bold">Welcome, {{ request.user.get_full_name }}</h1>
+                                <p class="text-muted mb-0">Here's an overview of your traffic records and activities</p>
+                            </div>
+                        </div>
                     </div>
-                    <h2 class="mb-0">{{ active_violations_count }}</h2>
-                    <p class="text-muted small mb-0">Pending or unpaid violations</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm">
+
+        <!-- Statistics Cards -->
+        <div class="row g-4 mb-4">
+            <div class="col-12 col-md-4">
+                <div class="card dashboard-card shadow-lg rounded-xl h-100">
                 <div class="card-body p-4">
-                    <div class="d-flex align-items-center mb-3">
-                        <span class="material-icons me-2" style="color: #198754;">payments</span>
-                        <h5 class="card-title mb-0">Total Paid</h5>
+                        <div class="d-flex">
+                            <div class="stat-card-icon" style="background-color: rgba(245, 61, 61, 0.1);">
+                                <span class="material-icons" style="color: var(--danger-color);">gavel</span>
+                            </div>
+                            <div>
+                                <div class="stat-card-title">Active Violations</div>
+                                <div class="stat-card-value">{{ active_violations_count }}</div>
+                                <div class="stat-card-description">Pending or unpaid violations</div>
+                            </div>
+                        </div>
                     </div>
-                    <h2 class="mb-0">₱{{ total_paid }}</h2>
-                    <p class="text-muted small mb-0">Amount paid for violations</p>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="card dashboard-card shadow-lg rounded-xl h-100">
+                    <div class="card-body p-4">
+                        <div class="d-flex">
+                            <div class="stat-card-icon" style="background-color: rgba(12, 170, 29, 0.1);">
+                                <span class="material-icons" style="color: var(--success-color);">payments</span>
+                            </div>
+                            <div>
+                                <div class="stat-card-title">Total Paid</div>
+                                <div class="stat-card-value">₱{{ total_paid }}</div>
+                                <div class="stat-card-description">Amount paid for violations</div>
+                            </div>
+                        </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm">
+            <div class="col-12 col-md-4">
+                <div class="card dashboard-card shadow-lg rounded-xl h-100">
                 <div class="card-body p-4">
-                    <div class="d-flex align-items-center mb-3">
-                        <span class="material-icons me-2" style="color: #ffc107;">warning</span>
-                        <h5 class="card-title mb-0">Due Soon</h5>
-                    </div>
-                    <h2 class="mb-0">{{ due_soon_count }}</h2>
-                    <p class="text-muted small mb-0">Violations due within 7 days</p>
+                        <div class="d-flex">
+                            <div class="stat-card-icon" style="background-color: rgba(255, 184, 0, 0.1);">
+                                <span class="material-icons" style="color: var(--warning-color);">warning</span>
+                            </div>
+                            <div>
+                                <div class="stat-card-title">Due Soon</div>
+                                <div class="stat-card-value">{{ due_soon_count }}</div>
+                                <div class="stat-card-description">Violations due within 7 days</div>
+                            </div>
+                        </div>
                 </div>
             </div>
         </div>
@@ -69,50 +575,53 @@
     <!-- Recent Violations -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white py-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Recent Violations</h5>
-                        <a href="{% url 'user_portal:user_violations' %}" class="btn btn-primary btn-sm">View All</a>
-                    </div>
+                <div class="card dashboard-card shadow-lg rounded-xl">
+                    <div class="card-header bg-white p-4 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold">Recent Violations</h5>
+                        <a href="{% url 'user_portal:user_violations' %}" class="btn btn-primary btn-sm px-3">
+                            View All
+                        </a>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="bg-light">
-                                <tr>
-                                    <th class="ps-4">Date</th>
+                        <div class="table-responsive table-container">
+                            <table class="table violations-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
                                     <th>Violation Type</th>
                                     <th>Location</th>
                                     <th>Amount</th>
                                     <th>Status</th>
-                                    <th class="text-end pe-4">Action</th>
+                                        <th class="text-end">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for violation in recent_violations %}
                                 <tr>
-                                    <td class="ps-4">{{ violation.violation_date|date:"M d, Y" }}</td>
+                                        <td>{{ violation.violation_date|date:"M d, Y" }}</td>
                                     <td>{{ violation.violation_type }}</td>
                                     <td>{{ violation.location }}</td>
                                     <td>₱{{ violation.fine_amount }}</td>
                                     <td>
-                                        <span class="badge bg-{{ violation.get_status_color }}">
+                                            <span class="status-badge status-badge-{{ violation.status|lower }}">
                                             {{ violation.get_status_display }}
                                         </span>
                                     </td>
-                                    <td class="text-end pe-4">
-                                        <a href="{% url 'user_portal:violation_detail' violation.id %}" class="btn btn-sm btn-outline-primary">
+                                        <td class="text-end">
+                                            <a href="{% url 'user_portal:violation_detail' violation.id %}" class="btn btn-sm btn-outline-primary btn-view-details">
                                             View Details
                                         </a>
                                     </td>
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="6" class="text-center py-4">
-                                        <div class="text-muted">
-                                            <span class="material-icons d-block mb-2" style="font-size: 2rem;">check_circle</span>
-                                            <p class="mb-0">No recent violations found</p>
+                                        <td colspan="6">
+                                            <div class="empty-state empty-state-violations">
+                                                <div class="empty-state-icon">
+                                                    <span class="material-icons" style="font-size: 32px; color: var(--primary-color);">check_circle</span>
+                                                </div>
+                                                <h6 class="mb-1 fw-bold">No Recent Violations</h6>
+                                                <p class="text-muted mb-0">You don't have any recorded violations yet</p>
                                         </div>
                                     </td>
                                 </tr>
@@ -125,50 +634,62 @@
         </div>
     </div>
 
-    <!-- Quick Actions -->
+        <!-- Quick Actions & Notifications -->
     <div class="row g-4">
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm">
+            <div class="col-12 col-lg-6">
+                <div class="card dashboard-card shadow-lg rounded-xl h-100">
                 <div class="card-body p-4">
-                    <h5 class="card-title mb-4">Quick Actions</h5>
-                    <div class="d-grid gap-3">
-                        <a href="{% url 'user_portal:file_report' %}" class="btn btn-outline-primary">
-                            <span class="material-icons me-2">report</span>
-                            File a Report
-                        </a>
-                        <a href="{% url 'user_portal:user_profile' %}" class="btn btn-outline-primary">
-                            <span class="material-icons me-2">person</span>
-                            Update Profile
-                        </a>
-                        <a href="#" class="btn btn-outline-primary">
-                            <span class="material-icons me-2">help</span>
-                            Get Help
-                        </a>
+                        <h5 class="card-title mb-4 fw-bold">Quick Actions</h5>
+                        <div class="quick-actions">
+                            <a href="{% url 'user_portal:file_report' %}" class="action-btn">
+                                <div class="action-btn-icon" style="background-color: rgba(53, 99, 233, 0.1);">
+                                    <span class="material-icons" style="color: var(--primary-color);">report</span>
+                                </div>
+                                <span>File a Report</span>
+                            </a>
+                            <a href="{% url 'user_portal:user_profile' %}" class="action-btn">
+                                <div class="action-btn-icon" style="background-color: rgba(77, 167, 255, 0.1);">
+                                    <span class="material-icons" style="color: var(--info-color);">person</span>
+                                </div>
+                                <span>Update Profile</span>
+                            </a>
+                            <a href="#" class="action-btn">
+                                <div class="action-btn-icon" style="background-color: rgba(255, 184, 0, 0.1);">
+                                    <span class="material-icons" style="color: var(--warning-color);">help</span>
+                                </div>
+                                <span>Get Help</span>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm">
+            <div class="col-12 col-lg-6">
+                <div class="card dashboard-card shadow-lg rounded-xl h-100">
                 <div class="card-body p-4">
-                    <h5 class="card-title mb-4">Recent Notifications</h5>
+                        <h5 class="card-title mb-4 fw-bold">Recent Notifications</h5>
                     <div class="notifications-list">
                         {% for notification in recent_notifications %}
-                        <div class="notification-item d-flex align-items-start mb-3">
-                            <span class="material-icons me-3" style="color: {{ notification.get_icon_color }}">
+                            <div class="notification-item d-flex">
+                                <div class="notification-icon notification-icon-{{ notification.get_icon_type|default:'gray' }}">
+                                    <span class="material-icons" style="font-size: 20px;">
                                 {{ notification.get_icon }}
                             </span>
-                            <div>
-                                <p class="mb-1">{{ notification.message }}</p>
-                                <small class="text-muted">{{ notification.created_at|timesince }} ago</small>
+                                </div>
+                                <div class="notification-content">
+                                    <div class="notification-message">{{ notification.message }}</div>
+                                    <div class="notification-time">{{ notification.created_at|timesince }} ago</div>
+                                </div>
                             </div>
+                            {% empty %}
+                            <div class="empty-state">
+                                <div class="empty-state-icon">
+                                    <span class="material-icons" style="font-size: 28px; color: var(--neutral-gray);">notifications_none</span>
+                                </div>
+                                <h6 class="mb-1 fw-medium">No New Notifications</h6>
+                                <p class="text-muted mb-0">You're all caught up!</p>
                         </div>
-                        {% empty %}
-                        <div class="text-center text-muted py-4">
-                            <span class="material-icons d-block mb-2" style="font-size: 2rem;">notifications_none</span>
-                            <p class="mb-0">No new notifications</p>
+                            {% endfor %}
                         </div>
-                        {% endfor %}
                     </div>
                 </div>
             </div>
@@ -176,38 +697,36 @@
     </div>
 </div>
 
-<style>
-    .welcome-icon {
-        width: 64px;
-        height: 64px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 16px;
-        background-color: var(--bg-light);
-    }
-
-    .card {
-        border-radius: 1rem;
-        transition: transform 0.2s ease;
-    }
-
-    .card:hover {
-        transform: translateY(-5px);
-    }
-
-    .notifications-list {
-        max-height: 300px;
-        overflow-y: auto;
-    }
-
-    .notification-item:last-child {
-        margin-bottom: 0 !important;
-    }
-
-    .badge {
-        padding: 0.5rem 1rem;
-        border-radius: 0.5rem;
-    }
-</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Show skeleton loading on page load
+    const dashboardSkeleton = document.getElementById('dashboard-skeleton');
+    const dashboardContent = document.getElementById('dashboard-content');
+    
+    // Simulate loading for demonstration
+    dashboardSkeleton.style.display = 'block';
+    dashboardContent.style.display = 'none';
+    
+    // After "loading" show the content
+    setTimeout(function() {
+        dashboardSkeleton.style.display = 'none';
+        dashboardContent.style.display = 'block';
+    }, 800);
+    
+    // Add fallback for notification types if needed
+    const notifications = document.querySelectorAll('.notification-item');
+    notifications.forEach(function(notification) {
+        const iconContainer = notification.querySelector('.notification-icon');
+        if (!iconContainer.classList.contains('notification-icon-primary') && 
+            !iconContainer.classList.contains('notification-icon-success') && 
+            !iconContainer.classList.contains('notification-icon-warning') && 
+            !iconContainer.classList.contains('notification-icon-danger') && 
+            !iconContainer.classList.contains('notification-icon-info') && 
+            !iconContainer.classList.contains('notification-icon-gray')) {
+            
+            iconContainer.classList.add('notification-icon-primary');
+        }
+    });
+});
+</script>
 {% endblock %} 

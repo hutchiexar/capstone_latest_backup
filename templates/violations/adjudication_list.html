@@ -20,8 +20,8 @@
     <!-- Main Content Card -->
     <div class="card shadow-sm border-0 rounded-3">
         <div class="card-body p-4">
-            <!-- Table Container -->
-            <div class="table-responsive">
+            <!-- Table Container - Desktop View -->
+            <div class="table-responsive d-none d-md-block">
                 <table class="table table-hover align-middle" id="adjudicationTable">
                     <thead>
                         <tr>
@@ -84,6 +84,55 @@
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+            
+            <!-- Mobile Card View -->
+            <div class="adjudication-cards d-md-none">
+                {% for violation in violations %}
+                <div class="adjudication-card">
+                    <div class="adjudication-card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="case-id">#{{ violation.id }}</span>
+                            <span class="filing-date text-muted">{{ violation.violation_date|date:"M d, Y" }}</span>
+                        </div>
+                        <div class="violator-info">
+                            <span class="fw-medium">{{ violation.violator.first_name }} {{ violation.violator.last_name }}</span>
+                            <span class="d-block text-muted small">{{ violation.violator.license_number }}</span>
+                        </div>
+                    </div>
+                    <div class="adjudication-card-content">
+                        <div class="violation-type-container">
+                            {% for type in violation.get_violation_types %}
+                            <span class="violation-type-mobile">{{ type }}</span>
+                            {% if not forloop.last %}<span class="separator">•</span>{% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="adjudication-card-footer">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                {% include 'includes/status_badge.html' with status=violation.status display_text=violation.get_status_display %}
+                            </div>
+                            <div class="fine-amount">₱{{ violation.fine_amount }}</div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <button type="button" class="btn btn-sm btn-primary" onclick="showViolationDetail({{ violation.id }})">
+                                <i class="fas fa-eye me-1"></i> View
+                            </button>
+                            <a href="{% url 'adjudication_form' violation.id %}" class="btn btn-sm btn-purple">
+                                <i class="fas fa-balance-scale me-1"></i> Adjudicate
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-4">
+                    <div class="text-muted">
+                        <span class="material-icons d-block mb-2" style="font-size: 2.5rem; opacity: 0.5;">search_off</span>
+                        <p class="mb-0">No violations found</p>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
         </div>
     </div>
@@ -167,56 +216,42 @@
 /* Mobile Responsive Adjustments */
 @media (max-width: 768px) {
     .card-body {
-        padding: 1rem !important;
+        padding: 0.75rem !important;
     }
-
-    .table td {
+    
+    /* Remove swipe hint since we're using cards now */
+    .table-responsive::after {
+        display: none;
+    }
+    
+    /* Card specific mobile adjustments */
+    .adjudication-card {
+        margin-bottom: 0.75rem;
+    }
+    
+    .adjudication-card-header,
+    .adjudication-card-content,
+    .adjudication-card-footer {
         padding: 0.75rem;
     }
-
-    .action-buttons {
-        flex-wrap: nowrap;
-    }
-
-    .btn-action {
-        width: 32px;
-        height: 32px;
-    }
-
-    .btn-action i {
-        font-size: 1rem;
-    }
-
+    
     /* Header Adjustments */
     .d-flex.justify-content-between {
         flex-direction: column;
         gap: 1rem;
     }
-
+    
     .d-flex.align-items-center {
         width: 100%;
     }
-
+    
     /* Search Form Adjustments */
     .search-form {
         width: 100%;
     }
-
+    
     .search-form .input-group {
         width: 100%;
-    }
-
-    /* Modal Adjustments */
-    .modal-dialog {
-        margin: 0.5rem;
-    }
-
-    .modal-content {
-        border-radius: 8px;
-    }
-
-    .modal-body {
-        padding: 1rem;
     }
 }
 
@@ -333,10 +368,119 @@
     max-width: 400px;
     white-space: normal;
 }
+
+/* Mobile Card View Styles */
+.adjudication-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.adjudication-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.adjudication-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.adjudication-card-header {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.case-id {
+    font-weight: 600;
+    color: var(--primary-color);
+    background: rgba(var(--primary-rgb), 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+}
+
+.filing-date {
+    font-size: 0.875rem;
+}
+
+.violator-info {
+    margin-top: 0.5rem;
+}
+
+.adjudication-card-content {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.violation-type-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.violation-type-mobile {
+    font-size: 0.875rem;
+    color: var(--text-dark);
+}
+
+.adjudication-card-footer {
+    padding: 1rem;
+}
+
+.fine-amount {
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 1rem;
+}
+
+/* Button style for adjudication */
+.btn-purple {
+    background-color: #8950fc;
+    border-color: #8950fc;
+    color: white;
+}
+
+.btn-purple:hover, .btn-purple:focus {
+    background-color: #7a3ef0;
+    border-color: #7a3ef0;
+    color: white;
+}
+
+/* Skeleton loader for mobile cards (optional enhancement) */
+@keyframes shimmer {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+}
+
+.skeleton-card {
+    background: #f8f9fa;
+    height: 160px;
+    margin-bottom: 1rem;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+}
+
+.skeleton-card::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.4), rgba(255,255,255,0));
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite;
+}
 </style>
 
 <script>
-// Keep only the search functionality and tooltips
+// Update the search functionality to also work with cards
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize tooltips
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
@@ -344,18 +488,34 @@ document.addEventListener('DOMContentLoaded', function() {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
 
-    // Custom search functionality
+    // Custom search functionality for both table and cards
     const searchInput = document.getElementById('searchInput');
     const tableRows = document.querySelectorAll('#adjudicationTable tbody tr');
+    const cardItems = document.querySelectorAll('.adjudication-card');
 
     searchInput.addEventListener('keyup', function() {
         const searchTerm = this.value.toLowerCase();
         
+        // Search in table rows (desktop)
         tableRows.forEach(row => {
             const text = row.textContent.toLowerCase();
             row.style.display = text.includes(searchTerm) ? '' : 'none';
         });
+        
+        // Search in cards (mobile)
+        cardItems.forEach(card => {
+            const text = card.textContent.toLowerCase();
+            card.style.display = text.includes(searchTerm) ? '' : 'none';
+        });
     });
+    
+    // Handle modal scroll on iOS
+    const modal = document.getElementById('violationDetailModal');
+    if (modal && /iPad|iPhone|iPod/.test(navigator.userAgent)) {
+        modal.querySelector('.modal-body').addEventListener('touchmove', function(e) {
+            e.stopPropagation();
+        });
+    }
 });
 
 function showViolationDetail(violationId) {

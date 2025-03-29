@@ -19,17 +19,19 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# OpenAI API Key
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
+# Google API Key for Gemini
+GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-$$rg@e&2^@vs#w+ypj)(lhh(#1^+mf2r(dcoyk(+am*7waot7p"
+SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-here')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = ['192.168.1.4', 'localhost', '127.0.0.1', '192.168.0.14', '192.168.135.71', '192.168.254.118', '192.168.134.71', '192.168.1.10']
+ALLOWED_HOSTS = ['192.168.1.4', 'localhost', '127.0.0.1', '192.168.0.14', '192.168.135.71', '192.168.254.118', '192.168.134.71', '192.168.1.10', '192.168.254.140', '192.168.1.6','*']
 
 
 
@@ -46,6 +48,7 @@ INSTALLED_APPS = [
     "traffic_violation_system",
     "sslserver",
     "django_extensions",
+    "rest_framework",
 ]
 
 MIDDLEWARE = [
@@ -77,6 +80,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'traffic_violation_system.context_processors.user_notifications',
             ],
         },
     },
@@ -211,9 +215,30 @@ INSTALLED_APPS = [
     'traffic_violation_system',
     'sslserver',
     'django_extensions',
+    'rest_framework',
 ]
 
 STRIPE_PUBLIC_KEY = 'pk_test_51QMUtiRtsOGIIsiiixsia2aXfEA3K3aWdsxOUP70JIVEqoBPOOTRqfG0rzuhvokcNBIwZJQV5TTwmI6EM2UFAquf00l1UPS9oo'
 STRIPE_SECRET_KEY = 'sk_test_51QMUtiRtsOGIIsii5FbSeuUGHw5rhyUaVkIJfAVA8UbqHpW4YRTm7BjIftFB34UQC7G1sqqVQrdpTo9b2YadUjcQ00I21Bdd4g'
 PAYPAL_CLIENT_ID = 'AeBk0i0IG66r6i0kFzphzpKjAekDL5WUS-fBRR8KSTFNr4HEQjiviJTdFEvX1Hy13jElkjiGdJ4OQe-W'
 PAYPAL_CLIENT_SECRET = 'yEPApFknBCa218RIXGFHVZU7QdFfeZFGHp53QVw79ZblnBVpUl3wqqbf81SxDI0tO7FdsVDGHNoYK0dFA'
+
+# Django REST Framework settings
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,
+}
+
+# Update CORS settings to allow frontend requests
+CORS_ALLOW_CREDENTIALS = True
+CORS_ORIGIN_WHITELIST = [
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+]

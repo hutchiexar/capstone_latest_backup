@@ -112,6 +112,69 @@
                                 {% endfor %}
                             </div>
                         </div>
+                        
+                        <!-- User Violations -->
+                        <div class="section mt-4">
+                            <h5 class="section-title">
+                                My Violations
+                                <span class="badge bg-danger ms-2">{{ open_violations_count }}</span>
+                            </h5>
+                            
+                            <div class="violations-summary mb-3">
+                                <div class="alert alert-info">
+                                    <div class="d-flex align-items-center">
+                                        <span class="material-icons me-2">info</span>
+                                        <div>
+                                            <strong>Summary:</strong> You have {{ open_violations_count }} unpaid violation(s) with a total fine of ${{ total_fines_due|floatformat:2 }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {% if user_violations %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Violation ID</th>
+                                                <th>Date</th>
+                                                <th>Type</th>
+                                                <th>Fine Amount</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for violation in user_violations %}
+                                            <tr>
+                                                <td>{{ violation.violation_id }}</td>
+                                                <td>{{ violation.date_issued|date:"M d, Y" }}</td>
+                                                <td>{{ violation.violation_type.name }}</td>
+                                                <td>${{ violation.fine_amount|floatformat:2 }}</td>
+                                                <td>
+                                                    <span class="badge {% if violation.status == 'PAID' %}bg-success{% elif violation.status == 'PENDING' %}bg-warning{% else %}bg-danger{% endif %}">
+                                                        {{ violation.get_status_display }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <a href="{% url 'violation_detail' violation.id %}" class="btn btn-sm btn-primary">
+                                                        <span class="material-icons">visibility</span>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-success">
+                                    <div class="d-flex align-items-center">
+                                        <span class="material-icons me-2">check_circle</span>
+                                        <div>You have no violations on record. Keep up the good work!</div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>

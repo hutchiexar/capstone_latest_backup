@@ -22,90 +22,461 @@
                     </div>
                 </div>
             </div>
-            <div class="violation-status">
-                {% include 'includes/status_badge.html' with status=violation.status display_text=violation.get_status_display %}
+            <div class="d-flex flex-column align-items-end">
+                <div class="violation-status mb-2">
+                    {% include 'includes/status_badge.html' with status=violation.status display_text=violation.get_status_display %}
+                </div>
+                <div class="violation-amount">
+                    <span class="amount-label">Fine:</span>
+                    <span class="amount-value">₱{{ violation.fine_amount }}</span>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="modal-body">
-        <div class="violation-grid">
-            <!-- Violator Information -->
-            <div class="info-card">
-                <div class="info-header">
-                    <span class="material-icons">person</span>
-                    <h6>Violator Information</h6>
-                            </div>
-                <div class="info-content">
-                    <div class="info-group">
-                        <label>Full Name</label>
-                        <div class="info-value">{{ violation.violator.first_name }} {{ violation.violator.last_name }}</div>
-                            </div>
-                    <div class="info-group">
-                        <label>License Number</label>
-                        <div class="info-value">{{ violation.violator.license_number }}</div>
-                            </div>
-                    <div class="info-group">
-                        <label>Phone Number</label>
-                        <div class="info-value">{{ violation.violator.phone_number|default:"Not provided" }}</div>
-                            </div>
-                    <div class="info-group">
-                        <label>Address</label>
-                        <div class="info-value">{{ violation.violator.address|default:"Not provided" }}</div>
-                    </div>
-                </div>
-            </div>
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-tabs px-3 pt-2 bg-light" id="violationDetailTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab" aria-controls="overview" aria-selected="true">
+                <span class="material-icons align-middle me-1 small">info</span> Overview
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="vehicle-tab" data-bs-toggle="tab" data-bs-target="#vehicle" type="button" role="tab" aria-controls="vehicle" aria-selected="false">
+                <span class="material-icons align-middle me-1 small">directions_car</span> Vehicle
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="adjudication-tab" data-bs-toggle="tab" data-bs-target="#adjudication" type="button" role="tab" aria-controls="adjudication" aria-selected="false">
+                <span class="material-icons align-middle me-1 small">gavel</span> Adjudication
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab" aria-controls="history" aria-selected="false">
+                <span class="material-icons align-middle me-1 small">history</span> History
+            </button>
+        </li>
+        {% if violation.status == 'PAID' %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="payment-tab" data-bs-toggle="tab" data-bs-target="#payment" type="button" role="tab" aria-controls="payment" aria-selected="false">
+                <span class="material-icons align-middle me-1 small">payment</span> Payment
+            </button>
+        </li>
+        {% endif %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline" type="button" role="tab" aria-controls="timeline" aria-selected="false">
+                <span class="material-icons align-middle me-1 small">timeline</span> Timeline
+            </button>
+        </li>
+    </ul>
 
-            <!-- Violation Details -->
-            <div class="info-card">
-                <div class="info-header">
-                    <span class="material-icons">gavel</span>
-                    <h6>Violation Details</h6>
-                </div>
-                <div class="info-content">
-                    <div class="info-group">
-                        <label>Violation Types</label>
-                        <div class="info-value violation-types">
+    <div class="modal-body">
+        <div class="tab-content" id="violationDetailTabsContent">
+            <!-- Overview Tab -->
+            <div class="tab-pane fade show active" id="overview" role="tabpanel" aria-labelledby="overview-tab">
+                <div class="violation-grid">
+                    <!-- Violator Information -->
+                    <div class="info-card">
+                        <div class="info-header">
+                            <span class="material-icons">person</span>
+                            <h6>Violator Information</h6>
+                        </div>
+                        <div class="info-content">
+                            <div class="info-group">
+                                <label>Full Name</label>
+                                <div class="info-value">{{ violation.violator.first_name }} {{ violation.violator.last_name }}</div>
+                            </div>
+                            <div class="info-group">
+                                <label>License Number</label>
+                                <div class="info-value">{{ violation.violator.license_number }}</div>
+                            </div>
+                            <div class="info-group">
+                                <label>Phone Number</label>
+                                <div class="info-value">{{ violation.violator.phone_number|default:"Not provided" }}</div>
+                            </div>
+                            <div class="info-group">
+                                <label>Address</label>
+                                <div class="info-value">{{ violation.violator.address|default:"Not provided" }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Violation Details -->
+                    <div class="info-card">
+                        <div class="info-header">
+                            <span class="material-icons">gavel</span>
+                            <h6>Violation Details</h6>
+                        </div>
+                        <div class="info-content">
+                            <div class="info-group">
+                                <label>Violation Types</label>
+                                <div class="info-value violation-types">
                                     {% for type in violation.get_violation_types %}
-                            <span class="violation-type">{{ type }}</span>
+                                    <span class="violation-type">{{ type }}</span>
                                     {% endfor %}
                                 </div>
                             </div>
-                    <div class="info-group">
-                        <label>Fine Amount</label>
-                        <div class="info-value amount">₱{{ violation.fine_amount }}</div>
+                            <div class="info-group">
+                                <label>Fine Amount</label>
+                                <div class="info-value amount">₱{{ violation.fine_amount }}</div>
                             </div>
-                    <div class="info-group">
-                        <label>Location</label>
-                        <div class="info-value">{{ violation.location }}</div>
+                            {% if violation.is_tdz_violation %}
+                            <div class="info-group">
+                                <div class="alert alert-warning p-2 mb-0">
+                                    <div class="d-flex align-items-center">
+                                        <span class="material-icons me-2 small">warning</span>
+                                        <small><strong>TDZ Violation:</strong> Fine amount includes TDZ penalty (doubled)</small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            <div class="info-group">
+                                <label>Location</label>
+                                <div class="info-value">{{ violation.location }}</div>
+                            </div>
+                            <div class="info-group">
+                                <label>Due Date</label>
+                                <div class="info-value {% if violation.is_overdue %}text-danger{% endif %}">
+                                    {{ violation.payment_due_date|date:"F d, Y"|default:"Not set" }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Enforcer Information -->
+                    <div class="info-card enforcer-card">
+                        <div class="info-header">
+                            <span class="material-icons">badge</span>
+                            <h6>Enforcer Information</h6>
+                        </div>
+                        <div class="info-content">
+                            <div class="enforcer-grid">
+                                {% if violation.enforcer %}
+                                <div class="info-group">
+                                    <label>Enforcer Name</label>
+                                    <div class="info-value">{{ violation.enforcer.get_full_name }}</div>
+                                </div>
+                                <div class="info-group">
+                                    <label>Enforcer ID</label>
+                                    <div class="info-value">{{ violation.enforcer.userprofile.enforcer_id }}</div>
+                                </div>
+                                {% else %}
+                                <div class="info-group">
+                                    <div class="info-value text-muted">No enforcer information available</div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if violation.violator_signature %}
+                    <!-- Violator Signature Card -->
+                    <div class="info-card signature-card">
+                        <div class="info-header">
+                            <span class="material-icons">edit</span>
+                            <h6>Violator Signature</h6>
+                        </div>
+                        <div class="info-content">
+                            <div class="text-center">
+                                <img src="{{ violation.violator_signature.url }}" alt="Violator Signature" class="signature-image img-fluid" style="max-height: 100px; border: 1px solid #e0e0e0; border-radius: 4px; padding: 10px;">
+                                <div class="text-muted small mt-1">
+                                    Signed on {{ violation.violator_signature_date|date:"F d, Y H:i"|default:"Unknown Date" }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Vehicle Tab -->
+            <div class="tab-pane fade" id="vehicle" role="tabpanel" aria-labelledby="vehicle-tab">
+                <div class="info-card mb-3">
+                    <div class="info-header">
+                        <span class="material-icons">directions_car</span>
+                        <h6>Vehicle Information</h6>
+                    </div>
+                    <div class="info-content">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="info-group">
+                                    <label>Plate Number</label>
+                                    <div class="info-value">{{ violation.plate_number|default:"Not provided" }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-group">
+                                    <label>Vehicle Type/Make</label>
+                                    <div class="info-value">{{ violation.vehicle_type|default:"Not provided" }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-group">
+                                    <label>Color</label>
+                                    <div class="info-value">{{ violation.color|default:"Not provided" }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-group">
+                                    <label>Classification</label>
+                                    <div class="info-value">{{ violation.get_classification_display|default:"Not provided" }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-group">
+                                    <label>Registration Number</label>
+                                    <div class="info-value">{{ violation.registration_number|default:"Not provided" }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-group">
+                                    <label>Registration Date</label>
+                                    <div class="info-value">{{ violation.registration_date|date:"F d, Y"|default:"Not provided" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="info-group">
+                            <label>Vehicle Owner</label>
+                            <div class="info-value">{{ violation.vehicle_owner|default:"Not provided" }}</div>
+                        </div>
+                        <div class="info-group">
+                            <label>Owner Address</label>
+                            <div class="info-value">{{ violation.vehicle_owner_address|default:"Not provided" }}</div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Enforcer Information -->
-            <div class="info-card enforcer-card">
-                <div class="info-header">
-                    <span class="material-icons">badge</span>
-                    <h6>Enforcer Information</h6>
-                            </div>
-                <div class="info-content">
-                    <div class="enforcer-grid">
+            <!-- Adjudication Tab -->
+            <div class="tab-pane fade" id="adjudication" role="tabpanel" aria-labelledby="adjudication-tab">
+                <div class="info-card mb-3">
+                    <div class="info-header">
+                        <span class="material-icons">gavel</span>
+                        <h6>Adjudication Information</h6>
+                    </div>
+                    <div class="info-content">
+                        {% if violation.adjudicated_by %}
                         <div class="info-group">
-                            <label>Enforcer Name</label>
-                            <div class="info-value">{{ violation.enforcer.get_full_name }}</div>
-                            </div>
+                            <label>Adjudicated By</label>
+                            <div class="info-value">{{ violation.adjudicated_by.get_full_name }}</div>
+                        </div>
                         <div class="info-group">
-                            <label>Enforcer ID</label>
-                            <div class="info-value">{{ violation.enforcer.userprofile.enforcer_id }}</div>
+                            <label>Adjudication Date</label>
+                            <div class="info-value">{{ violation.adjudication_date|date:"F d, Y H:i" }}</div>
+                        </div>
+                        <div class="info-group">
+                            <label>Remarks</label>
+                            <div class="info-value remarks-text">{{ violation.adjudication_remarks|linebreaks|default:"No remarks provided" }}</div>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <span class="material-icons text-muted mb-2" style="font-size: 2rem;">pending_actions</span>
+                            <p class="text-muted">This violation has not been adjudicated yet.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Violation History Tab -->
+            <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab">
+                <div class="info-card mb-3">
+                    <div class="info-header">
+                        <span class="material-icons">history</span>
+                        <h6>Violation History</h6>
+                    </div>
+                    <div class="info-content">
+                        {% if previous_violations %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Violation Type</th>
+                                            <th>Status</th>
+                                            <th>Fine</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for prev_violation in previous_violations %}
+                                            <tr>
+                                                <td>{{ prev_violation.violation_date|date:"M d, Y" }}</td>
+                                                <td>
+                                                    <div class="text-truncate" style="max-width: 150px;" data-bs-toggle="tooltip" title="{{ prev_violation.violation_type }}">
+                                                        {{ prev_violation.violation_type|truncatechars:25 }}
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    {% include 'includes/status_badge.html' with status=prev_violation.status display_text=prev_violation.get_status_display %}
+                                                </td>
+                                                <td>₱{{ prev_violation.fine_amount }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% if previous_violations|length > 3 %}
+                                <div class="repeat-violator-alert mt-3">
+                                    <div class="alert alert-warning">
+                                        <div class="d-flex align-items-center">
+                                            <span class="material-icons me-2">warning</span>
+                                            <strong>Repeat Violator</strong> - This person has multiple violations.
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="text-center py-4">
+                                <span class="material-icons text-muted mb-2" style="font-size: 2rem;">check_circle</span>
+                                <p class="text-muted">No previous violations found.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Tab -->
+            {% if violation.status == 'PAID' %}
+            <div class="tab-pane fade" id="payment" role="tabpanel" aria-labelledby="payment-tab">
+                <div class="info-card mb-3">
+                    <div class="info-header">
+                        <span class="material-icons">payment</span>
+                        <h6>Payment Information</h6>
+                    </div>
+                    <div class="info-content">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="info-group">
+                                    <label>Receipt Number</label>
+                                    <div class="info-value">{{ violation.receipt_number|default:"Not provided" }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-group">
+                                    <label>Payment Date</label>
+                                    <div class="info-value">{{ violation.payment_date|date:"F d, Y"|default:"Not provided" }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-group">
+                                    <label>Amount Paid</label>
+                                    <div class="info-value amount">₱{{ violation.payment_amount|default:violation.fine_amount }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-group">
+                                    <label>Processed By</label>
+                                    <div class="info-value">{{ violation.processed_by.get_full_name|default:"Not recorded" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="info-group">
+                            <label>Payment Remarks</label>
+                            <div class="info-value">{{ violation.payment_remarks|linebreaks|default:"No remarks" }}</div>
+                        </div>
+                        <div class="text-center mt-3">
+                            <button class="btn btn-sm btn-outline-primary" id="printReceiptBtn">
+                                <span class="material-icons small">print</span> Print Receipt
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Timeline Tab -->
+            <div class="tab-pane fade" id="timeline" role="tabpanel" aria-labelledby="timeline-tab">
+                <div class="timeline">
+                    <!-- Issuance -->
+                    <div class="timeline-item">
+                        <div class="timeline-marker done">
+                            <span class="material-icons">assignment</span>
+                        </div>
+                        <div class="timeline-content">
+                            <h6 class="mb-1">Violation Issued</h6>
+                            <div class="timeline-date">{{ violation.violation_date|date:"F d, Y H:i" }}</div>
+                            <div class="text-muted small">
+                                Issued by: {{ violation.enforcer.get_full_name|default:"Unknown" }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Adjudication -->
+                    <div class="timeline-item">
+                        <div class="timeline-marker {% if violation.adjudication_date %}done{% else %}pending{% endif %}">
+                            <span class="material-icons">gavel</span>
+                        </div>
+                        <div class="timeline-content">
+                            <h6 class="mb-1">Adjudication</h6>
+                            {% if violation.adjudication_date %}
+                            <div class="timeline-date">{{ violation.adjudication_date|date:"F d, Y H:i" }}</div>
+                            <div class="text-muted small">
+                                Adjudicated by: {{ violation.adjudicated_by.get_full_name }}
+                            </div>
+                            {% else %}
+                            <div class="text-muted small">Pending</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Payment -->
+                    <div class="timeline-item">
+                        <div class="timeline-marker {% if violation.payment_date %}done{% else %}pending{% endif %}">
+                            <span class="material-icons">payments</span>
+                        </div>
+                        <div class="timeline-content">
+                            <h6 class="mb-1">Payment</h6>
+                            {% if violation.payment_date %}
+                            <div class="timeline-date">{{ violation.payment_date|date:"F d, Y H:i" }}</div>
+                            <div class="text-muted small">
+                                Processed by: {{ violation.processed_by.get_full_name|default:"System" }}
+                            </div>
+                            {% elif violation.status == 'SETTLED' %}
+                            <div class="text-muted small">Not required (Settled)</div>
+                            {% else %}
+                            <div class="text-muted small">Pending</div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Action Buttons Footer -->
+    <div class="modal-footer bg-light">
+        <div id="qrCode" class="me-auto d-none d-md-block">
+            <!-- QR code would be generated here -->
+        </div>
+        {% if violation.status == 'PENDING' %}
+        <button class="btn btn-primary" id="payNowBtn">
+            <span class="material-icons me-1">payment</span>
+            Pay Now
+        </button>
+        {% endif %}
+        <button class="btn btn-outline-secondary" id="exportPdfBtn">
+            <span class="material-icons me-1">download</span>
+            Export PDF
+        </button>
+    </div>
 </div>
 
 <style>
+:root {
+    --primary-color: #2563eb;
+    --primary-light: #3b82f6;
+    --primary-dark: #1d4ed8;
+    --primary-rgb: 37, 99, 235;
+    --text-dark: #1e293b;
+    --text-muted: #64748b;
+    --border-light: #e2e8f0;
+    --bg-light: #f8fafc;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --success: #10b981;
+    --info: #3b82f6;
+}
+
 /* Modal Base Styles */
 .modal-content {
     border: none;
@@ -157,15 +528,65 @@
     font-size: 1rem;
 }
 
+.violation-amount {
+    display: flex;
+    align-items: center;
+}
+
+.amount-label {
+    font-size: 0.875rem;
+    color: var(--text-light);
+    margin-right: 0.5rem;
+}
+
+.amount-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    padding: 0.25rem 0.75rem;
+    background: rgba(0,35,102,0.08);
+    border-radius: 6px;
+}
+
+/* Nav Tabs Styling */
+.nav-tabs {
+    border-bottom: 1px solid var(--border-light);
+}
+
+.nav-tabs .nav-link {
+    color: var(--text-muted);
+    border: none;
+    padding: 0.75rem 1rem;
+    margin-right: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--primary-color);
+    background: transparent;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.nav-tabs .nav-link:hover:not(.active) {
+    background-color: rgba(0,0,0,0.02);
+    border-color: transparent;
+}
+
+.nav-tabs .material-icons {
+    font-size: 1rem;
+}
+
 /* Modal Body Layout */
 .modal-body {
-    padding: 1.5rem;
+    padding: 1rem;
 }
 
 .violation-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
+    gap: 1rem;
 }
 
 /* Info Cards */
@@ -180,7 +601,7 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 1rem 1.25rem;
+    padding: 0.75rem 1rem;
     background: rgba(0,0,0,0.02);
     border-bottom: 1px solid rgba(0,0,0,0.06);
 }
@@ -198,12 +619,15 @@
 }
 
 .info-content {
-    padding: 1.25rem;
+    padding: 0.75rem 1rem;
 }
 
 /* Info Groups */
 .info-group {
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
 }
 
 .info-group:last-child {
@@ -211,16 +635,23 @@
 }
 
 .info-group label {
-    display: block;
+    display: inline-block;
     font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--text-light);
-    margin-bottom: 0.25rem;
-    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 0;
+    margin-right: 0.5rem;
+    min-width: 100px;
+    text-transform: capitalize;
     letter-spacing: 0.5px;
 }
 
+.info-group label::after {
+    content: ":";
+}
+
 .info-value {
+    flex: 1;
     font-size: 0.9375rem;
     color: var(--text-dark);
     line-height: 1.5;
@@ -231,6 +662,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
+    flex: 1;
 }
 
 .violation-type {
@@ -249,6 +681,7 @@
     font-size: 1.125rem;
 }
 
+/* Enforcer Grid */
 .enforcer-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -280,6 +713,79 @@
 .toast-body {
     padding: 1rem 1.5rem;
     font-weight: 500;
+}
+
+/* Timeline Styling */
+.timeline {
+    position: relative;
+    padding: 1rem 0;
+}
+
+.timeline:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 1.25rem;
+    height: 100%;
+    width: 2px;
+    background: #e2e8f0;
+    z-index: 0;
+}
+
+.timeline-item {
+    display: flex;
+    margin-bottom: 1rem;
+    position: relative;
+}
+
+.timeline-marker {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    z-index: 1;
+}
+
+.timeline-marker.done {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.timeline-marker.pending {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+    color: #94a3b8;
+}
+
+.timeline-marker .material-icons {
+    font-size: 1rem;
+}
+
+.timeline-content {
+    flex: 1;
+    padding-top: 0.25rem;
+}
+
+.timeline-date {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+}
+
+/* Footer */
+.modal-footer {
+    border-top: 1px solid var(--border-light);
+}
+
+/* Remarks text */
+.remarks-text {
+    white-space: pre-line;
 }
 
 /* Responsive Adjustments */
@@ -322,6 +828,11 @@
 .modal-body::-webkit-scrollbar-thumb:hover {
     background: #999;
 }
+
+/* Update the row layouts for vehicle info */
+.row .col-md-6 .info-group {
+    margin-bottom: 0.5rem;
+}
 </style>
 
 <script>
@@ -332,6 +843,39 @@ document.addEventListener('DOMContentLoaded', function() {
         modalBody.addEventListener('touchmove', function(e) {
             e.stopPropagation();
         }, { passive: true });
+    }
+    
+    // Print Receipt button click handler
+    const printBtn = document.getElementById('printReceiptBtn');
+    if (printBtn) {
+        printBtn.addEventListener('click', function() {
+            // In a real implementation, this would open a print dialog or download a receipt
+            const toast = new bootstrap.Toast(document.getElementById('successToast'));
+            document.getElementById('toastMessage').innerText = 'Receipt printing functionality will be implemented soon';
+            toast.show();
+        });
+    }
+    
+    // Export PDF button click handler
+    const exportBtn = document.getElementById('exportPdfBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', function() {
+            // In a real implementation, this would generate and download a PDF
+            const toast = new bootstrap.Toast(document.getElementById('successToast'));
+            document.getElementById('toastMessage').innerText = 'PDF export functionality will be implemented soon';
+            toast.show();
+        });
+    }
+    
+    // Pay Now button click handler
+    const payBtn = document.getElementById('payNowBtn');
+    if (payBtn) {
+        payBtn.addEventListener('click', function() {
+            // In a real implementation, this would redirect to payment page
+            const toast = new bootstrap.Toast(document.getElementById('successToast'));
+            document.getElementById('toastMessage').innerText = 'Payment functionality will be implemented soon';
+            toast.show();
+        });
     }
 });
 </script> 

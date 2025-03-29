@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Preview Imported Operators{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="d-flex align-items-center">
+                        <span class="material-icons me-2" style="color: var(--primary-color)">upload_file</span>
+                        <h4 class="mb-0">Preview Imported Operators</h4>
+                    </div>
+                    <p class="text-muted mt-2 mb-0">Review the imported data before saving to the database</p>
+                </div>
+                <div class="d-flex">
+                    <a href="{% url 'operator_import' %}" class="btn btn-outline-secondary d-flex align-items-center px-4 py-2 me-2">
+                        <span class="material-icons fs-5 me-2">arrow_back</span> Upload Different File
+                    </a>
+                    <form action="{% url 'operator_import_confirm' %}" method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary d-flex align-items-center px-4 py-2">
+                            <span class="material-icons fs-5 me-2">check_circle</span> Confirm and Import
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Preview Card -->
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-header bg-transparent border-0 py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <span class="material-icons me-2" style="color: var(--primary-color)">preview</span>
+                    <h5 class="mb-0">Data Preview</h5>
+                </div>
+                <div>
+                    <span class="badge bg-primary rounded-pill">Total Records: {{ data|length }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="border-top-0 px-4 py-3">#</th>
+                            <th class="border-top-0 px-4 py-3">Last Name</th>
+                            <th class="border-top-0 px-4 py-3">First Name</th>
+                            <th class="border-top-0 px-4 py-3">M.I.</th>
+                            <th class="border-top-0 px-4 py-3">Address</th>
+                            <th class="border-top-0 px-4 py-3">Old P.D. No.</th>
+                            <th class="border-top-0 px-4 py-3">New P.D. No.</th>
+                            <th class="border-top-0 px-4 py-3">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data %}
+                        <tr>
+                            <td class="px-4 py-3">{{ forloop.counter }}</td>
+                            <td class="fw-medium px-4 py-3">{{ row.last_name|default:"" }}</td>
+                            <td class="px-4 py-3">{{ row.first_name|default:"" }}</td>
+                            <td class="px-4 py-3">{{ row.middle_initial|default:"" }}</td>
+                            <td class="px-4 py-3">{{ row.address|default:"" }}</td>
+                            <td class="px-4 py-3">{{ row.old_pd_number|default:"" }}</td>
+                            <td class="px-4 py-3">{{ row.new_pd_number|default:"" }}</td>
+                            <td class="px-4 py-3 text-center">
+                                {% if row.new_pd_number %}
+                                    {% if row.last_name and row.first_name %}
+                                        <span class="badge bg-success rounded-pill">Valid</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark rounded-pill">Incomplete</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge bg-danger rounded-pill">Missing PD No</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-4">
+                                <div class="d-flex flex-column align-items-center">
+                                    <span class="material-icons" style="font-size: 48px; color: #c0c0c0;">error_outline</span>
+                                    <p class="mt-2 mb-0">No data to preview</p>
+                                    <p class="text-muted small">Please upload a file with valid records</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card-footer bg-transparent py-3">
+                <div class="alert alert-info d-flex align-items-center mb-3">
+                    <span class="material-icons me-2">info</span>
+                    <div>
+                        <strong>Note:</strong> Only valid records will be imported. Records missing required fields will be skipped.
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <a href="{% url 'operator_import' %}" class="btn btn-outline-secondary d-flex align-items-center px-4 py-2 me-2">
+                        <span class="material-icons fs-5 me-2">close</span> Cancel
+                    </a>
+                    <form action="{% url 'operator_import_confirm' %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary d-flex align-items-center px-4 py-2">
+                            <span class="material-icons fs-5 me-2">check_circle</span> Confirm and Import
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

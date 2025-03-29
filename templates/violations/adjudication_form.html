@@ -1,17 +1,31 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <div class="container-fluid py-4">
     <!-- Header Card -->
-    <div class="card shadow-sm border-0 rounded-3 mb-4">
-        <div class="card-body p-4">
+    <div class="content-card mb-4">
+        <div class="skeleton-loader" style="display: none;">
+            <div class="skeleton-card">
+                <div class="skeleton-header">
+                    <div class="skeleton-circle skeleton"></div>
+                    <div class="skeleton-title skeleton"></div>
+                </div>
+                <div class="skeleton-body">
+                    <div class="skeleton-line skeleton"></div>
+                    <div class="skeleton-line skeleton medium"></div>
+                </div>
+            </div>
+        </div>
+        <div class="content-card-header">
+            <span class="material-icons icon-primary">gavel</span>
+            <h4 class="m-0">Adjudication Form</h4>
+        </div>
+        <div class="content-card-body">
             <div class="d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
-                    <span class="material-icons me-2" style="color: var(--primary-color)">gavel</span>
-                    <div>
-                        <h4 class="mb-1">Adjudication Form</h4>
-                        <p class="text-muted mb-0">Citation #{{ violation.id }}</p>
-                    </div>
+                <div>
+                    <h5 class="mb-1">Citation #{{ violation.id }}</h5>
+                    <p class="text-muted mb-0">Issued on {{ violation.violation_date|date:"F d, Y" }}</p>
                 </div>
                 <div class="status-badge status-{{ violation.status|lower }}">
                     {{ violation.get_status_display }}
@@ -23,52 +37,241 @@
     <!-- Form Content -->
     <form id="adjudicationForm" method="POST" action="{% url 'submit_adjudication' violation.id %}">
         {% csrf_token %}
+        <input type="hidden" id="removedViolations" name="removed_violations" value="">
+        <input type="hidden" id="originalPenalty" name="original_penalty" value="{{ violation.fine_amount }}">
+        <input type="hidden" id="originalViolations" name="original_violations" value="{{ violation.get_violation_types|join:',' }}">
+        <input type="hidden" id="settledStatus" name="settled_status" value="false">
+        <input type="hidden" id="adjudicationStatus" name="adjudication_status" value="adjudicated">
+        <input type="hidden" id="requiresApproval" name="requires_approval" value="true">
+        
         <div class="row g-4">
             <!-- Left Column -->
             <div class="col-lg-6">
                 <!-- Violation Details Card -->
-                <div class="card shadow-sm border-0 rounded-3 h-100">
-                    <div class="card-body p-4">
-                        <h5 class="section-title">
-                            <i class="fas fa-file-alt me-2"></i>Violation Details
-                        </h5>
-                        <div class="info-grid">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <div class="info-item autofilled">
-                                        <label>Citation Number</label>
-                                        <p class="citation-number">{{ violation.id }}</p>
+                <div class="content-card mb-4">
+                    <div class="skeleton-loader" style="display: none;">
+                        <div class="skeleton-card">
+                            <div class="skeleton-header">
+                                <div class="skeleton-circle skeleton"></div>
+                                <div class="skeleton-title skeleton"></div>
+                            </div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-line skeleton"></div>
+                                <div class="skeleton-line skeleton medium"></div>
+                                <div class="skeleton-line skeleton short"></div>
+                                <div class="skeleton-line skeleton"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="content-card-header">
+                        <span class="material-icons icon-primary">description</span>
+                        <h5>Violation Details</h5>
+                    </div>
+                    <div class="content-card-body">
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="info-field">
+                                    <label>Citation Number</label>
+                                    <div class="value">{{ violation.id }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-field">
+                                    <label>Date of Violation</label>
+                                    <div class="value">{{ violation.violation_date|date:"F d, Y" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="info-field mb-4">
+                            <label>Apprehending Officer</label>
+                            <div class="value">{{ violation.enforcer.get_full_name }}</div>
+                            <div class="sub-value">ID: {{ violation.enforcer.userprofile.enforcer_id }}</div>
+                        </div>
+                        <div class="info-field mb-4">
+                            <label>Location</label>
+                            <div class="value">{{ violation.location }}</div>
+                        </div>
+                        <div class="info-field">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <label class="mb-0">Violations</label>
+                                <div class="helper-text">(uncheck to remove a violation)</div>
+                            </div>
+                            <div class="violations-list">
+                                {% for type in violation.get_violation_types %}
+                                <div class="violation-item">
+                                    <div class="form-check">
+                                        <input class="form-check-input violation-checkbox" type="checkbox" 
+                                               id="violation{{ forloop.counter }}" 
+                                               value="{{ type }}" 
+                                               data-penalty=""
+                                               checked>
+                                        <label class="form-check-label" for="violation{{ forloop.counter }}">
+                                            {{ type }}
+                                        </label>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="info-item autofilled">
-                                        <label>Date of Violation</label>
-                                        <p>{{ violation.violation_date|date:"F d, Y" }}</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Other Violations Card (Batch Adjudication) -->
+                {% if previous_violations %}
+                <div class="content-card mb-4">
+                    <div class="content-card-header d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="material-icons icon-primary">fact_check</span>
+                            <h5 class="m-0">Batch Adjudication</h5>
+                        </div>
+                        {% if previous_violations|length > 2 %}
+                        <span class="badge bg-warning text-dark">Repeat Violator</span>
+                        {% endif %}
+                    </div>
+                    <div class="content-card-body">
+                        <div class="alert alert-info d-flex align-items-start">
+                            <span class="material-icons me-2 mt-1">info</span>
+                            <div>
+                                <strong>This violator has {{ previous_violations|length }} other pending violation(s).</strong>
+                                <p class="mb-0 small">You can apply the same adjudication decision to other violations by selecting them below.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="enableBatchAdjudication">
+                            <label class="form-check-label" for="enableBatchAdjudication">
+                                <strong>Enable Batch Adjudication</strong>
+                            </label>
+                        </div>
+                        
+                        <div id="batchViolationsContainer" style="display: none;">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th width="5%">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="selectAllViolations">
+                                            </div>
+                                        </th>
+                                        <th width="10%">Citation #</th>
+                                        <th width="15%">Date</th>
+                                        <th width="40%">Violation</th>
+                                        <th width="15%">Fine</th>
+                                        <th width="15%">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for prev_violation in previous_violations %}
+                                    <tr>
+                                        <td>
+                                            <div class="form-check">
+                                                <input class="form-check-input batch-violation-checkbox" 
+                                                       type="checkbox" 
+                                                       name="batch_violations[]" 
+                                                       value="{{ prev_violation.id }}"
+                                                       data-fine="{{ prev_violation.fine_amount }}"
+                                                       data-original-fine="{{ prev_violation.fine_amount }}">
+                                            </div>
+                                        </td>
+                                        <td>{{ prev_violation.id }}</td>
+                                        <td>{{ prev_violation.violation_date|date:"M d, Y" }}</td>
+                                        <td>
+                                            <div title="{{ prev_violation.violation_type }}">
+                                                {{ prev_violation.violation_type }}
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-link p-0 mt-1 toggle-violations" 
+                                                data-violation-id="{{ prev_violation.id }}">
+                                                <small>
+                                                    <span class="show-text">Show violations</span>
+                                                    <span class="hide-text d-none">Hide violations</span>
+                                                    <span class="material-icons" style="font-size: 14px; vertical-align: middle;">expand_more</span>
+                                                </small>
+                                            </button>
+                                            <div id="violation-details-{{ prev_violation.id }}" class="violation-details mt-2 d-none">
+                                                {% for type in prev_violation.get_violation_types %}
+                                                <div class="violation-detail-item d-flex align-items-center mb-1">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input individual-violation-checkbox" 
+                                                               type="checkbox" 
+                                                               data-violation-id="{{ prev_violation.id }}"
+                                                               data-violation-type="{{ type }}"
+                                                               checked>
+                                                        <label class="form-check-label small">{{ type }}</label>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                                <input type="hidden" class="removed-violation-types" 
+                                                       name="removed_violation_types_{{ prev_violation.id }}" value="">
+                                            </div>
+                                        </td>
+                                        <td data-violation-id="{{ prev_violation.id }}">
+                                            <span class="violation-fine">₱{{ prev_violation.fine_amount }}</span>
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-outline-primary view-details-btn" 
+                                                    onclick="showViolationDetail({{ prev_violation.id }})">
+                                                <span class="material-icons" style="font-size: 16px;">visibility</span>
+                                                View
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr class="bg-light">
+                                        <td colspan="4" class="text-end fw-bold">Total Selected:</td>
+                                        <td colspan="2" class="fw-bold text-primary" id="batchTotalAmount">₱0.00</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                            
+                            <input type="hidden" id="batchViolationIds" name="batch_violation_ids" value="">
+                            
+                            <div class="alert alert-warning batch-warning mt-3" style="display: none;">
+                                <span class="material-icons me-2">warning</span>
+                                <span id="batchWarningText">You have selected multiple violations for batch processing.</span>
+                            </div>
+                            
+                            <div class="alert alert-info mt-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="material-icons">info</span>
+                                    <div>
+                                        <strong>Penalty Calculation</strong>
+                                        <p class="mb-0">The total fine amount for selected violations will be automatically added to the main penalty in the Adjudication Decision section.</p>
                                     </div>
                                 </div>
-                                <div class="col-12">
-                                    <div class="info-item autofilled">
-                                        <label>Apprehending Officer</label>
-                                        <p>{{ violation.enforcer.get_full_name }}</p>
-                                        <small>ID: {{ violation.enforcer.userprofile.enforcer_id }}</small>
-                                    </div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="info-item autofilled">
-                                        <label>Location</label>
-                                        <p>{{ violation.location }}</p>
-                                    </div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="info-item autofilled">
-                                        <label>Violations Committed</label>
-                                        <ul class="violations-list">
-                                            {% for type in violation.get_violation_types %}
-                                            <li>{{ type }}</li>
-                                            {% endfor %}
-                                        </ul>
-                                    </div>
-                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Settlement Option Card -->
+                <div class="content-card mb-4">
+                    <div class="content-card-header">
+                        <span class="material-icons icon-primary">done_all</span>
+                        <h5>Settlement Option</h5>
+                    </div>
+                    <div class="content-card-body">
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="markAsSettled">
+                            <label class="form-check-label" for="markAsSettled">
+                                <span class="d-flex align-items-center">
+                                    <span class="material-icons text-success me-2">fact_check</span>
+                                    <strong>Mark as Settled</strong> 
+                                    <span class="badge bg-success ms-2">No Penalty</span>
+                                </span>
+                            </label>
+                        </div>
+                        <div class="alert alert-info d-flex align-items-center" role="alert">
+                            <span class="material-icons me-2">info</span>
+                            <small>Use this option when a violation should be excused or settled without penalty. This could be due to wrong issuance, medical reasons, or other valid justifications. This will mark the case as SETTLED with zero penalty.</small>
+                        </div>
+                        <div id="settlementReasonContainer" style="display: none;">
+                            <div class="form-field mt-3">
+                                <label for="settlementReason">Settlement Reason <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="settlementReason" name="settlement_reason" rows="3" 
+                                          placeholder="Provide detailed reason for settling this violation..."></textarea>
                             </div>
                         </div>
                     </div>
@@ -77,69 +280,107 @@
 
             <!-- Right Column -->
             <div class="col-lg-6">
-                <!-- Violator and Decision Card -->
-                <div class="card shadow-sm border-0 rounded-3 h-100">
-                    <div class="card-body p-4">
-                        <!-- Violator Information -->
-                        <h5 class="section-title">
-                            <i class="fas fa-user me-2"></i>Violator Information
-                        </h5>
-                        <div class="row g-3 mb-4">
-                            <div class="col-12">
-                                <div class="info-item autofilled">
-                                    <label>Name</label>
-                                    <p>{{ violation.violator.first_name }} {{ violation.violator.last_name }}</p>
-                                </div>
+                <!-- Violator Information Card -->
+                <div class="content-card mb-4">
+                    <div class="skeleton-loader" style="display: none;">
+                        <div class="skeleton-card">
+                            <div class="skeleton-header">
+                                <div class="skeleton-circle skeleton"></div>
+                                <div class="skeleton-title skeleton"></div>
                             </div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-line skeleton"></div>
+                                <div class="skeleton-line skeleton medium"></div>
+                                <div class="skeleton-line skeleton short"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="content-card-header">
+                        <span class="material-icons icon-primary">person</span>
+                        <h5>Violator Information</h5>
+                    </div>
+                    <div class="content-card-body">
+                        <div class="info-field mb-4">
+                            <label>Name</label>
+                            <div class="value">{{ violation.violator.first_name }} {{ violation.violator.last_name }}</div>
+                        </div>
+                        <div class="row mb-4">
                             <div class="col-md-6">
-                                <div class="info-item autofilled">
+                                <div class="info-field">
                                     <label>License Number</label>
-                                    <p>{{ violation.violator.license_number }}</p>
+                                    <div class="value">{{ violation.violator.license_number|default:"N/A" }}</div>
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <div class="info-item autofilled">
+                                <div class="info-field">
                                     <label>Phone Number</label>
-                                    <p>{{ violation.violator.phone_number|default:"N/A" }}</p>
-                                </div>
-                            </div>
-                            <div class="col-12">
-                                <div class="info-item autofilled">
-                                    <label>Address</label>
-                                    <p>{{ violation.violator.address }}</p>
+                                    <div class="value">{{ violation.violator.phone_number|default:"N/A" }}</div>
                                 </div>
                             </div>
                         </div>
+                        <div class="info-field">
+                            <label>Address</label>
+                            <div class="value">{{ violation.violator.address|default:"N/A" }}</div>
+                        </div>
+                    </div>
+                </div>
 
-                        <!-- Adjudication Decision -->
-                        <h5 class="section-title">
-                            <i class="fas fa-gavel me-2"></i>Adjudication Decision
-                        </h5>
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <div class="info-item autofilled">
-                                    <label>Adjudicating Officer</label>
-                                    <p>{{ user.get_full_name }}</p>
-                                    <small>ID: {{ user.userprofile.enforcer_id }}</small>
-                                </div>
+                <!-- Adjudication Decision Card -->
+                <div class="content-card" id="adjudicationDecisionCard">
+                    <div class="skeleton-loader" style="display: none;">
+                        <div class="skeleton-card">
+                            <div class="skeleton-header">
+                                <div class="skeleton-circle skeleton"></div>
+                                <div class="skeleton-title skeleton"></div>
                             </div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-line skeleton"></div>
+                                <div class="skeleton-line skeleton medium"></div>
+                                <div class="skeleton-line skeleton"></div>
+                                <div class="skeleton-line skeleton medium"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="content-card-header">
+                        <span class="material-icons icon-primary">gavel</span>
+                        <h5>Adjudication Decision</h5>
+                    </div>
+                    <div class="content-card-body">
+                        <div class="info-field mb-4">
+                            <label>Adjudicating Officer</label>
+                            <div class="value">{{ user.get_full_name }}</div>
+                            <div class="sub-value">ID: {{ user.userprofile.enforcer_id }}</div>
+                        </div>
+                        <div class="row mb-4">
                             <div class="col-md-6">
-                                <div class="form-group">
+                                <div class="form-field">
                                     <label for="totalPenalty">Total Penalty</label>
                                     <div class="input-group">
                                         <span class="input-group-text">₱</span>
                                         <input type="number" class="form-control" id="totalPenalty" 
-                                               name="total_penalty" min="0" step="0.01" required>
+                                               name="total_penalty" min="0" step="0.01" 
+                                               value="{{ violation.fine_amount }}" required>
+                                    </div>
+                                    <small class="text-muted mt-1" id="penaltyNote">
+                                        Original fine: ₱{{ violation.fine_amount }}
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-field">
+                                    <label for="paymentDue">Payment Due Date</label>
+                                    <div class="input-wrapper">
+                                        <input type="date" class="form-control" id="paymentDue" 
+                                               name="payment_due" required>
+                                        <span class="material-icons input-icon">calendar_today</span>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-12">
-                                <div class="form-group">
-                                    <label for="remarks">Decision/Remarks</label>
-                                    <textarea class="form-control" id="remarks" name="remarks" rows="4" 
-                                             placeholder="Enter your decision and any additional remarks..." required></textarea>
-                                </div>
-                            </div>
+                        </div>
+                        <div class="form-field">
+                            <label for="remarks">Decision/Remarks</label>
+                            <textarea class="form-control" id="remarks" name="remarks" rows="4" 
+                                     placeholder="Enter your decision and any additional remarks..." required></textarea>
                         </div>
                     </div>
                 </div>
@@ -147,132 +388,813 @@
         </div>
 
         <!-- Action Buttons -->
-        <div class="d-flex justify-content-end gap-2 mt-4">
-            <a href="{% url 'adjudication_list' %}" class="btn btn-outline-secondary">
-                <i class="fas fa-times me-2"></i>Cancel
-            </a>
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-gavel me-2"></i>Submit Decision
-            </button>
+        <div class="d-flex justify-content-between mt-4">
+            <div class="alert alert-info mb-0 d-flex align-items-center" id="violationRemovalAlert" style="display: none;">
+                <span class="material-icons me-2">info</span>
+                <span id="violationAlertText">You have removed one or more violations from this citation.</span>
+            </div>
+            <div class="action-buttons">
+                <a href="{% url 'adjudication_list' %}" class="btn btn-outline">
+                    <span class="material-icons">arrow_back</span>
+                    <span>Cancel</span>
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <span class="material-icons">gavel</span>
+                    <span>Submit Decision</span>
+                </button>
+            </div>
         </div>
     </form>
 </div>
 
 <style>
-/* Enhanced Card Styling */
-.card {
-    background: white;
-    border: none;
-    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+:root {
+    --primary-color: #2563eb;
+    --primary-light: #3b82f6;
+    --primary-dark: #1d4ed8;
+    --primary-rgb: 37, 99, 235;
+    --text-dark: #1e293b;
+    --text-muted: #64748b;
+    --border-light: #e2e8f0;
+    --bg-light: #f8fafc;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --success: #10b981;
+    --info: #3b82f6;
 }
 
-/* Section Title */
-.section-title {
-    color: var(--text-dark);
-    font-weight: 600;
-    margin-bottom: 1.5rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 2px solid var(--primary-color);
+/* Modern Card Styling */
+.content-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.content-card-header {
+    padding: 1.25rem 1.5rem;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
+    border-bottom: 1px solid var(--border-light);
 }
 
-/* Info Items */
-.info-item.autofilled {
-    background-color: #f8f9fa;
-    padding: 1rem;
-    border-radius: 8px;
-    border: 1px solid #e0e0e0;
-    height: 100%;
-}
-
-.info-item.autofilled label {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: #666;
-    text-transform: uppercase;
-    margin-bottom: 0.5rem;
-    display: block;
-}
-
-.info-item.autofilled p {
+.content-card-header h5 {
     margin: 0;
-    font-weight: 500;
-    color: #333;
+    font-weight: 600;
+    color: var(--text-dark);
+    font-size: 1.1rem;
 }
 
-/* Form Controls */
-.form-group {
+.content-card-body {
+    padding: 1.5rem;
+}
+
+.icon-primary {
+    color: var(--primary-color);
+}
+
+/* Info Fields */
+.info-field {
+    display: flex;
+    flex-direction: column;
+}
+
+.info-field label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+}
+
+.info-field .value {
+    font-weight: 500;
+    color: var(--text-dark);
+}
+
+.info-field .sub-value {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+
+/* Form Fields */
+.form-field {
     margin-bottom: 1rem;
 }
 
+.form-field label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-dark);
+    margin-bottom: 0.5rem;
+}
+
 .form-control {
-    border: 1px solid #dee2e6;
-    padding: 0.75rem;
+    border: 1px solid var(--border-light);
     border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    width: 100%;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus {
+    border-color: var(--primary-light);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15);
+    outline: none;
 }
 
 .input-group {
+    display: flex;
     border-radius: 8px;
     overflow: hidden;
 }
 
 .input-group-text {
-    background-color: #f8f9fa;
-    border-color: #dee2e6;
-    color: #495057;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0 1rem;
+    display: flex;
+    align-items: center;
     font-weight: 500;
+}
+
+.input-wrapper {
+    position: relative;
+}
+
+.input-icon {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
 }
 
 /* Status Badge */
 .status-badge {
-    padding: 0.5rem 1.5rem;
-    border-radius: 8px;
-    font-weight: 500;
+    padding: 0.5rem 1.25rem;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
 }
 
-.status-pending { background-color: #fff4de; color: #ffa800; }
-.status-disputed { background-color: #e7f5ff; color: #3699ff; }
-.status-settled { background-color: #e8fff3; color: #0bb783; }
+.status-pending { 
+    background-color: #fff4de; 
+    color: #ffa800; 
+}
+
+.status-disputed { 
+    background-color: #e7f5ff; 
+    color: #3699ff; 
+}
+
+.status-settled { 
+    background-color: #e8fff3; 
+    color: #0bb783; 
+}
 
 /* Violations List */
 .violations-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 250px;
+    overflow-y: auto;
+    padding: 0.25rem;
 }
 
-.violations-list li {
+.violation-item {
     padding: 0.75rem 1rem;
-    margin-bottom: 0.5rem;
-    background-color: #fff;
-    border: 1px solid #e0e0e0;
+    background: var(--bg-light);
     border-radius: 8px;
-    font-size: 0.9rem;
+    transition: all 0.2s ease;
 }
 
-.violations-list li:last-child {
-    margin-bottom: 0;
+.violation-item:hover {
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.violation-item .form-check {
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    gap: 0.75rem;
+}
+
+.violation-item .form-check-input {
+    margin-top: 0.25rem;
+    border-color: var(--primary-color);
+}
+
+.violation-item .form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.violation-item .form-check-label {
+    font-weight: 500;
+    color: var(--text-dark);
+    transition: all 0.2s ease;
+}
+
+.violation-item .form-check-input:not(:checked) + .form-check-label {
+    text-decoration: line-through;
+    color: var(--text-muted);
+}
+
+/* Alert */
+.alert {
+    border-radius: 8px;
+    border: none;
+    padding: 0.75rem 1.25rem;
+}
+
+.alert-info {
+    background-color: rgba(var(--primary-rgb), 0.1);
+    color: var(--primary-dark);
+}
+
+/* Helper Text */
+.helper-text {
+    font-size: 0.8rem;
+    color: var(--primary-color);
+    font-weight: 500;
 }
 
 /* Action Buttons */
-.btn {
-    padding: 0.75rem 1.5rem;
+.action-buttons {
     display: flex;
+    gap: 1rem;
+}
+
+.btn {
+    display: inline-flex;
     align-items: center;
     gap: 0.5rem;
+    padding: 0.6rem 1.5rem;
+    border-radius: 8px;
     font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.2);
+}
+
+.btn-outline {
+    background-color: transparent;
+    border: 1px solid var(--border-light);
+    color: var(--text-muted);
+}
+
+.btn-outline:hover {
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    transform: translateY(-2px);
+}
+
+/* Toggle switch styling */
+.form-check-input[type=checkbox].form-switch-lg {
+    width: 3em;
+    height: 1.5em;
+    margin-top: 0.125em;
+}
+
+.form-switch .form-check-input {
+    height: 1.5em;
+    width: 3em;
+    margin-top: 0.125em;
+}
+
+/* Badge styling */
+.badge {
+    padding: 0.35em 0.65em;
+    border-radius: 50px;
+    font-size: 0.75em;
+}
+
+/* Batch Adjudication Styles */
+.table {
+    width: 100%;
+    margin-bottom: 1rem;
+    color: var(--text-dark);
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table thead th {
+    vertical-align: bottom;
+    border-bottom: 2px solid var(--border-light);
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(var(--primary-rgb), 0.05);
+}
+
+.table td {
+    padding: 0.75rem;
+    vertical-align: middle;
+    border-top: 1px solid var(--border-light);
+}
+
+.table td .form-check {
+    margin: 0;
+    display: flex;
+    justify-content: center;
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.35em 0.65em;
+    font-size: 0.75em;
+    font-weight: 600;
+    line-height: 1;
+    color: #fff;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 50px;
+}
+
+.bg-warning {
+    background-color: var(--warning);
+}
+
+.text-dark {
+    color: #212529;
+}
+
+.gap-2 {
+    gap: 0.5rem;
+}
+
+/* Expandable Violation Details */
+.toggle-violations {
+    color: var(--primary-color);
+    transition: all 0.2s ease;
+}
+
+.toggle-violations:hover {
+    text-decoration: underline;
+}
+
+.violation-details {
+    background-color: rgba(var(--primary-rgb), 0.05);
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.violation-detail-item .form-check-input {
+    margin-top: 0;
+}
+
+.violation-detail-item .form-check-label {
+    margin-left: 0.5rem;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.view-details-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* ADDED: Mobile Responsive Styles */
+@media (max-width: 768px) {
+    /* Adjust card padding for smaller screens */
+    .content-card-header {
+        padding: 1rem;
+    }
+    
+    .content-card-body {
+        padding: 1rem;
+    }
+    
+    /* Adjust font sizes */
+    .content-card-header h4 {
+        font-size: 1.1rem;
+    }
+    
+    .content-card-header h5 {
+        font-size: 1rem;
+    }
+    
+    h5 {
+        font-size: 1rem;
+    }
+    
+    .info-field .value {
+        font-size: 0.95rem;
+    }
+    
+    .info-field .sub-value {
+        font-size: 0.8rem;
+    }
+    
+    .form-field label {
+        font-size: 0.85rem;
+    }
+    
+    .form-control {
+        font-size: 0.9rem;
+        padding: 0.6rem 0.8rem;
+    }
+    
+    /* Adjust action buttons */
+    .action-buttons {
+        flex-direction: column;
+        width: 100%;
+        gap: 0.5rem;
+    }
+    
+    .action-buttons .btn {
+        width: 100%;
+        justify-content: center;
+        padding: 0.5rem;
+    }
+    
+    /* Adjust badge padding */
+    .status-badge {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.7rem;
+    }
+    
+    /* Adjust tables for mobile */
+    .table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    
+    .table thead th {
+        font-size: 0.75rem;
+        padding: 0.5rem;
+    }
+    
+    .table td {
+        padding: 0.5rem;
+        font-size: 0.85rem;
+    }
+    
+    /* Make form container full width */
+    .container-fluid {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+    
+    /* Adjust violation items */
+    .violation-item {
+        padding: 0.6rem 0.8rem;
+    }
+    
+    .violation-item .form-check-label {
+        font-size: 0.9rem;
+    }
+    
+    /* Stack form elements on mobile */
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .violation-detail-item .form-check-label {
+        font-size: 0.8rem;
+    }
+}
+
+/* ADDED: Skeleton Loader Styles */
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 4px;
+}
+
+.skeleton-card {
+    border-radius: 12px;
+    overflow: hidden;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.skeleton-header {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.skeleton-circle {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+}
+
+.skeleton-title {
+    height: 20px;
+    margin-left: 15px;
+    width: 150px;
+}
+
+.skeleton-body {
+    padding: 1.5rem;
+}
+
+.skeleton-line {
+    height: 15px;
+    margin-bottom: 10px;
+    width: 100%;
+}
+
+.skeleton-line.short {
+    width: 60%;
+}
+
+.skeleton-line.medium {
+    width: 80%;
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
 }
 </style>
 
 <script>
+// Set default payment due date to 7 days from today
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date();
+    const nextWeek = new Date(today);
+    nextWeek.setDate(today.getDate() + 7);
+    
+    const formattedDate = nextWeek.toISOString().substring(0, 10);
+    document.getElementById('paymentDue').value = formattedDate;
+    
+    // Initialize violation penalties
+    initializeViolations();
+    
+    // Store original fine amounts for all batch violations
+    document.querySelectorAll('.batch-violation-checkbox').forEach(checkbox => {
+        // Store the original fine value to use for recalculations
+        checkbox.dataset.originalFine = checkbox.dataset.fine;
+    });
+    
+    // Handle mark as settled checkbox
+    const settledCheckbox = document.getElementById('markAsSettled');
+    const adjudicationCard = document.getElementById('adjudicationDecisionCard');
+    const settlementReasonContainer = document.getElementById('settlementReasonContainer');
+    const settlementReason = document.getElementById('settlementReason');
+    const totalPenalty = document.getElementById('totalPenalty');
+    const paymentDue = document.getElementById('paymentDue');
+    const remarks = document.getElementById('remarks');
+    const settledStatus = document.getElementById('settledStatus');
+    
+    if (settledCheckbox) {
+        settledCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                // Update UI when checked
+                adjudicationCard.style.opacity = '0.5';
+                settlementReasonContainer.style.display = 'block';
+                settlementReason.required = true;
+                totalPenalty.value = '0.00';
+                totalPenalty.readOnly = true;
+                settledStatus.value = "true";
+                
+                // Update violations - check all as they'll all be marked as settled
+                document.querySelectorAll('.violation-checkbox').forEach(checkbox => {
+                    checkbox.checked = true;
+                    checkbox.disabled = true;
+                });
+                
+                // Hide violation removal alert if visible
+                const violationRemovalAlert = document.getElementById('violationRemovalAlert');
+                if (violationRemovalAlert) {
+                    violationRemovalAlert.style.display = 'none';
+                }
+                
+                // Update violation checkboxes
+                updateRemovedViolations();
+                
+            } else {
+                // Restore UI when unchecked
+                adjudicationCard.style.opacity = '1';
+                settlementReasonContainer.style.display = 'none';
+                settlementReason.required = false;
+                totalPenalty.value = document.getElementById('originalPenalty').value;
+                totalPenalty.readOnly = false;
+                settledStatus.value = "false";
+                
+                // Re-enable violation checkboxes
+                document.querySelectorAll('.violation-checkbox').forEach(checkbox => {
+                    checkbox.disabled = false;
+                });
+                
+                // Recalculate penalty
+                updatePenaltyField();
+            }
+        });
+    }
+    
+    // Mobile-specific adjustments
+    adjustForMobileView();
+    
+    // Re-adjust on window resize
+    window.addEventListener('resize', function() {
+        adjustForMobileView();
+    });
+});
+
+// Function to make mobile-specific adjustments
+function adjustForMobileView() {
+    const isMobile = window.innerWidth < 768;
+    
+    if (isMobile) {
+        // Adjust any elements that need specific mobile handling
+        document.querySelectorAll('.material-icons').forEach(icon => {
+            if (!icon.dataset.originalFontSize) {
+                icon.dataset.originalFontSize = window.getComputedStyle(icon).fontSize;
+            }
+            icon.style.fontSize = '18px';
+        });
+        
+        // Make table responsive
+        document.querySelectorAll('table').forEach(table => {
+            table.classList.add('table-responsive');
+        });
+    } else {
+        // Restore original settings for desktop
+        document.querySelectorAll('.material-icons').forEach(icon => {
+            if (icon.dataset.originalFontSize) {
+                icon.style.fontSize = icon.dataset.originalFontSize;
+            }
+        });
+    }
+}
+
+// Initialize violation penalty values
+function initializeViolations() {
+    // Get the original fine amount
+    const originalPenalty = parseFloat(document.getElementById('originalPenalty').value) || 0;
+    const totalViolations = document.querySelectorAll('.violation-checkbox').length;
+    
+    if (totalViolations > 0) {
+        // Distribute the original penalty evenly among all violations
+        const penaltyPerViolation = originalPenalty / totalViolations;
+        
+        // Assign equal penalty to each violation
+        document.querySelectorAll('.violation-checkbox').forEach(checkbox => {
+            checkbox.dataset.penalty = penaltyPerViolation.toFixed(2);
+        });
+    }
+}
+
+// Calculate penalty based on checked violations
+function calculatePenalty() {
+    let totalPenalty = 0;
+    document.querySelectorAll('.violation-checkbox:checked').forEach(checkbox => {
+        totalPenalty += parseFloat(checkbox.dataset.penalty) || 0;
+    });
+    return totalPenalty;
+}
+
+// Update penalty amount in the form
+function updatePenaltyField() {
+    // If settled is checked, penalty is always 0
+    if (document.getElementById('markAsSettled').checked) {
+        document.getElementById('totalPenalty').value = "0.00";
+        return;
+    }
+    
+    const totalPenalty = calculatePenalty();
+    const penaltyInput = document.getElementById('totalPenalty');
+    const originalPenalty = parseFloat(document.getElementById('originalPenalty').value) || 0;
+    
+    // Set the calculated penalty
+    penaltyInput.value = totalPenalty.toFixed(2);
+    
+    // Update the penalty note
+    const penaltyNote = document.getElementById('penaltyNote');
+    if (originalPenalty !== totalPenalty) {
+        penaltyNote.innerHTML = `Original fine: ₱${originalPenalty.toFixed(2)} <span class="text-primary">(Adjusted due to removed violations)</span>`;
+    } else {
+        penaltyNote.innerHTML = `Original fine: ₱${originalPenalty.toFixed(2)}`;
+    }
+}
+
+// Update the removed violations list
+function updateRemovedViolations() {
+    const removedViolations = [];
+    document.querySelectorAll('.violation-checkbox:not(:checked)').forEach(checkbox => {
+        removedViolations.push(checkbox.value);
+    });
+    document.getElementById('removedViolations').value = JSON.stringify(removedViolations);
+}
+
+// Track removed violations
+const violationCheckboxes = document.querySelectorAll('.violation-checkbox');
+const removedViolationsInput = document.getElementById('removedViolations');
+const violationRemovalAlert = document.getElementById('violationRemovalAlert');
+const violationAlertText = document.getElementById('violationAlertText');
+let removedViolations = [];
+
+violationCheckboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+        // Skip processing if settlement is active
+        if (document.getElementById('markAsSettled').checked) {
+            return;
+        }
+        
+        if (!this.checked) {
+            removedViolations.push(this.value);
+            violationRemovalAlert.style.display = 'flex';
+        } else {
+            const index = removedViolations.indexOf(this.value);
+            if (index > -1) {
+                removedViolations.splice(index, 1);
+            }
+            if (removedViolations.length === 0) {
+                violationRemovalAlert.style.display = 'none';
+            }
+        }
+        
+        // Update the hidden input with JSON string of removed violations
+        removedViolationsInput.value = JSON.stringify(removedViolations);
+        
+        // Update penalty amount
+        updatePenaltyField();
+        
+        // Check if all violations are removed
+        const allViolationsRemoved = document.querySelectorAll('.violation-checkbox:checked').length === 0;
+        
+        if (allViolationsRemoved) {
+            violationAlertText.innerHTML = 'All violations have been removed. The penalty amount has been set to zero.';
+            document.getElementById('totalPenalty').value = "0.00";
+            document.getElementById('totalPenalty').readOnly = true;
+        } else {
+            violationAlertText.innerHTML = 'You have removed one or more violations from this citation.';
+            document.getElementById('totalPenalty').readOnly = false;
+        }
+    });
+});
+
 // Form validation
 document.getElementById('adjudicationForm').addEventListener('submit', function(e) {
     const totalPenalty = document.getElementById('totalPenalty').value;
     const remarks = document.getElementById('remarks').value;
+    const paymentDue = document.getElementById('paymentDue').value;
+    const isSettled = document.getElementById('markAsSettled').checked;
+    const settlementReason = document.getElementById('settlementReason').value;
+    const allViolationsRemoved = document.querySelectorAll('.violation-checkbox:checked').length === 0;
 
-    if (!totalPenalty || parseFloat(totalPenalty) <= 0) {
+    // Validate settlement reason if marked as settled
+    if (isSettled && !settlementReason.trim()) {
+        e.preventDefault();
+        alert('Please provide a reason for settling this violation.');
+        return;
+    }
+
+    // Skip penalty validation if settled
+    if (!isSettled && !allViolationsRemoved && (!totalPenalty || parseFloat(totalPenalty) <= 0)) {
         e.preventDefault();
         alert('Please enter a valid penalty amount');
         return;
@@ -283,6 +1205,313 @@ document.getElementById('adjudicationForm').addEventListener('submit', function(
         alert('Please enter your decision remarks');
         return;
     }
+    
+    if (!paymentDue && !isSettled) {
+        e.preventDefault();
+        alert('Please set a payment due date');
+        return;
+    }
+    
+    // All adjudications are sent for approval
+    document.getElementById('adjudicationStatus').value = "adjudicated";
+    document.getElementById('requiresApproval').value = "true";
+    
+    // Set batch violations data if batch mode is enabled
+    if (document.getElementById('enableBatchAdjudication') && document.getElementById('enableBatchAdjudication').checked) {
+        const selectedViolations = [];
+        document.querySelectorAll('.batch-violation-checkbox:checked').forEach(checkbox => {
+            selectedViolations.push(checkbox.value);
+        });
+        
+        document.getElementById('batchViolationIds').value = JSON.stringify(selectedViolations);
+    }
+    
+    // Confirmation message based on action
+    let confirmMessage = 'This adjudication will be sent for approval. Do you want to continue?';
+    
+    // Specific confirmation for settlement
+    if (isSettled) {
+        confirmMessage = 'You are about to mark this violation as SETTLED with zero penalty. It will be sent for approval. Do you want to continue?';
+    }
+    // Specific confirmation for removing all violations
+    else if (allViolationsRemoved) {
+        confirmMessage = 'You have removed all violations, which will dismiss the entire citation. This will be sent for approval. Do you want to continue?';
+    }
+    
+    // Specific confirmation for batch processing
+    const batchIdsValue = document.getElementById('batchViolationIds').value;
+    if (batchIdsValue && batchIdsValue !== '[]') {
+        const batchCount = JSON.parse(batchIdsValue).length;
+        confirmMessage = `You are about to apply the same decision to ${batchCount} additional violation(s). All decisions will be sent for approval. Do you want to continue?`;
+    }
+    
+    if (!confirm(confirmMessage)) {
+        e.preventDefault();
+        return;
+    }
+});
+
+// Batch Adjudication Handling
+document.addEventListener('DOMContentLoaded', function() {
+    const enableBatchAdjudication = document.getElementById('enableBatchAdjudication');
+    const batchViolationsContainer = document.getElementById('batchViolationsContainer');
+    const selectAllViolations = document.getElementById('selectAllViolations');
+    const batchWarning = document.querySelector('.batch-warning');
+    const batchWarningText = document.getElementById('batchWarningText');
+    
+    if (enableBatchAdjudication) {
+        enableBatchAdjudication.addEventListener('change', function() {
+            if (this.checked) {
+                batchViolationsContainer.style.display = 'block';
+                // Update the total to include batch violations
+                updateBatchTotal();
+            } else {
+                batchViolationsContainer.style.display = 'none';
+                // Reset to original penalty when batch is disabled
+                document.getElementById('totalPenalty').value = document.getElementById('originalPenalty').value;
+                document.getElementById('penaltyNote').innerHTML = `Original fine: ₱${parseFloat(document.getElementById('originalPenalty').value).toFixed(2)}`;
+                // Uncheck all batch checkboxes
+                document.querySelectorAll('.batch-violation-checkbox').forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                // Clear batch warnings
+                batchWarning.style.display = 'none';
+                // Update hidden input
+                document.getElementById('batchViolationIds').value = '[]';
+            }
+        });
+    }
+    
+    if (selectAllViolations) {
+        selectAllViolations.addEventListener('change', function() {
+            document.querySelectorAll('.batch-violation-checkbox').forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateBatchWarning();
+            updateBatchTotal();
+        });
+    }
+    
+    // Individual checkbox handling
+    document.querySelectorAll('.batch-violation-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateBatchWarning();
+            updateBatchTotal();
+            
+            // Update "select all" checkbox state
+            const allCheckboxes = document.querySelectorAll('.batch-violation-checkbox');
+            const checkedCheckboxes = document.querySelectorAll('.batch-violation-checkbox:checked');
+            
+            if (selectAllViolations) {
+                selectAllViolations.checked = allCheckboxes.length === checkedCheckboxes.length;
+                selectAllViolations.indeterminate = checkedCheckboxes.length > 0 && checkedCheckboxes.length < allCheckboxes.length;
+            }
+        });
+    });
+    
+    // Function to update batch warning display
+    function updateBatchWarning() {
+        const checkedViolations = document.querySelectorAll('.batch-violation-checkbox:checked');
+        const count = checkedViolations.length;
+        
+        if (count > 0) {
+            batchWarning.style.display = 'flex';
+            batchWarningText.textContent = `You have selected ${count} additional violation(s) for batch processing. The same adjudication decision will be applied to all selected violations.`;
+        } else {
+            batchWarning.style.display = 'none';
+        }
+    }
+    
+    // Function to update the total amount for selected batch violations
+    function updateBatchTotal() {
+        const checkedViolations = document.querySelectorAll('.batch-violation-checkbox:checked');
+        let totalAmount = 0;
+        
+        checkedViolations.forEach(checkbox => {
+            const fine = parseFloat(checkbox.dataset.fine) || 0;
+            totalAmount += fine;
+        });
+        
+        // Update the batch total display
+        document.getElementById('batchTotalAmount').textContent = `₱${totalAmount.toFixed(2)}`;
+        
+        // Also update the main penalty field if batch adjudication is enabled
+        const enableBatchAdjudication = document.getElementById('enableBatchAdjudication');
+        if (enableBatchAdjudication && enableBatchAdjudication.checked) {
+            // Get the original penalty from the current violation
+            const originalPenalty = parseFloat(document.getElementById('originalPenalty').value) || 0;
+            
+            // Calculate new total (original penalty + batch total)
+            const newTotal = originalPenalty + totalAmount;
+            
+            // Update the main penalty field
+            const totalPenaltyField = document.getElementById('totalPenalty');
+            if (!document.getElementById('markAsSettled').checked) {
+                totalPenaltyField.value = newTotal.toFixed(2);
+            }
+            
+            // Update the penalty note
+            const penaltyNote = document.getElementById('penaltyNote');
+            if (totalAmount > 0) {
+                penaltyNote.innerHTML = `Original fine: ₱${originalPenalty.toFixed(2)} <span class="text-primary">+ Batch total: ₱${totalAmount.toFixed(2)}</span>`;
+            } else {
+                penaltyNote.innerHTML = `Original fine: ₱${originalPenalty.toFixed(2)}`;
+            }
+        }
+        
+        // Update the batch violation IDs hidden input with only the checked ones
+        const selectedViolations = [];
+        document.querySelectorAll('.batch-violation-checkbox:checked').forEach(checkbox => {
+            selectedViolations.push(checkbox.value);
+        });
+        document.getElementById('batchViolationIds').value = JSON.stringify(selectedViolations);
+        
+        // Show/hide batch warning
+        const batchWarning = document.querySelector('.batch-warning');
+        const batchWarningText = document.getElementById('batchWarningText');
+        if (selectedViolations.length > 0) {
+            batchWarning.style.display = 'flex';
+            batchWarningText.textContent = `You have selected ${selectedViolations.length} additional violation(s) for batch processing. The same adjudication decision will be applied to all selected violations.`;
+        } else {
+            batchWarning.style.display = 'none';
+        }
+    }
+    
+    // Toggle violation details
+    document.querySelectorAll('.toggle-violations').forEach(button => {
+        button.addEventListener('click', function() {
+            const violationId = this.dataset.violationId;
+            const detailsElement = document.getElementById(`violation-details-${violationId}`);
+            const showText = this.querySelector('.show-text');
+            const hideText = this.querySelector('.hide-text');
+            const icon = this.querySelector('.material-icons');
+            
+            if (detailsElement.classList.contains('d-none')) {
+                detailsElement.classList.remove('d-none');
+                showText.classList.add('d-none');
+                hideText.classList.remove('d-none');
+                icon.textContent = 'expand_less';
+            } else {
+                detailsElement.classList.add('d-none');
+                showText.classList.remove('d-none');
+                hideText.classList.add('d-none');
+                icon.textContent = 'expand_more';
+            }
+        });
+    });
+    
+    // Handle individual violation checkboxes
+    document.querySelectorAll('.individual-violation-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const violationId = this.dataset.violationId;
+            const violationType = this.dataset.violationType;
+            const removedTypesInput = document.querySelector(`input[name="removed_violation_types_${violationId}"]`);
+            
+            let removedTypes = [];
+            if (removedTypesInput.value) {
+                try {
+                    removedTypes = JSON.parse(removedTypesInput.value);
+                } catch (e) {
+                    console.error('Error parsing removed types JSON', e);
+                }
+            }
+            
+            if (!this.checked) {
+                // Add to removed types if not already there
+                if (!removedTypes.includes(violationType)) {
+                    removedTypes.push(violationType);
+                }
+            } else {
+                // Remove from removed types if present
+                const index = removedTypes.indexOf(violationType);
+                if (index > -1) {
+                    removedTypes.splice(index, 1);
+                }
+            }
+            
+            // Update hidden input with JSON string of removed types
+            removedTypesInput.value = JSON.stringify(removedTypes);
+            
+            // Recalculate the fine for this violation
+            recalculateViolationFine(violationId);
+            
+            // Update batch total
+            updateBatchTotal();
+        });
+    });
+});
+
+// Function to recalculate fine for a specific violation based on removed types
+function recalculateViolationFine(violationId) {
+    const checkboxContainer = document.getElementById(`violation-details-${violationId}`);
+    if (!checkboxContainer) return;
+    
+    const totalCheckboxes = checkboxContainer.querySelectorAll('.individual-violation-checkbox').length;
+    const checkedCheckboxes = checkboxContainer.querySelectorAll('.individual-violation-checkbox:checked').length;
+    
+    // Find the batch checkbox for this violation
+    const batchCheckbox = document.querySelector(`.batch-violation-checkbox[value="${violationId}"]`);
+    if (!batchCheckbox) return;
+    
+    // Get the original fine
+    const originalFine = parseFloat(batchCheckbox.dataset.originalFine || batchCheckbox.dataset.fine || 0);
+    
+    // Calculate new proportional fine based on checked violations
+    let newFine = 0;
+    if (totalCheckboxes > 0 && checkedCheckboxes > 0) {
+        newFine = (originalFine * checkedCheckboxes) / totalCheckboxes;
+    }
+    
+    // Update the fine display for this violation
+    const fineDisplay = document.querySelector(`td[data-violation-id="${violationId}"] .violation-fine`);
+    if (fineDisplay) {
+        fineDisplay.textContent = `₱${newFine.toFixed(2)}`;
+        
+        // Add indicator if some violations are unchecked
+        if (checkedCheckboxes < totalCheckboxes) {
+            fineDisplay.innerHTML = `₱${newFine.toFixed(2)} <span class="badge bg-warning text-dark ms-1" title="Some violations removed">Adjusted</span>`;
+        } else {
+            fineDisplay.textContent = `₱${newFine.toFixed(2)}`;
+        }
+    }
+    
+    // Update the data-fine attribute to use in calculations
+    batchCheckbox.dataset.fine = newFine.toFixed(2);
+    
+    // Update the checkbox status based on whether any violations are checked
+    if (checkedCheckboxes === 0) {
+        batchCheckbox.checked = false;
+        batchCheckbox.disabled = true;
+    } else {
+        batchCheckbox.disabled = false;
+    }
+}
+
+// Show skeletons initially
+document.addEventListener('DOMContentLoaded', function() {
+    // Show all skeleton loaders
+    document.querySelectorAll('.skeleton-loader').forEach(skeleton => {
+        skeleton.style.display = 'block';
+    });
+    
+    // Hide content initially
+    document.querySelectorAll('.content-card-body, .content-card-header').forEach(content => {
+        content.style.opacity = '0';
+    });
+    
+    // Simulate loading delay
+    setTimeout(function() {
+        // Hide skeleton loaders
+        document.querySelectorAll('.skeleton-loader').forEach(skeleton => {
+            skeleton.style.display = 'none';
+        });
+        
+        // Show content with fade-in effect
+        document.querySelectorAll('.content-card-body, .content-card-header').forEach(content => {
+            content.style.opacity = '1';
+            content.style.transition = 'opacity 0.3s ease';
+        });
+    }, 800);
 });
 </script>
 {% endblock %} 

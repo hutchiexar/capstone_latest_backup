@@ -2,13 +2,16 @@ from django.contrib.auth import logout, authenticate, login
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
-from django.db.models import Sum, Count, Q
+from django.db.models import Sum, Count, Q, F, Value, BooleanField, Case, When, IntegerField
+from django.db.models.functions import Concat, TruncDate, TruncMonth, TruncWeek
 from django.utils import timezone
-from .models import Violation, Payment, UserProfile, ActivityLog, Violator, Announcement
+from .models import Violation, Payment, UserProfile, ActivityLog, Violator, Announcement, AnnouncementAcknowledgment, LocationHistory, Operator, Vehicle, OperatorApplication, Driver
+from .user_portal.models import UserNotification, UserReport
 from django.conf import settings
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest, Http404
 from django.views.decorators.csrf import csrf_exempt
 from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
 import cv2
 import numpy as np
 from datetime import datetime, timedelta, date
@@ -18,7 +21,6 @@ from django.utils import timezone
 from django.contrib.auth.models import User
 import random
 import string
-from django.db.models.functions import TruncDate, TruncWeek, TruncMonth
 from .utils import log_activity
 import requests
 import json
@@ -28,9 +30,59 @@ from io import BytesIO
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from idanalyzer import CoreAPI
 import os
+from django.db import models
+from django.contrib.sessions.backends.db import SessionStore
+from .forms import (
+    NCAPViolationForm, OperatorForm, ImportOperatorsForm,
+    ViolationForm, PaymentForm, ProfileUpdateForm, UserUpdateForm, 
+    ViolatorForm, SignatureForm, OperatorForm,
+    OperatorImportForm, OperatorApplicationForm, DriverImportForm, DriverForm
+)
+from django.core.exceptions import PermissionDenied
+import logging
+import time
+import uuid
+import csv, io
+import pandas as pd
+import xlwt
+from django.template.loader import render_to_string
+import pytz
+import re
+import sys
+import openpyxl
+from decimal import Decimal
 
+# Initialize logger
+logger = logging.getLogger(__name__)
 
+# Define choices after importing models but before any views
+VIOLATION_CHOICES = [
+    ('Illegal Parking', 'Illegal Parking (DTS)'),
+    ('Entering Prohibited Zones', 'Entering Prohibited Zones'),
+    ('Obstruction', 'Obstruction'),
+    ('Unlicensed Driver', 'Unlicensed Driver'),
+    ('Permitting Hitching', 'Permitting Hitching/Over Loading Passenger(s)'),
+    ('Unregistered MV', 'Unregistered MV'),
+    ('Refusal to Convey', 'Refusal to convey to proper destination'),
+    ('Discourteous Driver', 'Discourteous driver/Conduct'),
+    ('Defective Lights', 'No/Defective Lights'),
+    ('Expired OR/CR', 'Expired OR/CR'),
+    ('No License', 'Failure to Carry DL'),
+    ('No Permit', "No MAYOR'S PERMIT/MTOP/POP/PDP"),
+    ('Overcharging', 'Overcharging'),
+    ('DUI', 'Driving under the influence of liquor/drugs'),
+    ('Defective Muffler', 'Operating a vehicle with Defective Muffler'),
+    ('Dilapidated', 'Operating a Dilapidated Motorcab'),
+    ('Reckless Driving', 'Reckless Driving'),
+    ('Others', 'Others')
+]
 
+VEHICLE_CLASSIFICATIONS = [
+    ('Private', 'Private'),
+    ('Public', 'Public'),
+    ('Government', 'Government'),
+    ('Commercial', 'Commercial')
+]
 
 @login_required
 def admin_dashboard(request):
@@ -302,9 +354,20 @@ def upload_violation(request):
             violation = Violation.objects.create(
                 violator=violator,
                 location=request.POST.get('location'),
-                violation_type=request.POST.get('violation_type'),
                 fine_amount=request.POST.get('fine_amount'),
-                image=request.FILES.get('violation_image')
+                is_tdz_violation=request.POST.get('is_tdz_violation') == 'on',
+                vehicle_type=request.POST.get('vehicle_type'),
+                plate_number=request.POST.get('plate_number'),
+                color=request.POST.get('color'),
+                classification=request.POST.get('classification'),
+                registration_number=request.POST.get('registration_number'),
+                registration_date=request.POST.get('registration_date') or None,
+                vehicle_owner=request.POST.get('vehicle_owner'),
+                vehicle_owner_address=request.POST.get('vehicle_owner_address'),
+                status='PENDING',
+                enforcer=request.user,
+                enforcer_signature_date=timezone.now(),
+                user_account=user_account  # Link to user account if provided
             )
             
             log_activity(
@@ -359,6 +422,19 @@ def issue_ticket(request):
             license_number = request.POST.get('license_number')
             print("License number:", license_number)
             
+            # Check if this violation should be associated with a user account
+            user_account_id = request.POST.get('user_account_id')
+            violator_source = request.POST.get('violator_source')
+            
+            user_account = None
+            if user_account_id and violator_source == 'user':
+                try:
+                    user_account = User.objects.get(id=user_account_id)
+                    print(f"Found user account: {user_account.username} (ID: {user_account_id})")
+                except User.DoesNotExist:
+                    print(f"User account with ID {user_account_id} not found")
+                    user_account = None
+            
             try:
                 violator = Violator.objects.get(license_number=license_number)
                 # Update violator information
@@ -372,7 +448,7 @@ def issue_ticket(request):
                 violator = Violator.objects.create(
                     first_name=request.POST.get('first_name'),
                     last_name=request.POST.get('last_name'),
-                    license_number=license_number,
+                    license_number=license_number or '',  # Handle case where there's no license
                     phone_number=request.POST.get('phone_number'),
                     address=request.POST.get('address')
                 )
@@ -382,68 +458,138 @@ def issue_ticket(request):
             print("Selected violations:", violation_types)
             
             if not violation_types:
-                raise ValueError("Please select at least one violation type")
+                return JsonResponse({
+                    'success': False,
+                    'message': "Please select at least one violation type"
+                })
 
-            # Create violation with new vehicle information and multiple violations
+            # Create the violation ticket
             violation = Violation.objects.create(
                 violator=violator,
                 location=request.POST.get('location'),
-                violation_type=violation_types[0],  # Store first violation as primary type
                 fine_amount=request.POST.get('fine_amount'),
-                enforcer=request.user,  # This will store the user object
-                enforcer_signature_date=timezone.now(),
+                is_tdz_violation=request.POST.get('is_tdz_violation') == 'on',
                 vehicle_type=request.POST.get('vehicle_type'),
-                classification=request.POST.get('classification'),
                 plate_number=request.POST.get('plate_number'),
                 color=request.POST.get('color'),
+                classification=request.POST.get('classification'),
                 registration_number=request.POST.get('registration_number'),
-                registration_date=request.POST.get('registration_date'),
+                registration_date=request.POST.get('registration_date') or None,
                 vehicle_owner=request.POST.get('vehicle_owner'),
-                vehicle_owner_address=request.POST.get('vehicle_owner_address')
+                vehicle_owner_address=request.POST.get('vehicle_owner_address'),
+                status='PENDING',
+                enforcer=request.user,
+                enforcer_signature_date=timezone.now(),
+                user_account=user_account  # Link to user account if provided
             )
             
-            # Set violation types
-            violation.set_violation_types(violation_types)
-            
-            # Handle signature or refusal note
-            if request.POST.get('no_signature') == 'on':
-                violation.description = f"Violator refused to sign. Note: {request.POST.get('refusal_note')}"
-            else:
-                signature_data = request.POST.get('signature_data')
-                if signature_data:
-                    format, imgstr = signature_data.split(';base64,')
-                    ext = format.split('/')[-1]
-                    filename = f'signature_{violation.id}.{ext}'
-                    data = ContentFile(base64.b64decode(imgstr))
-                    violation.violator_signature.save(filename, data, save=False)
-                    violation.violator_signature_date = timezone.now()
+            # Record the association in the activity log
+            if user_account:
+                ActivityLog.objects.create(
+                    user=request.user,
+                    action=f"Linked violation #{violation.id} to user account {user_account.username}",
+                    details=f"Violation ID: {violation.id} linked to user: {user_account.username}",
+                    category="violation"
+                )
+                
+                # Create a notification for the user
+                UserNotification.objects.create(
+                    user=user_account,
+                    message=f"A new violation has been issued to you. Violation ID: {violation.id}",
+                    type="VIOLATION",
+                    reference_id=violation.id
+                )
 
+            # Initialize signature_data as None
+            signature_data = None
+
+            # Handle signature if provided
+            signature_input = request.POST.get('signature_data')
+            if signature_input:
+                try:
+                    # Check if signature_data is a filename (new approach) or base64 data (old approach)
+                    if ';base64,' in signature_input:
+                        # Handle old base64 format
+                        format_data = signature_input.split(';base64,', 1)
+                        if len(format_data) == 2:
+                            format_info, imgstr = format_data
+                            ext = format_info.split('/')[-1]
+                            signature_file = ContentFile(base64.b64decode(imgstr), name=f'signature_{violation.id}.{ext}')
+                            violation.violator_signature = signature_file
+                            violation.violator_signature_date = timezone.now()
+                            violation.save()
+                            signature_data = signature_file.name
+                    else:
+                        # Handle new filename format
+                        signature_path = os.path.join('signatures', signature_input)
+                        if os.path.exists(signature_path):
+                            with open(signature_path, 'rb') as f:
+                                violation.violator_signature.save(
+                                    f'signature_{violation.id}.png',
+                                    ContentFile(f.read()),
+                                    save=True
+                                )
+                            violation.violator_signature_date = timezone.now()
+                            violation.save()
+                            signature_data = signature_input
+                except Exception as e:
+                    print(f"Error processing signature: {str(e)}")
+
+            # Add violation types
+            violation_types_list = []
+            for violation_type in violation_types:
+                violation_types_list.append(violation_type)
+            
+            # Store as JSON
+            violation.violation_types = json.dumps(violation_types_list)
+            
+            # Also store the first type in the single field for compatibility
+            if violation_types_list:
+                violation.violation_type = violation_types_list[0]
+            
             violation.save()
 
-            # Log the activity
-            log_activity(
-                user=request.user,
-                action='Issued Ticket',
-                details=f'Ticket issued to {violator.license_number}',
-                category='violation'
-            )
+            # Create ticket data dictionary
+            ticket_data = {
+                'id': violation.id,
+                'first_name': violator.first_name,
+                'last_name': violator.last_name,
+                'license_number': violator.license_number,
+                'phone_number': violator.phone_number,
+                'address': violator.address,
+                'vehicle_type': violation.vehicle_type,
+                'plate_number': violation.plate_number,
+                'color': violation.color,
+                'classification': violation.classification,
+                'registration_number': violation.registration_number,
+                'registration_date': violation.registration_date,
+                'location': violation.location,
+                'violations': violation_types,
+                'fine_amount': float(violation.fine_amount),
+                'is_tdz_violation': violation.is_tdz_violation,
+                'violation_date': violation.violation_date.strftime('%Y-%m-%d %H:%M:%S'),
+                'signature_data': signature_data,
+                'enforcer_name': request.user.get_full_name(),
+                'enforcer_id': request.user.userprofile.enforcer_id
+            }
 
-            print("Ticket created successfully, rendering template")
-            
-            return render(request, 'violations/ticket_template.html', {
-                'violation': violation,
+            return JsonResponse({
+                'success': True,
+                'message': 'Ticket issued successfully',
+                'ticket_data': ticket_data
             })
 
         except Exception as e:
             print("Error:", str(e))
-            messages.error(request, f'Error issuing ticket: {str(e)}')
-            return redirect('issue_ticket')
+            return JsonResponse({
+                'success': False,
+                'message': str(e)
+            })
 
-    context = {
-        'violation_choices': Violation.VIOLATION_CHOICES,
-        'vehicle_classifications': Violation.VEHICLE_CLASSIFICATIONS,
-    }
-    return render(request, 'violations/issue_direct_ticket.html', context)
+    return render(request, 'violations/issue_direct_ticket.html', {
+        'violation_choices': VIOLATION_CHOICES,
+        'vehicle_classifications': VEHICLE_CLASSIFICATIONS
+    })
 
 
 def custom_logout(request):
@@ -501,24 +647,47 @@ def generate_enforcer_id():
 def register(request):
     if request.method == 'POST':
         try:
+            # Check for existing username
+            username = request.POST['username']
+            email = request.POST['email']
+            license_number = request.POST['license_number']
+            
+            # Check for duplicate username
+            if User.objects.filter(username=username).exists():
+                messages.error(request, 'Username already exists. Please choose a different username.')
+                return render(request, 'registration/register.html', {'form_data': request.POST})
+            
+            # Check for duplicate email
+            if User.objects.filter(email=email).exists():
+                messages.error(request, 'Email address already exists. Please use a different email.')
+                return render(request, 'registration/register.html', {'form_data': request.POST})
+            
+            # Check for duplicate license
+            if UserProfile.objects.filter(license_number=license_number).exists():
+                messages.error(request, 'License number already registered. Please contact support if this is an error.')
+                return render(request, 'registration/register.html', {'form_data': request.POST})
+            
+            # Validate password match
+            if request.POST['password'] != request.POST.get('confirm_password', ''):
+                messages.error(request, 'Passwords do not match.')
+                return render(request, 'registration/register.html', {'form_data': request.POST})
+            
             # Create user
             user = User.objects.create_user(
-                username=request.POST['username'],
+                username=username,
                 password=request.POST['password'],
-                email=request.POST['email'],
+                email=email,
                 first_name=request.POST['first_name'],
                 last_name=request.POST['last_name']
             )
 
             # Create user profile
-            profile = UserProfile.objects.create(
-                user=user,
-                enforcer_id=generate_enforcer_id(),  # Still needed for system compatibility
-                phone_number=request.POST['phone_number'],
-                address=request.POST['address'],
-                role='USER',  # Set role as USER
-                license_number=request.POST['license_number']  # Add license number
-            )
+            profile = UserProfile.objects.get(user=user)  # Get profile created by signal
+            profile.phone_number = request.POST['phone_number']
+            profile.address = request.POST['address']
+            profile.role = 'USER'  # Set role as USER
+            profile.license_number = license_number  # Add license number
+            profile.save()
 
             # Handle avatar upload
             if 'avatar' in request.FILES:
@@ -527,19 +696,49 @@ def register(request):
 
             messages.success(request, 'Registration successful! Please login.')
             return redirect('login')
+        except IntegrityError as e:
+            # Handle database integrity errors (e.g., unique constraints)
+            if 'username' in str(e).lower():
+                messages.error(request, 'Username already exists. Please choose a different username.')
+            elif 'email' in str(e).lower():
+                messages.error(request, 'Email address already exists. Please use a different email.')
+            elif 'license_number' in str(e).lower():
+                messages.error(request, 'License number already registered. Please contact support if this is an error.')
+            else:
+                messages.error(request, f'Registration failed due to database error: {str(e)}')
+            return render(request, 'registration/register.html', {'form_data': request.POST})
         except Exception as e:
             messages.error(request, f'Registration failed: {str(e)}')
-            return redirect('register')
+            return render(request, 'registration/register.html', {'form_data': request.POST})
 
     return render(request, 'registration/register.html')
 
 
 @login_required
 def profile(request):
+    # Get the user's violations
+    user_violations = Violation.objects.filter(user_account=request.user)
+    
+    # Count open (unpaid) violations
+    open_violations_count = user_violations.exclude(status__in=['PAID', 'SETTLED']).count()
+    
+    # Calculate total fines due
+    total_fines_due = user_violations.exclude(status__in=['PAID', 'SETTLED']).aggregate(
+        total=models.Sum('fine_amount', default=0)
+    )['total'] or 0
+    
+    # Get latest notifications
+    notifications = UserNotification.objects.filter(user=request.user).order_by('-created_at')[:5]
+    
     # Add context for showing messages
     context = {
+        'user_violations': user_violations,
+        'open_violations_count': open_violations_count,
+        'total_fines_due': total_fines_due,
+        'notifications': notifications,
         'show_messages': request.session.get('current_page') == 'profile'
     }
+    
     return render(request, 'profile.html', context)
 
 
@@ -629,7 +828,7 @@ def users_list(request):
         user_profiles = paginator.page(1)
     except EmptyPage:
         user_profiles = paginator.page(paginator.num_pages)
-
+    
     context = {
         'user_profiles': user_profiles,
         'page_obj': user_profiles,
@@ -915,12 +1114,20 @@ def violation_detail_modal(request, violation_id):
         # Check if it's an NCAP violation by checking for image
         is_ncap = bool(violation.image)
         
+        # Get previous violations for the same violator
+        previous_violations = Violation.objects.filter(
+            violator=violation.violator
+        ).exclude(
+            id=violation.id
+        ).order_by('-violation_date')
+        
         # Use the appropriate template
         template_name = 'violations/ncap_violation_detail_modal.html' if is_ncap else 'violations/violation_detail_modal.html'
         
         context = {
             'violation': violation,
-            'is_modal': True
+            'is_modal': True,
+            'previous_violations': previous_violations
         }
         
         return render(request, template_name, context)
@@ -1106,56 +1313,214 @@ def adjudication_list(request):
 @login_required
 def adjudication_form(request, violation_id):
     violation = get_object_or_404(Violation, id=violation_id)
+    
+    # Get other pending violations from the same violator (excluding current one)
+    previous_violations = Violation.objects.filter(
+        violator=violation.violator,
+        status='PENDING'
+    ).exclude(id=violation_id).order_by('-violation_date')
+    
     context = {
         'violation': violation,
+        'previous_violations': previous_violations
     }
+    
     return render(request, 'violations/adjudication_form.html', context)
 
 @login_required
 def submit_adjudication(request, violation_id):
-    if request.method == 'POST':
-        violation = get_object_or_404(Violation, id=violation_id)
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
+    
+    violation = get_object_or_404(Violation, id=violation_id)
+    
+    try:
+        # Process the main violation
+        process_adjudication(request, violation)
+        
+        # Check if there are batch violations to process
+        batch_violation_ids_json = request.POST.get('batch_violation_ids', '[]')
+        if batch_violation_ids_json and batch_violation_ids_json != '[]':
+            batch_violation_ids = json.loads(batch_violation_ids_json)
+            
+            # Log batch adjudication in the activity log
+            if batch_violation_ids:
+                ActivityLog.objects.create(
+                    user=request.user,
+                    action="BATCH_ADJUDICATION",
+                    details=f"Batch adjudicated {len(batch_violation_ids)} violations along with violation #{violation_id}",
+                    category="violation"
+                )
+            
+            # Process each batch violation
+            for batch_id in batch_violation_ids:
+                try:
+                    batch_violation = Violation.objects.get(id=batch_id)
+                    
+                    # Get removed violation types for this batch item
+                    removed_types_key = f'removed_violation_types_{batch_id}'
+                    removed_types_json = request.POST.get(removed_types_key, '[]')
+                    
+                    # Process the batch violation with its specific removed violations
+                    process_adjudication(request, batch_violation, removed_types_json)
+                    
+                except Violation.DoesNotExist:
+                    logger.error(f"Batch violation ID {batch_id} not found during adjudication")
+                except Exception as e:
+                    logger.error(f"Error processing batch violation {batch_id}: {str(e)}")
+        
+        return redirect('adjudication_list')
+    
+    except Exception as e:
+        logger.error(f"Error in submit_adjudication: {str(e)}")
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+def process_adjudication(request, violation, batch_removed_types_json=None):
+    """Helper function to process a single violation adjudication"""
+    adjudication_status = request.POST.get('adjudication_status', 'adjudicated')
+    requires_approval = request.POST.get('requires_approval', 'true') == 'true'
+    settled_status = request.POST.get('settled_status', 'false') == 'true'
+    
+    # Get form data
+    total_penalty = request.POST.get('total_penalty', '0')
+    remarks = request.POST.get('remarks', '')
+    settlement_reason = request.POST.get('settlement_reason', '')
+    
+    # Parse removed violations - use batch specific ones if provided
+    if batch_removed_types_json:
+        removed_violations_json = batch_removed_types_json
+    else:
+        removed_violations_json = request.POST.get('removed_violations', '[]')
+    
+    removed_violations = []
+    try:
+        removed_violations = json.loads(removed_violations_json)
+    except json.JSONDecodeError:
+        logger.error(f"Error parsing removed violations JSON: {removed_violations_json}")
+    
+    # Handle payment due date
+    payment_due_str = request.POST.get('payment_due', '')
+    payment_due_date = None
+    if payment_due_str:
         try:
-            # Process the adjudication form
-            violation.status = 'ADJUDICATED'
-            violation.adjudicated_by = request.user
-            violation.adjudication_date = timezone.now()
-            violation.adjudication_remarks = request.POST.get('remarks')
-            violation.save()
+            payment_due_date = datetime.strptime(payment_due_str, '%Y-%m-%d').date()
+        except ValueError:
+            logger.error(f"Invalid payment due date format: {payment_due_str}")
+    
+    # Set adjudication status based on form data
+    if settled_status:
+        violation.status = 'SETTLED'
+        violation.fine_amount = 0
+        remarks = f"SETTLED: {settlement_reason or remarks}"
+    elif len(removed_violations) == len(violation.get_violation_types()):
+        violation.status = 'REMOVED'
+        violation.fine_amount = 0
+        remarks = f"REMOVED: All violations removed. {remarks}"
+    else:
+        violation.status = 'ADJUDICATED'
+        
+        # For batch items, recalculate the fine amount proportionally if violations were removed
+        if batch_removed_types_json and removed_violations:
+            original_types = violation.get_violation_types()
+            remaining_count = len(original_types) - len(removed_violations)
+            if remaining_count > 0 and len(original_types) > 0:
+                # Adjust fine proportionally based on removed violations
+                original_fine = float(violation.fine_amount)
+                violation.fine_amount = original_fine * (remaining_count / len(original_types))
+            else:
+                # All violations removed for this batch item
+                violation.fine_amount = 0
+                violation.status = 'REMOVED'
+        else:
+            # For main violation, use the submitted total penalty
+            violation.fine_amount = float(total_penalty)
             
-            # Log the activity
-            log_activity(
-                user=request.user,
-                action='Adjudicated Case',
-                details=f'Adjudicated Violation #{violation.id}',
-                category='violation'
-            )
-            
-            messages.success(request, 'Case adjudicated successfully.')
-            return redirect('adjudication_list')
-            
-        except Exception as e:
-            messages.error(request, f'Error processing adjudication: {str(e)}')
-            return redirect('adjudication_form', violation_id=violation_id)
-            
-    return redirect('adjudication_list')
+            # For the main violation, note if it includes batch penalties
+            batch_ids_json = request.POST.get('batch_violation_ids', '[]')
+            if batch_ids_json and batch_ids_json != '[]':
+                try:
+                    batch_ids = json.loads(batch_ids_json)
+                    if batch_ids and len(batch_ids) > 0:
+                        # Get information about batch violations
+                        batch_violations = Violation.objects.filter(id__in=batch_ids)
+                        total_batch_amount = sum([v.fine_amount for v in batch_violations])
+                        
+                        # Create detailed batch information
+                        batch_details = "\n\n=== BATCH ADJUDICATION SUMMARY ===\n"
+                        batch_details += f"This adjudication includes {len(batch_ids)} additional violation(s) with a total of ₱{total_batch_amount:.2f}.\n"
+                        batch_details += "Batch violations included:\n"
+                        
+                        for v in batch_violations:
+                            batch_details += f"- Citation #{v.id}: {v.violation_type} (₱{v.fine_amount:.2f}) from {v.violation_date.strftime('%b %d, %Y')}\n"
+                        
+                        # Add batch details to remarks
+                        remarks += batch_details
+                except json.JSONDecodeError:
+                    logger.error(f"Error parsing batch violation IDs: {batch_ids_json}")
+                except Exception as e:
+                    logger.error(f"Error processing batch details: {str(e)}")
+        
+        # Remove specific violations if any were unchecked
+        if removed_violations:
+            current_types = violation.get_violation_types()
+            remaining_types = [t for t in current_types if t not in removed_violations]
+            violation.violation_type = ', '.join(remaining_types)
+    
+    # Record adjudication details
+    violation.adjudicated_by = request.user
+    violation.adjudication_date = timezone.now()
+    violation.adjudication_remarks = remarks
+    violation.payment_due_date = payment_due_date
+    violation.requires_approval = requires_approval
+    
+    # Save the updated violation
+    violation.save()
+    
+    # Log the adjudication
+    ActivityLog.objects.create(
+        user=request.user,
+        action="ADJUDICATION",
+        details=f"Adjudicated violation #{violation.id} as {violation.status}",
+        category="violation"
+    )
+    
+    return violation
 
 @login_required
 def announcements_list(request):
-    announcements = Announcement.objects.filter(is_active=True).select_related('created_by').order_by('-created_at')
+    user_role = request.user.userprofile.role
+    current_time = timezone.now()
     
     # Enhanced search functionality
     search_query = request.GET.get('search', '').strip()
+    category_filter = request.GET.get('category', '')
+    priority_filter = request.GET.get('priority', '')
+    
+    # For admins and supervisors, show all announcements by default including inactive ones
+    if user_role in ['ADMIN', 'SUPERVISOR']:
+        announcements = Announcement.objects.all().select_related('created_by').order_by('-created_at')
+    else:
+        # For regular users, show only active announcements
+        announcements = Announcement.objects.filter(
+            is_active=True
+        ).select_related('created_by').order_by('-created_at')
+    
+    # Apply filters
     if search_query:
         announcements = announcements.filter(
             Q(title__icontains=search_query) |
             Q(content__icontains=search_query) |
-            Q(priority__icontains=search_query) |
             Q(created_by__first_name__icontains=search_query) |
             Q(created_by__last_name__icontains=search_query) |
             Q(created_by__userprofile__enforcer_id__icontains=search_query)
         ).distinct()
-
+    
+    if category_filter:
+        announcements = announcements.filter(category=category_filter)
+        
+    if priority_filter:
+        announcements = announcements.filter(priority=priority_filter)
+    
     # Pagination - 8 announcements per page
     paginator = Paginator(announcements, 8)
     page = request.GET.get('page', 1)
@@ -1170,7 +1535,12 @@ def announcements_list(request):
         'announcements': announcements,
         'page_obj': announcements,
         'search_query': search_query,
-        'total_count': paginator.count
+        'category_filter': category_filter,
+        'priority_filter': priority_filter,
+        'total_count': paginator.count,
+        'categories': Announcement.CATEGORY_CHOICES,
+        'priorities': Announcement.PRIORITY_CHOICES,
+        'admin_view': ''  # No longer needed but keep for backward compatibility
     }
     return render(request, 'announcements/announcements_list.html', context)
 
@@ -1183,15 +1553,46 @@ def create_announcement(request):
     if request.method == 'POST':
         title = request.POST.get('title')
         content = request.POST.get('content')
+        rich_content = request.POST.get('rich_content')
         priority = request.POST.get('priority', 'MEDIUM')
+        category = request.POST.get('category', 'GENERAL')
+        target_audience = request.POST.get('target_audience', 'ALL')
+        geographic_area = request.POST.get('geographic_area')
+        
+        # Boolean fields
+        is_active = request.POST.get('is_active') == 'on'
+        is_popup = request.POST.get('is_popup') == 'on'
+        requires_acknowledgment = request.POST.get('requires_acknowledgment') == 'on'
+        send_as_notification = request.POST.get('send_as_notification') == 'on'
+        
+        # Date fields
+        publish_date = request.POST.get('publish_date')
+        publish_date = timezone.make_aware(datetime.strptime(publish_date, '%Y-%m-%dT%H:%M')) if publish_date else None
+        
+        expiration_date = request.POST.get('expiration_date')
+        expiration_date = timezone.make_aware(datetime.strptime(expiration_date, '%Y-%m-%dT%H:%M')) if expiration_date else None
 
         if title and content:
             announcement = Announcement.objects.create(
                 title=title,
                 content=content,
+                rich_content=rich_content,
                 priority=priority,
+                category=category,
+                target_audience=target_audience,
+                geographic_area=geographic_area,
+                is_active=is_active,
+                is_popup=is_popup,
+                requires_acknowledgment=requires_acknowledgment,
+                publish_date=publish_date,
+                expiration_date=expiration_date,
                 created_by=request.user
             )
+            
+            # Create notifications if send_as_notification is checked or if it's a popup
+            if send_as_notification or is_popup:
+                create_notifications_from_announcement(announcement)
+                
             # Store current page in session
             request.session['current_page'] = 'announcements_list'
             messages.success(request, 'Announcement created successfully.')
@@ -1212,15 +1613,44 @@ def edit_announcement(request, announcement_id):
     if request.method == 'POST':
         title = request.POST.get('title')
         content = request.POST.get('content')
+        rich_content = request.POST.get('rich_content')
         priority = request.POST.get('priority')
+        category = request.POST.get('category', 'GENERAL')
+        target_audience = request.POST.get('target_audience', 'ALL')
+        geographic_area = request.POST.get('geographic_area')
+        
+        # Boolean fields
         is_active = request.POST.get('is_active') == 'on'
+        is_popup = request.POST.get('is_popup') == 'on'
+        requires_acknowledgment = request.POST.get('requires_acknowledgment') == 'on'
+        send_as_notification = request.POST.get('send_as_notification') == 'on'
+        
+        # Date fields
+        publish_date = request.POST.get('publish_date')
+        publish_date = timezone.make_aware(datetime.strptime(publish_date, '%Y-%m-%dT%H:%M')) if publish_date else None
+        
+        expiration_date = request.POST.get('expiration_date')
+        expiration_date = timezone.make_aware(datetime.strptime(expiration_date, '%Y-%m-%dT%H:%M')) if expiration_date else None
 
         if title and content:
             announcement.title = title
             announcement.content = content
+            announcement.rich_content = rich_content
             announcement.priority = priority
+            announcement.category = category
+            announcement.target_audience = target_audience
+            announcement.geographic_area = geographic_area
             announcement.is_active = is_active
+            announcement.is_popup = is_popup
+            announcement.requires_acknowledgment = requires_acknowledgment
+            announcement.publish_date = publish_date
+            announcement.expiration_date = expiration_date
             announcement.save()
+            
+            # Create notifications if send_as_notification is checked or if it's a popup
+            if send_as_notification or is_popup:
+                create_notifications_from_announcement(announcement)
+                
             # Store current page in session
             request.session['current_page'] = 'announcements_list'
             messages.success(request, 'Announcement updated successfully.')
@@ -1233,6 +1663,36 @@ def edit_announcement(request, announcement_id):
     }
     return render(request, 'announcements/edit_announcement.html', context)
 
+def create_notifications_from_announcement(announcement):
+    """Create user notifications from an announcement"""
+    try:
+        # Determine which users should receive this notification based on target audience
+        if announcement.target_audience == 'ALL':
+            users = User.objects.all()
+        else:
+            # Filter users by role matching the target audience
+            users = User.objects.filter(userprofile__role=announcement.target_audience)
+        
+        # Create a notification for each user
+        for user in users:
+            # Check if notification referencing this announcement already exists for user
+            if not UserNotification.objects.filter(user=user, reference_id=announcement.id, type='SYSTEM').exists():
+                notification_type = 'SYSTEM'
+                if announcement.priority == 'HIGH':
+                    notification_type = 'VIOLATION'  # Use violation type for high priority
+                
+                UserNotification.objects.create(
+                    user=user,
+                    type=notification_type,
+                    message=f"{announcement.title} - {announcement.content[:100]}" + ('...' if len(announcement.content) > 100 else ''),
+                    reference_id=announcement.id
+                )
+        
+        return True
+    except Exception as e:
+        print(f"Error creating notifications from announcement: {str(e)}")
+        return False
+
 @login_required
 def delete_announcement(request, announcement_id):
     if not request.user.userprofile.role in ['ADMIN', 'SUPERVISOR']:
@@ -1241,9 +1701,111 @@ def delete_announcement(request, announcement_id):
 
     announcement = get_object_or_404(Announcement, id=announcement_id)
     announcement.delete()
-    # Store current page in session
-    request.session['current_page'] = 'announcements_list'
     messages.success(request, 'Announcement deleted successfully.')
+    return redirect('announcements_list')
+
+@login_required
+def get_popup_announcement(request):
+    """API endpoint to get the latest popup announcement"""
+    try:
+        user_role = request.user.userprofile.role
+        current_time = timezone.now()
+        
+        # Debug info
+        print(f"Checking popup announcements for user {request.user.username}, role: {user_role}")
+        
+        # Get the latest active popup announcement for this user's role
+        announcement = Announcement.objects.filter(
+            is_active=True, 
+            is_popup=True
+        ).filter(
+            # Check for target audience
+            Q(target_audience='ALL') | Q(target_audience=user_role)
+        ).filter(
+            # Check for publish and expiration dates
+            Q(publish_date__isnull=True) | Q(publish_date__lte=current_time)
+        ).filter(
+            Q(expiration_date__isnull=True) | Q(expiration_date__gt=current_time)
+        ).order_by('-created_at').first()
+        
+        if announcement:
+            # Debug
+            print(f"Found popup announcement: {announcement.title} (ID: {announcement.id})")
+            
+            # Check if user needs to acknowledge and has already done so
+            acknowledged = False
+            if announcement.requires_acknowledgment:
+                acknowledged = AnnouncementAcknowledgment.objects.filter(
+                    announcement=announcement,
+                    user=request.user
+                ).exists()
+                
+                if acknowledged:
+                    print(f"User has already acknowledged announcement {announcement.id}")
+                    return JsonResponse({'status': 'no_announcements'})
+            
+            # Increment view count
+            announcement.view_count += 1
+            announcement.save(update_fields=['view_count'])
+            
+            # Prepare response data
+            data = {
+                'id': announcement.id,
+                'title': announcement.title,
+                'content': announcement.rich_content if announcement.rich_content else announcement.content,
+                'priority': announcement.priority,
+                'created_at': announcement.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'created_by': f"{announcement.created_by.first_name} {announcement.created_by.last_name}",
+                'category': announcement.get_category_display() if announcement.category else None,
+                'requires_acknowledgment': announcement.requires_acknowledgment
+            }
+            return JsonResponse(data)
+        else:
+            print("No active popup announcements found")
+        
+        return JsonResponse({'status': 'no_announcements'})
+    except Exception as e:
+        print(f"Error in get_popup_announcement: {str(e)}")
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@login_required
+def reset_popup_announcement(request, announcement_id):
+    """Reset a popup announcement so it shows again for all users"""
+    if not request.user.userprofile.role in ['ADMIN', 'SUPERVISOR']:
+        messages.error(request, 'You do not have permission to reset popup announcements.')
+        return redirect('announcements_list')
+        
+    announcement = get_object_or_404(Announcement, id=announcement_id)
+    
+    # Make sure it's a popup announcement
+    if not announcement.is_popup:
+        messages.error(request, 'This is not a popup announcement.')
+        return redirect('announcements_list')
+    
+    # Update the announcement to force a refresh (updated_at will change)
+    announcement.save()
+    
+    # Clear session data for this announcement for all active sessions
+    from django.contrib.sessions.models import Session
+    active_sessions = Session.objects.filter(expire_date__gt=timezone.now())
+    
+    session_count = 0
+    for session in active_sessions:
+        try:
+            session_data = session.get_decoded()
+            if 'seen_popup_announcements' in session_data:
+                seen_announcements = session_data['seen_popup_announcements']
+                if announcement.id in seen_announcements:
+                    seen_announcements.remove(announcement.id)
+                    session_data['seen_popup_announcements'] = seen_announcements
+                    session.session_data = SessionStore().encode(session_data)
+                    session.save()
+                    session_count += 1
+        except:
+            # Skip any problematic sessions
+            continue
+            
+    messages.success(request, f'Popup announcement reset for {session_count} active sessions.')
     return redirect('announcements_list')
 
 @login_required
@@ -1257,11 +1819,19 @@ def enforcer_map(request):
 @login_required
 @csrf_exempt
 def update_location(request):
+    # For GET requests or non-POST requests, return a clear message
     if request.method != 'POST':
-        return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
+        return JsonResponse({
+            'status': 'error', 
+            'message': 'This endpoint requires POST method'
+        }, status=405)
     
-    if not request.user.userprofile.role == 'ENFORCER':
-        return JsonResponse({'status': 'error', 'message': 'Only enforcers can update location'}, status=403)
+    # If user is not an enforcer, return a clear message instead of a generic error
+    if request.user.userprofile.role != 'ENFORCER':
+        return JsonResponse({
+            'status': 'error', 
+            'message': 'Location tracking is only available for enforcers'
+        }, status=403)
 
     try:
         data = json.loads(request.body)
@@ -1273,11 +1843,37 @@ def update_location(request):
         profile.last_location_update = timezone.now()
         profile.is_active_duty = data.get('is_active', True)
         
+        # Save additional data if provided
+        if 'accuracy' in data:
+            profile.accuracy = data['accuracy']
+        if 'heading' in data:
+            profile.heading = data['heading']
+        if 'speed' in data:
+            profile.speed = data['speed']
+        if 'battery_level' in data:
+            profile.battery_level = data['battery_level']
+        if 'device_info' in data:
+            profile.device_info = data['device_info']
+        
         # Use update_fields to optimize the query
-        profile.save(update_fields=['latitude', 'longitude', 'last_location_update', 'is_active_duty'])
+        profile.save()
+        
+        # Also save to location history for path tracking
+        LocationHistory.objects.create(
+            user_profile=profile,
+            latitude=profile.latitude,
+            longitude=profile.longitude,
+            accuracy=profile.accuracy if hasattr(profile, 'accuracy') else None,
+            heading=profile.heading if hasattr(profile, 'heading') else None,
+            speed=profile.speed if hasattr(profile, 'speed') else None,
+            is_active_duty=profile.is_active_duty,
+            battery_level=profile.battery_level if hasattr(profile, 'battery_level') else None,
+            device_info=profile.device_info if hasattr(profile, 'device_info') else None
+        )
         
         return JsonResponse({'status': 'success'})
     except Exception as e:
+        logger.error(f"Error updating location: {str(e)}")
         return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
 
 @login_required
@@ -1292,34 +1888,100 @@ def get_enforcer_locations(request):
     current_time = timezone.now()
     inactive_threshold = current_time - timezone.timedelta(minutes=5)
 
-    locations_query = UserProfile.objects.filter(
+    # Base query to get all enforcers
+    base_query = UserProfile.objects.filter(
         role='ENFORCER',
         latitude__isnull=False,
-        longitude__isnull=False,
-        is_active_duty=True,
-        last_location_update__gt=inactive_threshold
+        longitude__isnull=False
     ).select_related('user').only(
         'id', 'user__first_name', 'user__last_name',
         'enforcer_id', 'role', 'latitude', 'longitude',
         'last_location_update', 'avatar', 'is_active_duty'
     )
-
-    locations = [{
-        'id': profile.id,
-        'name': f"{profile.user.first_name} {profile.user.last_name}",
-        'enforcer_id': profile.enforcer_id,
-        'role': profile.role,
-        'latitude': float(profile.latitude),
-        'longitude': float(profile.longitude),
-        'last_update': profile.last_location_update.isoformat() if profile.last_location_update else None,
-        'avatar_url': profile.avatar.url if profile.avatar else None,
-        'is_active': True  # All returned enforcers are active
-    } for profile in locations_query]
+    
+    # Process all enforcers and mark them as active/inactive based on last update time
+    locations = []
+    for profile in base_query:
+        is_active = profile.is_active_duty and profile.last_location_update and profile.last_location_update > inactive_threshold
+        
+        locations.append({
+            'id': profile.id,
+            'name': f"{profile.user.first_name} {profile.user.last_name}",
+            'enforcer_id': profile.enforcer_id,
+            'role': profile.role,
+            'latitude': float(profile.latitude),
+            'longitude': float(profile.longitude),
+            'last_update': profile.last_location_update.isoformat() if profile.last_location_update else None,
+            'avatar_url': profile.avatar.url if profile.avatar else None,
+            'is_active': is_active,
+            'inactive_time': (current_time - profile.last_location_update).total_seconds() // 60 if profile.last_location_update else None
+        })
 
     return JsonResponse({
         'status': 'success',
         'locations': locations
     })
+
+@login_required
+def get_enforcer_path(request):
+    """Get historical location data for an enforcer to display their movement path"""
+    if not request.user.userprofile.role in ['ADMIN', 'SUPERVISOR', 'ENFORCER']:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Permission denied'
+        }, status=403)
+    
+    enforcer_id = request.GET.get('enforcer_id')
+    hours = int(request.GET.get('hours', 24))  # Default to 24 hours
+    
+    if not enforcer_id:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Enforcer ID is required'
+        }, status=400)
+    
+    try:
+        # Get the enforcer profile
+        enforcer_profile = UserProfile.objects.get(id=enforcer_id)
+        
+        # Get location history for the specified time range
+        time_threshold = timezone.now() - timezone.timedelta(hours=hours)
+        
+        path_query = LocationHistory.objects.filter(
+            user_profile=enforcer_profile,
+            timestamp__gt=time_threshold
+        ).order_by('timestamp')
+        
+        # Format the path data
+        path = [{
+            'latitude': float(point.latitude),
+            'longitude': float(point.longitude),
+            'timestamp': point.timestamp.isoformat(),
+            'is_active': point.is_active_duty,
+            'accuracy': point.accuracy,
+            'speed': point.speed,
+            'heading': point.heading
+        } for point in path_query]
+        
+        return JsonResponse({
+            'status': 'success',
+            'enforcer_id': enforcer_id,
+            'enforcer_name': f"{enforcer_profile.user.first_name} {enforcer_profile.user.last_name}",
+            'hours': hours,
+            'path': path
+        })
+        
+    except UserProfile.DoesNotExist:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Enforcer not found'
+        }, status=404)
+    except Exception as e:
+        logger.error(f"Error fetching enforcer path: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'An error occurred: {str(e)}'
+        }, status=500)
 
 # Add this function to check if user is authorized
 def is_payment_recorder(user):
@@ -1469,7 +2131,20 @@ def approve_adjudication(request, violation_id):
     if request.method == 'POST':
         violation = get_object_or_404(Violation, id=violation_id)
         try:
-            violation.status = 'APPROVED'
+            # Check if the fine amount is zero, mark as SETTLED instead of APPROVED
+            if violation.fine_amount == 0:
+                violation.status = 'SETTLED'
+                
+                # Log the activity for zero amount (settled) cases
+                log_action = 'Approved & Settled'
+                log_details = f'Approved and settled Violation #{violation.id} (zero amount)'
+            else:
+                violation.status = 'APPROVED'
+                
+                # Log the activity for regular approvals
+                log_action = 'Approved Adjudication'
+                log_details = f'Approved adjudication for Violation #{violation.id}'
+            
             violation.approved_by = request.user
             violation.approval_date = timezone.now()
             violation.save()
@@ -1477,8 +2152,8 @@ def approve_adjudication(request, violation_id):
             # Log the activity
             log_activity(
                 user=request.user,
-                action='Approved Adjudication',
-                details=f'Approved adjudication for Violation #{violation.id}',
+                action=log_action,
+                details=log_details,
                 category='violation'
             )
             
@@ -1517,8 +2192,11 @@ def reject_adjudication(request, violation_id):
 @user_passes_test(is_treasurer)
 def payment_processing(request):
     # Get violations that are approved but not yet paid
+    # Exclude violations with zero fine amounts as they're auto-settled
     violations = Violation.objects.filter(
         status='APPROVED'
+    ).exclude(
+        fine_amount=0
     ).select_related('violator', 'enforcer', 'adjudicated_by').order_by('-violation_date')
     
     # Enhanced search functionality
@@ -1732,3 +2410,1619 @@ def scan_document(request):
             'success': False,
             'message': f'Error processing document: {str(e)}'
         })
+
+def track_violation(request):
+    """View for tracking violations by ticket number"""
+    if request.method == 'POST':
+        ticket_number = request.POST.get('ticket_number')
+        try:
+            violation = Violation.objects.get(id=ticket_number)
+            return render(request, 'track_violation.html', {
+                'violation': violation,
+                'found': True
+            })
+        except Violation.DoesNotExist:
+            return render(request, 'track_violation.html', {
+                'error': 'No violation found with this ticket number.',
+                'found': False
+            })
+    return render(request, 'track_violation.html', {'found': None})
+
+@login_required
+def save_signature(request):
+    if request.method == 'POST' and request.FILES.get('signature'):
+        try:
+            signature_file = request.FILES['signature']
+            # Save to signatures directory
+            filename = signature_file.name
+            filepath = os.path.join('signatures', filename)
+            
+            # Ensure signatures directory exists
+            os.makedirs('signatures', exist_ok=True)
+            
+            # Save the file
+            with open(filepath, 'wb+') as destination:
+                for chunk in signature_file.chunks():
+                    destination.write(chunk)
+            
+            return JsonResponse({
+                'success': True,
+                'filename': filename,
+                'message': 'Signature saved successfully'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Error saving signature: {str(e)}'
+            }, status=500)
+    return JsonResponse({
+        'success': False,
+        'message': 'Invalid request'
+    }, status=400)
+
+@login_required
+def get_signature(request, filename):
+    try:
+        filepath = os.path.join('signatures', filename)
+        if os.path.exists(filepath):
+            with open(filepath, 'rb') as f:
+                return HttpResponse(f.read(), content_type='image/png')
+        return HttpResponse('Signature not found', status=404)
+    except Exception as e:
+        return HttpResponse(f'Error retrieving signature: {str(e)}', status=500)
+
+@login_required
+def acknowledge_announcement(request, announcement_id):
+    """API endpoint to acknowledge an announcement"""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
+    
+    try:
+        announcement = get_object_or_404(Announcement, id=announcement_id)
+        
+        # Record acknowledgment
+        AnnouncementAcknowledgment.objects.get_or_create(
+            announcement=announcement,
+            user=request.user
+        )
+        
+        return JsonResponse({'status': 'success'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@login_required
+def resend_announcement_notification(request, announcement_id):
+    """Resend an announcement as a notification to users"""
+    if not request.user.userprofile.role in ['ADMIN', 'SUPERVISOR']:
+        messages.error(request, 'You do not have permission to resend announcement notifications.')
+        return redirect('announcements_list')
+    
+    announcement = get_object_or_404(Announcement, id=announcement_id)
+    
+    # Send the announcement as a notification
+    if create_notifications_from_announcement(announcement):
+        messages.success(request, 'Announcement has been sent as notification successfully.')
+    else:
+        messages.error(request, 'Error sending notifications. Please try again.')
+    
+    return redirect('announcements_list')
+
+@login_required
+def mark_notification_read(request, notification_id):
+    """API endpoint to mark a notification as read"""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
+    
+    try:
+        notification = get_object_or_404(
+            UserNotification,
+            id=notification_id,
+            user=request.user
+        )
+        notification.is_read = True
+        notification.save()
+        
+        # Count unread notifications for the user
+        unread_count = UserNotification.objects.filter(
+            user=request.user, 
+            is_read=False
+        ).count()
+        
+        return JsonResponse({
+            'status': 'success',
+            'unread_count': unread_count
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@login_required
+def get_announcement_details(request, announcement_id):
+    """API endpoint to get announcement details"""
+    try:
+        announcement = get_object_or_404(Announcement, id=announcement_id)
+        
+        # Check if user is allowed to see this announcement based on target audience
+        if announcement.target_audience != 'ALL' and announcement.target_audience != request.user.userprofile.role:
+            return JsonResponse({'status': 'error', 'message': 'You do not have permission to view this announcement'}, status=403)
+        
+        # Increment view count
+        announcement.view_count += 1
+        announcement.save()
+        
+        # Check if user has acknowledged this announcement
+        acknowledged = AnnouncementAcknowledgment.objects.filter(
+            announcement=announcement,
+            user=request.user
+        ).exists()
+        
+        # Format data for response
+        data = {
+            'id': announcement.id,
+            'title': announcement.title,
+            'content': announcement.content,
+            'rich_content': announcement.rich_content,
+            'priority': announcement.priority,
+            'category': announcement.category,
+            'created_at': announcement.created_at.isoformat(),
+            'created_by': announcement.created_by.get_full_name() or announcement.created_by.username,
+            'requires_acknowledgment': announcement.requires_acknowledgment,
+            'is_acknowledged': acknowledged,
+            'view_count': announcement.view_count
+        }
+        
+        return JsonResponse(data)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+def save_ncap_violation(request):
+    if request.method == 'POST':
+        form = NCAPViolationForm(request.POST, request.FILES)
+        if form.is_valid():
+            try:
+                # Process the uploaded image if it exists
+                if 'image' in request.FILES:
+                    image = request.FILES['image']
+                    # Check if file extension is valid
+                    valid_extensions = ['.jpg', '.jpeg', '.png', '.webp']
+                    ext = os.path.splitext(image.name)[1].lower()
+                    
+                    if not any(ext == valid_ext for valid_ext in valid_extensions):
+                        messages.error(request, f"Unsupported file type. Please upload a JPG, PNG, or WEBP image.")
+                        return redirect('create_ncap_violation')
+                    
+                    # Check file size (limit to 5MB)
+                    if image.size > 5 * 1024 * 1024:  # 5MB in bytes
+                        messages.error(request, "Image file is too large. Please upload an image less than 5MB.")
+                        return redirect('create_ncap_violation')
+                
+                # Save the violation
+                violation = form.save(commit=False)
+                violation.enforcer = request.user
+                violation.save()
+                
+                # Log the activity
+                log_activity(
+                    user=request.user,
+                    action='Created NCAP Violation',
+                    details=f'NCAP Violation created for {violation.violator.license_number}',
+                    category='violation'
+                )
+                
+                messages.success(request, "NCAP violation has been recorded successfully.")
+                return redirect('ncap_violations_list')
+                
+            except Exception as e:
+                # Log the error for debugging
+                import traceback
+                logger.error(f"Error saving NCAP violation: {str(e)}")
+                logger.error(traceback.format_exc())
+                
+                # Provide a user-friendly error message
+                error_message = str(e)
+                if "filename" in error_message.lower():
+                    messages.error(request, "Error saving the image file. Please try with a different image or a simpler filename.")
+                else:
+                    messages.error(request, f"An error occurred while saving the violation: {error_message}")
+                
+                return redirect('create_ncap_violation')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
+    else:
+        form = NCAPViolationForm()
+    
+    # Return to the form with context
+    context = {
+        'form': form,
+        'title': 'Create NCAP Violation',
+        'button_text': 'Record Violation'
+    }
+    return render(request, 'violations/create_ncap_violation.html', context)
+
+@login_required
+def create_ncap_violation(request):
+    """
+    View function to display the form for creating a new NCAP violation
+    """
+    if request.method == 'POST':
+        # The POST handling is done in save_ncap_violation view
+        # This is just a fallback in case form is submitted directly to this URL
+        return save_ncap_violation(request)
+    
+    # Create a new empty form
+    form = NCAPViolationForm()
+    
+    # Render the template with the form
+    context = {
+        'form': form,
+        'title': 'Create NCAP Violation',
+        'button_text': 'Record Violation'
+    }
+    
+    return render(request, 'violations/create_ncap_violation.html', context)
+
+@login_required
+def operator_list(request):
+    """View to list all operators with search and pagination"""
+    if not request.user.userprofile.role in ['ADMIN', 'SUPERVISOR']:
+        messages.error(request, "You don't have permission to access the operators management page.")
+        return redirect('home')
+    
+    # Search functionality
+    query = request.GET.get('q', '')
+    if query:
+        operators = Operator.objects.filter(
+            Q(last_name__icontains=query) |
+            Q(first_name__icontains=query) |
+            Q(new_pd_number__icontains=query) |
+            Q(old_pd_number__icontains=query) |
+            Q(address__icontains=query)
+        )
+    else:
+        operators = Operator.objects.all()
+    
+    # Clean up middle_initial values - convert 'nan' to None
+    for operator in operators:
+        if operator.middle_initial == 'nan':
+            operator.middle_initial = None
+        
+    # Pagination
+    paginator = Paginator(operators, 10)  # Show 10 operators per page
+    page_number = request.GET.get('page')
+    operators_page = paginator.get_page(page_number)
+    
+    context = {
+        'operators': operators_page,
+        'query': query,
+        'title': 'Operators Management',
+    }
+    
+    # Log activity
+    ActivityLog.objects.create(
+        user=request.user,
+        action="Viewed operators list",
+        category="general"
+    )
+    
+    return render(request, 'operators/operator_list.html', context)
+
+
+@login_required
+def operator_detail(request, pk):
+    """View to display detailed information about an operator"""
+    if not request.user.is_authenticated:
+        messages.error(request, "You must be logged in to view operator details.")
+        return redirect('login')
+    
+    # Get the operator or return 404
+    operator = get_object_or_404(Operator, pk=pk)
+    
+    # Get vehicles associated with this operator
+    vehicles = Vehicle.objects.filter(operator=operator).order_by('-created_at')
+    
+    context = {
+        'operator': operator,
+        'vehicles': vehicles,
+        'title': f'Operator Details: {operator.full_name()}',
+    }
+    
+    # Log activity
+    ActivityLog.objects.create(
+        user=request.user,
+        action=f"Viewed operator details for: {operator.full_name()}",
+        category="general"
+    )
+    
+    return render(request, 'operators/operator_detail.html', context)
+
+
+@login_required
+def operator_create(request):
+    """View to create a new operator"""
+    if not request.user.userprofile.role in ['ADMIN', 'SUPERVISOR']:
+        messages.error(request, "You don't have permission to create operators.")
+        return redirect('operator_list')
+    
+    if request.method == 'POST':
+        form = OperatorForm(request.POST)
+        if form.is_valid():
+            operator = form.save()
+            
+            # Log activity
+            ActivityLog.objects.create(
+                user=request.user,
+                action=f"Created operator: {operator.last_name}, {operator.first_name}",
+                category="user"
+            )
+            
+            messages.success(request, f"Operator {operator.last_name}, {operator.first_name} created successfully.")
+            return redirect('operator_list')
+    else:
+        form = OperatorForm()
+    
+    context = {
+        'form': form,
+        'title': 'Create Operator',
+    }
+    
+    return render(request, 'operators/operator_form.html', context)
+
+
+@login_required
+def operator_update(request, pk):
+    """View to update an existing operator"""
+    if not request.user.userprofile.role in ['ADMIN', 'SUPERVISOR']:
+        messages.error(request, "You don't have permission to update operators.")
+        return redirect('operator_list')
+    
+    operator = get_object_or_404(Operator, pk=pk)
+    
+    if request.method == 'POST':
+        form = OperatorForm(request.POST, instance=operator)
+        if form.is_valid():
+            operator = form.save()
+            
+            # Log activity
+            ActivityLog.objects.create(
+                user=request.user,
+                action=f"Updated operator: {operator.last_name}, {operator.first_name}",
+                category="user"
+            )
+            
+            messages.success(request, f"Operator {operator.last_name}, {operator.first_name} updated successfully.")
+            return redirect('operator_list')
+    else:
+        form = OperatorForm(instance=operator)
+    
+    context = {
+        'form': form,
+        'operator': operator,
+        'title': 'Update Operator',
+    }
+    
+    return render(request, 'operators/operator_form.html', context)
+
+
+@login_required
+def operator_delete(request, pk):
+    """View to delete an operator"""
+    if not request.user.userprofile.role in ['ADMIN']:
+        messages.error(request, "You don't have permission to delete operators.")
+        return redirect('operator_list')
+    
+    operator = get_object_or_404(Operator, pk=pk)
+    
+    if request.method == 'POST':
+        operator_name = f"{operator.last_name}, {operator.first_name}"
+        operator.delete()
+        
+        # Log activity
+        ActivityLog.objects.create(
+            user=request.user,
+            action=f"Deleted operator: {operator_name}",
+            category="user"
+        )
+        
+        messages.success(request, f"Operator {operator_name} deleted successfully.")
+        return redirect('operator_list')
+    
+    context = {
+        'operator': operator,
+        'title': 'Delete Operator',
+    }
+    
+    return render(request, 'operators/operator_confirm_delete.html', context)
+
+
+@login_required
+def operator_vehicles(request, operator_id):
+    """View to display all vehicles associated with an operator"""
+    if not request.user.userprofile.role in ['ADMIN', 'SUPERVISOR', 'CLERK', 'TREASURER']:
+        messages.error(request, "You don't have permission to view operator vehicles.")
+        return redirect('operator_list')
+    
+    operator = get_object_or_404(Operator, pk=operator_id)
+    vehicles = Vehicle.objects.filter(operator=operator)
+    
+    # Log activity
+    ActivityLog.objects.create(
+        user=request.user,
+        action=f"Viewed vehicles for operator: {operator.last_name}, {operator.first_name}",
+        category="user"
+    )
+    
+    context = {
+        'operator': operator, 
+        'vehicles': vehicles,
+        'title': f"{operator.first_name} {operator.last_name}'s Vehicles",
+    }
+    
+    return render(request, 'operators/operator_vehicles.html', context)
+
+
+@login_required
+def operator_import(request):
+    """View to import operators from an Excel or CSV file"""
+    if not request.user.userprofile.role in ['ADMIN', 'SUPERVISOR']:
+        messages.error(request, "You don't have permission to import operators.")
+        return redirect('operator_list')
+    
+    if request.method == 'POST':
+        form = OperatorImportForm(request.POST, request.FILES)
+        if form.is_valid():
+            file = request.FILES['file']
+            
+            # Get file extension to determine file type
+            extension = file.name.split('.')[-1].lower()
+            
+            try:
+                if extension == 'csv':
+                    # Process CSV file
+                    data = []
+                    decoded_file = file.read().decode('utf-8')
+                    io_string = io.StringIO(decoded_file)
+                    reader = csv.DictReader(io_string)
+                    for row in reader:
+                        data.append(row)
+                elif extension in ['xlsx', 'xls']:
+                    # Process Excel file
+                    df = pd.read_excel(file)
+                    data = df.to_dict('records')
+                    
+                    # Debug info for the first few rows to diagnose the issue
+                    print(f"Excel file columns: {df.columns.tolist()}")
+                    print(f"First row: {data[0] if data else 'No data'}")
+                    
+                    # Check if the file has the header row as first data row or has unnamed columns
+                    # This is to handle different Excel file formats that users might upload
+                    cleaned_data = []
+                    for row in data:
+                        # Skip rows with NaN or None values in key fields
+                        if pd.isna(row.get('LAST_NAME')) and pd.isna(row.get('last_name')) and pd.isna(row.get('Unnamed: 1')):
+                            continue
+                            
+                        # Create a new row with cleaned data
+                        clean_row = {}
+                        
+                        # Try to extract the data, accounting for various column formats
+                        # For 'POTPOT OPERATOR 2024-2025' format where first row might be column headers
+                        if 'POTPOT OPERATOR 2024-2025' in row or 'Unnamed: 1' in row:
+                            # The first row likely contains header info
+                            if row.get('POTPOT OPERATOR 2024-2025') == 'LASTNAME' or row.get('Unnamed: 1') == 'FIRST NAME':
+                                continue  # Skip header rows
+                                
+                            # Extract values from possible column structures
+                            clean_row['last_name'] = row.get('POTPOT OPERATOR 2024-2025')
+                            clean_row['first_name'] = row.get('Unnamed: 1')
+                            clean_row['middle_initial'] = row.get('Unnamed: 2')
+                            clean_row['address'] = row.get('Unnamed: 3')
+                            clean_row['old_pd_number'] = row.get('Unnamed: 4')
+                            clean_row['new_pd_number'] = row.get('Unnamed: 5')
+                        else:
+                            # Try standard column names (with variations)
+                            clean_row['last_name'] = row.get('LAST_NAME') or row.get('last_name') or row.get('Last Name')
+                            clean_row['first_name'] = row.get('FIRST_NAME') or row.get('first_name') or row.get('First Name')
+                            clean_row['middle_initial'] = row.get('M_I') or row.get('M.I.') or row.get('middle_initial')
+                            clean_row['address'] = row.get('ADDRESS') or row.get('address')
+                            clean_row['old_pd_number'] = row.get('OLD_PD_NO') or row.get('old_pd_number') or row.get('Old P.D. No.')
+                            clean_row['new_pd_number'] = row.get('NEW_PD_NO') or row.get('new_pd_number') or row.get('NEW P.O NO.') or row.get('New P.D. No.')
+                        
+                        # Validate required fields
+                        if clean_row.get('last_name') and clean_row.get('first_name') and clean_row.get('new_pd_number'):
+                            # Convert any float types (from Excel) to strings
+                            for key, value in clean_row.items():
+                                if isinstance(value, float) and not pd.isna(value):
+                                    # Convert to integer first if it's a whole number to remove .0
+                                    if value.is_integer():
+                                        clean_row[key] = str(int(value))
+                                    else:
+                                        clean_row[key] = str(value)
+                            
+                            cleaned_data.append(clean_row)
+                    
+                    # Replace the original data with the cleaned data
+                    data = cleaned_data
+                else:
+                    messages.error(request, f"Unsupported file format: {extension}. Please upload a CSV or Excel file.")
+                    return redirect('operator_import')
+                
+                # Preview the data
+                context = {
+                    'data': data,
+                    'title': 'Preview Imported Operators',
+                    'form': form,
+                }
+                
+                # Store data in session for later processing
+                request.session['import_data'] = data
+                
+                return render(request, 'operators/operator_import_preview.html', context)
+                
+            except Exception as e:
+                messages.error(request, f"Error processing file: {str(e)}")
+                return redirect('operator_import')
+    else:
+        form = OperatorImportForm()
+    
+    context = {
+        'form': form,
+        'title': 'Import Operators',
+    }
+    
+    return render(request, 'operators/operator_import.html', context)
+
+
+@login_required
+def operator_import_confirm(request):
+    """View to save imported operators after preview"""
+    if not request.user.userprofile.role in ['ADMIN', 'SUPERVISOR']:
+        messages.error(request, "You don't have permission to import operators.")
+        return redirect('operator_list')
+    
+    if request.method == 'POST':
+        import_data = request.session.get('import_data', [])
+        if not import_data:
+            messages.error(request, "No import data found. Please try again.")
+            return redirect('operator_import')
+        
+        # Process the data
+        success_count = 0
+        error_count = 0
+        error_messages = []
+        
+        for row in import_data:
+            try:
+                # With our cleaned data, we can directly access the lowercase keys
+                last_name = row.get('last_name')
+                first_name = row.get('first_name')
+                middle_initial = row.get('middle_initial')
+                address = row.get('address')
+                old_pd_number = row.get('old_pd_number')
+                new_pd_number = row.get('new_pd_number')
+                
+                # Skip empty rows
+                if not last_name or not first_name or not new_pd_number:
+                    continue
+                
+                # Check if the operator already exists
+                existing = Operator.objects.filter(new_pd_number=new_pd_number).first()
+                if existing:
+                    # Update existing operator
+                    existing.last_name = last_name
+                    existing.first_name = first_name
+                    existing.middle_initial = middle_initial
+                    existing.address = address
+                    existing.old_pd_number = old_pd_number
+                    existing.save()
+                else:
+                    # Create new operator
+                    Operator.objects.create(
+                        last_name=last_name,
+                        first_name=first_name,
+                        middle_initial=middle_initial,
+                        address=address,
+                        old_pd_number=old_pd_number,
+                        new_pd_number=new_pd_number
+                    )
+                
+                success_count += 1
+            
+            except Exception as e:
+                error_count += 1
+                error_messages.append(f"Error with row {success_count + error_count}: {str(e)}")
+                continue
+        
+        # Log activity
+        ActivityLog.objects.create(
+            user=request.user,
+            action=f"Imported operators: {success_count} successful, {error_count} failed",
+            category="user"
+        )
+        
+        # Clear the session data
+        del request.session['import_data']
+        
+        if error_count > 0:
+            # Log the first few errors to help with debugging
+            error_details = "; ".join(error_messages[:5])
+            if len(error_messages) > 5:
+                error_details += f"; and {len(error_messages) - 5} more errors"
+            messages.warning(request, f"Import completed with issues: {success_count} operators imported successfully, {error_count} failed. Errors: {error_details}")
+        else:
+            messages.success(request, f"Import completed: {success_count} operators imported successfully.")
+        
+        return redirect('operator_list')
+    
+    return redirect('operator_import')
+
+
+@login_required
+def operator_export_excel(request):
+    """View to export operators to Excel"""
+    if not request.user.userprofile.role in ['ADMIN', 'SUPERVISOR']:
+        messages.error(request, "You don't have permission to export operators.")
+        return redirect('home')
+    
+    # Create an Excel workbook
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+    sheet.title = "Operators"
+    
+    # Add headers
+    headers = ['Last Name', 'First Name', 'Middle Initial', 'Address', 'Old PD Number', 'New PD Number']
+    for col_num, header in enumerate(headers, 1):
+        sheet.cell(row=1, column=col_num).value = header
+        sheet.cell(row=1, column=col_num).font = openpyxl.styles.Font(bold=True)
+    
+    # Add data rows
+    operators = Operator.objects.all().order_by('last_name', 'first_name')
+    for row_num, operator in enumerate(operators, 2):
+        row = [
+            operator.last_name,
+            operator.first_name,
+            operator.middle_initial or '',
+            operator.address,
+            operator.old_pd_number or '',
+            operator.new_pd_number
+        ]
+        for col_num, cell_value in enumerate(row, 1):
+            sheet.cell(row=row_num, column=col_num).value = cell_value
+    
+    # Adjust column widths
+    for column in sheet.columns:
+        max_length = 0
+        column_letter = openpyxl.utils.get_column_letter(column[0].column)
+        for cell in column:
+            if cell.value:
+                max_length = max(max_length, len(str(cell.value)))
+        adjusted_width = max_length + 2
+        sheet.column_dimensions[column_letter].width = adjusted_width
+    
+    # Create response
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename=operators_export.xlsx'
+    
+    # Log activity
+    ActivityLog.objects.create(
+        user=request.user,
+        action=f"Exported operators to Excel",
+        category="user"
+    )
+    
+    # Save the workbook to the response
+    workbook.save(response)
+    return response
+
+
+@login_required
+def operator_apply(request):
+    if request.user.userprofile.is_operator:
+        messages.info(request, 'You are already registered as an operator.')
+        return redirect('operator_dashboard')
+            
+    if request.method == 'POST':
+        form = OperatorApplicationForm(request.POST, request.FILES)
+        if form.is_valid():
+            application = form.save(commit=False)
+            application.user = request.user
+            application.save()
+            
+            messages.success(request, 'Your application has been submitted successfully. We will review it shortly.')
+            return redirect('operator_application_status')
+    else:
+        form = OperatorApplicationForm()
+            
+    return render(request, 'operators/operator_apply.html', {
+        'form': form
+    })
+
+@login_required
+def operator_application_status(request):
+    try:
+        application = OperatorApplication.objects.filter(user=request.user).latest('submitted_at')
+        return render(request, 'operators/operator_application_status.html', {
+            'application': application
+        })
+    except OperatorApplication.DoesNotExist:
+        messages.info(request, 'You have not submitted an operator application yet.')
+        return redirect('user_portal:user_dashboard')
+
+@login_required
+def operator_dashboard(request):
+    if not request.user.userprofile.is_operator:
+        messages.error(request, 'You are not registered as an operator.')
+        return redirect('user_portal:user_dashboard')
+            
+    # Get operator-specific information
+    vehicles = Vehicle.objects.filter(operator__user=request.user)
+    
+    return render(request, 'operators/operator_dashboard.html', {
+        'vehicles': vehicles
+    })
+
+@login_required
+def operator_applications_manage(request):
+    if not request.user.is_staff:
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('user_portal:user_dashboard')
+            
+    applications = OperatorApplication.objects.all().order_by('-submitted_at')
+    
+    return render(request, 'operators/operator_applications_manage.html', {
+        'applications': applications
+    })
+
+@login_required
+def operator_application_review(request, application_id):
+    if not request.user.is_staff:
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('user_portal:user_dashboard')
+            
+    application = get_object_or_404(OperatorApplication, id=application_id)
+    
+    if request.method == 'POST':
+        status = request.POST.get('status')
+        notes = request.POST.get('notes', '')
+        
+        if status in ['APPROVED', 'REJECTED']:
+            application.status = status
+            application.notes = notes
+            application.processed_at = timezone.now()
+            application.processed_by = request.user
+            application.save()
+            
+            # If approved, update user profile
+            if status == 'APPROVED':
+                user_profile = application.user.userprofile
+                user_profile.is_operator = True
+                user_profile.operator_since = timezone.now()
+                user_profile.save()
+                
+                # Create notification for user
+                notification = UserNotification(
+                    user=application.user,
+                    message=f"Your operator application has been approved.",
+                    type='OPERATOR',
+                    reference_id=application.id
+                )
+                notification.save()
+            else:
+                # Create notification for rejection
+                notification = UserNotification(
+                    user=application.user,
+                    message=f"Your operator application has been rejected. Reason: {notes}",
+                    type='OPERATOR',
+                    reference_id=application.id
+                )
+                notification.save()
+            
+            messages.success(request, f'Application {status.lower()} successfully.')
+            return redirect('operator_applications_manage')
+    
+    return render(request, 'operators/operator_application_review.html', {
+        'application': application
+    })
+
+@login_required
+def driver_import(request):
+    """View to import drivers from an Excel or CSV file - reads the first available worksheet"""
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to import drivers.")
+        return redirect('user_portal:user_dashboard')
+    
+    if request.method == 'POST':
+        form = DriverImportForm(request.POST, request.FILES)
+        if form.is_valid():
+            try:
+                import pandas as pd
+                import io
+                import sys
+                import re
+                
+                # Get file from request
+                file = request.FILES['file']
+                skip_header = form.cleaned_data.get('skip_header', True)
+                
+                # Check file extension
+                if file.name.endswith('.csv'):
+                    # Process CSV file
+                    try:
+                        df = pd.read_csv(file)
+                    except Exception as e:
+                        # Try reading without headers
+                        try:
+                            df = pd.read_csv(file, header=None)
+                            # Assign default column names
+                            df.columns = [f"Column_{i}" for i in range(df.shape[1])]
+                        except Exception as e2:
+                            messages.error(request, f"Error reading CSV file: {str(e)}")
+                            return redirect('driver_import')
+                elif file.name.endswith('.xlsx'):
+                    # Process Excel file
+                    try:
+                        # First try reading with headers
+                        df = pd.read_excel(file)
+                    except Exception as e:
+                        try:
+                            # Try reading without headers
+                            df = pd.read_excel(file, header=None)
+                            # Assign default column names
+                            df.columns = [f"Column_{i}" for i in range(df.shape[1])]
+                        except Exception as e2:
+                            messages.error(request, f"Error reading Excel file: {str(e)}")
+                            return redirect('driver_import')
+                else:
+                    messages.error(request, "Unsupported file format. Please upload a CSV or Excel file.")
+                    return redirect('driver_import')
+                
+                # Debug info
+                print(f"DataFrame shape: {df.shape}", file=sys.stderr)
+                print(f"Column names: {df.columns.tolist()}", file=sys.stderr)
+                print(f"First 3 rows:\n{df.head(3)}", file=sys.stderr)
+                
+                # If first row contains headers and skip_header is True, use the first row as column names
+                if skip_header and not df.columns.str.contains('Column_').any():
+                    # First row might contain more descriptive headers, show this for debugging
+                    first_row = df.iloc[0].tolist()
+                    print(f"First row (potential headers): {first_row}", file=sys.stderr)
+                    
+                    # Check if the first row looks like headers (strings instead of numbers)
+                    headers_detected = all([not isinstance(x, (int, float)) or pd.isna(x) for x in first_row])
+                    if headers_detected:
+                        # Use first row as column names and skip it in the data
+                        df.columns = [str(x).strip() if not pd.isna(x) else f"Column_{i}" for i, x in enumerate(first_row)]
+                        df = df.iloc[1:]
+                        print(f"Using first row as headers. New columns: {df.columns.tolist()}", file=sys.stderr)
+                
+                # Define additional patterns for better matching
+                column_patterns = {
+                    'LASTNAME': ['LASTNAME', 'LAST NAME', 'LAST', 'SURNAME', 'FAMILY NAME', 'LN', 'FAMILY', 'SECOND NAME', 'SECOND'],
+                    'FIRSTNAME': ['FIRSTNAME', 'FIRST NAME', 'FIRST', 'GIVEN NAME', 'FN', 'GIVEN', 'NAME'],
+                    'MI': ['MI', 'M.I.', 'MIDDLE INITIAL', 'MIDDLE', 'MIDDLE NAME', 'M.I', 'INIT', 'INITIAL'],
+                    'ADDRESS': ['ADDRESS', 'ADDR', 'LOCATION', 'RESIDENCE', 'HOME ADDRESS', 'LOC', 'RES', 'HOME'],
+                    'OLD_PD_NO': ['OLD PD NO', 'OLD P.D. NO.', 'OLD P.D. NO', 'OLD PD', 'PREVIOUS PD', 'OLD ID', 'PREVIOUS ID', 'OLD P.D NO', 'OLD', 'OLD NUMBER', 'PREV', 'PREVIOUS', 'OLD P.O.', 'OLD P.O. NO.', 'OLD P.O'],
+                    'NEW_PD_NO': ['NEW PD NO', 'NEW P.D. NO.', 'NEW P.D. NO', 'NEW PD', 'CURRENT PD', 'NEW ID', 'CURRENT ID', 'PD NUMBER', 'ID NUMBER', 'NEW', 'PD NO', 'P.D. NO', 'PD', 'ID', 'NUMBER', 'NO', 'NEW P.O.', 'NEW P.O. NO.', 'NEW P.O']
+                }
+                
+                # Clean column names for better matching
+                clean_columns = {}
+                for col in df.columns:
+                    # Convert to uppercase, remove special characters, and trim whitespace
+                    clean_col = re.sub(r'[^A-Z0-9 ]', '', str(col).upper()).strip()
+                    clean_columns[col] = clean_col
+                    
+                print(f"Cleaned column names: {clean_columns}", file=sys.stderr)
+                
+                # Match each column to the most similar pattern
+                column_mapping = {}
+                
+                # First try exact matches
+                for field, patterns in column_patterns.items():
+                    for col, clean_col in clean_columns.items():
+                        for pattern in patterns:
+                            if clean_col == pattern:
+                                column_mapping[field] = col
+                                break
+                
+                # If we're missing any fields, try partial matches
+                for field in column_patterns:
+                    if field not in column_mapping:
+                        for col, clean_col in clean_columns.items():
+                            # Skip columns already mapped
+                            if col in column_mapping.values():
+                                continue
+                                
+                            for pattern in column_patterns[field]:
+                                if pattern in clean_col or clean_col in pattern:
+                                    column_mapping[field] = col
+                                    break
+                
+                # Last resort: for fields still missing, use positional assumptions
+                required_positions = {
+                    'LASTNAME': 0,     # First column
+                    'FIRSTNAME': 1,    # Second column
+                    'MI': 2,           # Third column
+                    'ADDRESS': 3,      # Fourth column
+                    'OLD_PD_NO': 4,    # Fifth column
+                    'NEW_PD_NO': 5     # Sixth column
+                }
+                
+                for field in column_patterns:
+                    if field not in column_mapping and field in required_positions:
+                        pos = required_positions[field]
+                        if pos < len(df.columns):
+                            column_mapping[field] = df.columns[pos]
+                
+                print(f"Detected column mapping: {column_mapping}", file=sys.stderr)
+                
+                # Check if all required columns are present
+                required_columns = ['LASTNAME', 'FIRSTNAME', 'ADDRESS', 'NEW_PD_NO']
+                missing_columns = [col for col in required_columns if col not in column_mapping]
+                
+                if missing_columns:
+                    # Print more debug info to help diagnose the issue
+                    messages.error(request, f"Could not find columns for: {', '.join(missing_columns)}. Please check your file has columns for these fields.")
+                    messages.info(request, f"Available columns in your file: {', '.join(df.columns.tolist())}")
+                    return redirect('driver_import')
+                
+                # Create a new DataFrame with mapped columns
+                named_df = pd.DataFrame()
+                for field, col in column_mapping.items():
+                    named_df[field] = df[col]
+                
+                # Debug output
+                print(f"Named columns: {named_df.columns.tolist()}", file=sys.stderr)
+                print(f"First 3 rows after mapping:\n{named_df.head(3)}", file=sys.stderr)
+                
+                # Process data and validate
+                data_to_import = []
+                for _, row in named_df.iterrows():
+                    # Preserve the exact P.O. numbers from the file
+                    old_pd_number = str(row.get('OLD_PD_NO', '')).strip() if pd.notna(row.get('OLD_PD_NO')) else None
+                    new_pd_number = str(row.get('NEW_PD_NO', '')).strip() if pd.notna(row.get('NEW_PD_NO')) else None
+                    
+                    # Debug output for P.O. numbers
+                    print(f"Original P.O. numbers - Old: {old_pd_number}, New: {new_pd_number}", file=sys.stderr)
+                    
+                    if new_pd_number:
+                        # Create record
+                        driver_data = {
+                            'last_name': str(row.get('LASTNAME', '')).strip(),
+                            'first_name': str(row.get('FIRSTNAME', '')).strip(),
+                            'middle_initial': str(row.get('MI', '')).strip() if pd.notna(row.get('MI')) else '',
+                            'address': str(row.get('ADDRESS', '')).strip(),
+                            'old_pd_number': old_pd_number,
+                            'new_pd_number': new_pd_number,
+                            'status': 'new',  # Default status
+                            'note': ''
+                        }
+                        
+                        # Debug output for created record
+                        print(f"Created driver record: {driver_data}", file=sys.stderr)
+                        
+                        # Validate the data
+                        if not driver_data['last_name'] or not driver_data['first_name'] or not driver_data['address']:
+                            driver_data['status'] = 'error'
+                            driver_data['note'] = 'Missing required fields'
+                        else:
+                            # Check if this driver already exists with the exact same P.O. number
+                            try:
+                                Driver.objects.get(new_pd_number=new_pd_number)
+                                driver_data['status'] = 'update'
+                                driver_data['note'] = 'Driver exists, will be updated'
+                            except Driver.DoesNotExist:
+                                # Find if there's a matching operator for this driver
+                                try:
+                                    matching_operator = Operator.objects.filter(
+                                        last_name__iexact=driver_data['last_name'],
+                                        first_name__iexact=driver_data['first_name'],
+                                        address__iexact=driver_data['address']
+                                    ).first()
+                                    
+                                    if matching_operator:
+                                        driver_data['note'] = f'Will be linked to operator: {matching_operator.new_pd_number}'
+                                except Exception:
+                                    pass
+                        
+                        data_to_import.append(driver_data)
+                
+                if not data_to_import:
+                    messages.error(request, "No valid driver data found in the file.")
+                    return redirect('driver_import')
+                
+                # Store the data in the session for confirmation
+                request.session['driver_import_data'] = data_to_import
+                
+                # Proceed to confirmation page
+                return redirect('driver_import_confirm')
+                
+            except Exception as e:
+                messages.error(request, f"Error processing file: {str(e)}")
+                logger.exception("Error in driver import")
+                import traceback
+                print(traceback.format_exc(), file=sys.stderr)
+                return redirect('driver_import')
+    else:
+        form = DriverImportForm()
+    
+    return render(request, 'drivers/driver_import.html', {
+        'form': form
+    })
+
+@login_required
+def driver_list(request):
+    """View to display a list of all drivers with search and pagination"""
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to view the list of drivers.")
+        return redirect('user_portal:user_dashboard')
+    
+    # Get search query
+    search_query = request.GET.get('search', '')
+    
+    # Get all drivers ordered by last name, first name
+    drivers = Driver.objects.all().order_by('last_name', 'first_name')
+    
+    # Apply search filter if provided
+    if search_query:
+        drivers = drivers.filter(
+            Q(last_name__icontains=search_query) | 
+            Q(first_name__icontains=search_query) |
+            Q(new_pd_number__icontains=search_query) |
+            Q(old_pd_number__icontains=search_query)
+        )
+    
+    # Pagination - 20 drivers per page
+    paginator = Paginator(drivers, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'drivers/driver_list.html', {
+        'drivers': page_obj,
+        'search_query': search_query,
+    })
+
+@login_required
+def driver_create(request):
+    """View to create a new driver record"""
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to create driver records.")
+        return redirect('user_portal:user_dashboard')
+    
+    if request.method == 'POST':
+        form = DriverForm(request.POST)
+        if form.is_valid():
+            driver = form.save()
+            
+            # Log the activity
+            ActivityLog.objects.create(
+                user=request.user,
+                action=f"Created driver record for {driver.first_name} {driver.last_name}",
+                timestamp=timezone.now()
+            )
+            
+            messages.success(request, f"Driver {driver.first_name} {driver.last_name} created successfully.")
+            return redirect('driver_list')
+    else:
+        form = DriverForm()
+    
+    return render(request, 'drivers/driver_form.html', {
+        'form': form,
+        'title': 'Create Driver',
+        'is_create': True
+    })
+
+@login_required
+def driver_update(request, pk):
+    """View to update an existing driver record"""
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to update driver records.")
+        return redirect('user_portal:user_dashboard')
+    
+    try:
+        driver = Driver.objects.get(pk=pk)
+    except Driver.DoesNotExist:
+        messages.error(request, "Driver not found.")
+        return redirect('driver_list')
+    
+    if request.method == 'POST':
+        form = DriverForm(request.POST, instance=driver)
+        if form.is_valid():
+            updated_driver = form.save()
+            
+            # Log the activity
+            ActivityLog.objects.create(
+                user=request.user,
+                action=f"Updated driver: {updated_driver.first_name} {updated_driver.last_name} ({updated_driver.new_pd_number})",
+                timestamp=timezone.now()
+            )
+            
+            messages.success(request, f"Driver {updated_driver.first_name} {updated_driver.last_name} updated successfully.")
+            return redirect('driver_list')
+    else:
+        form = DriverForm(instance=driver)
+    
+    return render(request, 'drivers/driver_form.html', {
+        'form': form,
+        'title': f'Update Driver: {driver.last_name}, {driver.first_name}',
+        'submit_text': 'Update',
+        'is_create': False
+    })
+
+@login_required
+def driver_delete(request, pk):
+    """View to delete an existing driver"""
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to delete drivers.")
+        return redirect('user_portal:user_dashboard')
+    
+    driver = get_object_or_404(Driver, pk=pk)
+    
+    if request.method == 'POST':
+        # Log the driver details before deletion
+        driver_details = f"{driver.first_name} {driver.last_name} ({driver.new_pd_number})"
+        
+        # Delete the driver
+        driver.delete()
+        
+        # Log activity
+        ActivityLog.objects.create(
+            user=request.user,
+            action=f"Deleted driver: {driver_details}",
+            timestamp=timezone.now()
+        )
+        
+        messages.success(request, f"Driver {driver_details} deleted successfully.")
+        return redirect('driver_list')
+    
+    return render(request, 'drivers/driver_confirm_delete.html', {
+        'driver': driver
+    })
+
+@login_required
+def driver_import_confirm(request):
+    """View to confirm the import of drivers from Excel/CSV file"""
+    if not request.user.is_staff:
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('user_portal:user_dashboard')
+        
+    # Get the data from the session
+    driver_data = request.session.get('driver_import_data', [])
+    
+    if not driver_data:
+        messages.error(request, "No driver data to import. Please upload a file first.")
+        return redirect('driver_import')
+    
+    # Calculate counts
+    new_count = 0
+    update_count = 0
+    error_count = 0
+    
+    for item in driver_data:
+        if item['status'] == 'error':
+            error_count += 1
+        elif item['status'] == 'update':
+            update_count += 1
+        else:
+            new_count += 1
+    
+    if request.method == 'POST':
+        # Process the data
+        imported_count = 0
+        updated_count = 0
+        error_count = 0
+        error_messages = []
+        
+        print(f"Processing {len(driver_data)} driver records for import", file=sys.stderr)
+        
+        for index, item in enumerate(driver_data):
+            try:
+                # Skip items already marked with errors
+                if item['status'] == 'error':
+                    error_count += 1
+                    error_messages.append(f"Row {index+1}: {item['note']}")
+                    print(f"Skipping row {index+1} - {item['note']}", file=sys.stderr)
+                    continue
+                
+                # Print the item being processed for debugging
+                print(f"Processing row {index+1}: {item}", file=sys.stderr)
+                
+                # Try to find a matching operator
+                matching_operator = None
+                try:
+                    matching_operator = Operator.objects.filter(
+                        last_name__iexact=item['last_name'],
+                        first_name__iexact=item['first_name'],
+                        address__iexact=item['address']
+                    ).first()
+                    
+                    if matching_operator:
+                        print(f"Found matching operator: {matching_operator}", file=sys.stderr)
+                except Exception as e:
+                    print(f"Error finding matching operator: {str(e)}", file=sys.stderr)
+                
+                # Use the PD number exactly as entered in the file - keep it as a plain number
+                new_pd_number = item['new_pd_number']
+                old_pd_number = item['old_pd_number']
+                print(f"Using PD numbers as-is - Old: {old_pd_number}, New: {new_pd_number}", file=sys.stderr)
+                
+                # Check if driver with this PD number already exists
+                try:
+                    driver = Driver.objects.get(new_pd_number=new_pd_number)
+                    # Update existing driver
+                    print(f"Updating existing driver: {driver}", file=sys.stderr)
+                    driver.last_name = item['last_name']
+                    driver.first_name = item['first_name']
+                    driver.middle_initial = item['middle_initial']
+                    driver.address = item['address']
+                    if item['old_pd_number']:
+                        driver.old_pd_number = item['old_pd_number']
+                    if matching_operator:
+                        driver.operator = matching_operator
+                    
+                    # Set necessary fields directly using setattr to handle db schema changes
+                    try:
+                        # Set is_also_operator field (default False)
+                        setattr(driver, 'is_also_operator', matching_operator is not None)
+                    except Exception as e:
+                        print(f"Warning: Couldn't set is_also_operator field: {str(e)}", file=sys.stderr)
+                    
+                    driver.save()
+                    updated_count += 1
+                except Driver.DoesNotExist:
+                    # Create new driver - use raw SQL to handle missing model fields
+                    print(f"Creating new driver with PD number: {new_pd_number}", file=sys.stderr)
+                    
+                    try:
+                        # First attempt to create using the model
+                        driver = Driver(
+                            last_name=item['last_name'],
+                            first_name=item['first_name'],
+                            middle_initial=item['middle_initial'],
+                            address=item['address'],
+                            old_pd_number=item['old_pd_number'],
+                            new_pd_number=new_pd_number,
+                            operator=matching_operator
+                        )
+                        
+                        # Set is_also_operator field
+                        setattr(driver, 'is_also_operator', matching_operator is not None)
+                        
+                        # Save the driver
+                        driver.save()
+                        imported_count += 1
+                    except Exception as e:
+                        # If model approach fails, try direct SQL
+                        print(f"Falling back to raw SQL: {str(e)}", file=sys.stderr)
+                        
+                        from django.db import connection
+                        with connection.cursor() as cursor:
+                            cursor.execute(
+                                """
+                                INSERT INTO traffic_violation_system_driver
+                                (last_name, first_name, middle_initial, address, old_pd_number, new_pd_number, 
+                                is_also_operator, operator_id, created_at, updated_at, vehicle_id)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                """,
+                                [
+                                    item['last_name'],
+                                    item['first_name'],
+                                    item['middle_initial'] or '',
+                                    item['address'],
+                                    item['old_pd_number'] or '',
+                                    new_pd_number,
+                                    1 if matching_operator else 0,  # is_also_operator
+                                    matching_operator.id if matching_operator else None,  # operator_id
+                                    timezone.now(),  # created_at
+                                    timezone.now(),  # updated_at
+                                    None,  # vehicle_id
+                                ]
+                            )
+                        imported_count += 1
+            except Exception as e:
+                error_count += 1
+                error_detail = f"Row {index+1} ({item.get('last_name', 'Unknown')}, {item.get('first_name', 'Unknown')}): {str(e)}"
+                error_messages.append(error_detail)
+                print(f"Error importing driver: {error_detail}", file=sys.stderr)
+                logger.error(f"Error importing driver {item.get('new_pd_number', 'Unknown')}: {str(e)}")
+                import traceback
+                print(traceback.format_exc(), file=sys.stderr)
+        
+        # Clear the session data
+        if 'driver_import_data' in request.session:
+            del request.session['driver_import_data']
+        
+        # Create activity log entry
+        ActivityLog.objects.create(
+            user=request.user,
+            action=f"Imported {imported_count} new drivers, updated {updated_count} existing drivers",
+            timestamp=timezone.now()
+        )
+        
+        # Show success message
+        if error_count > 0:
+            messages.warning(request, f"Imported {imported_count} drivers, updated {updated_count} drivers, with {error_count} errors. Check the logs for details.")
+            # Show first 5 errors in the UI
+            if error_messages:
+                top_errors = error_messages[:5]
+                messages.error(request, f"Sample errors: {'; '.join(top_errors)}" + (" and more..." if len(error_messages) > 5 else ""))
+        else:
+            messages.success(request, f"Successfully imported {imported_count} new drivers and updated {updated_count} existing drivers.")
+        
+        return redirect('driver_list')
+    
+    # Render the confirmation template
+    return render(request, 'drivers/driver_import_confirm.html', {
+        'driver_data': driver_data,
+        'new_count': new_count,
+        'update_count': update_count,
+        'error_count': error_count,
+        'total_count': len(driver_data)
+    })
+
+@login_required
+def driver_export_excel(request):
+    """View to export drivers as Excel file"""
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to export drivers.")
+        return redirect('user_portal:user_dashboard')
+    
+    try:
+        import pandas as pd
+        from io import BytesIO
+        
+        # Get all drivers ordered by last name, first name
+        drivers = Driver.objects.all().order_by('last_name', 'first_name')
+        
+        # Create data for Excel file
+        data = []
+        for driver in drivers:
+            data.append({
+                'LASTNAME': driver.last_name,
+                'FIRST NAME': driver.first_name,
+                'M.I.': driver.middle_initial,
+                'ADDRESS': driver.address,
+                'OLD P.D NO.': driver.old_pd_number or '',
+                'NEW P.D NO.': driver.new_pd_number,
+                'OPERATOR': driver.operator.new_pd_number if driver.operator else ''
+            })
+        
+        # Create DataFrame
+        df = pd.DataFrame(data)
+        
+        # Create Excel file
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            # Write drivers data
+            df.to_excel(writer, sheet_name='Drivers', index=False)
+            
+            # Create a template sheet for import
+            template_df = pd.DataFrame(columns=[
+                'LASTNAME', 'FIRST NAME', 'M.I.', 'ADDRESS', 'OLD P.D NO.', 'NEW P.D NO.'
+            ])
+            template_df.to_excel(writer, sheet_name='Template', index=False)
+        
+        # Prepare response
+        output.seek(0)
+        response = HttpResponse(
+            output.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename=drivers.xlsx'
+        
+        # Log activity
+        ActivityLog.objects.create(
+            user=request.user,
+            action=f"Exported drivers to Excel",
+            timestamp=timezone.now()
+        )
+        
+        return response
+    except Exception as e:
+        messages.error(request, f"Error exporting drivers: {str(e)}")
+        logger.error(f"Error exporting drivers: {str(e)}")
+        return redirect('driver_list')
+
+@login_required
+def admin_reports_dashboard(request):
+    # Check if user is admin
+    if request.user.userprofile.role != 'ADMIN':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('admin_dashboard')
+    
+    # Get filters from request
+    status_filter = request.GET.get('status', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    user_id = request.GET.get('user_id', '')
+    violation_type = request.GET.get('type', '')
+    
+    # Get all reports
+    reports = UserReport.objects.all().select_related('user', 'assigned_to')
+    
+    # Apply filters if provided
+    if status_filter:
+        reports = reports.filter(status=status_filter)
+    
+    if date_from:
+        try:
+            date_from = datetime.strptime(date_from, '%Y-%m-%d')
+            reports = reports.filter(created_at__gte=date_from)
+        except ValueError:
+            pass
+    
+    if date_to:
+        try:
+            date_to = datetime.strptime(date_to, '%Y-%m-%d')
+            # Add a day to include the end date fully
+            date_to = date_to + timedelta(days=1)
+            reports = reports.filter(created_at__lt=date_to)
+        except ValueError:
+            pass
+    
+    if user_id:
+        reports = reports.filter(user_id=user_id)
+    
+    if violation_type:
+        reports = reports.filter(type=violation_type)
+    
+    # Calculate statistics for summary cards
+    total_reports = UserReport.objects.count()
+    pending_reports = UserReport.objects.filter(status='PENDING').count()
+    in_progress_reports = UserReport.objects.filter(status='IN_PROGRESS').count()
+    resolved_reports = UserReport.objects.filter(status='RESOLVED').count()
+    closed_reports = UserReport.objects.filter(status='CLOSED').count()
+    
+    context = {
+        'reports': reports,
+        'total_reports': total_reports,
+        'pending_reports': pending_reports,
+        'in_progress_reports': in_progress_reports,
+        'resolved_reports': resolved_reports,
+        'closed_reports': closed_reports,
+        'report_types': UserReport.REPORT_TYPES,
+        'status_choices': UserReport.STATUS_CHOICES,
+        'selected_status': status_filter,
+        'selected_type': violation_type,
+        'date_from': date_from if isinstance(date_from, str) else date_from.strftime('%Y-%m-%d') if date_from else '',
+        'date_to': date_to if isinstance(date_to, str) else (date_to - timedelta(days=1)).strftime('%Y-%m-%d') if date_to else '',
+        'user_id': user_id
+    }
+    
+    return render(request, 'admin/reports_dashboard.html', context)
+
+
+@login_required
+def update_report(request, report_id):
+    # Check if user is admin
+    if request.user.userprofile.role != 'ADMIN':
+        return JsonResponse({'status': 'error', 'message': 'Permission denied'}, status=403)
+    
+    # Only allow POST requests
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
+    
+    try:
+        report = UserReport.objects.get(id=report_id)
+    except UserReport.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Report not found'}, status=404)
+    
+    # Get data from request
+    status = request.POST.get('status')
+    notes = request.POST.get('notes', '')
+    notify_user = request.POST.get('notify_user') == 'true'
+    
+    # Validate status
+    if status not in [s[0] for s in UserReport.STATUS_CHOICES]:
+        return JsonResponse({'status': 'error', 'message': 'Invalid status'}, status=400)
+    
+    # Update report
+    old_status = report.status
+    report.status = status
+    
+    # Add notes if provided
+    if notes:
+        if report.resolution_notes:
+            report.resolution_notes += f"\n\n{timezone.now().strftime('%Y-%m-%d %H:%M')} - {request.user.get_full_name()}:\n{notes}"
+        else:
+            report.resolution_notes = f"{timezone.now().strftime('%Y-%m-%d %H:%M')} - {request.user.get_full_name()}:\n{notes}"
+    
+    # If status is resolved or closed, add resolution timestamp
+    if status in ['RESOLVED', 'CLOSED'] and not report.resolved_at:
+        report.resolved_at = timezone.now()
+    
+    # Assign to current user if status is changed to in progress
+    if status == 'IN_PROGRESS' and old_status != 'IN_PROGRESS':
+        report.assigned_to = request.user
+    
+    report.save()
+    
+    # Create notification for user if requested
+    if notify_user:
+        status_display = dict(UserReport.STATUS_CHOICES)[status]
+        message = f'Your report "{report.subject}" has been updated to {status_display}.'
+        if notes:
+            message += f' Admin notes: {notes}'
+        
+        UserNotification.objects.create(
+            user=report.user,
+            type='SYSTEM',
+            message=message
+        )
+    
+    # Log the activity
+    ActivityLog.objects.create(
+        user=request.user,
+        action=f'Updated report #{report.id} status from {old_status} to {status}',
+        object_id=report.id,
+        object_type='UserReport'
+    )
+    
+    return JsonResponse({
+        'status': 'success',
+        'message': 'Report updated successfully',
+        'report': {
+            'id': report.id,
+            'status': status,
+            'status_display': dict(UserReport.STATUS_CHOICES)[status],
+            'assigned_to': report.assigned_to.get_full_name() if report.assigned_to else None,
+            'resolution_notes': report.resolution_notes,
+            'resolved_at': report.resolved_at.strftime('%Y-%m-%d %H:%M') if report.resolved_at else None
+        }
+    })
+
+
+@login_required
+def get_report_details(request, report_id):
+    # Check if user is admin
+    if request.user.userprofile.role != 'ADMIN':
+        return JsonResponse({'status': 'error', 'message': 'Permission denied'}, status=403)
+    
+    try:
+        report = UserReport.objects.select_related('user', 'assigned_to', 'user__userprofile').get(id=report_id)
+    except UserReport.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Report not found'}, status=404)
+    
+    # Format the user and report details for JSON response
+    user_profile = report.user.userprofile
+    
+    # Build report data
+    report_data = {
+        'id': report.id,
+        'user': {
+            'id': report.user.id,
+            'full_name': report.user.get_full_name(),
+            'username': report.user.username,
+            'email': report.user.email,
+            'license_number': user_profile.license_number,
+            'phone_number': user_profile.phone_number,
+            'avatar_url': user_profile.avatar.url if user_profile.avatar else None
+        },
+        'type': report.type,
+        'type_display': report.get_type_display(),
+        'subject': report.subject,
+        'description': report.description,
+        'location': report.location,
+        'incident_date': report.incident_date.strftime('%Y-%m-%d %H:%M') if report.incident_date else None,
+        'status': report.status,
+        'status_display': report.get_status_display(),
+        'created_at': report.created_at.strftime('%Y-%m-%d %H:%M'),
+        'updated_at': report.updated_at.strftime('%Y-%m-%d %H:%M'),
+        'assigned_to': report.assigned_to.get_full_name() if report.assigned_to else None,
+        'resolution_notes': report.resolution_notes,
+        'resolved_at': report.resolved_at.strftime('%Y-%m-%d %H:%M') if report.resolved_at else None
+    }
+    
+    # Add attachment info if present
+    if report.attachment:
+        report_data['attachment'] = {
+            'url': report.attachment.url,
+            'filename': report.attachment.name.split('/')[-1]
+        }
+    else:
+        report_data['attachment'] = None
+    
+    return JsonResponse({
+        'status': 'success',
+        'report': report_data
+    })

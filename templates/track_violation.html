@@ -1,0 +1,234 @@
+{% extends 'base_landing.html' %}
+{% load static %}
+
+{% block title %}Track Violation - CTTMO Portal{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center mb-4">
+            <h2 class="fw-bold mb-3">Track Your Violation</h2>
+            <p class="text-muted">Enter your ticket number to track the status of your violation and payment details</p>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <form method="POST" class="mb-0">
+                        {% csrf_token %}
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text bg-white border-end-0">
+                                <span class="material-icons text-muted">receipt</span>
+                            </span>
+                            <input type="text" class="form-control border-start-0 ps-0" 
+                                id="ticket_number" name="ticket_number" required 
+                                placeholder="Enter ticket number"
+                                style="font-size: 1rem;">
+                            <button type="submit" class="btn btn-primary px-4">
+                                <span class="material-icons align-middle me-1">search</span>Track
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if found == False %}
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="alert alert-danger d-flex align-items-center" role="alert">
+                <span class="material-icons me-2">error</span>
+                {{ error }}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if found %}
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <!-- Status Timeline -->
+                    <div class="tracking-progress mb-4">
+                        <div class="d-flex justify-content-between position-relative">
+                            <div class="tracking-step {% if violation.status in 'PENDING,ADJUDICATED,APPROVED,PAID,SETTLED' %}active{% endif %}">
+                                <div class="icon-wrapper">
+                                    <span class="material-icons">flag</span>
+                                </div>
+                                <div class="step-label">Issued</div>
+                            </div>
+                            <div class="tracking-step {% if violation.status in 'ADJUDICATED,APPROVED,PAID,SETTLED' %}active{% endif %}">
+                                <div class="icon-wrapper">
+                                    <span class="material-icons">gavel</span>
+                                </div>
+                                <div class="step-label">Adjudicated</div>
+                            </div>
+                            <div class="tracking-step {% if violation.status in 'APPROVED,PAID,SETTLED' %}active{% endif %}">
+                                <div class="icon-wrapper">
+                                    <span class="material-icons">verified</span>
+                                </div>
+                                <div class="step-label">Approved</div>
+                            </div>
+                            <div class="tracking-step {% if violation.status in 'PAID,SETTLED' %}active{% endif %}">
+                                <div class="icon-wrapper">
+                                    <span class="material-icons">paid</span>
+                                </div>
+                                <div class="step-label">Paid</div>
+                            </div>
+                            <!-- Progress Line -->
+                            <div class="progress-line"></div>
+                        </div>
+                    </div>
+
+                    <!-- Current Status -->
+                    <div class="current-status text-center mb-4">
+                        <span class="badge rounded-pill fs-6 px-4 py-2 
+                            {% if violation.status == 'PAID' %}bg-success
+                            {% elif violation.status == 'PENDING' %}bg-warning
+                            {% elif violation.status == 'REJECTED' %}bg-danger
+                            {% else %}bg-info{% endif %}">
+                            {{ violation.get_status_display }}
+                        </span>
+                    </div>
+
+                    <!-- Violation Details -->
+                    <div class="violation-details">
+                        <div class="row g-4">
+                            <!-- Left Column -->
+                            <div class="col-md-6">
+                                <div class="detail-card">
+                                    <h6 class="detail-title">
+                                        <span class="material-icons">description</span>
+                                        Basic Information
+                                    </h6>
+                                    <div class="detail-content">
+                                        <p><strong>Ticket Number:</strong> <span class="text-primary">{{ violation.id }}</span></p>
+                                        <p><strong>Violation Date:</strong> {{ violation.violation_date|date:"F d, Y h:i A" }}</p>
+                                        <p><strong>Location:</strong> {{ violation.location }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Right Column -->
+                            <div class="col-md-6">
+                                <div class="detail-card">
+                                    <h6 class="detail-title">
+                                        <span class="material-icons">receipt_long</span>
+                                        Payment Details
+                                    </h6>
+                                    <div class="detail-content">
+                                        <p><strong>Violation Type:</strong> {{ violation.get_violation_type_display }}</p>
+                                        <p><strong>Fine Amount:</strong> <span class="text-danger fw-bold">₱{{ violation.fine_amount }}</span></p>
+                                        {% if violation.payment_due_date %}
+                                        <p><strong>Due Date:</strong> {{ violation.payment_due_date|date:"F d, Y" }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    /* Tracking Progress Styles */
+    .tracking-progress {
+        padding: 20px 0;
+    }
+    
+    .tracking-step {
+        text-align: center;
+        position: relative;
+        z-index: 1;
+        flex: 1;
+    }
+    
+    .icon-wrapper {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background-color: #f0f0f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 10px;
+        transition: all 0.3s ease;
+    }
+    
+    .tracking-step.active .icon-wrapper {
+        background-color: var(--primary-color);
+        color: white;
+    }
+    
+    .step-label {
+        font-size: 0.875rem;
+        color: #666;
+        font-weight: 500;
+    }
+    
+    .tracking-step.active .step-label {
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+    
+    .progress-line {
+        position: absolute;
+        top: 25px;
+        left: 50px;
+        right: 50px;
+        height: 3px;
+        background-color: #f0f0f0;
+        z-index: 0;
+    }
+    
+    /* Detail Card Styles */
+    .detail-card {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        height: 100%;
+    }
+    
+    .detail-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+    
+    .detail-content p {
+        margin-bottom: 0.75rem;
+        font-size: 0.95rem;
+    }
+    
+    .detail-content p:last-child {
+        margin-bottom: 0;
+    }
+    
+    /* Input Group Styles */
+    .input-group-text {
+        border-color: #dee2e6;
+    }
+    
+    .form-control {
+        border-color: #dee2e6;
+    }
+    
+    .form-control:focus {
+        box-shadow: none;
+        border-color: var(--primary-color);
+    }
+    
+    /* Badge Styles */
+    .badge {
+        font-weight: 500;
+        letter-spacing: 0.5px;
+    }
+</style>
+{% endblock %} 

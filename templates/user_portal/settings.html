@@ -3,18 +3,421 @@
 
 {% block title %}Settings - CTTMO User Portal{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Modern Color Palette */
+    :root {
+        --primary-color: #3563E9;
+        --primary-light: #EEF3FF;
+        --success-color: #0CAA1D;
+        --danger-color: #F53D3D;
+        --warning-color: #FFB800;
+        --info-color: #4DA7FF;
+        --dark-blue: #0F1C3F;
+        --neutral-gray: #737791;
+        --light-gray: #F6F7F9;
+        --white: #FFFFFF;
+    }
+
+    /* Common Utility Classes */
+    .shadow-lg { box-shadow: 0 10px 20px rgba(0,0,0,0.08); }
+    .shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .rounded-xl { border-radius: 1rem; }
+    .rounded-lg { border-radius: 0.75rem; }
+    .transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 300ms; }
+    
+    /* Animation */
+    @keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+    }
+    
+    @keyframes spinner {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Settings Container */
+    .settings-container {
+        animation: fadeIn 0.5s ease-out;
+    }
+    
+    /* Settings Card Design */
+    .settings-card {
+        transition: all 0.3s ease;
+        border: none;
+        height: 100%;
+    }
+    
+    .settings-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+    }
+    
+    .settings-card .card-title {
+        color: var(--dark-blue);
+        font-weight: 600;
+        position: relative;
+        padding-bottom: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .settings-card .card-title:after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        height: 3px;
+        width: 40px;
+        background-color: var(--primary-color);
+        border-radius: 2px;
+    }
+    
+    /* Notification Options */
+    .notification-option {
+        padding: 1rem;
+        border-radius: 0.75rem;
+        border: 1px solid #E2E8F0;
+        transition: all 0.2s ease;
+        margin-bottom: 1rem;
+        cursor: pointer;
+    }
+    
+    .notification-option:hover {
+        background-color: var(--primary-light);
+        border-color: var(--primary-color);
+    }
+    
+    .notification-option.active {
+        background-color: var(--primary-light);
+        border-color: var(--primary-color);
+    }
+    
+    .notification-option .option-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+    
+    .notification-option .option-title {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        color: var(--dark-blue);
+        font-size: 1rem;
+    }
+    
+    .notification-option .option-description {
+        color: var(--neutral-gray);
+        font-size: 0.875rem;
+        margin-bottom: 0;
+    }
+    
+    /* Security options */
+    .security-option {
+        padding: 1.25rem;
+        border-radius: 0.75rem;
+        border: 1px solid #E2E8F0;
+        transition: all 0.2s ease;
+        margin-bottom: 1.25rem;
+    }
+    
+    .security-option:hover {
+        background-color: var(--light-gray);
+    }
+    
+    .security-option .option-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+    }
+    
+    .security-option .option-title {
+        display: flex;
+        align-items: center;
+        font-weight: 600;
+        color: var(--dark-blue);
+        font-size: 1rem;
+        margin-bottom: 0;
+    }
+    
+    .security-option .option-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.75rem;
+        flex-shrink: 0;
+    }
+    
+    .security-option .option-description {
+        color: var(--neutral-gray);
+        font-size: 0.875rem;
+        margin-bottom: 0;
+        padding-left: 2.75rem;
+    }
+    
+    .badge-verified {
+        background-color: #E6F7EE;
+        color: var(--success-color);
+        font-weight: 500;
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+    }
+    
+    /* Custom buttons */
+    .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        box-shadow: 0 2px 4px rgba(53, 99, 233, 0.2);
+    }
+    
+    .btn-primary:hover {
+        background-color: #2954d8;
+        border-color: #2954d8;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px rgba(53, 99, 233, 0.3);
+    }
+    
+    .btn-outline-primary {
+        color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+    
+    .btn-outline-primary:hover {
+        background-color: var(--primary-color);
+        color: white;
+    }
+    
+    .btn-danger {
+        background-color: var(--danger-color);
+        border-color: var(--danger-color);
+    }
+    
+    .btn-outline-danger {
+        color: var(--danger-color);
+        border-color: var(--danger-color);
+    }
+    
+    .btn-outline-danger:hover {
+        background-color: var(--danger-color);
+        color: white;
+    }
+    
+    /* Loading skeleton */
+    .text-skeleton { 
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); 
+        background-size: 200% 100%; 
+        animation: shimmer 1.5s infinite; 
+        height: 1rem; 
+        margin-bottom: 0.5rem; 
+        border-radius: 0.25rem; 
+    }
+    
+    /* Toast notifications */
+    .custom-toast {
+        border-radius: 0.75rem;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        border: none;
+        overflow: hidden;
+    }
+    
+    .toast-success {
+        background-color: #EAF7EE;
+        border-left: 4px solid var(--success-color);
+    }
+    
+    .toast-success .toast-icon {
+        color: var(--success-color);
+    }
+    
+    .toast-error {
+        background-color: #FDEEEE;
+        border-left: 4px solid var(--danger-color);
+    }
+    
+    .toast-error .toast-icon {
+        color: var(--danger-color);
+    }
+    
+    .toast-message {
+        color: var(--dark-blue);
+        font-weight: 500;
+    }
+    
+    /* Modals */
+    .modal-content {
+        border: none;
+        border-radius: 1rem;
+        box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+    }
+    
+    .modal-header {
+        border-bottom: none;
+        padding: 1.5rem 1.5rem 1rem;
+    }
+    
+    .modal-footer {
+        border-top: none;
+        padding: 1rem 1.5rem 1.5rem;
+    }
+    
+    .modal-body {
+        padding: 1.5rem;
+    }
+    
+    /* Form styling */
+    .form-control {
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        line-height: 1.5;
+        border-radius: 0.5rem;
+        border: 1px solid #E2E8F0;
+        transition: all 0.2s ease;
+    }
+    
+    .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(53, 99, 233, 0.2);
+    }
+    
+    .form-label {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        color: var(--dark-blue);
+    }
+    
+    /* Custom form check */
+    .form-check-input {
+        width: 1.25em;
+        height: 1.25em;
+        margin-top: 0.125em;
+        cursor: pointer;
+    }
+    
+    .form-check-input:checked {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+    
+    /* High Contrast Mode Support */
+    @media (forced-colors: active) {
+        .settings-card, .btn, .form-control, .notification-option, .security-option {
+            border: 1px solid ButtonText;
+        }
+    }
+    
+    /* Accessibility Improvements */
+    .form-control:focus, .btn:focus {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+    }
+    
+    /* Touch Target Sizes */
+    @media (max-width: 768px) {
+        .btn {
+            padding: 0.625rem 1rem;
+            min-height: 44px;
+        }
+        
+        .security-option .option-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .security-option .option-action {
+            margin-top: 1rem;
+            align-self: flex-start;
+            width: 100%;
+        }
+        
+        .security-option .option-action .btn {
+            width: 100%;
+        }
+        
+        .notification-option {
+            padding: 0.75rem;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container py-4">
-    <!-- Settings Header -->
+<div class="container py-3 py-md-5 settings-container">
+    <!-- Loading Skeleton (hidden when data is loaded) -->
+    <div id="settings-skeleton" style="display: none;">
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card border-0 shadow-sm">
+                <div class="card shadow-lg rounded-xl">
                 <div class="card-body p-4">
                     <div class="d-flex align-items-center">
-                        <span class="material-icons me-3" style="font-size: 2rem; color: var(--bs-primary)">settings</span>
+                            <div class="text-skeleton rounded-circle me-3" style="width: 48px; height: 48px;"></div>
                         <div>
-                            <h4 class="mb-1">Account Settings</h4>
-                            <p class="text-muted mb-0">Manage your account preferences and notifications</p>
+                                <div class="text-skeleton" style="width: 160px;"></div>
+                                <div class="text-skeleton" style="width: 240px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row g-4">
+            <div class="col-12 col-lg-6">
+                <div class="card shadow-lg rounded-xl">
+                    <div class="card-body p-4">
+                        <div class="text-skeleton" style="width: 180px;"></div>
+                        <div style="margin-top: 2rem;">
+                            <div class="text-skeleton" style="width: 100%; height: 70px; margin-bottom: 1rem;"></div>
+                            <div class="text-skeleton" style="width: 100%; height: 70px; margin-bottom: 1rem;"></div>
+                            <div class="text-skeleton" style="width: 100%; height: 70px; margin-bottom: 1rem;"></div>
+                            <div class="text-skeleton" style="width: 100%; height: 70px;"></div>
+                        </div>
+                        <div class="text-skeleton mt-4" style="width: 120px; height: 40px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-6">
+                <div class="card shadow-lg rounded-xl">
+                    <div class="card-body p-4">
+                        <div class="text-skeleton" style="width: 180px;"></div>
+                        <div style="margin-top: 2rem;">
+                            <div class="text-skeleton" style="width: 100%; height: 80px; margin-bottom: 1rem;"></div>
+                            <div class="text-skeleton" style="width: 100%; height: 80px; margin-bottom: 1rem;"></div>
+                            <div class="text-skeleton" style="width: 100%; height: 80px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Content -->
+    <div id="settings-content">
+        <!-- Settings Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-lg rounded-xl transition-all">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                 style="width: 48px; height: 48px; background-color: var(--primary-light);">
+                                <span class="material-icons" style="font-size: 24px; color: var(--primary-color);">settings</span>
+                            </div>
+                            <div>
+                                <h4 class="mb-1 fw-bold">Account Settings</h4>
+                                <p class="text-muted mb-0">Manage your account preferences and notifications</p>
                         </div>
                     </div>
                 </div>
@@ -23,74 +426,77 @@
     </div>
 
     <div class="row g-4">
-        <!-- Notification Settings -->
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm">
+            <!-- Notification Preferences -->
+            <div class="col-12 col-lg-6">
+                <div class="card settings-card shadow-lg rounded-xl h-100">
                 <div class="card-body p-4">
-                    <h5 class="card-title mb-4">Notification Preferences</h5>
-                    <form method="post" action="{% url 'user_portal:user_settings' %}">
+                        <h5 class="card-title">Notification Preferences</h5>
+                        <form id="notificationForm" method="post" action="{% url 'user_portal:user_settings' %}">
                         {% csrf_token %}
-                        <div class="notification-settings">
-                            <div class="form-check mb-3">
-                                <input type="checkbox" class="form-check-input" id="violation_notifications" 
+                            <div class="notification-options">
+                                <label class="notification-option d-flex align-items-start w-100 {% if 'violations' in user_profile.notification_preferences %}active{% endif %}">
+                                    <input type="checkbox" class="form-check-input mt-1 me-2" id="violation_notifications" 
                                        name="notifications" value="violations"
                                        {% if 'violations' in user_profile.notification_preferences %}checked{% endif %}>
-                                <label class="form-check-label" for="violation_notifications">
-                                    <div class="d-flex align-items-start">
-                                        <span class="material-icons me-2" style="color: var(--bs-danger)">report</span>
+                                    <div class="d-flex align-items-start w-100">
+                                        <div class="option-icon" style="background-color: rgba(245, 61, 61, 0.1);">
+                                            <span class="material-icons" style="color: var(--danger-color);">report</span>
+                                        </div>
                                         <div>
-                                            <p class="mb-0 fw-medium">Violation Notifications</p>
-                                            <small class="text-muted">Receive notifications about new violations and updates</small>
+                                            <p class="option-title">Violation Notifications</p>
+                                            <p class="option-description">Receive notifications about new violations and updates</p>
                                         </div>
                                     </div>
                                 </label>
-                            </div>
-                            <div class="form-check mb-3">
-                                <input type="checkbox" class="form-check-input" id="payment_notifications" 
+                                
+                                <label class="notification-option d-flex align-items-start w-100 {% if 'payments' in user_profile.notification_preferences %}active{% endif %}">
+                                    <input type="checkbox" class="form-check-input mt-1 me-2" id="payment_notifications" 
                                        name="notifications" value="payments"
                                        {% if 'payments' in user_profile.notification_preferences %}checked{% endif %}>
-                                <label class="form-check-label" for="payment_notifications">
-                                    <div class="d-flex align-items-start">
-                                        <span class="material-icons me-2" style="color: var(--bs-success)">payments</span>
+                                    <div class="d-flex align-items-start w-100">
+                                        <div class="option-icon" style="background-color: rgba(12, 170, 29, 0.1);">
+                                            <span class="material-icons" style="color: var(--success-color);">payments</span>
+                                        </div>
                                         <div>
-                                            <p class="mb-0 fw-medium">Payment Notifications</p>
-                                            <small class="text-muted">Get updates about payments and due dates</small>
+                                            <p class="option-title">Payment Notifications</p>
+                                            <p class="option-description">Get updates about payments and due dates</p>
                                         </div>
                                     </div>
                                 </label>
-                            </div>
-                            <div class="form-check mb-3">
-                                <input type="checkbox" class="form-check-input" id="report_notifications" 
+                                
+                                <label class="notification-option d-flex align-items-start w-100 {% if 'reports' in user_profile.notification_preferences %}active{% endif %}">
+                                    <input type="checkbox" class="form-check-input mt-1 me-2" id="report_notifications" 
                                        name="notifications" value="reports"
                                        {% if 'reports' in user_profile.notification_preferences %}checked{% endif %}>
-                                <label class="form-check-label" for="report_notifications">
-                                    <div class="d-flex align-items-start">
-                                        <span class="material-icons me-2" style="color: var(--bs-info)">description</span>
+                                    <div class="d-flex align-items-start w-100">
+                                        <div class="option-icon" style="background-color: rgba(77, 167, 255, 0.1);">
+                                            <span class="material-icons" style="color: var(--info-color);">description</span>
+                                        </div>
                                         <div>
-                                            <p class="mb-0 fw-medium">Report Updates</p>
-                                            <small class="text-muted">Stay informed about your report status changes</small>
+                                            <p class="option-title">Report Updates</p>
+                                            <p class="option-description">Stay informed about your report status changes</p>
                                         </div>
                                     </div>
                                 </label>
-                            </div>
-                            <div class="form-check mb-3">
-                                <input type="checkbox" class="form-check-input" id="system_notifications" 
+                                
+                                <label class="notification-option d-flex align-items-start w-100 {% if 'system' in user_profile.notification_preferences %}active{% endif %}">
+                                    <input type="checkbox" class="form-check-input mt-1 me-2" id="system_notifications" 
                                        name="notifications" value="system"
                                        {% if 'system' in user_profile.notification_preferences %}checked{% endif %}>
-                                <label class="form-check-label" for="system_notifications">
-                                    <div class="d-flex align-items-start">
-                                        <span class="material-icons me-2" style="color: var(--bs-warning)">campaign</span>
+                                    <div class="d-flex align-items-start w-100">
+                                        <div class="option-icon" style="background-color: rgba(255, 184, 0, 0.1);">
+                                            <span class="material-icons" style="color: var(--warning-color);">campaign</span>
+                                        </div>
                                         <div>
-                                            <p class="mb-0 fw-medium">System Notifications</p>
-                                            <small class="text-muted">Receive important system updates and announcements</small>
+                                            <p class="option-title">System Notifications</p>
+                                            <p class="option-description">Receive important system updates and announcements</p>
                                         </div>
                                     </div>
                                 </label>
-                            </div>
                         </div>
                         <div class="mt-4">
-                            <button type="submit" class="btn btn-primary">
-                                <span class="material-icons me-2">save</span>Save Preferences
+                                <button type="submit" id="savePreferencesBtn" class="btn btn-primary px-4">
+                                    <span class="material-icons me-2" style="font-size: 18px;">save</span>Save Preferences
                             </button>
                         </div>
                     </form>
@@ -99,44 +505,61 @@
         </div>
 
         <!-- Account Security -->
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm">
+            <div class="col-12 col-lg-6">
+                <div class="card settings-card shadow-lg rounded-xl h-100">
                 <div class="card-body p-4">
-                    <h5 class="card-title mb-4">Account Security</h5>
-                    <div class="security-settings">
-                        <div class="mb-4">
-                            <div class="d-flex align-items-center justify-content-between mb-3">
-                                <div class="d-flex align-items-center">
-                                    <span class="material-icons me-2" style="color: var(--bs-primary)">lock</span>
-                                    <h6 class="mb-0">Password</h6>
+                        <h5 class="card-title">Account Security</h5>
+                        
+                        <div class="security-option">
+                            <div class="option-header">
+                                <h6 class="option-title">
+                                    <div class="option-icon" style="background-color: rgba(53, 99, 233, 0.1);">
+                                        <span class="material-icons" style="color: var(--primary-color);">lock</span>
+                                    </div>
+                                    Password
+                                </h6>
+                                <div class="option-action">
+                                    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                                        Change Password
+                                    </button>
                                 </div>
-                                <a href="#" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
-                                    Change Password
-                                </a>
                             </div>
-                            <p class="text-muted small mb-0">Last changed: Never</p>
+                            <p class="option-description">Last changed: Never</p>
                         </div>
-                        <div class="mb-4">
-                            <div class="d-flex align-items-center justify-content-between mb-3">
-                                <div class="d-flex align-items-center">
-                                    <span class="material-icons me-2" style="color: var(--bs-info)">email</span>
-                                    <h6 class="mb-0">Email Verification</h6>
+                        
+                        <div class="security-option">
+                            <div class="option-header">
+                                <h6 class="option-title">
+                                    <div class="option-icon" style="background-color: rgba(77, 167, 255, 0.1);">
+                                        <span class="material-icons" style="color: var(--info-color);">email</span>
+                                    </div>
+                                    Email Verification
+                                </h6>
+                                <div class="option-action">
+                                    <span class="badge-verified">
+                                        <span class="material-icons me-1" style="font-size: 16px; vertical-align: middle;">check_circle</span>
+                                        Verified
+                                    </span>
                                 </div>
-                                <span class="badge bg-success">Verified</span>
                             </div>
-                            <p class="text-muted small mb-0">Your email address is verified</p>
+                            <p class="option-description">Your email address is verified</p>
                         </div>
-                        <div>
-                            <div class="d-flex align-items-center justify-content-between mb-3">
-                                <div class="d-flex align-items-center">
-                                    <span class="material-icons me-2" style="color: var(--bs-danger)">delete</span>
-                                    <h6 class="mb-0">Delete Account</h6>
+                        
+                        <div class="security-option">
+                            <div class="option-header">
+                                <h6 class="option-title">
+                                    <div class="option-icon" style="background-color: rgba(245, 61, 61, 0.1);">
+                                        <span class="material-icons" style="color: var(--danger-color);">delete</span>
                                 </div>
-                                <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                                    Delete Account
+                                </h6>
+                                <div class="option-action">
+                                    <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
                                     Delete Account
                                 </button>
+                                </div>
                             </div>
-                            <p class="text-muted small mb-0">Permanently delete your account and all data</p>
+                            <p class="option-description">Permanently delete your account and all data</p>
                         </div>
                     </div>
                 </div>
@@ -145,15 +568,39 @@
     </div>
 </div>
 
+<!-- Success Toast Notification -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="successToast" class="toast custom-toast toast-success" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header border-0 bg-transparent">
+            <span class="material-icons toast-icon me-2">check_circle</span>
+            <strong class="me-auto toast-message" id="toastMessage">Settings updated successfully!</strong>
+            <small class="text-muted">just now</small>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<!-- Error Toast Notification -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="errorToast" class="toast custom-toast toast-error" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header border-0 bg-transparent">
+            <span class="material-icons toast-icon me-2">error</span>
+            <strong class="me-auto toast-message" id="errorToastMessage">An error occurred.</strong>
+            <small class="text-muted">just now</small>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
 <!-- Change Password Modal -->
 <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
+        <div class="modal-content rounded-xl shadow-lg">
             <div class="modal-header">
-                <h5 class="modal-title" id="changePasswordModalLabel">Change Password</h5>
+                <h5 class="modal-title fw-bold" id="changePasswordModalLabel">Change Password</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form method="post" action="{% url 'user_portal:change_password' %}">
+            <form id="passwordForm" method="post" action="{% url 'user_portal:change_password' %}">
                 {% csrf_token %}
                 <div class="modal-body">
                     <div class="mb-3">
@@ -162,7 +609,14 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">New Password</label>
-                        <input type="password" class="form-control" name="new_password1" required>
+                        <input type="password" class="form-control" name="new_password1" id="new_password" required>
+                        <div class="form-text">
+                            <ul class="mb-0 ps-3 mt-2">
+                                <li>At least 8 characters long</li>
+                                <li>Contains at least one number</li>
+                                <li>Contains at least one special character</li>
+                            </ul>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Confirm New Password</label>
@@ -170,8 +624,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Change Password</button>
+                    <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" id="changePasswordBtn" class="btn btn-primary px-4">Change Password</button>
                 </div>
             </form>
         </div>
@@ -181,26 +635,29 @@
 <!-- Delete Account Modal -->
 <div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteAccountModalLabel">Delete Account</h5>
+        <div class="modal-content rounded-xl shadow-lg">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold" id="deleteAccountModalLabel">Delete Account</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="text-center mb-4">
-                    <span class="material-icons text-danger" style="font-size: 4rem;">warning</span>
-                    <h5 class="mt-3">Are you sure you want to delete your account?</h5>
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3" 
+                         style="width: 80px; height: 80px; background-color: rgba(245, 61, 61, 0.1);">
+                        <span class="material-icons" style="font-size: 40px; color: var(--danger-color);">warning</span>
+                    </div>
+                    <h5 class="mt-3 fw-bold">Are you sure you want to delete your account?</h5>
                     <p class="text-muted">This action cannot be undone. All your data will be permanently deleted.</p>
                 </div>
-                <form method="post" action="{% url 'user_portal:delete_account' %}">
+                <form id="deleteForm" method="post" action="{% url 'user_portal:delete_account' %}">
                     {% csrf_token %}
-                    <div class="mb-3">
+                    <div class="mb-4">
                         <label class="form-label">Please type "DELETE" to confirm</label>
                         <input type="text" class="form-control" name="confirmation" required 
                                pattern="DELETE" title="Please type DELETE in uppercase">
                     </div>
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-danger">
+                        <button type="submit" id="deleteAccountBtn" class="btn btn-danger">
                             <span class="material-icons me-2">delete_forever</span>Delete Account
                         </button>
                     </div>
@@ -210,49 +667,136 @@
     </div>
 </div>
 
-<style>
-.card {
-    transition: transform 0.2s;
-}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Show skeleton loading on page load
+    const settingsSkeleton = document.getElementById('settings-skeleton');
+    const settingsContent = document.getElementById('settings-content');
+    
+    // Simulate loading for demonstration
+    settingsSkeleton.style.display = 'block';
+    settingsContent.style.display = 'none';
+    
+    // After "loading" show the content
+    setTimeout(() => {
+        settingsSkeleton.style.display = 'none';
+        settingsContent.style.display = 'block';
+    }, 800);
 
-.card:hover {
-    transform: translateY(-2px);
-}
-
-.form-check-label {
-    cursor: pointer;
-}
-
-.notification-settings .form-check {
-    padding: 1rem;
-    border: 1px solid rgba(0,0,0,0.1);
-    border-radius: 8px;
-    transition: all 0.2s;
-}
-
-.notification-settings .form-check:hover {
-    background-color: rgba(var(--bs-primary-rgb), 0.05);
-}
-
-.notification-settings .form-check-input:checked ~ .form-check-label {
-    color: var(--bs-primary);
-}
-
-.security-settings .badge {
-    padding: 0.5rem 1rem;
-}
-
-.modal-content {
-    border: none;
-    border-radius: 12px;
-}
-
-.modal-header {
-    border-bottom: 1px solid rgba(0,0,0,0.1);
-}
-
-.modal-footer {
-    border-top: 1px solid rgba(0,0,0,0.1);
-}
-</style>
+    // Notification preferences form submission
+    const notificationForm = document.getElementById('notificationForm');
+    const savePreferencesBtn = document.getElementById('savePreferencesBtn');
+    
+    // Handle notification checkboxes to toggle active class on containers
+    const notificationCheckboxes = document.querySelectorAll('.notification-option input[type="checkbox"]');
+    notificationCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const container = this.closest('.notification-option');
+            if (this.checked) {
+                container.classList.add('active');
+            } else {
+                container.classList.remove('active');
+            }
+        });
+    });
+    
+    notificationForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Add loading state to button
+        savePreferencesBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Saving...';
+        savePreferencesBtn.disabled = true;
+        
+        // Submit form
+        fetch(notificationForm.action, {
+            method: 'POST',
+            body: new FormData(notificationForm),
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Show success toast
+            const successToast = new bootstrap.Toast(document.getElementById('successToast'));
+            document.getElementById('toastMessage').textContent = 'Notification preferences updated!';
+            successToast.show();
+        })
+        .catch(error => {
+            // Show error toast
+            const errorToast = new bootstrap.Toast(document.getElementById('errorToast'));
+            document.getElementById('errorToastMessage').textContent = 'Failed to update preferences. Please try again.';
+            errorToast.show();
+            console.error('Error:', error);
+        })
+        .finally(() => {
+            // Remove loading state
+            savePreferencesBtn.innerHTML = '<span class="material-icons me-2" style="font-size: 18px;">save</span>Save Preferences';
+            savePreferencesBtn.disabled = false;
+        });
+    });
+    
+    // Password form submission
+    const passwordForm = document.getElementById('passwordForm');
+    const changePasswordBtn = document.getElementById('changePasswordBtn');
+    
+    passwordForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Validate passwords match
+        const newPassword = document.getElementById('new_password').value;
+        const confirmPassword = document.getElementsByName('new_password2')[0].value;
+        
+        if (newPassword !== confirmPassword) {
+            const errorToast = new bootstrap.Toast(document.getElementById('errorToast'));
+            document.getElementById('errorToastMessage').textContent = 'Passwords do not match!';
+            errorToast.show();
+            return;
+        }
+        
+        // Add loading state
+        changePasswordBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Changing...';
+        changePasswordBtn.disabled = true;
+        
+        // Submit form
+        this.submit();
+    });
+    
+    // Delete account form
+    const deleteForm = document.getElementById('deleteForm');
+    const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+    
+    deleteForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Add loading state
+        deleteAccountBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Processing...';
+        deleteAccountBtn.disabled = true;
+        
+        // Submit form
+        this.submit();
+    });
+    
+    // Check for messages from backend (e.g., after form submission)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('success')) {
+        const successMessage = urlParams.get('success');
+        const successToast = new bootstrap.Toast(document.getElementById('successToast'));
+        document.getElementById('toastMessage').textContent = successMessage || 'Operation completed successfully!';
+        successToast.show();
+    }
+    
+    if (urlParams.has('error')) {
+        const errorMessage = urlParams.get('error');
+        const errorToast = new bootstrap.Toast(document.getElementById('errorToast'));
+        document.getElementById('errorToastMessage').textContent = errorMessage || 'An error occurred.';
+        errorToast.show();
+    }
+});
+</script>
 {% endblock %} 

@@ -1,0 +1,1008 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-body">
+            <div class="header-section">
+                <div class="header-title">
+                    <div class="icon-circle bg-primary text-white">
+                        <span class="material-icons">people</span>
+                    </div>
+                    <div>
+                        <h4 class="mb-0">Regular User Management</h4>
+                        <p class="text-muted mb-0 small">Total Regular Users: {{ user_profiles.count }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Form -->
+            <form method="get" class="search-form mb-1">
+                <div class="col-md-4">
+                    <div class="search-input">
+                        <span class="material-icons">search</span>
+                        <input type="text" 
+                            name="search" 
+                            id="userSearch"
+                            class="form-control" 
+                            placeholder="Search by name, email, or license..."
+                            value="{{ request.GET.search|default:'' }}">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="search-input">
+                        <span class="material-icons">directions_car</span>
+                        <select name="has_vehicle" class="form-select">
+                            <option value="">All Users</option>
+                            <option value="yes" {% if request.GET.has_vehicle == 'yes' %}selected{% endif %}>With Vehicles</option>
+                            <option value="no" {% if request.GET.has_vehicle == 'no' %}selected{% endif %}>Without Vehicles</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="search-input">
+                        <span class="material-icons">check_circle</span>
+                        <select name="status" class="form-select">
+                            <option value="">All Status</option>
+                            <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                            <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary px-5">
+                        <span class="material-icons">search</span>
+                        <span class="d-none d-sm-inline ms-1">Search</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted mb-1">Total Users</h6>
+                            <h4 class="mb-0">{{ total_users }}</h4>
+                        </div>
+                        <div class="stat-icon text-primary">
+                            <span class="material-icons">people</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted mb-1">Registered Vehicles</h6>
+                            <h4 class="mb-0">{{ total_vehicles }}</h4>
+                        </div>
+                        <div class="stat-icon text-success">
+                            <span class="material-icons">directions_car</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted mb-1">With License</h6>
+                            <h4 class="mb-0">{{ users_with_license }}</h4>
+                        </div>
+                        <div class="stat-icon text-warning">
+                            <span class="material-icons">badge</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted mb-1">Violations Issued</h6>
+                            <h4 class="mb-0">{{ total_violations }}</h4>
+                        </div>
+                        <div class="stat-icon text-danger">
+                            <span class="material-icons">gavel</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Card -->
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-body p-0">
+            <!-- Table Container -->
+            <div class="table-responsive">
+                <table class="table table-system table-hover align-middle mb-0" id="usersTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="border-0 ps-4">User</th>
+                            <th class="border-0">License</th>
+                            <th class="border-0">Vehicles</th>
+                            <th class="border-0">Joined</th>
+                            <th class="border-0 text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user_data in user_data %}
+                        <tr class="parent-row" data-user-id="{{ user_data.user.id }}">
+                            <td class="ps-4">
+                                <div class="table-profile">
+                                    <div class="avatar-container">
+                                        {% if user_data.user.userprofile.avatar %}
+                                        <img src="{{ user_data.user.userprofile.avatar.url }}" alt="{{ user_data.user.get_full_name }}" class="rounded-circle">
+                                        {% else %}
+                                        <div class="avatar-placeholder">
+                                            {{ user_data.user.first_name|slice:":1" }}{{ user_data.user.last_name|slice:":1" }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="user-info-container">
+                                        <h6 class="mb-0">{{ user_data.user.get_full_name }}</h6>
+                                        <div class="small text-muted">
+                                            {{ user_data.user.email }}
+                                        </div>
+                                        <div class="small text-muted">
+                                            {% if user_data.user.userprofile.phone_number %}
+                                            <span class="material-icons" style="font-size: 0.9rem;">phone</span> {{ user_data.user.userprofile.phone_number }}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if user_data.user.userprofile.license_number %}
+                                <span class="badge bg-success">{{ user_data.user.userprofile.license_number }}</span>
+                                {% else %}
+                                <span class="badge bg-secondary">No License</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ user_data.vehicle_count }} vehicles</span>
+                                {% if user_data.vehicle_count > 0 %}
+                                <button class="btn btn-sm btn-link toggle-vehicles" data-user-id="{{ user_data.user.id }}">
+                                    <span class="material-icons">expand_more</span>
+                                </button>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div>{{ user_data.user.date_joined|date:"M d, Y" }}</div>
+                                <div class="small text-muted">{{ user_data.joined_days_ago }} days ago</div>
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="action-buttons">
+                                    <button type="button" 
+                                            class="btn btn-action btn-view"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#userDetailModal"
+                                            data-user-id="{{ user_data.user.id }}"
+                                            title="View Details">
+                                        <span class="material-icons">visibility</span>
+                                    </button>
+                                    {% if user_data.user.username != request.user.username %}
+                                    <button type="button"
+                                            class="btn btn-action btn-toggle-status"
+                                            data-user-id="{{ user_data.user.id }}"
+                                            data-action="{{ user_data.user.is_active|yesno:'deactivate,activate' }}"
+                                            title="{{ user_data.user.is_active|yesno:'Deactivate,Activate' }} User">
+                                        <span class="material-icons">{{ user_data.user.is_active|yesno:'block,check_circle' }}</span>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% if user_data.vehicle_count > 0 %}
+                        <tr class="vehicles-row" id="vehicles-{{ user_data.user.id }}" style="display: none;">
+                            <td colspan="5" class="p-0">
+                                <div class="vehicles-section">
+                                    <div class="vehicle-list p-3">
+                                        <h6 class="mb-3 border-bottom pb-2">Registered Vehicles</h6>
+                                        {% for vehicle in user_data.vehicles %}
+                                        <div class="vehicle-item mb-3 p-3 bg-white rounded shadow-sm">
+                                            <div class="row">
+                                                <div class="col-md-4">
+                                                    <h6 class="mb-1">
+                                                        <span class="material-icons align-middle me-1">{{ vehicle.vehicle_type|lower|slice:":3" }}directions_car</span>
+                                                        {{ vehicle.vehicle_type }} {{ vehicle.model }}
+                                                    </h6>
+                                                    <div class="text-muted small">Plate #: {{ vehicle.plate_number }}</div>
+                                                    <div class="mt-2">
+                                                        <span class="badge {{ vehicle.is_active|yesno:'bg-success,bg-danger' }}">
+                                                            {{ vehicle.is_active|yesno:'Active,Inactive' }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <h6 class="mb-1">Registration Details</h6>
+                                                    <div class="text-muted small">OR Number: {{ vehicle.or_number }}</div>
+                                                    <div class="text-muted small">CR Number: {{ vehicle.cr_number }}</div>
+                                                    <div class="text-muted small">Expires: {{ vehicle.registration_expiry|date:"M d, Y" }}</div>
+                                                </div>
+                                                <div class="col-md-4 text-end">
+                                                    {% if vehicle.or_cr_image %}
+                                                    <a href="#" 
+                                                       class="btn btn-sm btn-outline-primary view-registration"
+                                                       data-bs-toggle="modal"
+                                                       data-bs-target="#registrationModal"
+                                                       data-vehicle-id="{{ vehicle.id }}"
+                                                       data-plate="{{ vehicle.plate_number }}"
+                                                       data-or="{{ vehicle.or_number }}"
+                                                       data-cr="{{ vehicle.cr_number }}"
+                                                       data-type="{{ vehicle.vehicle_type }}"
+                                                       data-make="{{ vehicle.make }}"
+                                                       data-model="{{ vehicle.model }}"
+                                                       data-year="{{ vehicle.year_model }}"
+                                                       data-color="{{ vehicle.color }}"
+                                                       data-classification="{{ vehicle.get_classification_display }}"
+                                                       data-registration="{{ vehicle.registration_date|date:'M d, Y' }}"
+                                                       data-expiry="{{ vehicle.registration_expiry|date:'M d, Y' }}"
+                                                       data-image="{{ vehicle.or_cr_image.url }}">
+                                                        <span class="material-icons">description</span> View Registration
+                                                    </a>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5">
+                                <div class="text-muted">
+                                    <span class="material-icons d-block mb-3" style="font-size: 3rem; opacity: 0.5;">person_search</span>
+                                    <h6 class="mb-1">No Regular Users Found</h6>
+                                    <p class="mb-0 small">Try adjusting your search criteria</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if user_data %}
+            <div class="pagination-container">
+                {% include 'includes/pagination.html' %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- User Detail Modal -->
+<div class="modal fade" id="userDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 bg-light">
+                <h5 class="modal-title">User Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Registration Details Modal -->
+<div class="modal fade" id="registrationModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 bg-light">
+                <h5 class="modal-title">Vehicle Registration Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="registration-details">
+                    <div class="row">
+                        <div class="col-md-5">
+                            <div class="text-center mb-3">
+                                <div id="registration-plate" class="fs-5 fw-bold mb-2"></div>
+                                <img id="registration-image" src="" class="img-fluid rounded border" style="max-height: 350px; width: 100%; object-fit: contain;">
+                                <div class="text-muted small mt-2">OR/CR Document</div>
+                            </div>
+                        </div>
+                        <div class="col-md-7">
+                            <h6 class="border-bottom pb-2 mb-3">Registration Information</h6>
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <div class="registration-item">
+                                        <div class="text-muted small">OR Number</div>
+                                        <div id="registration-or" class="fw-medium"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="registration-item">
+                                        <div class="text-muted small">CR Number</div>
+                                        <div id="registration-cr" class="fw-medium"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="registration-item">
+                                        <div class="text-muted small">Registration Date</div>
+                                        <div id="registration-date" class="fw-medium"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="registration-item">
+                                        <div class="text-muted small">Registration Expiry</div>
+                                        <div id="registration-expiry" class="fw-medium"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <h6 class="border-bottom pb-2 mb-3">Vehicle Information</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="registration-item">
+                                        <div class="text-muted small">Classification</div>
+                                        <div id="vehicle-classification" class="fw-medium"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="registration-item">
+                                        <div class="text-muted small">Vehicle Type</div>
+                                        <div id="vehicle-type" class="fw-medium"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="registration-item">
+                                        <div class="text-muted small">Make</div>
+                                        <div id="vehicle-make" class="fw-medium"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="registration-item">
+                                        <div class="text-muted small">Model</div>
+                                        <div id="vehicle-model" class="fw-medium"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="registration-item">
+                                        <div class="text-muted small">Year Model</div>
+                                        <div id="vehicle-year" class="fw-medium"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="registration-item">
+                                        <div class="text-muted small">Color</div>
+                                        <div id="vehicle-color" class="fw-medium"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Add these new styles at the beginning of your style section */
+.icon-circle {
+        width: 48px;
+        height: 48px;
+    border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+.icon-circle .material-icons {
+        font-size: 24px;
+}
+
+/* Stats Cards */
+    .stat-icon {
+    background: rgba(37, 99, 235, 0.1);
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+}
+
+.stat-icon .material-icons {
+    font-size: 24px;
+}
+
+.search-input {
+    position: relative;
+    width: 100%;
+}
+
+.search-input .material-icons {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6b7280;
+    font-size: 20px;
+    z-index: 1;
+}
+
+.search-input .form-control,
+.search-input .form-select {
+    padding-left: 40px;
+    height: 42px;
+    border-color: #e5e7eb;
+    border-radius: 6px;
+}
+
+.search-input .form-control:focus,
+.search-input .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.1);
+}
+
+.btn-primary {
+    height: 42px;
+    padding: 0.5rem 1.5rem;
+    font-size: 0.95rem;
+        font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 6px;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+}
+
+.btn-primary .material-icons {
+    font-size: 20px;
+}
+
+/* Table Styles */
+.table {
+    font-size: 0.95rem;
+    margin-bottom: 0;
+}
+
+.table th {
+    font-weight: 600;
+    color: #6b7280;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.table td {
+    padding: 1rem 0.75rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+/* Button and Badge Styles */
+.btn-link {
+    padding: 0;
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.badge {
+    font-weight: 500;
+    padding: 0.4em 0.7em;
+}
+
+/* Action Buttons */
+.btn-action {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+    background-color: white;
+    color: #6b7280;
+    transition: all 0.2s ease;
+    margin-left: 0.5rem;
+}
+
+.btn-action:hover {
+    background-color: #f3f4f6;
+    border-color: #d1d5db;
+    color: #374151;
+}
+
+.btn-action .material-icons {
+    font-size: 1.25rem;
+}
+
+/* Search Input Styles */
+.input-group-text {
+    color: #6b7280;
+}
+
+.form-control-lg {
+    height: 3rem;
+}
+
+.form-control:focus {
+    box-shadow: none;
+    border-color: var(--primary-color);
+}
+
+/* Avatar Styles */
+.avatar-container {
+    position: relative;
+}
+
+.avatar-container img,
+.avatar-placeholder {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+}
+
+/* Vehicles Section */
+.vehicles-section {
+    background-color: #f9fafb;
+    border-top: 1px solid #f3f4f6;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.toggle-vehicles {
+    padding: 0;
+    margin-left: 0.25rem;
+}
+
+.toggle-vehicles .material-icons {
+    font-size: 1.1rem;
+    transition: transform 0.2s ease;
+}
+
+.toggle-vehicles.active .material-icons {
+    transform: rotate(180deg);
+}
+
+.vehicle-item {
+    transition: transform 0.2s ease;
+}
+
+.vehicle-item:hover {
+    transform: translateY(-2px);
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .table td {
+        padding: 0.75rem;
+    }
+    
+    .btn-action {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .btn-action .material-icons {
+        font-size: 1rem;
+    }
+}
+
+/* Add these new styles */
+.btn-toggle-status {
+    transition: all 0.2s ease;
+}
+
+.btn-toggle-status:hover {
+    transform: scale(1.1);
+}
+
+.btn-toggle-status .material-icons {
+    font-size: 1.25rem;
+}
+
+/* Status colors */
+.btn-toggle-status[title*="Activate"] {
+        color: var(--success);
+    }
+    
+.btn-toggle-status[title*="Deactivate"] {
+        color: var(--danger);
+    }
+    
+/* Toast notification styles */
+.alert {
+    z-index: 1060;
+}
+
+.alert-success {
+    background-color: var(--success);
+    color: white;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+}
+
+.alert .material-icons {
+    vertical-align: middle;
+    font-size: 1.1rem;
+}
+
+.modal {
+    padding: 0 !important;
+}
+
+.modal-open {
+    overflow-y: auto !important;
+    padding-right: 0 !important;
+}
+
+.modal-open .modal {
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding-right: 0 !important;
+}
+
+.modal-dialog {
+    margin: 1.75rem auto;
+    max-width: 800px;
+}
+
+.modal-content {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Prevent table row spacing changes */
+.table {
+    width: 100% !important;
+    margin-bottom: 0 !important;
+    table-layout: fixed !important;
+}
+
+.table td {
+    padding: 1rem 0.75rem !important;
+    vertical-align: middle !important;
+}
+
+/* Ensure consistent widths */
+.table-responsive {
+    width: 100% !important;
+    margin: 0 !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    position: relative !important;
+    padding-right: 0 !important;
+}
+
+/* Fixed Table Layout */
+.table {
+    width: 100% !important;
+    margin: 0 !important;
+    table-layout: fixed !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+}
+
+/* Fixed Cell Content */
+.table th,
+.table td {
+    padding: 1rem 0.75rem !important;
+    vertical-align: middle !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    position: relative !important;
+    box-sizing: border-box !important;
+}
+
+/* Profile Layout Fixes */
+.d-flex {
+    display: flex !important;
+    align-items: center !important;
+    gap: 1rem !important;
+    width: 100% !important;
+    position: relative !important;
+}
+
+.avatar-container {
+    flex-shrink: 0 !important;
+    width: 40px !important;
+    height: 40px !important;
+    position: relative !important;
+}
+
+/* Avatar Container */
+.avatar-container {
+    flex: 0 0 40px !important;
+    width: 40px !important;
+    height: 40px !important;
+    position: relative !important;
+    margin-right: 1rem !important;
+}
+
+.avatar-container img,
+.avatar-placeholder {
+    width: 40px !important;
+    height: 40px !important;
+    object-fit: cover !important;
+    flex-shrink: 0 !important;
+}
+
+/* User Info Container */
+.user-info-container {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+}
+
+.user-info-container h6 {
+    margin: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.user-info-container .small {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+/* Ensure consistent spacing */
+.table td:first-child {
+    padding-left: 1.5rem !important;
+}
+
+/* Prevent text wrapping in cells */
+.table td > * {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+/* Fix avatar placeholder */
+.avatar-placeholder {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background-color: var(--primary-color) !important;
+    color: white !important;
+    font-weight: 500 !important;
+    border-radius: 50% !important;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 576px) {
+    .btn-primary {
+        height: 38px;
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+    }
+    
+    .btn-primary .material-icons {
+        font-size: 18px;
+    }
+}
+
+/* Registration item styling */
+.registration-item {
+    margin-bottom: 1rem;
+}
+
+.registration-item .text-muted {
+    font-size: 0.8rem;
+    margin-bottom: 0.25rem;
+}
+
+.registration-item .fw-medium {
+    font-weight: 500;
+    }
+</style>
+
+<script>
+// Function to show user details in modal
+function showUserDetail(userId) {
+    const modalBody = document.querySelector('#userDetailModal .modal-body');
+    modalBody.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+        </div>
+        </div>
+    `;
+    
+    fetch(`/users/${userId}/modal/`)
+        .then(response => response.text())
+        .then(html => {
+            modalBody.innerHTML = html;
+        })
+        .catch(error => {
+            modalBody.innerHTML = `
+                <div class="alert alert-danger m-3">
+                    <span class="material-icons me-2">error_outline</span>
+                    Error loading user details: ${error.message}
+            </div>
+            `;
+        });
+}
+
+// Function to toggle user status
+function toggleUserStatus(userId, action) {
+    if (!confirm(`Are you sure you want to ${action} this user?`)) {
+        return;
+    }
+
+    const button = event.target.closest('button');
+    const originalHtml = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+    fetch(`/users/${userId}/toggle-status/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Use the global showToast function from base template
+            if (typeof showToast === 'function') {
+                showToast('success', data.message);
+            }
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            if (typeof showToast === 'function') {
+                showToast('error', data.error || 'Error updating user status');
+            } else {
+                alert(data.error || 'Error updating user status');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        if (typeof showToast === 'function') {
+            showToast('error', 'Failed to update user status. Please try again.');
+        } else {
+            alert('Failed to update user status. Please try again.');
+        }
+    })
+    .finally(() => {
+        button.disabled = false;
+        button.innerHTML = originalHtml;
+    });
+}
+
+// Initialize modal functionality when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle vehicle details
+    const toggleButtons = document.querySelectorAll('.toggle-vehicles');
+    toggleButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const userId = this.getAttribute('data-user-id');
+            const vehiclesRow = document.getElementById(`vehicles-${userId}`);
+            
+            if (vehiclesRow.style.display === 'none') {
+                vehiclesRow.style.display = 'table-row';
+                this.classList.add('active');
+            } else {
+                vehiclesRow.style.display = 'none';
+                this.classList.remove('active');
+            }
+        });
+    });
+    
+    // Setup toggle status buttons
+    const statusButtons = document.querySelectorAll('.btn-toggle-status');
+    statusButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const userId = this.getAttribute('data-user-id');
+            const action = this.getAttribute('data-action');
+            toggleUserStatus(userId, action);
+        });
+    });
+
+    // Setup registration view buttons
+    const registrationButtons = document.querySelectorAll('.view-registration');
+    registrationButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Get data attributes
+            const plateNumber = this.getAttribute('data-plate');
+            const orNumber = this.getAttribute('data-or');
+            const crNumber = this.getAttribute('data-cr');
+            const vehicleType = this.getAttribute('data-type');
+            const make = this.getAttribute('data-make');
+            const model = this.getAttribute('data-model');
+            const year = this.getAttribute('data-year');
+            const color = this.getAttribute('data-color');
+            const classification = this.getAttribute('data-classification');
+            const registrationDate = this.getAttribute('data-registration');
+            const expiryDate = this.getAttribute('data-expiry');
+            const imageUrl = this.getAttribute('data-image');
+            
+            // Set modal content
+            document.getElementById('registration-plate').textContent = `Plate Number: ${plateNumber}`;
+            document.getElementById('registration-or').textContent = orNumber;
+            document.getElementById('registration-cr').textContent = crNumber;
+            document.getElementById('registration-date').textContent = registrationDate;
+            document.getElementById('registration-expiry').textContent = expiryDate;
+            document.getElementById('vehicle-classification').textContent = classification;
+            document.getElementById('vehicle-type').textContent = vehicleType;
+            document.getElementById('vehicle-make').textContent = make;
+            document.getElementById('vehicle-model').textContent = model;
+            document.getElementById('vehicle-year').textContent = year;
+            document.getElementById('vehicle-color').textContent = color;
+            document.getElementById('registration-image').src = imageUrl;
+        });
+    });
+
+    const userDetailModal = document.getElementById('userDetailModal');
+    if (userDetailModal) {
+        // Load user details when modal is shown
+        userDetailModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const userId = button.getAttribute('data-user-id');
+            showUserDetail(userId);
+            
+            // Prevent layout shifts
+            const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+            document.documentElement.style.setProperty('--scrollbar-width', `${scrollbarWidth}px`);
+            document.body.style.paddingRight = '0';
+            document.body.style.overflow = 'hidden';
+        });
+
+        // After modal is hidden
+        userDetailModal.addEventListener('hidden.bs.modal', function() {
+            document.body.style.paddingRight = '0';
+            document.body.style.overflow = '';
+            document.body.classList.remove('modal-open');
+            document.documentElement.style.removeProperty('--scrollbar-width');
+        });
+    }
+    
+    // Ensure table layout remains consistent
+    const tableContainer = document.querySelector('.table-responsive');
+    if (tableContainer) {
+        const resizeObserver = new ResizeObserver(entries => {
+            for (let entry of entries) {
+                const table = entry.target.querySelector('.table');
+                if (table) {
+                    table.style.width = `${entry.contentRect.width}px`;
+                }
+            }
+        });
+        resizeObserver.observe(tableContainer);
+    }
+});
+
+// Make toggleUserStatus available globally
+window.toggleUserStatus = toggleUserStatus;
+</script>
+{% endblock %} 

@@ -27,6 +27,7 @@ class AuthenticationMiddleware:
             reverse('services'),
             reverse('contact'),
             reverse('register'),
+            reverse('track_violation'),
         ]
         
         # Allow access to landing pages, static files, and media files

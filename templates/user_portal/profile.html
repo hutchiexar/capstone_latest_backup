@@ -3,28 +3,370 @@
 
 {% block title %}My Profile - CTTMO User Portal{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Modern Color Palette */
+    :root {
+        --primary-color: #3563E9;
+        --primary-light: #EEF3FF;
+        --success-color: #0CAA1D;
+        --danger-color: #F53D3D;
+        --warning-color: #FFB800;
+        --dark-blue: #0F1C3F;
+        --neutral-gray: #737791;
+        --light-gray: #F6F7F9;
+        --white: #FFFFFF;
+    }
+
+    /* Tailwind-inspired Utility Classes */
+    .shadow-lg { box-shadow: 0 10px 20px rgba(0,0,0,0.08); }
+    .shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .rounded-xl { border-radius: 1rem; }
+    .rounded-lg { border-radius: 0.75rem; }
+    .transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 300ms; }
+    .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+    .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+    .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+    .opacity-80 { opacity: 0.8; }
+    
+    /* Animation */
+    @keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+    }
+    
+    @keyframes spinner {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Modern Profile Design */
+    .profile-container {
+        animation: fadeIn 0.5s ease-out;
+    }
+    
+    .profile-header {
+        background-color: var(--white);
+        position: relative;
+    }
+    
+    .profile-avatar {
+        position: relative;
+        width: 120px;
+        height: 120px;
+        border: 4px solid var(--white);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .profile-card {
+        transition: all 0.3s ease;
+        border: none;
+        height: 100%;
+    }
+    
+    .profile-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+    }
+    
+    .profile-card .card-title {
+        color: var(--dark-blue);
+        font-weight: 600;
+        position: relative;
+        padding-bottom: 0.75rem;
+    }
+    
+    .profile-card .card-title:after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        height: 3px;
+        width: 40px;
+        background-color: var(--primary-color);
+        border-radius: 2px;
+    }
+    
+    .info-label {
+        font-size: 0.85rem;
+        color: var(--neutral-gray);
+        font-weight: 500;
+        margin-bottom: 0.25rem;
+    }
+    
+    .info-value {
+        font-weight: 500;
+        color: var(--dark-blue);
+        margin-bottom: 1.25rem;
+    }
+    
+    /* Avatar Upload & Edit */
+    .avatar-container { 
+        position: relative;
+        margin-right: 2rem;
+    }
+    
+    .edit-avatar-overlay { 
+        position: absolute; 
+        bottom: 0; 
+        right: 0; 
+        background-color: var(--primary-color); 
+        color: white; 
+        border-radius: 50%; 
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        transition: all 0.2s ease;
+    }
+    
+    .edit-avatar-overlay:hover {
+        transform: scale(1.1);
+    }
+    
+    /* Better loading states */
+    .avatar-skeleton { 
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); 
+        background-size: 200% 100%; 
+        animation: shimmer 1.5s infinite;
+        border-radius: 50%;
+    }
+    
+    .text-skeleton { 
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); 
+        background-size: 200% 100%; 
+        animation: shimmer 1.5s infinite; 
+        height: 1rem; 
+        margin-bottom: 0.5rem; 
+        border-radius: 0.25rem; 
+    }
+    
+    /* Button states */
+    .btn-loading { 
+        position: relative; 
+        pointer-events: none; 
+    }
+    
+    .btn-loading::after { 
+        content: ""; 
+        position: absolute; 
+        width: 1rem; 
+        height: 1rem; 
+        top: calc(50% - 0.5rem); 
+        right: 1rem; 
+        border: 2px solid transparent; 
+        border-top-color: currentColor; 
+        border-radius: 50%; 
+        animation: spinner 0.6s linear infinite; 
+    }
+    
+    /* Enhanced form styling */
+    .form-control {
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        line-height: 1.5;
+        border-radius: 0.5rem;
+        border: 1px solid #E2E8F0;
+        transition: all 0.2s ease;
+    }
+    
+    .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(53, 99, 233, 0.2);
+    }
+    
+    .form-label {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        color: var(--dark-blue);
+    }
+    
+    /* Custom buttons */
+    .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        box-shadow: 0 2px 4px rgba(53, 99, 233, 0.2);
+    }
+    
+    .btn-primary:hover {
+        background-color: #2954d8;
+        border-color: #2954d8;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px rgba(53, 99, 233, 0.3);
+    }
+    
+    .btn-outline-primary {
+        color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+    
+    .btn-outline-primary:hover {
+        background-color: var(--primary-color);
+        color: white;
+    }
+    
+    /* Toast notifications */
+    .custom-toast {
+        border-radius: 0.75rem;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        border: none;
+        overflow: hidden;
+    }
+    
+    .toast-success {
+        background-color: #EAF7EE;
+        border-left: 4px solid var(--success-color);
+    }
+    
+    .toast-success .toast-icon {
+        color: var(--success-color);
+    }
+    
+    .toast-error {
+        background-color: #FDEEEE;
+        border-left: 4px solid var(--danger-color);
+    }
+    
+    .toast-error .toast-icon {
+        color: var(--danger-color);
+    }
+    
+    .toast-message {
+        color: var(--dark-blue);
+        font-weight: 500;
+    }
+    
+    /* High Contrast Mode Support */
+    @media (forced-colors: active) {
+        .profile-card, .btn, .form-control {
+            border: 1px solid ButtonText;
+        }
+    }
+    
+    /* Accessibility Improvements */
+    .form-control:focus, .btn:focus {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+    }
+    
+    /* Touch Target Sizes */
+    @media (max-width: 768px) {
+        .btn {
+            padding: 0.625rem 1rem;
+            min-height: 44px;
+        }
+        
+        .modal-footer .btn {
+            min-width: 120px;
+        }
+        
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 1rem;
+        }
+        
+        .avatar-container {
+            margin-right: 0;
+            margin-bottom: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container py-4">
+<div class="container py-3 py-md-5 profile-container">
+    <!-- Loading Skeleton (hidden when data is loaded) -->
+    <div id="profile-skeleton" style="display: none;">
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-lg rounded-xl">
+                    <div class="card-body p-4 p-md-5">
+                        <div class="d-flex flex-column flex-md-row align-items-center">
+                            <div class="avatar-skeleton me-md-4 mb-3 mb-md-0" style="width: 120px; height: 120px;"></div>
+                            <div class="text-center text-md-start">
+                                <div class="text-skeleton" style="width: 180px;"></div>
+                                <div class="text-skeleton" style="width: 220px;"></div>
+                                <div class="text-skeleton" style="width: 120px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row g-4">
+            <div class="col-12 col-md-6">
+                <div class="card shadow-lg rounded-xl">
+                    <div class="card-body p-4 p-md-5">
+                        <div class="text-skeleton" style="width: 150px;"></div>
+                        <div class="text-skeleton" style="width: 100%;"></div>
+                        <div class="text-skeleton" style="width: 100%;"></div>
+                        <div class="text-skeleton" style="width: 100%;"></div>
+                        <div class="text-skeleton" style="width: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6">
+                <div class="card shadow-lg rounded-xl">
+                    <div class="card-body p-4 p-md-5">
+                        <div class="text-skeleton" style="width: 150px;"></div>
+                        <div class="text-skeleton" style="width: 100%;"></div>
+                        <div class="text-skeleton" style="width: 100%;"></div>
+                        <div class="text-skeleton" style="width: 100%;"></div>
+                        <div class="text-skeleton" style="width: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Content (will be shown after loading) -->
+    <div id="profile-content">
     <!-- Profile Header -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body p-4">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar-container me-4">
+                <div class="card profile-header shadow-lg rounded-xl transition-all overflow-hidden">
+                    <div class="card-body p-4 p-md-5">
+                        <div class="d-flex flex-column flex-md-row align-items-center">
+                            <div class="avatar-container">
                             {% if user.userprofile.avatar %}
-                                <img src="{{ user.userprofile.avatar.url }}" alt="Profile Picture" class="rounded-circle" width="100" height="100">
+                                    <img src="{{ user.userprofile.avatar.url }}" alt="Profile Picture" class="profile-avatar rounded-circle" style="object-fit: cover;">
                             {% else %}
-                                <div class="avatar-placeholder rounded-circle d-flex align-items-center justify-content-center bg-primary" style="width: 100px; height: 100px;">
-                                    <span class="material-icons text-white" style="font-size: 48px;">person</span>
+                                    <div class="profile-avatar rounded-circle d-flex align-items-center justify-content-center" style="background-color: var(--primary-light);">
+                                        <span class="material-icons" style="font-size: 48px; color: var(--primary-color);">person</span>
+                                    </div>
+                                {% endif %}
+                                <div class="edit-avatar-overlay" onclick="document.getElementById('avatar-upload').click()">
+                                    <span class="material-icons" style="font-size: 18px;">edit</span>
                                 </div>
-                            {% endif %}
+                                <input type="file" id="avatar-upload" style="display: none;" accept="image/*" onchange="uploadAvatar(this)">
                         </div>
-                        <div>
-                            <h4 class="mb-1">{{ user.get_full_name }}</h4>
-                            <p class="text-muted mb-2">License Number: {{ user.userprofile.license_number }}</p>
-                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editProfileModal">
-                                <span class="material-icons me-1" style="font-size: 18px;">edit</span>
+                            
+                            <div class="text-center text-md-start">
+                                <h3 class="mb-1 fw-bold text-base text-md-lg text-lg-xl">{{ user.get_full_name }}</h3>
+                                <p class="mb-3 text-sm text-md-base opacity-80">
+                                    <span class="d-inline-flex align-items-center me-3">
+                                        <span class="material-icons me-1" style="font-size: 18px; color: var(--neutral-gray);">badge</span>
+                                        License: {{ user.userprofile.license_number }}
+                                    </span>
+                                    <span class="d-inline-flex align-items-center">
+                                        <span class="material-icons me-1" style="font-size: 18px; color: var(--neutral-gray);">event</span>
+                                        Member since {{ user.date_joined|date:"M d, Y" }}
+                                    </span>
+                                </p>
+                                <button class="btn btn-outline-primary d-flex align-items-center mx-auto mx-md-0 px-4" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#editProfileModal"
+                                        style="min-height: 38px;">
+                                    <span class="material-icons me-2" style="font-size: 18px;">edit</span>
                                 Edit Profile
                             </button>
                         </div>
@@ -36,124 +378,414 @@
 
     <!-- Profile Details -->
     <div class="row g-4">
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body p-4">
-                    <h5 class="card-title mb-4">Personal Information</h5>
-                    <div class="mb-3">
-                        <label class="text-muted mb-1">Full Name</label>
-                        <p class="mb-0">{{ user.get_full_name }}</p>
+            <div class="col-12 col-md-6">
+                <div class="card profile-card shadow-lg rounded-xl">
+                    <div class="card-body p-4 p-md-5">
+                        <h5 class="card-title mb-4 text-base text-md-lg">Personal Information</h5>
+                        
+                        <div class="mb-4">
+                            <div class="d-flex align-items-start">
+                                <span class="material-icons me-3" style="color: var(--primary-color); font-size: 20px;">person</span>
+                                <div>
+                                    <div class="info-label">Full Name</div>
+                                    <div class="info-value">{{ user.get_full_name }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="d-flex align-items-start">
+                                <span class="material-icons me-3" style="color: var(--primary-color); font-size: 20px;">email</span>
+                                <div>
+                                    <div class="info-label">Email Address</div>
+                                    <div class="info-value">{{ user.email }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="d-flex align-items-start">
+                                <span class="material-icons me-3" style="color: var(--primary-color); font-size: 20px;">phone</span>
+                                <div>
+                                    <div class="info-label">Contact Number</div>
+                                    <div class="info-value">{{ user.userprofile.contact_number|default:"Not provided" }}</div>
                     </div>
-                    <div class="mb-3">
-                        <label class="text-muted mb-1">Email Address</label>
-                        <p class="mb-0">{{ user.email }}</p>
                     </div>
-                    <div class="mb-3">
-                        <label class="text-muted mb-1">Contact Number</label>
-                        <p class="mb-0">{{ user.userprofile.contact_number|default:"Not provided" }}</p>
                     </div>
+                        
+                        <div>
+                            <div class="d-flex align-items-start">
+                                <span class="material-icons me-3" style="color: var(--primary-color); font-size: 20px;">home</span>
                     <div>
-                        <label class="text-muted mb-1">Address</label>
-                        <p class="mb-0">{{ user.userprofile.address|default:"Not provided" }}</p>
+                                    <div class="info-label">Address</div>
+                                    <div class="info-value">{{ user.userprofile.address|default:"Not provided" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-12 col-md-6">
+                <div class="card profile-card shadow-lg rounded-xl">
+                    <div class="card-body p-4 p-md-5">
+                        <h5 class="card-title mb-4 text-base text-md-lg">Account Information</h5>
+                        
+                        <div class="mb-4">
+                            <div class="d-flex align-items-start">
+                                <span class="material-icons me-3" style="color: var(--primary-color); font-size: 20px;">account_circle</span>
+                                <div>
+                                    <div class="info-label">Username</div>
+                                    <div class="info-value">{{ user.username }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="d-flex align-items-start">
+                                <span class="material-icons me-3" style="color: var(--primary-color); font-size: 20px;">category</span>
+                                <div>
+                                    <div class="info-label">Account Type</div>
+                                    <div class="info-value">{{ user.userprofile.get_role_display }}</div>
+                </div>
+            </div>
+        </div>
+                        
+                        <div class="mb-4">
+                            <div class="d-flex align-items-start">
+                                <span class="material-icons me-3" style="color: var(--primary-color); font-size: 20px;">badge</span>
+                                <div>
+                                    <div class="info-label">License Number</div>
+                                    <div class="info-value">{{ user.userprofile.license_number }}</div>
+                    </div>
+                    </div>
+                    </div>
+                        
+                        <div>
+                            <div class="d-flex align-items-start">
+                                <span class="material-icons me-3" style="color: var(--primary-color); font-size: 20px;">calendar_today</span>
+                    <div>
+                                    <div class="info-label">Member Since</div>
+                                    <div class="info-value">{{ user.date_joined|date:"F d, Y" }}</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body p-4">
-                    <h5 class="card-title mb-4">Account Information</h5>
-                    <div class="mb-3">
-                        <label class="text-muted mb-1">Username</label>
-                        <p class="mb-0">{{ user.username }}</p>
-                    </div>
-                    <div class="mb-3">
-                        <label class="text-muted mb-1">Account Type</label>
-                        <p class="mb-0">{{ user.userprofile.get_role_display }}</p>
-                    </div>
-                    <div class="mb-3">
-                        <label class="text-muted mb-1">License Number</label>
-                        <p class="mb-0">{{ user.userprofile.license_number }}</p>
-                    </div>
-                    <div>
-                        <label class="text-muted mb-1">Member Since</label>
-                        <p class="mb-0">{{ user.date_joined|date:"F d, Y" }}</p>
-                    </div>
-                </div>
-            </div>
+    </div>
+</div>
+
+<!-- Success Toast Notification -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="successToast" class="toast custom-toast toast-success" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header border-0 bg-transparent">
+            <span class="material-icons toast-icon me-2">check_circle</span>
+            <strong class="me-auto toast-message" id="toastMessage">Profile updated successfully!</strong>
+            <small class="text-muted">just now</small>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<!-- Error Toast Notification -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="errorToast" class="toast custom-toast toast-error" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header border-0 bg-transparent">
+            <span class="material-icons toast-icon me-2">error</span>
+            <strong class="me-auto toast-message" id="errorToastMessage">An error occurred.</strong>
+            <small class="text-muted">just now</small>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
     </div>
 </div>
 
 <!-- Edit Profile Modal -->
 <div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="editProfileModalLabel">Edit Profile</h5>
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rounded-xl shadow-lg border-0">
+            <div class="modal-header border-0 bg-light py-4">
+                <h5 class="modal-title fw-bold" id="editProfileModalLabel">Edit Profile</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form method="post" action="{% url 'user_portal:edit_profile' %}" enctype="multipart/form-data">
+            <form id="profileForm" method="post" action="{% url 'user_portal:edit_profile' %}" enctype="multipart/form-data">
                 {% csrf_token %}
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Profile Picture</label>
-                        <input type="file" class="form-control" name="avatar" accept="image/*">
+                <div class="modal-body p-4">
+                    <div class="row g-4">
+                        <div class="col-12 text-center mb-3">
+                            <div class="position-relative d-inline-block">
+                                {% if user.userprofile.avatar %}
+                                    <img src="{{ user.userprofile.avatar.url }}" alt="Profile Picture" class="rounded-circle mb-3" width="100" height="100" style="object-fit: cover;">
+                                {% else %}
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center mb-3" style="width: 100px; height: 100px; background-color: var(--primary-light);">
+                                        <span class="material-icons" style="font-size: 48px; color: var(--primary-color);">person</span>
+                                    </div>
+                                {% endif %}
                     </div>
                     <div class="mb-3">
+                                <label for="avatar-input" class="btn btn-sm btn-outline-primary">
+                                    <span class="material-icons me-1" style="font-size: 16px;">photo_camera</span>
+                                    Change Photo
+                                </label>
+                                <input type="file" id="avatar-input" name="avatar" accept="image/*" style="display: none;">
+                            </div>
+                            <small class="text-muted d-block">Recommended: Square image, 400x400px (Max: 5MB)</small>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="card shadow-sm rounded-lg border-0 bg-light mb-4">
+                                <div class="card-body p-3">
+                                    <h6 class="mb-3 text-dark fw-bold">Personal Information</h6>
+                                    <div class="row g-3">
+                                        <div class="col-12 col-md-6">
                         <label class="form-label">First Name</label>
                         <input type="text" class="form-control" name="first_name" value="{{ user.first_name }}" required>
                     </div>
-                    <div class="mb-3">
+                                        <div class="col-12 col-md-6">
                         <label class="form-label">Last Name</label>
                         <input type="text" class="form-control" name="last_name" value="{{ user.last_name }}" required>
                     </div>
-                    <div class="mb-3">
+                                        <div class="col-12">
                         <label class="form-label">Email Address</label>
                         <input type="email" class="form-control" name="email" value="{{ user.email }}" required>
                     </div>
-                    <div class="mb-3">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card shadow-sm rounded-lg border-0 bg-light">
+                                <div class="card-body p-3">
+                                    <h6 class="mb-3 text-dark fw-bold">Contact Information</h6>
+                                    <div class="row g-3">
+                                        <div class="col-12 col-md-6">
+                        <label class="form-label">License Number</label>
+                                            <input type="text" class="form-control" name="license_number" value="{{ user.userprofile.license_number }}" aria-describedby="licenseHelp">
+                                            <div id="licenseHelp" class="form-text text-muted">Your driver's license number</div>
+                    </div>
+                                        <div class="col-12 col-md-6">
                         <label class="form-label">Contact Number</label>
                         <input type="tel" class="form-control" name="contact_number" value="{{ user.userprofile.contact_number }}">
                     </div>
-                    <div class="mb-3">
+                                        <div class="col-12">
                         <label class="form-label">Address</label>
                         <textarea class="form-control" name="address" rows="3">{{ user.userprofile.address }}</textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                <div class="modal-footer border-0 pt-2 pb-4 px-4 justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" id="saveProfileBtn" class="btn btn-primary px-4">
+                        Save Changes
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<style>
-.avatar-placeholder {
-    background-color: var(--bs-primary);
-}
+<!-- Confirmation Modal for Actions -->
+<div class="modal fade" id="confirmActionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-xl shadow-lg border-0">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold" id="confirmActionTitle">Confirm Action</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="confirmActionBody">
+                Are you sure you want to proceed?
+            </div>
+            <div class="modal-footer border-0 justify-content-between">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmActionBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-.card {
-    transition: transform 0.2s;
-}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Show skeleton loading on page load
+    const profileSkeleton = document.getElementById('profile-skeleton');
+    const profileContent = document.getElementById('profile-content');
+    
+    // Simulate loading for demonstration
+    profileSkeleton.style.display = 'block';
+    profileContent.style.display = 'none';
+    
+    // After "loading" show the content
+    setTimeout(() => {
+        profileSkeleton.style.display = 'none';
+        profileContent.style.display = 'block';
+    }, 800);
 
-.card:hover {
-    transform: translateY(-2px);
-}
+    // Profile form submission handling
+    const profileForm = document.getElementById('profileForm');
+    const saveProfileBtn = document.getElementById('saveProfileBtn');
+    const successToast = new bootstrap.Toast(document.getElementById('successToast'));
+    const errorToast = document.getElementById('errorToast');
+    const errorToastInstance = new bootstrap.Toast(errorToast);
+    const errorToastMessage = document.getElementById('errorToastMessage');
+    const avatarInput = document.getElementById('avatar-input');
+    
+    // Display selected image name
+    avatarInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+            let fileName = this.files[0].name;
+            // Could add code to display the file name or preview the image here
+        }
+    });
 
-.modal-content {
-    border: none;
-    border-radius: 12px;
-}
+    profileForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Show confirmation for major changes
+        if (profileForm.email.value !== '{{ user.email }}') {
+            showConfirmation(
+                'Change Email Address?', 
+                'Changing your email address will affect how you log in and receive notifications. Are you sure you want to continue?',
+                () => submitProfileForm()
+            );
+            return;
+        }
+        
+        submitProfileForm();
+    });
+    
+    function submitProfileForm() {
+        // Add loading state to button
+        saveProfileBtn.classList.add('btn-loading');
+        saveProfileBtn.innerHTML = 'Saving...';
+        
+        // Send form data via fetch
+        fetch(profileForm.action, {
+            method: 'POST',
+            body: new FormData(profileForm),
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Success - close modal and show toast
+            const modalElement = document.getElementById('editProfileModal');
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            modal.hide();
+            
+            // Show success toast
+            document.getElementById('toastMessage').textContent = 'Profile updated successfully!';
+            successToast.show();
+            
+            // Reload page to show updated data
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        })
+        .catch(error => {
+            // Show error toast
+            errorToastMessage.textContent = 'Error updating profile. Please try again.';
+            errorToastInstance.show();
+            console.error('Error:', error);
+        })
+        .finally(() => {
+            // Remove loading state
+            saveProfileBtn.classList.remove('btn-loading');
+            saveProfileBtn.innerHTML = 'Save Changes';
+        });
+    }
+    
+    // Function to show confirmation modal
+    function showConfirmation(title, message, onConfirm) {
+        const confirmModal = new bootstrap.Modal(document.getElementById('confirmActionModal'));
+        document.getElementById('confirmActionTitle').textContent = title;
+        document.getElementById('confirmActionBody').textContent = message;
+        
+        const confirmBtn = document.getElementById('confirmActionBtn');
+        
+        // Remove existing event listeners
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+        
+        // Add new event listener
+        newConfirmBtn.addEventListener('click', function() {
+            confirmModal.hide();
+            onConfirm();
+        });
+        
+        confirmModal.show();
+    }
+});
 
-.modal-header {
-    border-bottom: 1px solid rgba(0,0,0,0.1);
+// Function to handle avatar upload
+function uploadAvatar(input) {
+    if (input.files && input.files[0]) {
+        // Show loading in avatar container
+        const avatarContainer = document.querySelector('.avatar-container');
+        const originalContent = avatarContainer.innerHTML;
+        avatarContainer.innerHTML = `
+            <div class="profile-avatar rounded-circle d-flex align-items-center justify-content-center bg-light">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        `;
+        
+        const formData = new FormData();
+        formData.append('avatar', input.files[0]);
+        formData.append('csrfmiddlewaretoken', document.querySelector('input[name="csrfmiddlewaretoken"]').value);
+        
+        // Set other fields with current values to avoid losing data
+        formData.append('first_name', '{{ user.first_name }}');
+        formData.append('last_name', '{{ user.last_name }}');
+        formData.append('email', '{{ user.email }}');
+        formData.append('license_number', '{{ user.userprofile.license_number }}');
+        formData.append('contact_number', '{{ user.userprofile.contact_number|default:"" }}');
+        formData.append('address', '{{ user.userprofile.address|default:"" }}');
+        
+        fetch('{% url 'user_portal:edit_profile' %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Show success toast
+            document.getElementById('toastMessage').textContent = 'Profile picture updated!';
+            const successToast = new bootstrap.Toast(document.getElementById('successToast'));
+            successToast.show();
+            
+            // Reload page to show updated avatar
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        })
+        .catch(error => {
+            // Show error toast
+            document.getElementById('errorToastMessage').textContent = 'Error updating profile picture.';
+            const errorToast = new bootstrap.Toast(document.getElementById('errorToast'));
+            errorToast.show();
+            
+            // Restore original avatar content
+            avatarContainer.innerHTML = originalContent;
+            console.error('Error:', error);
+        });
+    }
 }
-
-.modal-footer {
-    border-top: 1px solid rgba(0,0,0,0.1);
-}
-</style>
+</script>
 {% endblock %} 

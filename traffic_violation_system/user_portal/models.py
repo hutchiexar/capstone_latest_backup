@@ -121,4 +121,48 @@ class UserViolationManager(models.Manager):
             status='PAID'
         ).aggregate(
             total=models.Sum('fine_amount')
-        )['total'] or 0 
+        )['total'] or 0
+
+
+class VehicleRegistration(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='registered_vehicles')
+    or_number = models.CharField(max_length=50, unique=True)  # OR Number
+    cr_number = models.CharField(max_length=50, unique=True)  # CR Number
+    plate_number = models.CharField(max_length=20, unique=True)
+    vehicle_type = models.CharField(max_length=100)
+    make = models.CharField(max_length=100)
+    model = models.CharField(max_length=100)
+    year_model = models.CharField(max_length=4)
+    color = models.CharField(max_length=50)
+    classification = models.CharField(max_length=20, choices=[
+        ('Private', 'Private'),
+        ('Public', 'Public'),
+        ('Government', 'Government'),
+        ('Commercial', 'Commercial')
+    ])
+    registration_date = models.DateField()
+    expiry_date = models.DateField()
+    or_cr_image = models.ImageField(upload_to='or_cr_images/')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.plate_number} - {self.vehicle_type}"
+
+    class Meta:
+        ordering = ['-created_at']
+
+
+class OperatorViolationLookup(models.Model):
+    """Model to track when vehicle owners look up operators to check their violation history"""
+    vehicle_owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='operator_lookups')
+    operator_license = models.CharField(max_length=20)  # License number of the operator being looked up
+    operator_name = models.CharField(max_length=200)    # Name of the operator being looked up
+    lookup_date = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-lookup_date']
+        
+    def __str__(self):
+        return f"{self.vehicle_owner.get_full_name()} looked up {self.operator_name} on {self.lookup_date}" 

@@ -29,6 +29,15 @@
                 </div>
             </div>
             
+            <!-- Enforcer Information -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h6 class="font-weight-bold">Enforcer Information</h6>
+                    <p><strong>Enforcer Name:</strong> {{ violation.enforcer.get_full_name }}</p>
+                    <p><strong>Enforcer ID:</strong> {{ violation.enforcer.userprofile.enforcer_id }}</p>
+                </div>
+            </div>
+            
             {% if violation.status == 'PENDING' %}
                 <div class="mt-4">
                     <h6>Payment Options</h6>

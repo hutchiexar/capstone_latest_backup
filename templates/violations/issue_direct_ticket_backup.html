@@ -1,0 +1,3612 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Progress Steps -->
+    <div class="progress-container mb-4">
+        <div class="progress">
+            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+        </div>
+        <div class="steps-container">
+            <div class="step active" data-step="1">
+                <div class="step-circle">1</div>
+                <div class="step-label">Violator Info</div>
+            </div>
+            <div class="step" data-step="2">
+                <div class="step-circle">2</div>
+                <div class="step-label">Violation Details</div>
+            </div>
+            <div class="step" data-step="3">
+                <div class="step-circle">3</div>
+                <div class="step-label">Signature</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Container -->
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-header bg-white py-3">
+            <div class="d-flex align-items-center">
+                <span class="material-icons me-2" style="color: var(--primary-color)">gavel</span>
+                <h4 class="m-0">Issue Violation Ticket</h4>
+            </div>
+        </div>
+
+        <div class="card-body p-4">
+            <form method="POST" id="ticketForm" class="needs-validation" novalidate>
+                {% csrf_token %}
+                <!-- Hidden field to store user ID if violator is a registered user -->
+                <input type="hidden" id="user_account_id" name="user_account_id" value="">
+                <input type="hidden" id="violator_source" name="violator_source" value="">
+                
+                <!-- Step 1: Violator Information -->
+                <div class="form-step active" id="step1">
+                    <div class="row g-4">
+                        <div class="col-lg-4">
+                            <div class="info-card">
+                                <h5 class="section-title">License Information</h5>
+                                
+                                <!-- Add unlicensed driver option -->
+                                <div class="form-check mb-3">
+                                    <input type="checkbox" class="form-check-input" id="noLicense" name="no_license">
+                                    <label class="form-check-label" for="noLicense">
+                                        Driver has no license
+                                    </label>
+                                </div>
+
+                                <div id="licenseInputGroup">
+                                    <div class="form-floating mb-3">
+                                        <input type="text" class="form-control autocomplete-input" id="license_number" name="license_number" 
+                                               pattern="[A-Z0-9]{3}-[0-9]{2}-[0-9]{6}" title="Format: XXX-XX-XXXXXX">
+                                        <label for="license_number">License Number</label>
+                                        <div class="form-text">Format: XXX-XX-XXXXXX (e.g., G12-24-001899)</div>
+                                        <div class="autocomplete-dropdown" id="license_dropdown"></div>
+                                    </div>
+
+                                    <!-- Add camera scanner button -->
+                                    <button type="button" id="scanLicense" class="btn btn-primary mb-3 w-100 d-flex align-items-center justify-content-center gap-2">
+                                        <span class="material-icons">camera_alt</span>
+                                        <span>Scan License</span>
+                                    </button>
+
+                                    <!-- Add camera feed modal -->
+                                    <div class="modal fade" id="cameraModal" tabindex="-1">
+                                        <div class="modal-dialog modal-dialog-centered modal-lg">
+                                            <div class="modal-content">
+                                                <div class="modal-header bg-primary text-white">
+                                                    <h5 class="modal-title">
+                                                        <span class="material-icons align-middle me-2">camera_alt</span>
+                                                        <span id="scannerTitle">Document Scanner</span>
+                                                    </h5>
+                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body p-0">
+                                                    <div class="camera-container position-relative">
+                                                        <!-- Scanning overlay -->
+                                                        <div id="scanningOverlay" class="scanning-overlay" style="display: none;">
+                                                            <div class="scanning-line"></div>
+                                                            <div class="corner-markers">
+                                                                <div class="corner-marker top-left"></div>
+                                                                <div class="corner-marker top-right"></div>
+                                                                <div class="corner-marker bottom-left"></div>
+                                                                <div class="corner-marker bottom-right"></div>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <!-- Camera elements -->
+                                                        <video id="cameraFeed" class="w-100" style="display: none;"></video>
+                                                        <canvas id="cameraCanvas" class="w-100" style="display: none;"></canvas>
+                                                        
+                                                        <!-- Status messages -->
+                                                        <div id="cameraPermissionMsg" class="camera-message text-center py-4">
+                                                            <span class="material-icons" style="font-size: 48px;">camera_alt</span>
+                                                            <p class="mt-2">Please allow camera access to scan the document.</p>
+                                                        </div>
+                                                        
+                                                        <div id="scanningMsg" class="camera-message text-center py-4" style="display: none;">
+                                                            <div class="spinner-border text-primary mb-2" role="status">
+                                                                <span class="visually-hidden">Processing...</span>
+                                                            </div>
+                                                            <p class="scanning-text">Processing document...</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                        <span class="material-icons align-middle me-2">close</span>
+                                                        Cancel
+                                                    </button>
+                                                    <button type="button" class="btn btn-primary" id="captureImage">
+                                                        <span class="material-icons align-middle me-2">photo_camera</span>
+                                                        Capture
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-8">
+                            <div class="info-card">
+                                <h5 class="section-title">Personal Information</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control autocomplete-input" id="first_name" name="first_name" required>
+                                            <label for="first_name">First Name</label>
+                                            <div class="autocomplete-dropdown" id="first_name_dropdown"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control autocomplete-input" id="last_name" name="last_name" required>
+                                            <label for="last_name">Last Name</label>
+                                            <div class="autocomplete-dropdown" id="last_name_dropdown"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="tel" class="form-control" id="phone_number" name="phone_number" required
+                                                   pattern="[0-9]{11}" title="Please enter a valid 11-digit phone number">
+                                            <label for="phone_number">Phone Number</label>
+                                            <div class="form-text">11-digit number (e.g., 09123456789)</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-floating">
+                                            <textarea class="form-control" id="address" name="address" style="height: 100px" required></textarea>
+                                            <label for="address">Complete Address</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Violation Details -->
+                <div class="form-step" id="step2" style="display: none;">
+                    <div class="row g-4">
+                        <div class="col-lg-4">
+                            <div class="info-card">
+                                <h5 class="section-title">Violation Type</h5>
+                                <div class="violations-list">
+                                    {% for code, label in violation_choices %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" 
+                                               name="violation_type[]" 
+                                               value="{{ label }}" 
+                                               id="violation_{{ code }}">
+                                        <label class="form-check-label" for="violation_{{ code }}">
+                                            {{ label }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-8">
+                            <div class="info-card">
+                                <h5 class="section-title">Vehicle Information</h5>
+                                <!-- Add camera scanner button for vehicle info -->
+                                <button type="button" id="scanVehicle" class="btn btn-primary mb-3 w-100 d-flex align-items-center justify-content-center gap-2">
+                                    <span class="material-icons">camera_alt</span>
+                                    <span>Scan Vehicle Registration</span>
+                                </button>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="vehicle_type" name="vehicle_type" required>
+                                            <label for="vehicle_type">Type/Make of Vehicle</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <select class="form-select" id="classification" name="classification" required>
+                                                <option value="">Select classification</option>
+                                                {% for code, label in vehicle_classifications %}
+                                                <option value="{{ code }}">{{ label }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <label for="classification">Classification</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="plate_number" name="plate_number" required>
+                                            <label for="plate_number">Plate Number</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="color" name="color" required>
+                                            <label for="color">Vehicle Color</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="registration_number" name="registration_number" required>
+                                            <label for="registration_number">Registration Number</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="date" class="form-control" id="registration_date" name="registration_date" required>
+                                            <label for="registration_date">Registration Date</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <h5 class="section-title mt-4">Vehicle Owner</h5>
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="vehicle_owner" name="vehicle_owner" required>
+                                            <label for="vehicle_owner">Vehicle Owner</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-floating">
+                                            <textarea class="form-control" id="vehicle_owner_address" name="vehicle_owner_address" style="height: 100px" required></textarea>
+                                            <label for="vehicle_owner_address">Vehicle Owner Address</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <h5 class="section-title mt-4">Violation Details</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-8">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="location" name="location" required>
+                                            <label for="location">Location of Violation</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-floating">
+                                            <input type="number" class="form-control" id="fine_amount" name="fine_amount" required min="0">
+                                            <label for="fine_amount">Fine Amount (₱)</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row g-3 mt-2">
+                                    <div class="col-12">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="is_tdz_violation" name="is_tdz_violation">
+                                            <label class="form-check-label" for="is_tdz_violation">
+                                                <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                                This violation occurred in a Traffic Discipline Zone (TDZ)
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Signature -->
+                <div class="form-step" id="step3" style="display: none;">
+                    <div class="row g-4">
+                        <div class="col-lg-4">
+                            <div class="info-card">
+                                <h5 class="section-title">Signature Options</h5>
+                                <div class="form-check mb-4">
+                                    <input class="form-check-input" type="checkbox" id="noSignature" name="no_signature">
+                                    <label class="form-check-label" for="noSignature">
+                                        <i class="fas fa-exclamation-circle text-warning me-2"></i>
+                                        Violator refused to sign
+                                    </label>
+                                </div>
+                                <div id="refusalNoteArea" style="display: none;">
+                                    <div class="form-floating">
+                                        <textarea class="form-control" id="refusalNote" name="refusal_note" 
+                                                style="height: 100px"></textarea>
+                                        <label for="refusalNote">Reason for Signature Refusal</label>
+                                    </div>
+                                </div>
+
+                                <!-- Add Enforcer Information Section -->
+                                <h5 class="section-title mt-4">Enforcer Information</h5>
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="enforcer_name" name="enforcer_name" required 
+                                           value="{{ request.user.get_full_name }}" readonly
+                                           data-enforcer-name="{{ request.user.get_full_name }}">
+                                    <label for="enforcer_name">Enforcer Name</label>
+                                </div>
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="enforcer_id" name="enforcer_id" required 
+                                           value="{{ request.user.userprofile.enforcer_id }}" readonly
+                                           data-enforcer-id="{{ request.user.userprofile.enforcer_id }}">
+                                    <label for="enforcer_id">Enforcer ID</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-8">
+                            <div class="info-card">
+                                <h5 class="section-title">Violator's Signature</h5>
+                                <div id="signatureArea">
+                                    <div class="signature-pad-container">
+                                        <canvas id="signatureCanvas"></canvas>
+                                    </div>
+                                    <div class="mt-3">
+                                        <button type="button" class="btn btn-outline-secondary" onclick="clearSignature()">
+                                            <i class="fas fa-eraser me-2"></i>Clear
+                                        </button>
+                                    </div>
+                                    <input type="hidden" name="signature_data" id="signatureData">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Buttons -->
+                <div class="d-flex justify-content-between mt-4 pt-3 border-top form-nav-buttons">
+                    <button type="button" class="btn btn-outline-secondary prev-step" style="display: none;">
+                        <span class="material-icons me-2">arrow_back</span>Previous
+                    </button>
+                    <button type="button" class="btn btn-primary next-step">
+                        Next<span class="material-icons ms-2">arrow_forward</span>
+                    </button>
+                    <button type="submit" class="btn btn-success submit-btn" style="display: none;">
+                        <span class="material-icons me-2">gavel</span>Issue Ticket
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Progress Steps */
+.progress-container {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+}
+
+.progress {
+    height: 4px;
+    background-color: #e9ecef;
+}
+
+.progress-bar {
+    background-color: var(--primary-color);
+    transition: width 0.3s ease;
+}
+
+.steps-container {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+    position: relative;
+}
+
+.step {
+    text-align: center;
+    flex: 1;
+}
+
+.step-circle {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 0.5rem;
+    font-weight: 600;
+    color: #6c757d;
+}
+
+.step.active .step-circle {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.step.completed .step-circle {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.step-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.step.active .step-label {
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+/* Cards */
+.info-card {
+    background-color: var(--bg-white);
+    border: 1px solid var(--bg-grey-100);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.section-title {
+    color: var(--text-dark);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--bg-grey-100);
+}
+
+/* Form Controls */
+.form-floating {
+    margin-bottom: 1rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.25);
+}
+
+.violations-list {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.form-check {
+    margin-bottom: 0.75rem;
+    padding: 0.5rem;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.form-check:hover {
+    background-color: #e9ecef;
+}
+
+/* Signature Pad */
+.signature-pad-container {
+    width: 100%;
+    height: 200px;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    touch-action: none;
+}
+
+/* Autocomplete styles */
+.autocomplete-input {
+    position: relative;
+}
+
+.autocomplete-dropdown {
+    position: absolute;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    z-index: 1050;
+    display: none;
+}
+
+.autocomplete-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s;
+}
+
+.autocomplete-item:hover,
+.autocomplete-item.active {
+    background-color: #f8f9fa;
+}
+
+.autocomplete-item .highlight {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.autocomplete-details {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 3px;
+}
+
+.source-badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: 500;
+}
+
+.source-badge.violator {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+.source-badge.user {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.autocomplete-error {
+    background-color: #f8d7da;
+    border-radius: 4px;
+    font-size: 0.875rem;
+}
+
+/* Signature Pad */
+#signatureCanvas {
+    width: 100%;
+    height: 100%;
+    background-color: white;
+    touch-action: none;
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+@media (max-width: 768px) {
+    .signature-pad-container {
+        height: 150px;
+    }
+}
+
+/* Buttons */
+.btn {
+    padding: 0.5rem 1.5rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .info-card {
+        margin-bottom: 1.5rem;
+    }
+
+    .step-label {
+        font-size: 0.75rem;
+    }
+
+    #scanLicense {
+        display: flex !important;
+    }
+}
+
+/* Camera Modal Styles */
+.camera-container {
+    position: relative;
+    background: #000;
+    min-height: 300px;
+    max-height: 70vh;
+    overflow: hidden;
+}
+
+.camera-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+    z-index: 10;
+}
+
+/* Scanning Animation */
+.scanning-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.scanning-line {
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    background: rgba(0, 123, 255, 0.5);
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.8);
+    animation: scan 2s linear infinite;
+}
+
+@keyframes scan {
+    0% {
+        top: 0;
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        top: 100%;
+        opacity: 1;
+    }
+}
+
+/* Corner Markers */
+.corner-markers {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.corner-marker {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #00ff00;
+}
+
+.top-left {
+    top: 10px;
+    left: 10px;
+    border-right: none;
+    border-bottom: none;
+}
+
+.top-right {
+    top: 10px;
+    right: 10px;
+    border-left: none;
+    border-bottom: none;
+}
+
+.bottom-left {
+    bottom: 10px;
+    left: 10px;
+    border-right: none;
+    border-top: none;
+}
+
+.bottom-right {
+    bottom: 10px;
+    right: 10px;
+    border-left: none;
+    border-top: none;
+}
+
+/* Camera Feed */
+#cameraFeed, #cameraCanvas {
+    background: #000;
+    max-height: 70vh;
+    object-fit: cover;
+}
+
+/* Processing Animation */
+.scanning-text {
+    margin-top: 10px;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+/* Modal Enhancements */
+.modal-content {
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.modal-header {
+    border-bottom: none;
+    padding: 1rem 1.5rem;
+}
+
+.modal-footer {
+    border-top: 1px solid rgba(0,0,0,0.1);
+    padding: 1rem 1.5rem;
+}
+
+.camera-instructions {
+    color: #6c757d;
+}
+
+.license-badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: 500;
+    margin-right: 5px;
+}
+
+.license-badge.has-license {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.license-badge.no-license {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Improved Mobile Styles for Navigation */
+@media (max-width: 768px) {
+    /* Overriding any inline styles */
+    .form-nav-buttons {
+        margin-top: 30px !important;
+        padding: 0 8px !important;
+    }
+    
+    /* Better touch targets and visual feedback */
+    .form-nav-buttons .btn {
+        min-height: 54px !important;
+        font-size: 16px !important;
+        font-weight: 500 !important;
+        padding: 12px 16px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    
+    /* License input and scan button */
+    #licenseInputGroup {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+    }
+    
+    #license_number {
+        margin-bottom: 10px !important;
+    }
+    
+    /* Improved step indicators */
+    .steps-container {
+        display: flex !important;
+        justify-content: space-between !important;
+        width: 100% !important;
+        margin-bottom: 20px !important;
+    }
+    
+    /* License scan button formatting */
+    #scanLicense {
+        margin-top: 5px !important;
+        margin-bottom: 15px !important;
+        padding: 12px 0 !important;
+    }
+    
+    /* Card and container improvements */
+    .card {
+        border-radius: 12px !important;
+        margin: 0 auto !important;
+        max-width: 100% !important;
+    }
+    
+    .info-card {
+        border-radius: 8px !important;
+        padding: 20px !important;
+        margin-bottom: 20px !important;
+    }
+    
+    /* For tablet portrait */
+    @media (min-width: 540px) and (max-width: 768px) {
+        .card-body {
+            padding: 20px !important;
+        }
+    }
+    
+    /* For mobile phones */
+    @media (max-width: 539px) {
+        .card-body {
+            padding: 16px !important;
+        }
+        
+        .steps-container {
+            padding: 0 10px !important;
+        }
+    }
+}
+
+/* Info Card Styling */
+.info-card {
+    background-color: var(--bg-white);
+    border: 1px solid var(--bg-grey-100);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.section-title {
+    color: var(--text-dark);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--bg-grey-100);
+}
+
+/* Improved Mobile Styles for Navigation */
+@media (max-width: 768px) {
+    /* Existing styles... */
+
+    /* Enhanced info card for mobile */
+    .info-card {
+        padding: 1rem !important;
+        margin-bottom: 1rem !important;
+        border-radius: 8px !important;
+    }
+    
+    .section-title {
+        font-size: 1rem !important;
+        margin-bottom: 1rem !important;
+        padding-bottom: 0.5rem !important;
+    }
+    
+    /* For better spacing in form groups */
+    .form-floating {
+        margin-bottom: 1rem !important;
+    }
+    
+    /* Autocomplete dropdown positioning */
+    .autocomplete-dropdown {
+        width: 100% !important;
+        max-height: 200px !important;
+        z-index: 1050 !important;
+    }
+    
+    /* Make license number field more visible */
+    #license_number {
+        font-weight: 500 !important;
+        letter-spacing: 0.5px !important;
+    }
+}
+
+/* For tablet portrait */
+@media (min-width: 540px) and (max-width: 768px) {
+    /* Existing styles... */
+}
+
+/* For mobile phones */
+@media (max-width: 539px) {
+    /* Existing styles... */
+}
+
+/* Single Page Mobile View */
+@media (max-width: 768px) {
+    /* Make all form steps visible on mobile */
+    .form-step {
+        display: block !important;
+        margin-bottom: 2rem !important;
+        padding-bottom: 2rem !important;
+        border-bottom: 1px dashed var(--bg-grey-200) !important;
+    }
+    
+    /* Hide the next/prev buttons on mobile */
+    .form-nav-buttons {
+        display: block !important;
+        margin-top: 2rem !important;
+    }
+    
+    /* Hide navigation buttons but show submit button */
+    .form-nav-buttons .prev-step,
+    .form-nav-buttons .next-step {
+        display: none !important;
+    }
+    
+    /* Show submit button always on mobile */
+    .submit-btn {
+        display: flex !important;
+        width: 100% !important;
+        padding: 16px !important;
+        margin-top: 1.5rem !important;
+        font-size: 18px !important;
+        font-weight: 600 !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 10px !important;
+        box-shadow: 0 4px 10px rgba(0, 150, 0, 0.2) !important;
+    }
+    
+    .submit-btn .material-icons {
+        font-size: 24px !important;
+    }
+    
+    /* Convert progress steps into section headers */
+    .progress-container {
+        position: sticky !important;
+        top: 0 !important;
+        background: white !important;
+        z-index: 10 !important;
+        padding: 10px 0 !important;
+        margin-bottom: 1.5rem !important;
+    }
+    
+    .steps-container {
+        overflow-x: auto !important;
+        padding-bottom: 5px !important;
+        -ms-overflow-style: none !important; /* IE and Edge */
+        scrollbar-width: none !important; /* Firefox */
+    }
+    
+    .steps-container::-webkit-scrollbar {
+        display: none !important; /* Chrome, Safari, Opera */
+    }
+    
+    /* Add section titles before each step */
+    .form-step::before {
+        content: attr(data-title);
+        display: block;
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--primary-color);
+    }
+    
+    /* Improve section spacing */
+    .info-card {
+        margin-bottom: 1.5rem !important;
+    }
+    
+    /* Add visual separator between sections */
+    .form-step:not(:last-of-type) {
+        position: relative !important;
+    }
+    
+    .form-step:not(:last-of-type)::after {
+        content: "";
+        display: block !important;
+        height: 6px !important;
+        background: var(--bg-grey-50) !important;
+        margin: 2rem -16px 0 -16px !important;
+    }
+    
+    /* Reduce form margin for cleaner appearance */
+    #ticketForm {
+        margin-bottom: 0 !important;
+    }
+    
+    /* Improve form validation on mobile */
+    .form-control.is-invalid {
+        background-position: right calc(0.375em + 0.75rem) center !important;
+    }
+    
+    .invalid-feedback {
+        font-size: 0.85rem !important;
+        font-weight: 500 !important;
+        margin-top: 0.25rem !important;
+    }
+    
+    /* Style error alert for violations */
+    #violationError {
+        background-color: #fff8f8 !important;
+        color: var(--danger) !important;
+        border: 1px solid #ffdddd !important;
+        border-radius: 8px !important;
+        padding: 12px !important;
+        margin-bottom: 15px !important;
+        font-weight: 500 !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+    }
+    
+    /* Make violation selection more visible */
+    .violation-checkbox {
+        margin-bottom: 10px !important;
+    }
+    
+    .violation-checkbox .form-check-input {
+        width: 20px !important;
+        height: 20px !important;
+        margin-right: 10px !important;
+    }
+    
+    .violation-checkbox .form-check-label {
+        font-size: 16px !important;
+        padding: 5px 0 !important;
+    }
+}
+
+/* Repeat Violator Badge */
+.form-floating {
+    position: relative;
+}
+
+.checking-badge {
+    position: absolute;
+    right: 10px;
+    top: 15px;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    z-index: 5;
+    opacity: 0.9;
+}
+
+.repeat-badge {
+    position: absolute;
+    right: 0;
+    top: -10px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    z-index: 5;
+}
+
+.is-checking .form-control {
+    padding-right: 100px !important;
+}
+
+.border-warning {
+    border-color: #ffc107 !important;
+    background-color: #fffbf2 !important;
+}
+
+/* Repeat Violator Alert */
+.repeat-alert {
+    background-color: #fff8db !important;
+    border-left: 4px solid #ffc107 !important;
+    padding: 12px !important;
+    margin: 10px 0 20px !important;
+    border-radius: 4px !important;
+    animation: pulse-warning 2s ease-in-out;
+}
+
+@keyframes pulse-warning {
+    0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+}
+
+.repeat-alert-icon {
+    background-color: #ffc107;
+    color: #fff;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 16px;
+}
+
+.repeat-alert-icon .material-icons {
+    font-size: 22px;
+}
+
+.repeat-alert-content {
+    flex: 1;
+}
+
+.repeat-alert .alert-heading {
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 5px;
+    color: #856404;
+}
+
+.repeat-alert p {
+    margin-bottom: 5px;
+    color: #856404;
+}
+
+.repeat-alert p small {
+    opacity: 0.8;
+}
+
+/* Mobile view enhancements for repeat alert */
+@media (max-width: 768px) {
+    .repeat-alert {
+        flex-direction: column !important;
+        padding: 15px !important;
+        margin: 0 0 20px !important;
+    }
+    
+    .repeat-alert-icon {
+        margin-right: 0 !important;
+        margin-bottom: 10px !important;
+    }
+    
+    .repeat-alert-content {
+        text-align: center !important;
+    }
+}
+
+/* Custom Toast Style */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+.toast {
+    min-width: 280px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.toast-header {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    border-radius: 8px 8px 0 0;
+    font-weight: 600;
+}
+
+.toast-body {
+    padding: 10px 15px;
+    font-size: 0.875rem;
+}
+</style>
+
+<script>
+// Function to show toast notifications
+function showToast(title, message, type = 'info') {
+    // Create toast container if it doesn't exist
+    let toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container';
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    
+    // Set color based on type
+    let bgColor, textColor, icon;
+    switch(type) {
+        case 'warning':
+            bgColor = '#fff3cd';
+            textColor = '#856404';
+            icon = 'warning';
+            break;
+        case 'success':
+            bgColor = '#d4edda';
+            textColor = '#155724';
+            icon = 'check_circle';
+            break;
+        case 'error':
+            bgColor = '#f8d7da';
+            textColor = '#721c24';
+            icon = 'error';
+            break;
+        default:
+            bgColor = '#d1ecf1';
+            textColor = '#0c5460';
+            icon = 'info';
+    }
+    
+    // Create toast content
+    const toastContent = `
+        <div class="toast-header" style="background-color: ${bgColor}; color: ${textColor}">
+            <span class="material-icons me-2">${icon}</span>
+            <strong class="me-auto">${title}</strong>
+            <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+        <div class="toast-body">
+            ${message}
+        </div>
+    `;
+    
+    toast.innerHTML = toastContent;
+    toastContainer.appendChild(toast);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (toast && toast.parentElement) {
+            toast.remove();
+        }
+    }, 5000);
+}
+</script>
+
+<script>
+// Add this script for the violation error message
+document.addEventListener('DOMContentLoaded', function() {
+    // Create violation error element if it doesn't exist
+    if (!document.getElementById('violationError')) {
+        const violationStep = Array.from(document.querySelectorAll('.form-step')).find(
+            step => step.querySelector('input[name="violation_type[]"]')
+        );
+        
+        if (violationStep) {
+            const errorDiv = document.createElement('div');
+            errorDiv.id = 'violationError';
+            errorDiv.className = 'alert alert-danger';
+            errorDiv.style.display = 'none';
+            errorDiv.innerHTML = '<span class="material-icons">error</span> Please select at least one violation type';
+            
+            const violationList = violationStep.querySelector('.violation-list') || 
+                               violationStep.querySelector('.col-12');
+            
+            if (violationList) {
+                violationList.insertBefore(errorDiv, violationList.firstChild);
+            }
+        }
+    }
+});
+</script>
+
+<script>
+// Form steps handling
+let currentStep = 0;
+const steps = document.querySelectorAll('.form-step');
+const progressBar = document.querySelector('.progress-bar');
+const stepIndicators = document.querySelectorAll('.step');
+const prevBtn = document.querySelector('.prev-step');
+const nextBtn = document.querySelector('.next-step');
+const submitBtn = document.querySelector('.submit-btn');
+
+function updateStep(step) {
+    // Hide all steps and show current
+    steps.forEach(s => s.style.display = 'none');
+    steps[step].style.display = 'block';
+    
+    // Update progress bar
+    progressBar.style.width = `${((step + 1) / steps.length) * 100}%`;
+    
+    // Update step indicators
+    stepIndicators.forEach((s, i) => {
+        s.classList.remove('active', 'completed');
+        if (i === step) s.classList.add('active');
+        if (i < step) s.classList.add('completed');
+    });
+    
+    // Update buttons
+    prevBtn.style.display = step === 0 ? 'none' : 'flex';
+    nextBtn.style.display = step === steps.length - 1 ? 'none' : 'flex';
+    submitBtn.style.display = step === steps.length - 1 ? 'flex' : 'none';
+    
+    // Mobile: Scroll to top of the form for better UX when changing steps
+    if (window.innerWidth <= 768) {
+        const cardTop = document.querySelector('.card').getBoundingClientRect().top;
+        const offset = window.pageYOffset + cardTop - 20; // 20px padding
+        window.scrollTo({
+            top: offset,
+            behavior: 'smooth'
+        });
+    }
+    
+    // When moving to step 2 (violations), initialize violation calculation
+    if (step === 1 && typeof updateViolationTotal === 'function') {
+        console.log('Step 2 displayed, initializing violation total calculation');
+        setTimeout(updateViolationTotal, 100);
+    }
+}
+
+function validateStep(step) {
+    const currentStepEl = steps[step];
+    const inputs = currentStepEl.querySelectorAll('input[required], select[required], textarea[required]');
+    let isValid = true;
+
+    inputs.forEach(input => {
+        if (!input.value) {
+            isValid = false;
+            input.classList.add('is-invalid');
+        } else {
+            input.classList.remove('is-invalid');
+        }
+    });
+
+    // Special validation for step 2 (violations)
+    if (step === 1) {
+        const selectedViolations = document.querySelectorAll('input[name="violation_type[]"]:checked');
+        if (selectedViolations.length === 0) {
+            isValid = false;
+            alert('Please select at least one violation type');
+        } else {
+            // Update the violation amount when validating step 2
+            if (typeof updateViolationTotal === 'function') {
+                console.log('Updating violation total during validation');
+                updateViolationTotal();
+            }
+        }
+    }
+
+    return isValid;
+}
+
+// Add event listeners for navigation buttons
+nextBtn.addEventListener('click', () => {
+    if (validateStep(currentStep)) {
+        currentStep++;
+        updateStep(currentStep);
+        
+        // If moving to step 2 and "no license" is checked, ensure unlicensed violation is checked
+        if (currentStep === 1 && document.getElementById('noLicense').checked) {
+            const unlicensedCheckbox = Array.from(document.querySelectorAll('input[name="violation_type[]"]'))
+                .find(checkbox => checkbox.value === 'Unlicensed Driver');
+            
+            if (unlicensedCheckbox) {
+                unlicensedCheckbox.checked = true;
+            }
+        }
+
+        // If moving to step 2, check if this is a repeat violator
+        if (currentStep === 1) {
+            checkForRepeatViolator();
+            
+            // Recalculate fine amount in case of pre-selected violations
+            if (typeof updateFineAmount === 'function') {
+                setTimeout(updateFineAmount, 100);
+            }
+        }
+    }
+});
+
+prevBtn.addEventListener('click', () => {
+    currentStep--;
+    updateStep(currentStep);
+});
+
+// Function to check for repeat violations
+async function checkForRepeatViolator() {
+    try {
+        const licenseNumber = document.getElementById('license_number').value;
+        const userId = document.getElementById('user_account_id').value;
+        const violatorSource = document.getElementById('violator_source').value;
+        
+        // Only check if we have license number or user ID
+        if (!licenseNumber && !userId) return;
+        
+        // Get CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        // Prepare the request data
+        const formData = new FormData();
+        if (licenseNumber) formData.append('license_number', licenseNumber);
+        if (userId) formData.append('user_id', userId);
+        if (violatorSource) formData.append('source', violatorSource);
+        
+        // Show loading indicator
+        const licenseField = document.getElementById('license_number');
+        const licenseParent = licenseField.parentElement;
+        
+        // Add loading state
+        if (licenseParent) {
+            licenseParent.classList.add('is-checking');
+            
+            // Add loading spinner if it doesn't exist
+            if (!licenseParent.querySelector('.checking-badge')) {
+                const loadingSpinner = document.createElement('div');
+                loadingSpinner.className = 'checking-badge';
+                loadingSpinner.innerHTML = '<span class="spinner-border spinner-border-sm text-primary" role="status"></span> Checking...';
+                licenseParent.appendChild(loadingSpinner);
+            }
+        }
+        
+        // Make API request to check for previous violations
+        const response = await fetch('/api/check-repeat-violator/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken
+            }
+        });
+        
+        // Remove loading state
+        if (licenseParent) {
+            licenseParent.classList.remove('is-checking');
+            const loadingBadge = licenseParent.querySelector('.checking-badge');
+            if (loadingBadge) loadingBadge.remove();
+        }
+        
+        if (!response.ok) {
+            throw new Error('Failed to check violator history');
+        }
+        
+        const data = await response.json();
+        
+        // Remove any existing alert first
+        const existingAlert = document.getElementById('repeat-violator-alert');
+        if (existingAlert) {
+            existingAlert.remove();
+        }
+        
+        if (data.is_repeat_violator) {
+            // Get the repeat violator checkbox
+            const repeatViolatorCheckbox = Array.from(document.querySelectorAll('input[name="violation_type[]"]'))
+                .find(checkbox => checkbox.value === 'Repeat Violator');
+            
+            if (repeatViolatorCheckbox) {
+                repeatViolatorCheckbox.checked = true;
+                
+                // Show toast notification about repeat violator
+                showToast('Repeat Violator Detected', 
+                    `This person has ${data.violation_count} previous violations. The Repeat Violator penalty has been automatically applied.`, 
+                    'warning');
+                
+                // Add visual indicator to license field
+                if (licenseParent && !licenseParent.querySelector('.repeat-badge')) {
+                    const repeatBadge = document.createElement('div');
+                    repeatBadge.className = 'repeat-badge bg-warning text-dark rounded px-2 py-1 small';
+                    repeatBadge.innerHTML = `<span class="material-icons" style="font-size: 14px;">warning</span> Repeat Violator (${data.violation_count})`;
+                    licenseParent.appendChild(repeatBadge);
+                    
+                    // Add warning class to license field
+                    licenseField.classList.add('border-warning');
+                }
+                
+                // Create and show prominent alert banner
+                const alertHTML = `
+                    <div id="repeat-violator-alert" class="alert alert-warning repeat-alert d-flex align-items-center" role="alert">
+                        <div class="repeat-alert-icon">
+                            <span class="material-icons">warning</span>
+                        </div>
+                        <div class="repeat-alert-content">
+                            <h5 class="alert-heading mb-1">⚠️ REPEAT VIOLATOR DETECTED</h5>
+                            <p class="mb-0">This person has <strong>${data.violation_count} previous violations</strong>. The Repeat Violator penalty has been automatically applied.</p>
+                            <p class="mb-0 mt-1"><small>Last violation: ${data.last_violation_date || 'N/A'}</small></p>
+                        </div>
+                    </div>
+                `;
+                
+                // Add the alert to the beginning of the personal info card
+                const personalInfoSection = document.querySelector('.form-step .info-card h5.section-title');
+                if (personalInfoSection && personalInfoSection.textContent.includes('Personal')) {
+                    personalInfoSection.insertAdjacentHTML('afterend', alertHTML);
+                } else {
+                    // Fallback: add to the first step
+                    const firstStep = document.querySelector('.form-step');
+                    if (firstStep) {
+                        firstStep.insertAdjacentHTML('afterbegin', alertHTML);
+                    }
+                }
+                
+                // Recalculate fine amount
+                if (typeof updateViolationTotal === 'function') {
+                    updateViolationTotal();
+                }
+            }
+        } else {
+            // Remove repeat violator badge if exists
+            const repeatBadge = licenseParent.querySelector('.repeat-badge');
+            if (repeatBadge) repeatBadge.remove();
+            
+            // Remove warning class from license field
+            licenseField.classList.remove('border-warning');
+            
+            // Uncheck repeat violator checkbox if it was checked
+            const repeatViolatorCheckbox = Array.from(document.querySelectorAll('input[name="violation_type[]"]'))
+                .find(checkbox => checkbox.value === 'Repeat Violator');
+            if (repeatViolatorCheckbox && repeatViolatorCheckbox.checked) {
+                repeatViolatorCheckbox.checked = false;
+                
+                // Recalculate fine amount
+                if (typeof updateViolationTotal === 'function') {
+                    updateViolationTotal();
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error checking for repeat violator:', error);
+        
+        // Remove loading state in case of error
+        const licenseParent = document.getElementById('license_number').parentElement;
+        if (licenseParent) {
+            licenseParent.classList.remove('is-checking');
+            const loadingBadge = licenseParent.querySelector('.checking-badge');
+            if (loadingBadge) loadingBadge.remove();
+        }
+    }
+}
+
+// Signature pad initialization
+const canvas = document.getElementById('signatureCanvas');
+const ctx = canvas.getContext('2d');
+let isDrawing = false;
+let lastX = 0;
+let lastY = 0;
+
+function initializeCanvas() {
+    const container = canvas.parentElement;
+    const rect = container.getBoundingClientRect();
+    
+    // Set canvas dimensions
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+    
+    // Set canvas styling
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.position = 'absolute';
+    canvas.style.left = '0';
+    canvas.style.top = '0';
+    
+    // Configure drawing context
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+}
+
+function getCoordinates(event) {
+    const rect = canvas.getBoundingClientRect();
+    
+    if (event.type.includes('touch')) {
+        const touch = event.touches[0] || event.changedTouches[0];
+        return {
+            x: touch.clientX - rect.left,
+            y: touch.clientY - rect.top
+        };
+    }
+    return {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top
+    };
+}
+
+function startDrawing(event) {
+    event.preventDefault();
+    isDrawing = true;
+    const coords = getCoordinates(event);
+    lastX = coords.x;
+    lastY = coords.y;
+}
+
+function draw(event) {
+    if (!isDrawing) return;
+    event.preventDefault();
+    
+    const coords = getCoordinates(event);
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(coords.x, coords.y);
+    ctx.stroke();
+    
+    lastX = coords.x;
+    lastY = coords.y;
+}
+
+function stopDrawing() {
+    if (!isDrawing) return;
+    isDrawing = false;
+    saveSignature();
+}
+
+function clearSignature() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    document.getElementById('signatureData').value = '';
+    console.log('Signature cleared');
+}
+
+function saveSignature() {
+    const dataUrl = canvas.toDataURL('image/png');
+    const signatureData = document.getElementById('signatureData');
+    
+    if (dataUrl) {
+        // Create a timestamp for unique filename
+        const timestamp = new Date().getTime();
+        const filename = `signature_${timestamp}.png`;
+        
+        // Convert data URL to blob
+        fetch(dataUrl)
+            .then(res => res.blob())
+            .then(blob => {
+                // Create form data
+                const formData = new FormData();
+                formData.append('signature', blob, filename);
+                formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+                
+                // Send to server
+                fetch('/save-signature/', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('Signature saved successfully:', data.filename);
+                        signatureData.value = data.filename;  // Store the filename instead of data URL
+                    } else {
+                        console.error('Failed to save signature:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error saving signature:', error);
+                });
+            });
+    } else {
+        signatureData.value = '';
+        console.log('No signature to save');
+    }
+}
+
+// Update the event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize canvas
+    initializeCanvas();
+    
+    // Mouse events with passive false for all events
+    canvas.addEventListener('mousedown', startDrawing, { passive: false });
+    canvas.addEventListener('mousemove', draw, { passive: false });
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+    
+    // Touch events with passive false for all events
+    canvas.addEventListener('touchstart', startDrawing, { passive: false });
+    canvas.addEventListener('touchmove', draw, { passive: false });
+    canvas.addEventListener('touchend', stopDrawing);
+    canvas.addEventListener('touchcancel', stopDrawing);
+    
+    // Handle window resize
+    window.addEventListener('resize', function() {
+        const imageData = canvas.toDataURL('image/png');
+        initializeCanvas();
+        if (imageData !== canvas.toDataURL('image/png')) {
+            const img = new Image();
+            img.onload = function() {
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            };
+            img.src = imageData;
+        }
+    });
+});
+
+// Define updateFineAmount globally to make it accessible from other functions
+function updateFineAmount() {
+    const violationCheckboxes = document.querySelectorAll('input[name="violation_type[]"]:checked');
+    const fineAmountEl = document.getElementById('fine_amount');
+    const isTdzViolationEl = document.getElementById('is_tdz_violation');
+
+    console.log('Running updateFineAmount function');
+    console.log('Found checked violations:', violationCheckboxes.length);
+    
+    // Default fine amount for unlisted violations
+    const DEFAULT_FINE = 500;
+    
+    // Default fine amounts for common violation types
+    const fineAmounts = {
+        'Speeding': 500,
+        'Running a Red Light': 800,
+        'Illegal Parking': 300,
+        'No Seat Belt': 250,
+        'Using Phone While Driving': 1000,
+        'Driving Under Influence': 2500,
+        'Unlicensed Driver': 1500,
+        'Reckless Driving': 2000,
+        'Expired Registration': 1000,
+        'No Helmet': 500,
+        'Obstruction': 1000,
+        'Wrong Way Driving': 600,
+        'Invalid Plate': 1000,
+        'No Muffler': 500,
+        'Permitting Hitching/Over Loading Passenger(s)': 800,
+        'Unregistered MV': 1200,
+        'Refusal to convey to proper destination': 600,
+        'Discourteous driver/Conduct': 500,
+        'Others': 500
+    };
+
+    // Calculate total based on all selected violations
+    let totalFine = 0;
+    
+    violationCheckboxes.forEach(checkbox => {
+        const violationType = checkbox.value;
+        const fineAmount = fineAmounts[violationType] !== undefined ? fineAmounts[violationType] : DEFAULT_FINE;
+        console.log(`Violation: ${violationType}, Fine: ${fineAmount}`);
+        totalFine += fineAmount;
+    });
+    
+    console.log('Total fine before TDZ multiplier:', totalFine);
+    
+    // Apply TDZ multiplier if checked
+    if (isTdzViolationEl && isTdzViolationEl.checked) {
+        totalFine *= 2;
+        console.log('Applied TDZ multiplier, new total:', totalFine);
+    }
+    
+    // Update the fine amount field
+    if (fineAmountEl) {
+        fineAmountEl.value = totalFine;
+        console.log('Updated fine amount field to:', totalFine);
+    } else {
+        console.error('Fine amount element not found!');
+    }
+}
+
+function initializeViolationFines() {
+    console.log('Initializing violation fines...');
+    
+    // Get all violation checkboxes and the TDZ checkbox
+    const violationCheckboxes = document.querySelectorAll('input[name="violation_type[]"]');
+    const fineAmountEl = document.getElementById('fine_amount');
+    const isTdzViolationEl = document.getElementById('is_tdz_violation');
+    
+    console.log('Found violation checkboxes:', violationCheckboxes.length);
+    if (fineAmountEl) {
+        console.log('Found fine amount element with ID:', fineAmountEl.id);
+    } else {
+        console.error('Fine amount element not found!');
+    }
+    
+    if (isTdzViolationEl) {
+        console.log('Found TDZ checkbox element with ID:', isTdzViolationEl.id);
+    } else {
+        console.error('TDZ checkbox element not found!');
+    }
+
+    // Set up event listeners for violation checkbox changes
+    if (violationCheckboxes.length > 0) {
+        violationCheckboxes.forEach(checkbox => {
+            console.log('Adding change listener to checkbox:', checkbox.value);
+            checkbox.addEventListener('change', function() {
+                console.log('Checkbox changed:', this.value, 'Checked:', this.checked);
+                updateFineAmount();
+            });
+        });
+
+        // Also check TDZ checkbox change
+        if (isTdzViolationEl) {
+            isTdzViolationEl.addEventListener('change', function() {
+                console.log('TDZ checkbox changed, checked:', this.checked);
+                updateFineAmount();
+            });
+        }
+    }
+
+    // Initial update for any pre-selected violations
+    updateFineAmount();
+}
+
+// Make sure to call initializeViolationFines when DOM is fully loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize existing functions
+    // ...
+    
+    // Make sure to initialize violation fines after the DOM is fully loaded
+    setTimeout(function() {
+        console.log('DOM fully loaded, initializing violation fines');
+        initializeViolationFines();
+    }, 500);
+});
+
+// Handle signature refusal
+document.getElementById('noSignature').addEventListener('change', function() {
+    const signatureArea = document.getElementById('signatureArea');
+    const refusalNoteArea = document.getElementById('refusalNoteArea');
+    
+    if (this.checked) {
+        signatureArea.style.display = 'none';
+        refusalNoteArea.style.display = 'block';
+    } else {
+        signatureArea.style.display = 'block';
+        refusalNoteArea.style.display = 'none';
+    }
+});
+
+// Form submission handling
+document.getElementById('ticketForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    try {
+        // Create a new FormData object
+        const formData = new FormData(this);
+        
+        // Get all checked violation types and ensure they're added to formData
+        const selectedViolations = document.querySelectorAll('input[name="violation_type[]"]:checked');
+        
+        // Debug log for violation types
+        console.log('Selected violation types:', Array.from(selectedViolations).map(v => v.value));
+        
+        // Remove any existing violation_type[] entries (may not be necessary but just to be safe)
+        // This is because FormData might not properly handle array-like field names
+        formData.delete('violation_type[]');
+        
+        // Explicitly add each selected violation type to formData
+        selectedViolations.forEach(checkbox => {
+            formData.append('violation_type[]', checkbox.value);
+            console.log('Added violation type to formData:', checkbox.value);
+        });
+        
+        // Store enforcer info in sessionStorage for future use
+        const enforcerName = document.getElementById('enforcer_name')?.value;
+        const enforcerId = document.getElementById('enforcer_id')?.value;
+        
+        // Debug logging for form submission
+        console.log('Submitting form with enforcer ID:', enforcerId);
+        console.log('Form data enforcer_id value:', formData.get('enforcer_id'));
+        
+        if (enforcerName) {
+            sessionStorage.setItem('enforcer_name', enforcerName);
+            console.log('Stored enforcer name in sessionStorage:', enforcerName);
+        }
+        if (enforcerId) {
+            sessionStorage.setItem('enforcer_id', enforcerId);
+            console.log('Stored enforcer ID in sessionStorage:', enforcerId);
+        }
+        
+        // Ensure signature data is included in the form data
+        if (!document.getElementById('noSignature').checked) {
+            const signatureData = document.getElementById('signatureData').value;
+            if (signatureData) {
+                formData.set('signature_data', signatureData);
+                console.log('Signature data included in form submission:', signatureData);
+            } else {
+                console.log('No signature data available');
+            }
+        } else {
+            const refusalNote = document.getElementById('refusalNote').value;
+            formData.set('refusal_note', refusalNote);
+            console.log('Signature refusal note included:', refusalNote);
+        }
+        
+        const response = await fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log('Ticket data received:', result.ticket_data);
+            const ticketContent = await generateTicketContent(result.ticket_data);
+            
+            try {
+                // Use a simple approach to trigger RawBT and avoid browser issues
+                // 1. Create the rawbt URL
+                const rawbtUrl = `rawbt://${encodeURIComponent(ticketContent)}`;
+                
+                // 2. Open it in a new window, which will trigger the RawBT app
+                const printWindow = window.open(rawbtUrl, '_blank');
+                
+                // 3. Give some time for RawBT to process (2 seconds)
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // 4. Close the print window if it's still open
+                if (printWindow) {
+                    printWindow.close();
+                }
+                
+                // 5. Show success message
+                const successMessage = document.createElement('div');
+                successMessage.className = 'alert alert-success alert-dismissible fade show mb-4';
+                successMessage.innerHTML = `
+                    <strong>Success!</strong> Ticket issued successfully and sent to printer.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+
+                // Get the form element directly and insert the message at the beginning
+                const formElement = this; // 'this' refers to the form being submitted
+                formElement.parentNode.insertBefore(successMessage, formElement);
+                
+                // 6. Reset form after successful submission
+                this.reset();
+                currentStep = 0;
+                updateStep(currentStep);
+                
+                // 7. Clear signature if exists
+                const signatureCanvas = document.getElementById('signatureCanvas');
+                if (signatureCanvas) {
+                    const ctx = signatureCanvas.getContext('2d');
+                    if (ctx) {
+                        ctx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+                    }
+                }
+            } catch (printError) {
+                console.error('Error printing ticket:', printError);
+                alert('Error printing ticket: ' + printError.message);
+            }
+        } else {
+            throw new Error(result.message || 'Failed to issue ticket');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error submitting form: ' + error.message);
+    }
+});
+
+async function generateTicketContent(ticketData) {
+    // ESC/POS commands for text formatting
+    const ESC = '\x1B';
+    const GS = '\x1D';
+    const FS = '\x1C';
+    
+    // Text alignment
+    const CENTER = `${ESC}a1`;
+    const LEFT = `${ESC}a0`;
+    const RIGHT = `${ESC}a2`;
+    
+    // Font selection and size
+    const FONT_B = `${ESC}M1`; // Font B (smallest)
+    const CHAR_SIZE_SMALLEST = `${GS}!0`; // Character size 1x1
+    const SET_FONT_SIZE = `${ESC}!0`; // Smallest font size
+    
+    // Text modifications
+    const CONDENSED_ON = `${ESC}15`;
+    const CONDENSED_OFF = `${ESC}14`;
+    const DOUBLE_STRIKE_ON = `${ESC}G1`;
+    const DOUBLE_STRIKE_OFF = `${ESC}G0`;
+    const UNDERLINE_ON = `${ESC}-1`;
+    const UNDERLINE_OFF = `${ESC}-0`;
+    
+    // Spacing controls
+    const SPACING_SMALLEST = `${ESC}3${String.fromCharCode(1)}`;
+    const DEFAULT_SPACING = `${ESC}2`;
+    const REDUCE_SPACING = `${ESC}3${String.fromCharCode(0)}`;
+    const LINE_SPACE = `${ESC}3${String.fromCharCode(24)}`; // Increased space between sections
+    
+    // Paper control
+    const FEED_AND_CUT = `${GS}V${String.fromCharCode(1)}`;
+    
+    let content = '';
+    
+    // Initialize with smallest possible font configuration
+    content += FONT_B;
+    content += CHAR_SIZE_SMALLEST;
+    content += SET_FONT_SIZE;
+    content += SPACING_SMALLEST;
+    content += REDUCE_SPACING;
+    content += CONDENSED_ON;
+    
+    // Header
+    content += CENTER;
+    content += DOUBLE_STRIKE_ON;
+    content += 'CITY TRANSPORT AND TRAFFIC MANAGEMENT OFFICE\n';
+    content += 'TRAFFIC VIOLATION MANAGEMENT SYSTEM\n';
+    content += 'VIOLATION TICKET\n';
+    content += DOUBLE_STRIKE_OFF;
+    content += LINE_SPACE;
+    content += `Date: ${ticketData.violation_date}\n`;
+    content += `Ticket No: ${ticketData.id}\n`;
+    content += '-'.repeat(42) + '\n';
+    
+    // Violator Information
+    content += LEFT;
+    content += UNDERLINE_ON;
+    content += 'VIOLATOR INFORMATION\n';
+    content += UNDERLINE_OFF;
+    content += `Name   : ${ticketData.first_name} ${ticketData.last_name}\n`;
+    content += `License : ${ticketData.license_number || 'N/A'}\n`;
+    content += `Phone  : ${ticketData.phone_number}\n`;
+    content += `Address: ${ticketData.address}\n`;
+    content += '-'.repeat(42) + '\n';
+    
+    // Vehicle Information
+    content += UNDERLINE_ON;
+    content += 'VEHICLE INFORMATION\n';
+    content += UNDERLINE_OFF;
+    content += `Type     : ${ticketData.vehicle_type}\n`;
+    content += `Plate No.: ${ticketData.plate_number}\n`;
+    content += `Color    : ${ticketData.color}\n`;
+    content += `Reg. No. : ${ticketData.registration_number}\n`;
+    content += '-'.repeat(42) + '\n';
+    
+    // Violations
+    content += UNDERLINE_ON;
+    content += 'VIOLATIONS:\n';
+    content += UNDERLINE_OFF;
+    ticketData.violations.forEach(violation => {
+        content += `* ${violation}\n`;
+    });
+    content += `\nLocation: ${ticketData.location}\n`;
+    content += DOUBLE_STRIKE_ON;
+    if (ticketData.is_tdz_violation) {
+        content += `Traffic Discipline Zone Violation: Yes (Fine Doubled)\n`;
+    }
+    content += `Amount Due: PHP ${ticketData.fine_amount.toFixed(2)}\n`;
+    content += DOUBLE_STRIKE_OFF;
+    content += '-'.repeat(42) + '\n';
+    
+    // Signature Section
+    content += UNDERLINE_ON;
+    content += 'ACKNOWLEDGEMENT\n';
+    content += UNDERLINE_OFF;
+    
+    if (ticketData.signature_data) {
+        console.log('Processing signature:', ticketData.signature_data);
+        try {
+            // Fetch the signature image
+            const response = await fetch(`/get-signature/${ticketData.signature_data}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch signature');
+            }
+            const blob = await response.blob();
+            
+            // Convert blob to base64
+            const base64 = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.readAsDataURL(blob);
+            });
+            
+            // Create an image element
+            const img = new Image();
+            await new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = reject;
+                img.src = base64;
+            });
+            
+            // Create a canvas to process the image
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size to match printer width (assuming 384px width for standard thermal printer)
+            const printerWidth = 384;
+            // Calculate target dimensions while maintaining aspect ratio
+            const targetWidth = Math.min(printerWidth, img.width);
+            const targetHeight = Math.floor((targetWidth / img.width) * img.height);
+            
+            // Set canvas dimensions
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            
+            // Draw and scale the image with better quality
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            
+            // Convert to monochrome bitmap with improved processing
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const pixels = imageData.data;
+            const widthInBytes = Math.ceil(canvas.width / 8);
+            const bitmap = new Uint8Array(widthInBytes * canvas.height);
+            
+            // Convert to 1-bit monochrome with better threshold and dithering
+            for (let y = 0; y < canvas.height; y++) {
+                for (let x = 0; x < canvas.width; x++) {
+                    const i = (y * canvas.width + x) * 4;
+                    const brightness = (pixels[i] * 0.299 + pixels[i + 1] * 0.587 + pixels[i + 2] * 0.114);
+                    const byteIndex = Math.floor(x / 8) + y * widthInBytes;
+                    const bitIndex = 7 - (x % 8);
+                    
+                    // Apply threshold with slight dithering for better quality
+                    if (brightness < 180 + (Math.random() * 20 - 10)) {
+                        bitmap[byteIndex] |= (1 << bitIndex);
+                    }
+                }
+            }
+            
+            // Add bitmap to ticket content with proper commands
+            content += CENTER;
+            content += LINE_SPACE;
+            
+            // Create command buffer for bitmap printing
+            const cmdBuffer = new Uint8Array([
+                0x1d, 0x76, 0x30, 0x00,                    // GS v 0 0 command
+                widthInBytes & 0xff, widthInBytes >> 8,    // width bytes, little endian
+                canvas.height & 0xff, canvas.height >> 8    // height pixels, little endian
+            ]);
+            
+            // Convert command buffer to string
+            content += String.fromCharCode.apply(null, cmdBuffer);
+            
+            // Add bitmap data
+            const bitmapArray = Array.from(bitmap);
+            content += String.fromCharCode.apply(null, bitmapArray);
+            
+            // Add proper spacing after signature
+            content += '\n';
+            content += LINE_SPACE;
+            content += CENTER;
+            content += 'Violator signature:\n';
+            content += LINE_SPACE;
+            
+            console.log('Signature bitmap processed successfully');
+        } catch (error) {
+            console.error('Error processing signature:', error);
+            content += 'Signature not available\n';
+        }
+    } else if (ticketData.refusal_note) {
+        content += 'Violator refused to sign\n';
+        content += `Reason: ${ticketData.refusal_note}\n`;
+    } else {
+        content += 'No signature provided\n';
+    }
+    
+    content += LINE_SPACE;
+    
+    // Enforcer Information
+    content += UNDERLINE_ON;
+    content += 'ISSUED BY:\n';
+    content += UNDERLINE_OFF;
+    
+    // Get enforcer info from the server-provided data or sessionStorage
+    let enforcerName = ticketData.enforcer_name;
+    let enforcerId = ticketData.enforcer_id;
+    
+    // Debug logging for ticket generation
+    console.log('Ticket Data Enforcer Name:', ticketData.enforcer_name);
+    console.log('Ticket Data Enforcer ID:', ticketData.enforcer_id);
+    console.log('SessionStorage Enforcer Name:', sessionStorage.getItem('enforcer_name'));
+    console.log('SessionStorage Enforcer ID:', sessionStorage.getItem('enforcer_id'));
+    
+    // If not available in ticket data, try to get from sessionStorage
+    if (!enforcerName || enforcerName === '') {
+        enforcerName = sessionStorage.getItem('enforcer_name') || '';
+        console.log('Using enforcer name from sessionStorage:', enforcerName);
+    }
+    if (!enforcerId || enforcerId === '') {
+        enforcerId = sessionStorage.getItem('enforcer_id') || '';
+        console.log('Using enforcer ID from sessionStorage:', enforcerId);
+    }
+    
+    content += `${enforcerName || 'Not specified'}\n`;
+    content += `${enforcerId || 'Not specified'}\n`;
+    content += '-'.repeat(42) + '\n';
+    
+    // Footer
+    content += CENTER;
+    content += LINE_SPACE;
+    content += 'Please settle this violation within 72 hours\n';
+    content += 'at the CTTMO office\n\n';
+    content += `Reference No: ${ticketData.id}\n`;
+    
+    // QR Code for digital verification (if supported)
+    if (ticketData.id) {
+        content += `${GS}k${String.fromCharCode(4)}${ticketData.id}${String.fromCharCode(0)}`;
+    }
+    
+    // Reset printer settings and cut
+    content += DEFAULT_SPACING;
+    content += CONDENSED_OFF;
+    content += FEED_AND_CUT;
+    
+    return content;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Get enforcer info elements
+    const enforcerNameInput = document.getElementById('enforcer_name');
+    const enforcerIdInput = document.getElementById('enforcer_id');
+
+    // Set enforcer info from data attributes or sessionStorage
+    if (enforcerNameInput) {
+        const enforcerName = enforcerNameInput.dataset.enforcerName || sessionStorage.getItem('enforcer_name');
+        if (enforcerName) {
+            enforcerNameInput.value = enforcerName;
+            sessionStorage.setItem('enforcer_name', enforcerName);
+        }
+    }
+
+    if (enforcerIdInput) {
+        const enforcerId = enforcerIdInput.dataset.enforcerId || sessionStorage.getItem('enforcer_id');
+        console.log('Setting enforcer ID from:', enforcerId);
+        if (enforcerId) {
+            enforcerIdInput.value = enforcerId;
+            sessionStorage.setItem('enforcer_id', enforcerId);
+        }
+    }
+
+    // Update camera instructions if the element exists
+    const cameraInstructions = document.querySelector('.camera-instructions small');
+    if (cameraInstructions) {
+        cameraInstructions.innerHTML = `
+            <span class="material-icons align-middle me-1" style="font-size: 16px;">info</span>
+            Position document within frame, ensure good lighting and no glare
+        `;
+    }
+
+    // Add helper text under the scan button if it exists
+    const scanLicenseBtn = document.getElementById('scanLicense');
+    if (scanLicenseBtn) {
+        const helperText = document.createElement('div');
+        helperText.className = 'text-muted small mt-2';
+        helperText.innerHTML = `
+            <span class="material-icons align-middle me-1" style="font-size: 14px;">tips_and_updates</span>
+            Tips: Good lighting, no glare, entire document visible
+        `;
+        scanLicenseBtn.parentNode.insertBefore(helperText, scanLicenseBtn.nextSibling);
+    }
+
+    const scanButton = document.getElementById('scanLicense');
+    const scanVehicleButton = document.getElementById('scanVehicle');
+    const cameraModal = new bootstrap.Modal(document.getElementById('cameraModal'));
+    const cameraFeed = document.getElementById('cameraFeed');
+    const cameraCanvas = document.getElementById('cameraCanvas');
+    const captureButton = document.getElementById('captureImage');
+    const permissionMsg = document.getElementById('cameraPermissionMsg');
+    let stream = null;
+    let currentScanMode = null; // 'license' or 'vehicle'
+
+    // Handle scan button clicks
+    scanButton.addEventListener('click', () => {
+        currentScanMode = 'license';
+        initializeCamera();
+    });
+
+    scanVehicleButton.addEventListener('click', () => {
+        currentScanMode = 'vehicle';
+        initializeCamera();
+    });
+
+    async function initializeCamera() {
+        try {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error('Your browser does not support camera access');
+            }
+
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: 'environment',
+                    width: { min: 640, ideal: 1920, max: 1920 },
+                    height: { min: 480, ideal: 1080, max: 1080 }
+                }
+            });
+            
+            cameraModal.show();
+            updateScannerTitle(currentScanMode);
+            
+            cameraFeed.srcObject = stream;
+            await cameraFeed.play();
+            
+            cameraFeed.style.display = 'block';
+            captureButton.style.display = 'block';
+            permissionMsg.style.display = 'none';
+            showScanningOverlay();
+            
+        } catch (err) {
+            handleCameraError(err);
+        }
+    }
+
+    function handleCameraError(err) {
+        console.error('Camera access error:', err);
+        let errorMessage = 'Unable to access camera. ';
+        
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+            errorMessage += 'Please allow camera access in your browser settings.';
+        } else if (err.name === 'NotFoundError') {
+            errorMessage += 'No camera found on your device.';
+        } else if (err.name === 'NotReadableError' || err.name === 'AbortError') {
+            errorMessage += 'Camera may be in use by another application.';
+        } else {
+            errorMessage += err.message || 'Please check your camera permissions and try again.';
+        }
+        
+        alert(errorMessage);
+        
+        permissionMsg.innerHTML = `
+            <span class="material-icons text-danger" style="font-size: 48px;">error</span>
+            <p class="mt-2 text-danger">${errorMessage}</p>
+        `;
+        
+        if (cameraModal._isShown) {
+            cameraFeed.style.display = 'none';
+            captureButton.style.display = 'none';
+            permissionMsg.style.display = 'block';
+        }
+    }
+
+    // Add preview modal HTML after the camera modal
+    const previewModalHTML = `
+        <div class="modal fade" id="previewModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            <span class="material-icons align-middle me-2">preview</span>
+                            Review Captured Image
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="preview-container">
+                            <img id="previewImage" class="img-fluid rounded" style="width: 100%; max-height: 70vh; object-fit: contain;">
+                            <div class="mt-3">
+                                <div class="alert alert-info">
+                                    <h6 class="mb-2"><span class="material-icons align-middle me-2">check_circle</span>Please verify:</h6>
+                                    <ul class="mb-0">
+                                        <li>The entire document is visible</li>
+                                        <li>Text is clear and readable</li>
+                                        <li>No glare or shadows</li>
+                                        <li>Document is properly aligned</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="retakeButton">
+                            <span class="material-icons align-middle me-2">camera_alt</span>
+                            Retake Photo
+                        </button>
+                        <button type="button" class="btn btn-primary" id="proceedButton">
+                            <span class="material-icons align-middle me-2">check</span>
+                            Proceed with this Image
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add the preview modal to the document
+    document.body.insertAdjacentHTML('beforeend', previewModalHTML);
+    
+    // Initialize the preview modal
+    const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
+    let capturedImageData = null;
+
+    // Modify the capture button click handler
+    captureButton.addEventListener('click', async () => {
+        hideScanningOverlay();
+        
+        const context = cameraCanvas.getContext('2d');
+        cameraCanvas.width = cameraFeed.videoWidth;
+        cameraCanvas.height = cameraFeed.videoHeight;
+        context.drawImage(cameraFeed, 0, 0, cameraCanvas.width, cameraCanvas.height);
+        
+        // Store the captured image data
+        capturedImageData = cameraCanvas.toDataURL('image/jpeg');
+        
+        // Show preview
+        document.getElementById('previewImage').src = capturedImageData;
+        cameraModal.hide();
+        previewModal.show();
+    });
+
+    // Handle retake button
+    document.getElementById('retakeButton').addEventListener('click', () => {
+        previewModal.hide();
+        capturedImageData = null;
+        cameraModal.show();
+        cameraFeed.style.display = 'block';
+        cameraCanvas.style.display = 'none';
+        showScanningOverlay();
+    });
+
+    // Handle proceed button
+    document.getElementById('proceedButton').addEventListener('click', async () => {
+        if (!capturedImageData) {
+            alert('No image captured. Please try again.');
+            return;
+        }
+
+        previewModal.hide();
+        const scanningMsg = document.getElementById('scanningMsg');
+        scanningMsg.style.display = 'block';
+        scanningMsg.querySelector('.scanning-text').textContent = 'Processing document...';
+        
+        try {
+            // Convert base64 to blob
+            const base64Response = await fetch(capturedImageData);
+            const blob = await base64Response.blob();
+
+            // Create form data
+            const formData = new FormData();
+            formData.append('image', blob, 'document.jpg');
+            formData.append('scan_type', currentScanMode);
+            
+            // Get CSRF token
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
+            // Show scanning message
+            scanningMsg.style.display = 'block';
+            
+            console.log('Sending scan request...', {
+                mode: currentScanMode,
+                imageSize: blob.size
+            });
+
+            const response = await fetch('/scan-document/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': csrfToken
+                }
+            });
+
+            console.log('Response status:', response.status);
+            const data = await response.json();
+            console.log('Response data:', data);
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to process document');
+            }
+            
+            if (data.success) {
+                console.log('Document processed successfully:', data);
+                if (currentScanMode === 'license') {
+                    // Fill license form fields
+                    const licenseNumber = document.getElementById('license_number');
+                    const firstName = document.getElementById('first_name');
+                    const lastName = document.getElementById('last_name');
+                    const address = document.getElementById('address');
+                    const phoneNumber = document.getElementById('phone_number');
+
+                    // Set values and trigger change event for validation
+                    if (data.license_number) {
+                        licenseNumber.value = data.license_number;
+                        licenseNumber.dispatchEvent(new Event('input'));
+                    }
+                    if (data.first_name) {
+                        firstName.value = data.first_name;
+                        firstName.dispatchEvent(new Event('change'));
+                    }
+                    if (data.last_name) {
+                        lastName.value = data.last_name;
+                        lastName.dispatchEvent(new Event('change'));
+                    }
+                    if (data.address) {
+                        address.value = data.address;
+                        address.dispatchEvent(new Event('change'));
+                    }
+                    if (data.phone_number) {
+                        phoneNumber.value = data.phone_number;
+                        phoneNumber.dispatchEvent(new Event('input'));
+                    }
+                } else if (currentScanMode === 'vehicle') {
+                    // Fill vehicle form fields
+                    const plateNumber = document.getElementById('plate_number');
+                    const vehicleType = document.getElementById('vehicle_type');
+                    const color = document.getElementById('color');
+                    const registrationNumber = document.getElementById('registration_number');
+                    const ownerName = document.getElementById('vehicle_owner');
+                    const ownerAddress = document.getElementById('vehicle_owner_address');
+
+                    // Set values and trigger change event for validation
+                    if (data.plate_number) {
+                        plateNumber.value = data.plate_number;
+                        plateNumber.dispatchEvent(new Event('change'));
+                    }
+                    if (data.vehicle_type) {
+                        vehicleType.value = data.vehicle_type;
+                        vehicleType.dispatchEvent(new Event('change'));
+                    }
+                    if (data.color) {
+                        color.value = data.color;
+                        color.dispatchEvent(new Event('change'));
+                    }
+                    if (data.registration_number) {
+                        registrationNumber.value = data.registration_number;
+                        registrationNumber.dispatchEvent(new Event('change'));
+                    }
+                    if (data.owner_name) {
+                        ownerName.value = data.owner_name;
+                        ownerName.dispatchEvent(new Event('change'));
+                    }
+                    if (data.owner_address) {
+                        ownerAddress.value = data.owner_address;
+                        ownerAddress.dispatchEvent(new Event('change'));
+                    }
+                }
+                
+                // Close the modal
+                cameraModal.hide();
+                
+                // Show success message
+                const successMessage = document.createElement('div');
+                successMessage.className = 'alert alert-success alert-dismissible fade show mt-3';
+                successMessage.innerHTML = `
+                    <strong>Success!</strong> Document scanned successfully.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.querySelector('.camera-container').insertAdjacentElement('afterend', successMessage);
+                
+                // Remove the message after 5 seconds
+                setTimeout(() => {
+                    successMessage.remove();
+                }, 5000);
+            } else {
+                throw new Error(data.message || 'Failed to extract information from document');
+            }
+
+        } catch (err) {
+            console.error('Error processing image:', err);
+            const retake = confirm(
+                'Error processing document: ' + err.message + '\n\n' +
+                'Would you like to retake the photo?\n\n' +
+                'If the problem persists, you can enter the details manually.'
+            );
+            
+            if (retake) {
+                cleanup();
+                cameraModal.show();
+                cameraFeed.style.display = 'block';
+                cameraCanvas.style.display = 'none';
+                showScanningOverlay();
+            }
+        } finally {
+            cleanup();
+            scanningMsg.style.display = 'none';
+            capturedImageData = null;
+        }
+    });
+
+    // Add cleanup for preview modal
+    document.getElementById('previewModal').addEventListener('hidden.bs.modal', () => {
+        if (!document.getElementById('cameraModal')._isShown) {
+            cleanup();
+        }
+    });
+
+    // Handle no license checkbox
+    document.getElementById('noLicense').addEventListener('change', function() {
+        const licenseInputGroup = document.getElementById('licenseInputGroup');
+        licenseInputGroup.style.display = this.checked ? 'none' : 'block';
+        
+        if (this.checked) {
+            document.getElementById('license_number').value = '';
+            document.getElementById('license_number').required = false;
+            
+            // Find and check the "Unlicensed Driver" violation checkbox
+            const unlicensedCheckbox = Array.from(document.querySelectorAll('input[name="violation_type[]"]'))
+                .find(checkbox => checkbox.value === 'Unlicensed Driver');
+            
+            if (unlicensedCheckbox) {
+                unlicensedCheckbox.checked = true;
+            }
+        } else {
+            document.getElementById('license_number').required = true;
+            
+            // Find and uncheck the "Unlicensed Driver" violation checkbox
+            const unlicensedCheckbox = Array.from(document.querySelectorAll('input[name="violation_type[]"]'))
+                .find(checkbox => checkbox.value === 'Unlicensed Driver');
+            
+            if (unlicensedCheckbox) {
+                unlicensedCheckbox.checked = false;
+            }
+        }
+    });
+
+    function showScanningOverlay() {
+        const overlay = document.getElementById('scanningOverlay');
+        overlay.style.display = 'block';
+    }
+
+    function hideScanningOverlay() {
+        const overlay = document.getElementById('scanningOverlay');
+        overlay.style.display = 'none';
+    }
+
+    function updateScannerTitle(mode) {
+        const title = document.getElementById('scannerTitle');
+        if (mode === 'license') {
+            title.textContent = 'License Scanner';
+        } else if (mode === 'vehicle') {
+            title.textContent = 'Vehicle Registration Scanner';
+        }
+    }
+
+    // Add a helper function to validate license format
+    function validateLicenseFormat(license) {
+        const formatRegex = /^[A-Z0-9]{3}-[0-9]{2}-[0-9]{6}$/;
+        return formatRegex.test(license.toUpperCase());
+    }
+
+    // Add event listener for license input validation
+    const licenseInputField = document.getElementById('license_number');
+    licenseInputField.addEventListener('input', function() {
+        let value = this.value.toUpperCase();
+        
+        // Auto-format as user types
+        value = value.replace(/[^A-Z0-9-]/g, ''); // Remove invalid characters
+        if (value.length >= 3 && value.charAt(3) !== '-') {
+            value = value.slice(0, 3) + '-' + value.slice(3);
+        }
+        if (value.length >= 6 && value.charAt(6) !== '-') {
+            value = value.slice(0, 6) + '-' + value.slice(6);
+        }
+        
+        this.value = value;
+        
+        // Validate format
+        if (value && !validateLicenseFormat(value)) {
+            this.setCustomValidity('Please enter a valid license number in format XXX-XX-XXXXXX');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+
+    // Add cleanup function definition
+    function cleanup() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+        }
+        cameraFeed.srcObject = null;
+        cameraFeed.style.display = 'none';
+        captureButton.style.display = 'none';
+        permissionMsg.style.display = 'block';
+        hideScanningOverlay();
+    }
+
+    // Modify modal event listeners to properly manage focus
+    document.getElementById('cameraModal').addEventListener('hidden.bs.modal', function(e) {
+        cleanup();
+        // Return focus to the button that opened the modal
+        const openButton = document.querySelector('[data-bs-target="#cameraModal"]');
+        if (openButton) {
+            openButton.focus();
+        }
+    });
+
+    document.getElementById('previewModal').addEventListener('hidden.bs.modal', function(e) {
+        if (!document.getElementById('cameraModal')._isShown) {
+            cleanup();
+        }
+        // Return focus to the button that opened the modal
+        const openButton = document.querySelector('[data-bs-target="#previewModal"]');
+        if (openButton) {
+            openButton.focus();
+        }
+    });
+
+    // Autocomplete functionality
+    class Autocomplete {
+        constructor(input, dropdown, options = {}) {
+            this.input = input;
+            this.dropdown = dropdown;
+            this.options = {
+                minChars: options.minChars || 2,
+                debounceTime: options.debounceTime || 300,
+                endpoint: options.endpoint || '/api/search-users/',
+                searchParam: options.searchParam || 'q',
+                onSelect: options.onSelect || this.defaultOnSelect,
+                limit: options.limit || 5,
+                queryParams: options.queryParams || {}
+            };
+            
+            this.activeIndex = -1;
+            this.debounceTimer = null;
+            this.isOpen = false;
+            
+            this.init();
+        }
+        
+        init() {
+            // Add event listeners
+            this.input.addEventListener('input', this.onInput.bind(this));
+            this.input.addEventListener('keydown', this.onKeyDown.bind(this));
+            this.input.addEventListener('blur', this.onBlur.bind(this));
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!this.input.contains(e.target) && !this.dropdown.contains(e.target)) {
+                    this.closeDropdown();
+                }
+            });
+        }
+        
+        onInput() {
+            const value = this.input.value.trim();
+            
+            // Clear previous timer
+            if (this.debounceTimer) {
+                clearTimeout(this.debounceTimer);
+            }
+            
+            // Close dropdown if input is empty
+            if (value.length < this.options.minChars) {
+                this.closeDropdown();
+                return;
+            }
+            
+            // Debounce search
+            this.debounceTimer = setTimeout(() => {
+                this.search(value);
+            }, this.options.debounceTime);
+        }
+        
+        onKeyDown(e) {
+            // Handle keyboard navigation
+            if (!this.isOpen) return;
+            
+            switch(e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    this.navigateDropdown(1);
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    this.navigateDropdown(-1);
+                    break;
+                case 'Enter':
+                    e.preventDefault();
+                    if (this.activeIndex >= 0) {
+                        const items = this.dropdown.querySelectorAll('.autocomplete-item');
+                        if (items[this.activeIndex]) {
+                            this.selectItem(items[this.activeIndex]);
+                        }
+                    }
+                    break;
+                case 'Escape':
+                    e.preventDefault();
+                    this.closeDropdown();
+                    break;
+            }
+        }
+        
+        onBlur(e) {
+            // Close dropdown with a small delay to allow clicking on dropdown items
+            setTimeout(() => {
+                if (!this.dropdown.contains(document.activeElement)) {
+                    this.closeDropdown();
+                }
+            }, 200);
+        }
+        
+        async search(query) {
+            try {
+                // Build URL with query parameters
+                const url = new URL(this.options.endpoint, window.location.origin);
+                url.searchParams.append(this.options.searchParam, query);
+                
+                // Add additional query parameters if provided
+                for (const [key, value] of Object.entries(this.options.queryParams)) {
+                    url.searchParams.append(key, value);
+                }
+                
+                url.searchParams.append('limit', this.options.limit);
+                
+                console.log('Searching with URL:', url.toString());
+                
+                // Fetch results
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    credentials: 'same-origin'
+                });
+                
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('API error response:', errorText);
+                    throw new Error(`Search request failed: ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Search results:', data);
+                this.renderResults(data.results || [], query);
+                
+            } catch (error) {
+                console.error('Autocomplete search error:', error);
+                
+                // Show error in dropdown for better visibility
+                this.dropdown.innerHTML = `<div class="autocomplete-error p-3 text-danger">
+                    <small><i class="fas fa-exclamation-circle me-1"></i> Error fetching results: ${error.message}</small>
+                </div>`;
+                this.openDropdown();
+                
+                // Automatically hide after 3 seconds
+                setTimeout(() => {
+                    this.closeDropdown();
+                }, 3000);
+            }
+        }
+        
+        renderResults(results, query) {
+            // Clear dropdown
+            this.dropdown.innerHTML = '';
+            
+            if (!results || results.length === 0) {
+                this.dropdown.innerHTML = `<div class="autocomplete-item text-muted">
+                    <small><i class="fas fa-info-circle me-1"></i> No matching records found</small>
+                </div>`;
+                this.openDropdown();
+                
+                // Hide after 2 seconds if no interaction
+                setTimeout(() => {
+                    if (this.isOpen && this.dropdown.querySelector('.autocomplete-item.active') === null) {
+                        this.closeDropdown();
+                    }
+                }, 2000);
+                
+                return;
+            }
+            
+            // Create result items
+            results.forEach(item => {
+                try {
+                    // Ensure we have valid data
+                    const safeItem = {
+                        id: item.id || '',
+                        first_name: typeof item.first_name === 'string' ? item.first_name : '',
+                        last_name: typeof item.last_name === 'string' ? item.last_name : '',
+                        license_number: typeof item.license_number === 'string' ? item.license_number : '',
+                        phone_number: typeof item.phone_number === 'string' ? item.phone_number : '',
+                        address: typeof item.address === 'string' ? item.address : '',
+                        source: item.source === 'violator' ? 'violator' : 'user',
+                        has_license: !!item.has_license
+                    };
+                    
+                    const element = document.createElement('div');
+                    element.className = 'autocomplete-item';
+                    element.dataset.item = JSON.stringify(safeItem);
+                    
+                    // Highlight matching text
+                    const nameHighlighted = this.highlightMatch(safeItem.first_name + ' ' + safeItem.last_name, query);
+                    const licenseHighlighted = safeItem.license_number ? this.highlightMatch(safeItem.license_number, query) : '';
+                    
+                    const sourceLabel = safeItem.source === 'violator' ? 
+                        '<span class="source-badge violator">Violator</span>' : 
+                        '<span class="source-badge user">User</span>';
+                    
+                    // Add license status badge
+                    const licenseStatusBadge = safeItem.has_license ? 
+                        '<span class="license-badge has-license">Licensed</span>' : 
+                        '<span class="license-badge no-license">No License</span>';
+                    
+                    element.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>${nameHighlighted}</div>
+                            <div class="d-flex gap-1">
+                                ${licenseStatusBadge}
+                                ${sourceLabel}
+                            </div>
+                        </div>
+                        ${licenseHighlighted ? `<div class="autocomplete-details">License: ${licenseHighlighted}</div>` : ''}
+                        ${safeItem.phone_number ? `<div class="autocomplete-details">Phone: ${safeItem.phone_number}</div>` : ''}
+                    `;
+                    
+                    element.addEventListener('click', () => this.selectItem(element));
+                    this.dropdown.appendChild(element);
+                } catch (err) {
+                    console.error('Error rendering result item:', err, item);
+                }
+            });
+            
+            // Show dropdown
+            this.openDropdown();
+        }
+        
+        highlightMatch(text, query) {
+            if (!text) return '';
+            
+            const regex = new RegExp(`(${query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
+            return text.replace(regex, '<span class="highlight">$1</span>');
+        }
+        
+        navigateDropdown(direction) {
+            const items = this.dropdown.querySelectorAll('.autocomplete-item');
+            
+            // Remove active class from current item
+            if (this.activeIndex >= 0 && items[this.activeIndex]) {
+                items[this.activeIndex].classList.remove('active');
+            }
+            
+            // Calculate new index
+            this.activeIndex += direction;
+            
+            // Ensure index is within bounds
+            if (this.activeIndex < 0) {
+                this.activeIndex = items.length - 1;
+            } else if (this.activeIndex >= items.length) {
+                this.activeIndex = 0;
+            }
+            
+            // Add active class to new item and scroll into view
+            if (items[this.activeIndex]) {
+                items[this.activeIndex].classList.add('active');
+                items[this.activeIndex].scrollIntoView({ block: 'nearest' });
+            }
+        }
+        
+        selectItem(element) {
+            try {
+                const item = JSON.parse(element.dataset.item);
+                
+                // Call the onSelect callback with the selected item
+                if (typeof this.options.onSelect === 'function') {
+                    this.options.onSelect(item);
+                } else {
+                    this.defaultOnSelect(item);
+                }
+                
+                // Close dropdown
+                this.closeDropdown();
+                
+            } catch (error) {
+                console.error('Error selecting item:', error);
+            }
+        }
+        
+        defaultOnSelect(item) {
+            // Default behavior: fill first_name, last_name, license_number, etc.
+            const fieldsMap = {
+                'first_name': document.getElementById('first_name'),
+                'last_name': document.getElementById('last_name'),
+                'license_number': document.getElementById('license_number'),
+                'address': document.getElementById('address'),
+                'phone_number': document.getElementById('phone_number')
+            };
+            
+            // Store user ID in hidden field if this is a registered user
+            const userAccountIdField = document.getElementById('user_account_id');
+            const violatorSourceField = document.getElementById('violator_source');
+            
+            if (userAccountIdField && violatorSourceField) {
+                // Store the source (user or violator)
+                violatorSourceField.value = item.source || '';
+                
+                // For registered users, store the ID for linking violation to their account
+                if (item.source === 'user' && item.id) {
+                    userAccountIdField.value = item.id;
+                    console.log('Selected registered user:', item.id);
+                } else {
+                    userAccountIdField.value = '';
+                }
+            }
+            
+            // Fill the form fields with the selected item data
+            for (const [key, field] of Object.entries(fieldsMap)) {
+                if (field && item[key]) {
+                    field.value = item[key];
+                    field.dispatchEvent(new Event('input'));
+                }
+            }
+            
+            // Handle name fields if the item has a combined 'name' field
+            if (item.name && !item.first_name && !item.last_name) {
+                const nameParts = item.name.split(' ');
+                if (nameParts.length > 1) {
+                    const lastName = nameParts.pop();
+                    const firstName = nameParts.join(' ');
+                    
+                    const firstNameField = document.getElementById('first_name');
+                    const lastNameField = document.getElementById('last_name');
+                    
+                    if (firstNameField) {
+                        firstNameField.value = firstName;
+                        firstNameField.dispatchEvent(new Event('input'));
+                    }
+                    
+                    if (lastNameField) {
+                        lastNameField.value = lastName;
+                        lastNameField.dispatchEvent(new Event('input'));
+                    }
+                }
+            }
+            
+            // Check the 'no license' checkbox if user/violator doesn't have a license
+            const noLicenseCheckbox = document.getElementById('noLicense');
+            if (noLicenseCheckbox) {
+                // Use the has_license property if available, otherwise check if license_number is empty
+                const hasLicense = 'has_license' in item ? item.has_license : Boolean(item.license_number?.trim());
+                
+                console.log('Selected item license status:', {
+                    has_license: item.has_license,
+                    license_number: item.license_number,
+                    hasLicense: hasLicense
+                });
+                
+                noLicenseCheckbox.checked = !hasLicense;
+                noLicenseCheckbox.dispatchEvent(new Event('change'));
+                
+                // Hide/show license input fields based on checkbox
+                const licenseInputGroup = document.getElementById('licenseInputGroup');
+                if (licenseInputGroup) {
+                    licenseInputGroup.style.display = hasLicense ? 'block' : 'none';
+                }
+            }
+            
+            // If the violator checkbox is available, check it for violator source
+            if (item.source === 'violator') {
+                // If this is from step 2 to step 1 navigation, handle relevant fields
+                if (currentStep === 0) {
+                    // Log the selection from a violator source
+                    console.log('Selected violator data:', item);
+                }
+            }
+        }
+        
+        openDropdown() {
+            this.dropdown.style.display = 'block';
+            this.isOpen = true;
+            this.activeIndex = -1;
+        }
+        
+        closeDropdown() {
+            this.dropdown.style.display = 'none';
+            this.isOpen = false;
+            this.activeIndex = -1;
+        }
+    }
+    
+    // Initialize autocomplete on inputs if they exist
+    try {
+        // License number autocomplete
+        const licenseAutoField = document.getElementById('license_number');
+        const licenseDropdown = document.getElementById('license_dropdown');
+        
+        if (licenseAutoField && licenseDropdown) {
+            console.log('Initializing license autocomplete');
+            new Autocomplete(licenseAutoField, licenseDropdown, {
+                endpoint: '/api/search-users/',
+                searchParam: 'q',
+                debounceTime: 300,
+                minChars: 3,
+                limit: 5,
+                queryParams: { search_by: 'license' }
+            });
+        } else {
+            console.log('License autocomplete elements not found');
+        }
+        
+        // First name autocomplete
+        const firstNameInput = document.getElementById('first_name');
+        const firstNameDropdown = document.getElementById('first_name_dropdown');
+        
+        if (firstNameInput && firstNameDropdown) {
+            console.log('Initializing first name autocomplete');
+            new Autocomplete(firstNameInput, firstNameDropdown, {
+                endpoint: '/api/search-users/',
+                searchParam: 'q',
+                debounceTime: 300,
+                minChars: 2,
+                limit: 5,
+                queryParams: { search_by: 'first_name' }
+            });
+        } else {
+            console.log('First name autocomplete elements not found');
+        }
+        
+        // Last name autocomplete
+        const lastNameInput = document.getElementById('last_name');
+        const lastNameDropdown = document.getElementById('last_name_dropdown');
+        
+        if (lastNameInput && lastNameDropdown) {
+            console.log('Initializing last name autocomplete');
+            new Autocomplete(lastNameInput, lastNameDropdown, {
+                endpoint: '/api/search-users/',
+                searchParam: 'q',
+                debounceTime: 300,
+                minChars: 2,
+                limit: 5,
+                queryParams: { search_by: 'last_name' }
+            });
+        } else {
+            console.log('Last name autocomplete elements not found');
+        }
+    } catch (error) {
+        console.error('Error initializing autocomplete:', error);
+    }
+
+    // Initialize the canvas
+    const canvas = document.getElementById('signatureCanvas');
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+
+    // Initialize signature drawing functionality
+    initializeSignatureCanvas();
+    
+    // Initialize violation fines
+    initializeViolationFines();
+
+    // Add window resize event listener
+    window.addEventListener('resize', function() {
+        // Re-draw the signature canvas after resize
+        const dataURL = canvas.toDataURL();
+        const img = new Image();
+        img.onload = function() {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        };
+        img.src = dataURL;
+    });
+});
+
+// Add direct event listeners for violation checkboxes and TDZ checkbox as soon as the script loads
+window.addEventListener('load', function() {
+    console.log('Window loaded, attaching direct event listeners');
+    
+    // Attach click listeners to all violation checkboxes
+    document.querySelectorAll('input[name="violation_type[]"]').forEach(checkbox => {
+        checkbox.addEventListener('click', function() {
+            console.log('Violation checkbox clicked:', this.value, 'Checked:', this.checked);
+            updateViolationTotal();
+        });
+    });
+    
+    // Attach click listener to TDZ checkbox
+    const tdzCheckbox = document.getElementById('is_tdz_violation');
+    if (tdzCheckbox) {
+        tdzCheckbox.addEventListener('click', function() {
+            console.log('TDZ checkbox clicked, checked:', this.checked);
+            updateViolationTotal();
+        });
+    }
+    
+    // Check for fine_amount element
+    const fineAmountEl = document.getElementById('fine_amount');
+    if (fineAmountEl) {
+        console.log('Found fine amount element on window load');
+    } else {
+        console.error('Fine amount element not found on window load!');
+    }
+    
+    // Initial calculation
+    updateViolationTotal();
+});
+
+// Alternative implementation to calculate total fine amount
+function updateViolationTotal() {
+    // Default values for fine amounts
+    const fineValues = {
+        'Speeding': 500,
+        'Running a Red Light': 800,
+        'Illegal Parking': 300,
+        'No Seat Belt': 250,
+        'Using Phone While Driving': 1000,
+        'Driving Under Influence': 2500,
+        'Unlicensed Driver': 1500,
+        'Reckless Driving': 2000,
+        'Expired Registration': 1000,
+        'No Helmet': 500,
+        'Obstruction': 1000,
+        'Wrong Way Driving': 600,
+        'Invalid Plate': 1000,
+        'No Muffler': 500,
+        'Permitting Hitching/Over Loading Passenger(s)': 800,
+        'Unregistered MV': 1200,
+        'Refusal to convey to proper destination': 600,
+        'Discourteous driver/Conduct': 500,
+        'Others': 500
+    };
+    
+    // Get all checked violation checkboxes
+    const checkedViolations = document.querySelectorAll('input[name="violation_type[]"]:checked');
+    console.log('Checked violations count:', checkedViolations.length);
+    
+    // Calculate total fine
+    let totalFine = 0;
+    checkedViolations.forEach(function(checkbox) {
+        const violationType = checkbox.value;
+        const amount = fineValues[violationType] || 500; // Use 500 as default if not found
+        console.log(`Adding fine for ${violationType}: ${amount}`);
+        totalFine += amount;
+    });
+    
+    // Apply TDZ multiplier if checked
+    const isTdzViolation = document.getElementById('is_tdz_violation')?.checked || false;
+    if (isTdzViolation) {
+        console.log('TDZ violation checked, doubling fine');
+        totalFine *= 2;
+    }
+    
+    console.log('Final total fine:', totalFine);
+    
+    // Update fine amount field
+    const fineAmountField = document.getElementById('fine_amount');
+    if (fineAmountField) {
+        fineAmountField.value = totalFine;
+        console.log('Updated fine amount field with value:', totalFine);
+        
+        // Trigger a change event on the field to ensure any validation is triggered
+        const event = new Event('change', { bubbles: true });
+        fineAmountField.dispatchEvent(event);
+    } else {
+        console.error('Could not find fine amount field!');
+    }
+}
+
+// Add data-title attributes to form steps for mobile view section headers
+document.addEventListener('DOMContentLoaded', function() {
+    // Set data-title attributes for mobile section headers
+    const formSteps = document.querySelectorAll('.form-step');
+    const stepLabels = document.querySelectorAll('.step-label');
+    
+    formSteps.forEach((step, index) => {
+        if (stepLabels[index]) {
+            step.setAttribute('data-title', stepLabels[index].textContent);
+        }
+    });
+    
+    // Original step navigation code
+    const steps = document.querySelectorAll('.form-step');
+    const progressBar = document.querySelector('.progress-bar');
+    const stepIndicators = document.querySelectorAll('.step');
+    const prevBtn = document.querySelector('.prev-step');
+    const nextBtn = document.querySelector('.next-step');
+    const submitBtn = document.querySelector('.submit-btn');
+    
+    // Check if mobile view
+    function isMobileView() {
+        return window.innerWidth <= 768;
+    }
+    
+    // Setup repeat violator detection on license number field for all views
+    const licenseInput = document.getElementById('license_number');
+    if (licenseInput) {
+        // Add event listener for license number changes - works on all device types
+        licenseInput.addEventListener('blur', function() {
+            if (this.value.trim() !== '') {
+                checkForRepeatViolator();
+            }
+        });
+        
+        // Also add input event with debounce for more responsive detection
+        let debounceTimer;
+        licenseInput.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            if (this.value.trim().length >= 10) { // Only check if enough characters entered
+                debounceTimer = setTimeout(() => {
+                    checkForRepeatViolator();
+                }, 500);
+            }
+        });
+    }
+
+    // Modified update step function to be conditionally applied based on viewport
+    function updateStep(step) {
+        // Only apply step hiding logic on desktop view
+        if (!isMobileView()) {
+            steps.forEach(s => s.style.display = 'none');
+            steps[step].style.display = 'block';
+            
+            // Update buttons
+            prevBtn.style.display = step === 0 ? 'none' : 'flex';
+            nextBtn.style.display = step === steps.length - 1 ? 'none' : 'flex';
+            submitBtn.style.display = step === steps.length - 1 ? 'flex' : 'none';
+            
+            // Desktop: Scroll to top of form when changing steps
+            const cardTop = document.querySelector('.card').getBoundingClientRect().top;
+            const offset = window.pageYOffset + cardTop - 20;
+            window.scrollTo({
+                top: offset,
+                behavior: 'smooth'
+            });
+        }
+        
+        // Always update these regardless of viewport
+        // Update progress bar
+        progressBar.style.width = `${((step + 1) / steps.length) * 100}%`;
+        
+        // Update step indicators
+        stepIndicators.forEach((s, i) => {
+            s.classList.remove('active', 'completed');
+            if (i === step) s.classList.add('active');
+            if (i < step) s.classList.add('completed');
+        });
+        
+        // When moving to step 2 (violations), initialize violation calculation
+        if (step === 1 && typeof updateViolationTotal === 'function') {
+            console.log('Step 2 displayed, initializing violation total calculation');
+            setTimeout(updateViolationTotal, 100);
+        }
+    }
+    
+    // Modified validate step function that handles both single and multi-page modes
+    function validateStep(step) {
+        const currentStepEl = steps[step];
+        
+        // If mobile view, only validate when submitting the form
+        if (isMobileView() && step < steps.length - 1) {
+            return true;
+        }
+        
+        // Get required inputs for the current step
+        const inputs = currentStepEl.querySelectorAll('input[required], select[required], textarea[required]');
+        let isValid = true;
+
+        inputs.forEach(input => {
+            if (!input.value) {
+                isValid = false;
+                input.classList.add('is-invalid');
+                
+                // In mobile view, scroll to first invalid input
+                if (isMobileView() && step === steps.length - 1) {
+                    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+            } else {
+                input.classList.remove('is-invalid');
+            }
+        });
+
+        // Special validation for violations
+        if (step === 1 || (isMobileView() && step === steps.length - 1)) {
+            const selectedViolations = document.querySelectorAll('input[name="violation_type[]"]:checked');
+            if (selectedViolations.length === 0) {
+                isValid = false;
+                
+                // Show error message for violations
+                const violationError = document.getElementById('violationError');
+                if (violationError) {
+                    violationError.style.display = 'block';
+                    
+                    // In mobile view, scroll to violation error
+                    if (isMobileView()) {
+                        violationError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                } else {
+                    alert('Please select at least one violation type');
+                }
+            }
+        }
+
+        return isValid;
+    }
+    
+    // Function to handle repeat violator check - works for both single and multi-page views
+    async function checkForRepeatViolator() {
+        try {
+            const licenseNumber = document.getElementById('license_number').value;
+            const userId = document.getElementById('user_account_id').value;
+            const violatorSource = document.getElementById('violator_source').value;
+            
+            // Only check if we have license number or user ID
+            if (!licenseNumber && !userId) return;
+            
+            // Get CSRF token
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
+            // Prepare the request data
+            const formData = new FormData();
+            if (licenseNumber) formData.append('license_number', licenseNumber);
+            if (userId) formData.append('user_id', userId);
+            if (violatorSource) formData.append('source', violatorSource);
+            
+            // Show loading indicator
+            const licenseField = document.getElementById('license_number');
+            const licenseParent = licenseField.parentElement;
+            
+            // Add loading state
+            if (licenseParent) {
+                licenseParent.classList.add('is-checking');
+                
+                // Add loading spinner if it doesn't exist
+                if (!licenseParent.querySelector('.checking-badge')) {
+                    const loadingSpinner = document.createElement('div');
+                    loadingSpinner.className = 'checking-badge';
+                    loadingSpinner.innerHTML = '<span class="spinner-border spinner-border-sm text-primary" role="status"></span> Checking...';
+                    licenseParent.appendChild(loadingSpinner);
+                }
+            }
+            
+            // Make API request to check for previous violations
+            const response = await fetch('/api/check-repeat-violator/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': csrfToken
+                }
+            });
+            
+            // Remove loading state
+            if (licenseParent) {
+                licenseParent.classList.remove('is-checking');
+                const loadingBadge = licenseParent.querySelector('.checking-badge');
+                if (loadingBadge) loadingBadge.remove();
+            }
+            
+            if (!response.ok) {
+                throw new Error('Failed to check violator history');
+            }
+            
+            const data = await response.json();
+            
+            // Remove any existing alert first
+            const existingAlert = document.getElementById('repeat-violator-alert');
+            if (existingAlert) {
+                existingAlert.remove();
+            }
+            
+            if (data.is_repeat_violator) {
+                // Get the repeat violator checkbox
+                const repeatViolatorCheckbox = Array.from(document.querySelectorAll('input[name="violation_type[]"]'))
+                    .find(checkbox => checkbox.value === 'Repeat Violator');
+                
+                if (repeatViolatorCheckbox) {
+                    repeatViolatorCheckbox.checked = true;
+                    
+                    // Show toast notification about repeat violator
+                    showToast('Repeat Violator Detected', 
+                        `This person has ${data.violation_count} previous violations. The Repeat Violator penalty has been automatically applied.`, 
+                        'warning');
+                    
+                    // Add visual indicator to license field
+                    if (licenseParent && !licenseParent.querySelector('.repeat-badge')) {
+                        const repeatBadge = document.createElement('div');
+                        repeatBadge.className = 'repeat-badge bg-warning text-dark rounded px-2 py-1 small';
+                        repeatBadge.innerHTML = `<span class="material-icons" style="font-size: 14px;">warning</span> Repeat Violator (${data.violation_count})`;
+                        licenseParent.appendChild(repeatBadge);
+                        
+                        // Add warning class to license field
+                        licenseField.classList.add('border-warning');
+                    }
+                    
+                    // Create and show prominent alert banner
+                    const alertHTML = `
+                        <div id="repeat-violator-alert" class="alert alert-warning repeat-alert d-flex align-items-center" role="alert">
+                            <div class="repeat-alert-icon">
+                                <span class="material-icons">warning</span>
+                            </div>
+                            <div class="repeat-alert-content">
+                                <h5 class="alert-heading mb-1">⚠️ REPEAT VIOLATOR DETECTED</h5>
+                                <p class="mb-0">This person has <strong>${data.violation_count} previous violations</strong>. The Repeat Violator penalty has been automatically applied.</p>
+                                <p class="mb-0 mt-1"><small>Last violation: ${data.last_violation_date || 'N/A'}</small></p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Add the alert to the beginning of the personal info card
+                    const personalInfoSection = document.querySelector('.form-step .info-card h5.section-title');
+                    if (personalInfoSection && personalInfoSection.textContent.includes('Personal')) {
+                        personalInfoSection.insertAdjacentHTML('afterend', alertHTML);
+                    } else {
+                        // Fallback: add to the first step
+                        const firstStep = document.querySelector('.form-step');
+                        if (firstStep) {
+                            firstStep.insertAdjacentHTML('afterbegin', alertHTML);
+                        }
+                    }
+                    
+                    // Recalculate fine amount
+                    if (typeof updateViolationTotal === 'function') {
+                        updateViolationTotal();
+                    }
+                }
+            } else {
+                // Remove repeat violator badge if exists
+                const repeatBadge = licenseParent.querySelector('.repeat-badge');
+                if (repeatBadge) repeatBadge.remove();
+                
+                // Remove warning class from license field
+                licenseField.classList.remove('border-warning');
+                
+                // Uncheck repeat violator checkbox if it was checked
+                const repeatViolatorCheckbox = Array.from(document.querySelectorAll('input[name="violation_type[]"]'))
+                    .find(checkbox => checkbox.value === 'Repeat Violator');
+                if (repeatViolatorCheckbox && repeatViolatorCheckbox.checked) {
+                    repeatViolatorCheckbox.checked = false;
+                    
+                    // Recalculate fine amount
+                    if (typeof updateViolationTotal === 'function') {
+                        updateViolationTotal();
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error checking for repeat violator:', error);
+        }
+    }
+    
+    // For mobile view, add listener to license input to trigger repeat violator check
+    if (isMobileView()) {
+        // For "no license" checkbox, add unlicensed violation
+        const noLicenseCheckbox = document.getElementById('noLicense');
+        if (noLicenseCheckbox) {
+            noLicenseCheckbox.addEventListener('change', function() {
+                const unlicensedCheckbox = Array.from(document.querySelectorAll('input[name="violation_type[]"]'))
+                    .find(checkbox => checkbox.value === 'Unlicensed Driver');
+                
+                if (unlicensedCheckbox) {
+                    unlicensedCheckbox.checked = this.checked;
+                    
+                    // Recalculate fine amount
+                    if (typeof updateViolationTotal === 'function') {
+                        updateViolationTotal();
+                    }
+                }
+            });
+        }
+        
+        // Check for repeat violator on form submit (additional safety check)
+        document.getElementById('ticketForm').addEventListener('submit', function(e) {
+            checkForRepeatViolator();
+        });
+    }
+    
+    // When the page loads, initialize the form for the current viewport
+    if (isMobileView()) {
+        steps.forEach(step => {
+            step.style.display = 'block';
+        });
+        submitBtn.style.display = 'flex';
+    } else {
+        updateStep(0); // Initialize to first step on desktop
+        
+        // Add event listeners for next/prev buttons (desktop only)
+        nextBtn.addEventListener('click', () => {
+            if (validateStep(currentStep)) {
+                currentStep++;
+                updateStep(currentStep);
+                
+                // If moving to step 2 and "no license" is checked, ensure unlicensed violation is checked
+                if (currentStep === 1 && document.getElementById('noLicense').checked) {
+                    const unlicensedCheckbox = Array.from(document.querySelectorAll('input[name="violation_type[]"]'))
+                        .find(checkbox => checkbox.value === 'Unlicensed Driver');
+                    
+                    if (unlicensedCheckbox) {
+                        unlicensedCheckbox.checked = true;
+                    }
+                }
+
+                // If moving to step 2, check if this is a repeat violator
+                if (currentStep === 1) {
+                    checkForRepeatViolator();
+                    
+                    // Recalculate fine amount in case of pre-selected violations
+                    if (typeof updateFineAmount === 'function') {
+                        setTimeout(updateFineAmount, 100);
+                    }
+                }
+            }
+        });
+
+        prevBtn.addEventListener('click', () => {
+            currentStep--;
+            updateStep(currentStep);
+        });
+    }
+    
+    // Event listener for window resize to handle transition between mobile and desktop
+    window.addEventListener('resize', function() {
+        if (isMobileView()) {
+            steps.forEach(step => {
+                step.style.display = 'block';
+            });
+            submitBtn.style.display = 'flex';
+        } else {
+            const currentStep = parseInt(document.querySelector('.step.active').getAttribute('data-step')) - 1;
+            updateStep(currentStep);
+        }
+    });
+    
+    // The form submission handler needs to validate all steps on mobile
+    document.getElementById('ticketForm').addEventListener('submit', function(e) {
+        if (isMobileView()) {
+            e.preventDefault();
+            
+            // Validate all steps at once on mobile
+            let isValid = true;
+            steps.forEach((step, index) => {
+                if (!validateStep(index)) {
+                    isValid = false;
+                }
+            });
+            
+            if (isValid) {
+                this.submit();
+            }
+        }
+    });
+    
+    // Original currentStep variable declaration if needed by other scripts
+    window.currentStep = 0;
+});
+</script>
+{% endblock %}

@@ -186,7 +186,7 @@
                     <h5 class="modal-title">User Details</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-0"></div>
+                <div class="modal-body p-0" style="min-height: 300px;"></div>
             </div>
         </div>
     </div>
@@ -759,7 +759,7 @@
     function showUserDetail(userId) {
         const modalBody = document.querySelector('#userDetailModal .modal-body');
         modalBody.innerHTML = `
-            <div class="text-center py-5">
+            <div class="d-flex align-items-center justify-content-center" style="min-height: 300px;">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>
@@ -773,9 +773,11 @@
             })
             .catch(error => {
                 modalBody.innerHTML = `
-                    <div class="alert alert-danger m-3">
-                        <span class="material-icons me-2">error_outline</span>
-                        Error loading user details: ${error.message}
+                    <div class="d-flex align-items-center justify-content-center" style="min-height: 300px;">
+                        <div class="alert alert-danger m-3">
+                            <span class="material-icons me-2">error_outline</span>
+                            Error loading user details: ${error.message}
+                        </div>
                     </div>
                 `;
             });
@@ -839,19 +841,20 @@
                 const userId = button.getAttribute('data-user-id');
                 showUserDetail(userId);
                 
-                // Prevent layout shifts
-                const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-                document.documentElement.style.setProperty('--scrollbar-width', `${scrollbarWidth}px`);
-                document.body.style.paddingRight = '0';
-                document.body.style.overflow = 'hidden';
+                // Fix for layout shift - measure scrollbar width once before modal opens
+                if (!document.documentElement.style.getPropertyValue('--scrollbar-width')) {
+                    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+                    document.documentElement.style.setProperty('--scrollbar-width', `${scrollbarWidth}px`);
+                }
             });
 
             // After modal is hidden
             userDetailModal.addEventListener('hidden.bs.modal', function() {
-                document.body.style.paddingRight = '0';
-                document.body.style.overflow = '';
-                document.body.classList.remove('modal-open');
-                document.documentElement.style.removeProperty('--scrollbar-width');
+                // Only remove the scrollbar width property when needed
+                // Don't manipulate other body styles to avoid layout shifts
+                if (!document.querySelector('.modal.show')) {
+                    document.documentElement.style.removeProperty('--scrollbar-width');
+                }
             });
         }
         

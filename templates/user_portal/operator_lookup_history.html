@@ -1,0 +1,272 @@
+{% extends 'user_portal/base_user.html' %}
+{% load static %}
+
+{% block title %}Operator Lookup History - CTTMO Portal{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Enhanced history page styles */
+    .history-container {
+        padding: 1.5rem;
+    }
+    
+    .page-header {
+        margin-bottom: 1.5rem;
+    }
+    
+    .page-title {
+        font-size: 1.75rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 0;
+    }
+    
+    .history-table {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    
+    .history-table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        padding: 1rem;
+        border-bottom: 2px solid #dee2e6;
+    }
+    
+    .history-table td {
+        padding: 1rem;
+        vertical-align: middle;
+    }
+    
+    .history-table tbody tr {
+        transition: background-color 0.3s ease;
+    }
+    
+    .history-table tbody tr:hover {
+        background-color: rgba(74, 144, 226, 0.05);
+    }
+    
+    .search-again-btn {
+        border-radius: 0.5rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .search-again-btn:hover {
+        background-color: var(--primary-color);
+        color: white;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1.5rem;
+    }
+    
+    .empty-state-icon {
+        font-size: 4rem;
+        color: #6c757d;
+        margin-bottom: 1.5rem;
+    }
+    
+    .empty-state-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+    
+    .empty-state-text {
+        color: var(--text-light);
+        margin-bottom: 1.5rem;
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    /* Pagination styles */
+    .pagination {
+        gap: 0.25rem;
+    }
+    
+    .pagination .page-item .page-link {
+        border-radius: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        color: var(--text-dark);
+        border: 1px solid #dee2e6;
+        transition: all 0.3s ease;
+    }
+    
+    .pagination .page-item .page-link:hover {
+        background-color: #f8f9fa;
+        color: var(--primary-color);
+        border-color: #dee2e6;
+    }
+    
+    .pagination .page-item.active .page-link {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+    }
+    
+    .pagination .page-item.disabled .page-link {
+        color: var(--text-light);
+        background-color: #f8f9fa;
+        border-color: #dee2e6;
+    }
+    
+    /* Action buttons */
+    .action-btn {
+        border-radius: 0.5rem;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .action-btn:hover {
+        transform: translateY(-2px);
+    }
+    
+    .action-btn .material-icons {
+        font-size: 1.25rem;
+    }
+    
+    /* Card styles */
+    .card {
+        border: none;
+        border-radius: 1rem;
+        box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body history-container">
+                    <div class="d-flex justify-content-between align-items-center page-header">
+                        <h2 class="page-title">Operator Lookup History</h2>
+                        <a href="{% url 'user_portal:operator_lookup' %}" class="btn btn-primary action-btn">
+                            <span class="material-icons">search</span> New Lookup
+                        </a>
+                    </div>
+                    
+                    {% if lookups %}
+                    <div class="table-responsive">
+                        <table class="table history-table">
+                            <thead>
+                                <tr>
+                                    <th>Operator Name</th>
+                                    <th>License/ID</th>
+                                    <th>Lookup Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for lookup in lookups %}
+                                <tr>
+                                    <td class="fw-medium">{{ lookup.operator_name }}</td>
+                                    <td>{{ lookup.operator_license }}</td>
+                                    <td>{{ lookup.lookup_date|date:"M d, Y h:i A" }}</td>
+                                    <td>
+                                        <a href="{% url 'user_portal:operator_lookup' %}?search={{ lookup.operator_name|urlencode }}" 
+                                           class="btn btn-sm btn-outline-primary search-again-btn">
+                                            <span class="material-icons" style="font-size: 16px;">refresh</span> Search Again
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    {% if page_obj.has_other_pages %}
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1" aria-label="First" title="First Page">
+                                    <span aria-hidden="true">&laquo;&laquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous" title="Previous Page">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" aria-label="First" title="First Page">
+                                    <span aria-hidden="true">&laquo;&laquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" aria-label="Previous" title="Previous Page">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for i in page_obj.paginator.page_range %}
+                                {% if page_obj.number == i %}
+                                <li class="page-item active">
+                                    <a class="page-link" href="#">{{ i }}</a>
+                                </li>
+                                {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next" title="Next Page">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last" title="Last Page">
+                                    <span aria-hidden="true">&raquo;&raquo;</span>
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" aria-label="Next" title="Next Page">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" aria-label="Last" title="Last Page">
+                                    <span aria-hidden="true">&raquo;&raquo;</span>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                    
+                    {% else %}
+                    <div class="empty-state">
+                        <span class="material-icons empty-state-icon">history</span>
+                        <h4 class="empty-state-title">No Lookup History</h4>
+                        <p class="empty-state-text">You haven't performed any operator lookups yet. Use the operator lookup feature to check if operators have violations before leasing your vehicle to them.</p>
+                        <a href="{% url 'user_portal:operator_lookup' %}" class="btn btn-primary action-btn">
+                            <span class="material-icons">search</span> Start Looking Up Operators
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

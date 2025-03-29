@@ -10,6 +10,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     
     <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     
     <!-- Poppins Font -->
@@ -17,13 +18,26 @@
     
     <style>
         :root {
-            --primary-color: #002366;
+            --primary-color: #3563E9;
+            --primary-light: #EEF3FF;
+            --primary-dark: #1E429F;
             --secondary-color: #4a90e2;
             --accent-color: #ffd700;
-            --text-dark: #2d3748;
-            --text-light: #718096;
+            --success-color: #0CAA1D;
+            --danger-color: #F53D3D;
+            --warning-color: #FFB800;
+            --info-color: #4DA7FF;
+            --dark-blue: #0F1C3F;
+            --neutral-gray: #737791;
+            --light-gray: #F6F7F9;
+            --white: #FFFFFF;
             --bg-light: #f7fafc;
             --font-primary: 'Poppins', sans-serif;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.05);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.05), 0 4px 6px -2px rgba(0,0,0,0.025);
+            --transition-default: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         body {
@@ -37,212 +51,947 @@
             font-weight: 600;
         }
 
+        /* ====== Navbar Redesign ====== */
+        .navbar {
+            background-color: var(--white);
+            box-shadow: var(--shadow-md);
+            padding: 0.6rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1020;
+            transition: var(--transition-default);
+        }
+        
+        .navbar.scrolled {
+            padding: 0.4rem 0;
+            box-shadow: var(--shadow-lg);
+        }
+        
         .navbar-brand {
             font-family: var(--font-primary);
             font-weight: 600;
-        }
-
-        .nav-link {
-            font-family: var(--font-primary);
-            font-weight: 500;
-        }
-
-        .dropdown-item {
-            font-family: var(--font-primary);
-            font-weight: 400;
-        }
-
-        /* Navbar Styles */
-        .navbar {
-            background-color: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            padding: 1rem 0;
-        }
-
-        .navbar-brand img {
-            height: 40px;
-        }
-
-        .nav-link {
-            color: var(--text-dark);
-            font-weight: 500;
-            padding: 0.5rem 1rem;
-            transition: color 0.3s ease;
-        }
-
-        .nav-link:hover {
-            color: var(--primary-color);
-        }
-
-        .nav-link .material-icons {
-            font-size: 1.25rem;
-            vertical-align: middle;
-            margin-right: 0.5rem;
-        }
-
-        .user-menu .dropdown-toggle::after {
-            display: none;
-        }
-
-        .user-menu .dropdown-menu {
-            border: none;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            border-radius: 0.5rem;
-        }
-
-        .user-menu .dropdown-item {
-            padding: 0.75rem 1.5rem;
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            color: var(--text-dark);
-            transition: all 0.3s ease;
+            padding: 0;
+            margin-right: 0;
         }
-
-        .user-menu .dropdown-item:hover {
-            background-color: var(--bg-light);
+        
+        .navbar-brand-title {
+            font-weight: 700;
+            color: var(--primary-color);
+            font-size: 1.25rem;
+            margin: 0;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+        
+        .navbar-brand img {
+            height: 40px;
+            transition: var(--transition-default);
+        }
+        
+        /* Navbar Toggle Button (Hamburger) */
+        .navbar-toggler {
+            border: none;
+            padding: 0.4rem;
+            border-radius: 0.5rem;
+            background-color: var(--primary-light);
+            transition: var(--transition-default);
+            margin-left: auto;
+        }
+        
+        .navbar-toggler:focus {
+            box-shadow: 0 0 0 0.2rem rgba(53, 99, 233, 0.25);
+        }
+        
+        .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath stroke='rgba(53, 99, 233, 0.75)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E");
+        }
+        
+        /* Navbar Collapse Animation */
+        .navbar-collapse {
+            transition: var(--transition-default);
+        }
+        
+        /* Main Navigation */
+        .main-nav {
+            margin-left: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 800px;
+        }
+        
+        .nav-item {
+            margin: 0 0.125rem;
+        }
+        
+        .nav-link {
+            font-family: var(--font-primary);
+            font-weight: 500;
+            color: var(--dark-blue);
+            padding: 0.6rem 0.75rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: var(--transition-default);
+            position: relative;
+        }
+        
+        .nav-link:focus {
+            box-shadow: 0 0 0 0.2rem rgba(53, 99, 233, 0.25);
+            outline: none;
+        }
+        
+        .nav-link .nav-icon {
+            font-size: 1.25rem;
+            color: var(--neutral-gray);
+            transition: var(--transition-default);
+            font-variation-settings: 'FILL' 0;
+        }
+        
+        .nav-link:hover {
+            color: var(--primary-color);
+            background-color: var(--primary-light);
+        }
+        
+        .nav-link:hover .nav-icon {
             color: var(--primary-color);
         }
-
-        .user-menu .dropdown-item .material-icons {
-            font-size: 1.25rem;
-            color: var(--text-light);
+        
+        .nav-link.active {
+            color: var(--primary-color);
+            background-color: var(--primary-light);
+            font-weight: 600;
         }
-
+        
+        .nav-link.active .nav-icon {
+            color: var(--primary-color);
+            font-variation-settings: 'FILL' 1;
+        }
+        
+        /* Navbar Right Section */
+        .navbar-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+        }
+        
+        /* User Menu Dropdown */
+        .user-menu .dropdown-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+        }
+        
+        .user-menu .dropdown-toggle::after {
+            display: none;
+        }
+        
+        .user-menu .dropdown-toggle .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: var(--primary-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            transition: var(--transition-default);
+        }
+        
+        .user-menu .dropdown-toggle:hover .user-avatar {
+            background-color: var(--primary-color);
+            color: var(--white);
+        }
+        
+        .user-menu .dropdown-toggle .user-name {
+            font-weight: 500;
+            display: none;
+        }
+        
+        .user-menu .dropdown-menu {
+            border: none;
+            box-shadow: var(--shadow-lg);
+            border-radius: 0.75rem;
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+            min-width: 220px;
+            animation: fadeInDown 0.2s ease-out;
+        }
+        
+        .user-menu .dropdown-item {
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--dark-blue);
+            transition: var(--transition-default);
+            border-radius: 0.5rem;
+            margin-bottom: 0.125rem;
+        }
+        
+        .user-menu .dropdown-item:hover {
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+        }
+        
+        .user-menu .dropdown-item:hover .material-icons,
+        .user-menu .dropdown-item:hover .material-symbols-rounded {
+            color: var(--primary-color);
+        }
+        
+        .user-menu .dropdown-item .material-icons,
+        .user-menu .dropdown-item .material-symbols-rounded {
+            font-size: 1.25rem;
+            color: var(--neutral-gray);
+            transition: var(--transition-default);
+        }
+        
+        /* Notification System */
+        .notification-badge {
+            position: relative;
+        }
+        
+        .notification-indicator {
+            position: absolute;
+            top: 0px;
+            right: 0px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--danger-color);
+            border: 2px solid var(--white);
+            transform: translate(25%, -25%);
+        }
+        
+        .badge-count {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--danger-color);
+            color: var(--white);
+            box-shadow: 0 2px 4px rgba(245, 61, 61, 0.25);
+        }
+        
+        /* Notification dropdown */
+        .notification-dropdown {
+            width: 320px;
+            padding: 0;
+            overflow: hidden;
+            border-radius: 0.75rem;
+            animation: fadeInDown 0.2s ease-out;
+            background-color: var(--white);
+            border: none;
+            box-shadow: var(--shadow-md);
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--light-gray);
+            background-color: var(--white);
+        }
+        
+        .notification-list {
+            max-height: 360px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--light-gray) transparent;
+            background-color: var(--white);
+        }
+        
+        .notification-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .notification-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .notification-list::-webkit-scrollbar-thumb {
+            background-color: var(--light-gray);
+            border-radius: 6px;
+        }
+        
+        .notification-item {
+            display: flex;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--light-gray);
+            transition: var(--transition-default);
+            cursor: pointer;
+        }
+        
+        .notification-item:hover {
+            background-color: var(--primary-light);
+        }
+        
+        .notification-item.unread {
+            background-color: rgba(53, 99, 233, 0.05);
+        }
+        
+        .notification-icon {
+            margin-right: 0.75rem;
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .notification-content {
+            flex: 1;
+        }
+        
+        .notification-text {
+            margin-bottom: 0.25rem;
+            font-size: 0.875rem;
+        }
+        
+        .notification-time {
+            color: var(--neutral-gray);
+            font-size: 0.75rem;
+            margin: 0;
+        }
+        
+        .notification-footer {
+            padding: 0.75rem 0;
+            border-top: 1px solid var(--light-gray);
+            background-color: var(--white);
+        }
+        
+        .notification-footer a {
+            color: var(--primary-color);
+            font-weight: 500;
+            padding: 0.5rem;
+            font-size: 0.875rem;
+        }
+        
+        .dropdown-item.text-center.py-3 {
+            background-color: var(--white);
+        }
+        
+        .dropdown-item.text-center.py-3 span.material-symbols-rounded {
+            color: var(--light-gray);
+        }
+        
+        /* Icon colors based on notification type */
+        .notification-icon-VIOLATION {
+            color: var(--danger-color);
+        }
+        .notification-icon-PAYMENT {
+            color: var(--success-color);
+        }
+        .notification-icon-STATUS {
+            color: var(--info-color);
+        }
+        .notification-icon-SYSTEM {
+            color: var(--neutral-gray);
+        }
+        
         /* Content Area */
         .main-content {
             padding: 2rem 0;
             min-height: calc(100vh - 76px);
         }
-
+        
         /* Footer */
         .footer {
-            background-color: white;
+            background-color: var(--white);
             padding: 1.5rem 0;
-            border-top: 1px solid #e2e8f0;
+            border-top: 1px solid var(--light-gray);
         }
-
-        /* Notification Badge */
-        .notification-badge {
-            position: relative;
+        
+        /* Mobile responsive adjustments */
+        @media (min-width: 992px) {
+            .user-menu .dropdown-toggle .user-name {
+                display: block;
+            }
+            
+            .navbar-collapse {
+                display: flex !important;
+                align-items: center;
+            }
+            
+            .nav-link {
+                padding: 0.6rem 1rem;
+                white-space: nowrap;
+            }
+            
+            .navbar-right {
+                margin-left: 1rem;
+            }
         }
-
-        .badge {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            padding: 0.25rem 0.5rem;
-            border-radius: 50%;
-            font-size: 0.75rem;
-            background-color: var(--accent-color);
-            color: var(--text-dark);
+        
+        @media (max-width: 991px) {
+            .navbar-brand img {
+                height: 36px;
+            }
+            
+            .navbar-collapse {
+                background-color: var(--white);
+                border-radius: 0.75rem;
+                box-shadow: var(--shadow-lg);
+                padding: 1rem;
+                margin-top: 0.75rem;
+                max-height: calc(100vh - 100px);
+                overflow-y: auto;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                z-index: 1030;
+            }
+            
+            .main-nav {
+                flex-direction: column;
+                width: 100%;
+                max-width: 100%;
+                align-items: center;
+            }
+            
+            .navbar-nav {
+                padding: 0.5rem 0;
+                width: 100%;
+                text-align: center;
+            }
+            
+            .nav-item {
+                margin: 0.5rem 0;
+                width: 100%;
+                display: flex;
+                justify-content: center;
+            }
+            
+            .nav-link {
+                padding: 0.75rem 1.5rem;
+                justify-content: center;
+                width: 100%;
+                max-width: 240px;
+            }
+            
+            .nav-item.dropdown {
+                position: static;
+            }
+            
+            .nav-item.dropdown .dropdown-menu {
+                position: static !important;
+                width: 100%;
+                max-width: 240px;
+                margin: 0.25rem auto 1rem;
+                box-shadow: none;
+                border: none;
+                padding: 0;
+                background-color: var(--primary-light);
+                border-radius: 0.5rem;
+            }
+            
+            .dropdown-menu .dropdown-item {
+                text-align: center;
+                justify-content: center;
+                padding: 0.75rem 1rem;
+            }
+            
+            .navbar-right {
+                flex-direction: column;
+                justify-content: center;
+                width: 100%;
+                margin-top: 1rem;
+                border-top: 1px solid var(--light-gray);
+                padding-top: 1rem;
+            }
+            
+            .navbar-right .nav-item {
+                margin: 0.5rem 0;
+                width: 100%;
+                position: relative;
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .user-menu .dropdown-toggle,
+            .notification-badge .nav-link {
+                padding: 0.75rem 1.5rem;
+                justify-content: center;
+                width: 100%;
+                max-width: 240px;
+            }
+            
+            .user-menu .dropdown-toggle .user-name {
+                display: inline-block;
+                margin-left: 0.5rem;
+            }
+            
+            .user-menu {
+                width: 100%;
+                display: flex;
+                justify-content: center;
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .notification-badge {
+                width: 100%;
+                margin-right: 0;
+                display: flex;
+                justify-content: center;
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            /* Mobile accordion-style dropdowns */
+            .navbar-right .dropdown-menu {
+                position: absolute !important;
+                float: none;
+                width: 100% !important;
+                max-width: 350px !important;
+                margin: 0.5rem auto !important;
+                transform: none !important;
+                left: 0 !important;
+                right: 0 !important;
+                padding: 0;
+                border-radius: 0.75rem;
+                border: none;
+                background-color: var(--white);
+                box-shadow: var(--shadow-md);
+                animation: slideDown 0.3s ease-out;
+                overflow: hidden;
+            }
+            
+            .navbar-right .dropdown {
+                position: static;
+            }
+            
+            @keyframes slideDown {
+                from {
+                    opacity: 0;
+                    transform: translateY(-10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
+            .notification-dropdown .notification-item,
+            .notification-dropdown .notification-header,
+            .notification-dropdown .notification-footer,
+            .notification-dropdown .notification-list,
+            .notification-dropdown .dropdown-item.text-center.py-3 {
+                background-color: var(--white);
+            }
+            
+            /* Mobile popup menu styles */
+            .mobile-menu-popups {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 2000;
+                display: none;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .mobile-menu-popups.show {
+                display: flex;
+            }
+            
+            .mobile-popup-content {
+                background-color: var(--white);
+                border-radius: 1rem;
+                width: 90%;
+                max-width: 350px;
+                max-height: 80vh;
+                overflow-y: auto;
+                box-shadow: var(--shadow-lg);
+                position: relative;
+            }
+            
+            .mobile-popup-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 1rem;
+                border-bottom: 1px solid var(--light-gray);
+            }
+            
+            .mobile-popup-header h5 {
+                margin: 0;
+                font-weight: 600;
+            }
+            
+            .mobile-popup-header button {
+                background: none;
+                border: none;
+                padding: 0.25rem;
+                cursor: pointer;
+                color: var(--neutral-gray);
+            }
+            
+            .mobile-popup-body {
+                padding: 0;
+            }
+            
+            .mobile-popup-footer {
+                padding: 1rem;
+                border-top: 1px solid var(--light-gray);
+                text-align: center;
+            }
         }
-
-        /* Logout button styles */
-        .user-menu form.dropdown-item {
-            margin: 0;
+        
+        @media (max-width: 575px) {
+            .navbar-brand img {
+                height: 32px;
+            }
+            
+            .navbar-brand-title {
+                font-size: 1rem;
+            }
+            
+            .notification-dropdown {
+                width: 100%;
+                max-width: 320px;
+                background-color: var(--white);
+            }
         }
-
-        .user-menu form.dropdown-item button {
-            width: 100%;
-            text-align: left;
-            background: none;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            color: var(--text-dark);
-            transition: all 0.3s ease;
+        
+        /* High Contrast Mode */
+        @media (forced-colors: active) {
+            .navbar {
+                border-bottom: 1px solid CanvasText;
+            }
+            
+            .nav-link:hover,
+            .nav-link.active {
+                border: 1px solid CanvasText;
+            }
+            
+            .badge-count {
+                border: 1px solid CanvasText;
+            }
         }
-
-        .user-menu form.dropdown-item button:hover {
-            background-color: var(--bg-light);
-            color: var(--primary-color);
-        }
-
-        .user-menu form.dropdown-item button .material-icons {
-            font-size: 1.25rem;
-            color: var(--text-light);
+        
+        /* Desktop dropdown overrides */
+        @media (min-width: 992px) {
+            .mobile-menu-popups {
+                display: none !important; /* Always hide mobile popups on desktop */
+            }
+            
+            .dropdown-menu {
+                margin-top: 0.5rem !important;
+                z-index: 1050 !important;
+                position: absolute !important;
+                transform: none !important;
+            }
+            
+            .notification-dropdown {
+                width: 320px !important;
+                max-width: 320px !important;
+                right: 0 !important;
+                left: auto !important;
+            }
         }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg sticky-top">
-        <div class="container">
-            <a class="navbar-brand" href="{% url 'user_portal:user_dashboard' %}">
+    <nav class="navbar navbar-expand-lg sticky-top" aria-label="Main Navigation">
+        <div class="container-fluid px-3 px-md-4">
+            <a class="navbar-brand" href="{% url 'user_portal:user_dashboard' %}" aria-label="CTTMO VMS Home">
                 <img src="{% static 'admin/img/logo.png' %}" alt="CTTMO Logo">
+                <div class="navbar-brand-title">CTTMO VMS</div>
             </a>
             
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             
             <div class="collapse navbar-collapse" id="navbarContent">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <ul class="navbar-nav main-nav mx-auto mb-2 mb-lg-0 justify-content-center">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'user_portal:user_dashboard' %}">
-                            <span class="material-icons">dashboard</span>
-                            Dashboard
+                        <a class="nav-link {% if request.resolver_match.url_name == 'user_dashboard' %}active{% endif %}" href="{% url 'user_portal:user_dashboard' %}" aria-label="Dashboard" tabindex="0">
+                            <span class="material-symbols-rounded nav-icon">dashboard</span>
+                            <span>Dashboard</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'user_portal:user_violations' %}">
-                            <span class="material-icons">gavel</span>
-                            My Violations
+                        <a class="nav-link {% if request.resolver_match.url_name == 'user_violations' %}active{% endif %}" href="{% url 'user_portal:user_violations' %}" aria-label="My Violations" tabindex="0">
+                            <span class="material-symbols-rounded nav-icon">gavel</span>
+                            <span>My Violations</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'user_portal:file_report' %}">
-                            <span class="material-icons">report</span>
-                            File Report
+                        <a class="nav-link {% if request.resolver_match.url_name == 'file_report' %}active{% endif %}" href="{% url 'user_portal:file_report' %}" aria-label="File Report" tabindex="0">
+                            <span class="material-symbols-rounded nav-icon">report</span>
+                            <span>File Report</span>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'vehicle_list' %}active{% endif %}" href="{% url 'user_portal:vehicle_list' %}" aria-label="My Vehicles" tabindex="0">
+                            <span class="material-symbols-rounded nav-icon">directions_car</span>
+                            <span>My Vehicles</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'operator_lookup' or request.resolver_match.url_name == 'operator_lookup_history' %}active{% endif %}" href="{% url 'user_portal:operator_lookup' %}" aria-label="Operator Lookup" tabindex="0">
+                            <span class="material-symbols-rounded nav-icon">search</span>
+                            <span>Operator Lookup</span>
+                        </a>
+                    </li>
+                    {% if user.is_authenticated and not user.userprofile.is_operator %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'operator_apply' %}active{% endif %}" href="{% url 'operator_apply' %}" aria-label="Apply as Operator" tabindex="0">
+                            <span class="material-symbols-rounded nav-icon">business</span>
+                            <span>Apply as Operator</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% if user.is_staff %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Admin" tabindex="0">
+                            <span class="material-symbols-rounded nav-icon">admin_panel_settings</span>
+                            <span>Admin</span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'admin:index' %}" target="_blank" tabindex="0">
+                                    <span class="material-symbols-rounded">admin_panel_settings</span>
+                                    Admin Panel
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'user_portal:user_management' %}" tabindex="0">
+                                    <span class="material-symbols-rounded">manage_accounts</span>
+                                    User Management
+                                </a>
+                            </li>
+                            {% if user.userprofile.role in 'ADMIN,SUPERVISOR,ENFORCER' %}
+                            <li>
+                                <a class="dropdown-item" href="{% url 'user_portal:regular_users_list' %}" tabindex="0">
+                                    <span class="material-symbols-rounded">people</span>
+                                    Regular Users
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </li>
+                    {% endif %}
                 </ul>
                 
-                <ul class="navbar-nav">
-                    <li class="nav-item notification-badge me-3">
-                        <a class="nav-link" href="#notifications">
-                            <span class="material-icons">notifications</span>
-                            <span class="badge">3</span>
+                <ul class="navbar-nav navbar-right d-flex flex-row flex-lg-row flex-column">
+                    <li class="nav-item notification-badge dropdown d-none d-lg-block">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications" tabindex="0">
+                            <span class="material-symbols-rounded nav-icon">notifications</span>
+                            {% if unread_notification_count > 0 %}
+                            <span class="badge-count">{{ unread_notification_count }}</span>
+                            {% endif %}
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-lg-end notification-dropdown" aria-labelledby="notificationDropdown">
+                            <div class="notification-header">
+                                <h6 class="m-0">Notifications</h6>
+                                {% if unread_notification_count > 0 %}
+                                <span class="badge bg-primary rounded-pill">{{ unread_notification_count }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="notification-list">
+                                {% if recent_notifications %}
+                                    {% for notification in recent_notifications %}
+                                        <div class="dropdown-item notification-item {% if not notification.is_read %}unread{% endif %}" 
+                                             data-notification-id="{{ notification.id }}"
+                                             data-reference-id="{{ notification.reference_id }}"
+                                             data-reference-type="{{ notification.type }}"
+                                             role="button"
+                                             tabindex="0">
+                                            <div class="notification-icon">
+                                                <span class="material-symbols-rounded notification-icon-{{ notification.type }}">{{ notification.get_icon }}</span>
+                                            </div>
+                                            <div class="notification-content">
+                                                <p class="notification-text">{{ notification.message }}</p>
+                                                <p class="notification-time">{{ notification.created_at|timesince }} ago</p>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="dropdown-item text-center py-3">
+                                        <span class="material-symbols-rounded text-muted d-block mb-2" style="font-size: 2rem;">notifications_none</span>
+                                        <p class="text-muted mb-0">No new notifications</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="notification-footer">
+                                <a href="{% url 'user_portal:user_notifications' %}" class="text-decoration-none text-center d-block w-100">View All</a>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="nav-item d-lg-none">
+                        <a class="nav-link" href="#" onclick="openMobilePopup('notificationsPopup'); return false;" aria-label="Notifications" tabindex="0">
+                            <span class="material-symbols-rounded nav-icon">notifications</span>
+                            <span class="d-inline-block ms-2">Notifications</span>
+                            {% if unread_notification_count > 0 %}
+                            <span class="badge-count">{{ unread_notification_count }}</span>
+                            {% endif %}
                         </a>
                     </li>
-                    <li class="nav-item user-menu dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <span class="material-icons">account_circle</span>
-                            {{ request.user.get_full_name }}
+                    <li class="nav-item user-menu dropdown d-none d-lg-block">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="User menu" tabindex="0">
+                            <div class="user-avatar">
+                                <span class="material-symbols-rounded">person</span>
+                            </div>
+                            <span class="user-name">{{ request.user.get_full_name }}</span>
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
+                        <ul class="dropdown-menu dropdown-menu-lg-end" aria-labelledby="userDropdown">
                             <li>
-                                <a class="dropdown-item" href="{% url 'user_portal:user_profile' %}">
-                                    <span class="material-icons">person</span>
+                                <a class="dropdown-item" href="{% url 'user_portal:user_profile' %}" tabindex="0">
+                                    <span class="material-symbols-rounded">person</span>
                                     My Profile
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item" href="{% url 'user_portal:user_settings' %}">
-                                    <span class="material-icons">settings</span>
+                                <a class="dropdown-item" href="{% url 'user_portal:user_settings' %}" tabindex="0">
+                                    <span class="material-symbols-rounded">settings</span>
                                     Settings
                                 </a>
                             </li>
+                            {% if not user.userprofile.is_operator %}
+                            <li>
+                                <a class="dropdown-item" href="{% url 'operator_apply' %}" tabindex="0">
+                                    <span class="material-symbols-rounded">business</span>
+                                    Apply as Operator
+                                </a>
+                            </li>
+                            {% endif %}
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form method="post" action="{% url 'logout' %}" class="dropdown-item p-0">
                                     {% csrf_token %}
-                                    <button type="submit" class="dropdown-item">
-                                        <span class="material-icons">logout</span>
+                                    <button type="submit" class="dropdown-item" tabindex="0">
+                                        <span class="material-symbols-rounded">logout</span>
                                         Logout
                                     </button>
                                 </form>
                             </li>
                         </ul>
                     </li>
+                    <li class="nav-item d-lg-none">
+                        <a class="nav-link" href="#" onclick="openMobilePopup('accountPopup'); return false;" aria-label="My Account" tabindex="0">
+                            <div class="user-avatar d-inline-flex">
+                                <span class="material-symbols-rounded">person</span>
+                            </div>
+                            <span class="d-inline-block ms-2">My Account</span>
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>
     </nav>
+
+    <!-- Mobile Popup Menus (for notifications and profile) -->
+    <div class="mobile-menu-popups" id="notificationsPopup">
+        <div class="mobile-popup-content">
+            <div class="mobile-popup-header">
+                <h5>Notifications</h5>
+                <button type="button" aria-label="Close" onclick="closeMobilePopup('notificationsPopup')">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <div class="mobile-popup-body">
+                <div class="notification-list">
+                    {% if recent_notifications %}
+                        {% for notification in recent_notifications %}
+                            <div class="dropdown-item notification-item {% if not notification.is_read %}unread{% endif %}" 
+                                 data-notification-id="{{ notification.id }}"
+                                 data-reference-id="{{ notification.reference_id }}"
+                                 data-reference-type="{{ notification.type }}"
+                                 role="button"
+                                 tabindex="0">
+                                <div class="notification-icon">
+                                    <span class="material-symbols-rounded notification-icon-{{ notification.type }}">{{ notification.get_icon }}</span>
+                                </div>
+                                <div class="notification-content">
+                                    <p class="notification-text">{{ notification.message }}</p>
+                                    <p class="notification-time">{{ notification.created_at|timesince }} ago</p>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="dropdown-item text-center py-4">
+                            <span class="material-symbols-rounded text-muted d-block mb-2" style="font-size: 3rem;">notifications_none</span>
+                            <p class="text-muted mb-0">No new notifications</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="mobile-popup-footer">
+                <a href="{% url 'user_portal:user_notifications' %}" class="btn btn-primary">View All</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mobile-menu-popups" id="accountPopup">
+        <div class="mobile-popup-content">
+            <div class="mobile-popup-header">
+                <h5>My Account</h5>
+                <button type="button" aria-label="Close" onclick="closeMobilePopup('accountPopup')">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <div class="mobile-popup-body">
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'user_portal:user_profile' %}" class="list-group-item list-group-item-action d-flex align-items-center">
+                        <span class="material-symbols-rounded me-3">person</span>
+                        My Profile
+                    </a>
+                    <a href="{% url 'user_portal:user_settings' %}" class="list-group-item list-group-item-action d-flex align-items-center">
+                        <span class="material-symbols-rounded me-3">settings</span>
+                        Settings
+                    </a>
+                    {% if not user.userprofile.is_operator %}
+                    <a href="{% url 'operator_apply' %}" class="list-group-item list-group-item-action d-flex align-items-center">
+                        <span class="material-symbols-rounded me-3">business</span>
+                        Apply as Operator
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="mobile-popup-footer">
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <span class="material-symbols-rounded me-2">logout</span>
+                        Logout
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <!-- Main Content -->
     <div class="main-content">
@@ -274,7 +1023,19 @@
     
     <!-- Auto-dismiss alerts -->
     <script>
+        // Functions for mobile popups
+        function openMobilePopup(popupId) {
+            document.getElementById(popupId).classList.add('show');
+            document.body.style.overflow = 'hidden'; // Prevent scrolling behind popup
+        }
+        
+        function closeMobilePopup(popupId) {
+            document.getElementById(popupId).classList.remove('show');
+            document.body.style.overflow = '';
+        }
+        
         document.addEventListener('DOMContentLoaded', function() {
+            // Auto-dismiss alerts
             const alerts = document.querySelectorAll('.alert');
             alerts.forEach(alert => {
                 setTimeout(() => {
@@ -282,9 +1043,267 @@
                     bsAlert.close();
                 }, 5000);
             });
+            
+            // Scrolled navbar effect
+            const navbar = document.querySelector('.navbar');
+            window.addEventListener('scroll', function() {
+                if (window.scrollY > 10) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+            });
+            
+            // Enhance keyboard navigation accessibility
+            const focusableElements = document.querySelectorAll('.nav-link, .dropdown-item, button');
+            focusableElements.forEach(el => {
+                el.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        el.click();
+                    }
+                });
+            });
+            
+            // Mobile popup background click to close
+            const mobilePopups = document.querySelectorAll('.mobile-menu-popups');
+            mobilePopups.forEach(popup => {
+                popup.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        this.classList.remove('show');
+                        document.body.style.overflow = '';
+                    }
+                });
+            });
+            
+            // Handle mobile notification item clicks
+            const mobileNotificationItems = document.querySelectorAll('#notificationsPopup .notification-item');
+            mobileNotificationItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    const notificationId = this.dataset.notificationId;
+                    const referenceId = this.dataset.referenceId;
+                    const referenceType = this.dataset.referenceType;
+                    
+                    // Mark notification as read
+                    markNotificationAsRead(notificationId);
+                    
+                    // Handle different reference types and close popup
+                    if (referenceType === 'SYSTEM' || referenceType === 'VIOLATION') {
+                        if (referenceId) {
+                            closeMobilePopup('notificationsPopup');
+                            fetchAnnouncementDetails(referenceId);
+                        }
+                    } else {
+                        closeMobilePopup('notificationsPopup');
+                    }
+                });
+            });
         });
     </script>
 
+    <!-- Announcement Modal -->
+    <div class="modal fade" id="announcementModal" tabindex="-1" aria-labelledby="announcementModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0">
+                <div class="modal-header border-0">
+                    <div>
+                        <h5 class="modal-title" id="announcementTitle"></h5>
+                        <span class="badge" id="announcementCategory"></span>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="announcementContent">
+                </div>
+                <div class="modal-footer border-0">
+                    <div class="small text-muted me-auto" id="announcementMeta"></div>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="acknowledgeAnnouncement">Acknowledge</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Notification handling
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up notification click handlers
+            const notificationItems = document.querySelectorAll('.notification-item');
+            notificationItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const notificationId = this.dataset.notificationId;
+                    const referenceId = this.dataset.referenceId;
+                    const referenceType = this.dataset.referenceType;
+                    
+                    // Mark notification as read
+                    markNotificationAsRead(notificationId);
+                    
+                    // Handle different reference types
+                    if (referenceType === 'SYSTEM' || referenceType === 'VIOLATION') {
+                        // If it's an announcement, display it in the modal
+                        if (referenceId) {
+                            fetchAnnouncementDetails(referenceId);
+                        }
+                    }
+                });
+                
+                // Add keyboard support
+                item.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.click();
+                    }
+                });
+            });
+            
+            // Function to mark notification as read
+            function markNotificationAsRead(notificationId) {
+                fetch(`/user/notifications/${notificationId}/mark-read/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    // Update UI to reflect the read status
+                    const notification = document.querySelector(`.notification-item[data-notification-id="${notificationId}"]`);
+                    if (notification) {
+                        notification.classList.remove('unread');
+                    }
+                    
+                    // Update the notification count
+                    const countElement = document.querySelector('.badge-count');
+                    if (countElement) {
+                        const currentCount = parseInt(countElement.textContent);
+                        if (currentCount > 1) {
+                            countElement.textContent = currentCount - 1;
+                        } else {
+                            countElement.remove();
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error marking notification as read:', error);
+                });
+            }
+            
+            // Function to fetch announcement details
+            function fetchAnnouncementDetails(announcementId) {
+                fetch(`/announcements/api/${announcementId}/`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Populate the modal with announcement details
+                        document.getElementById('announcementTitle').innerText = data.title;
+                        
+                        // Use rich content if available
+                        const contentEl = document.getElementById('announcementContent');
+                        if (data.rich_content) {
+                            contentEl.innerHTML = data.rich_content;
+                        } else {
+                            contentEl.innerText = data.content;
+                        }
+                        
+                        // Set category badge
+                        const categoryEl = document.getElementById('announcementCategory');
+                        if (data.category) {
+                            categoryEl.innerText = data.category;
+                            categoryEl.classList.add('bg-secondary');
+                            categoryEl.style.display = 'inline-flex';
+                        } else {
+                            categoryEl.style.display = 'none';
+                        }
+                        
+                        document.getElementById('announcementMeta').innerText = 
+                            `Posted by ${data.created_by} on ${new Date(data.created_at).toLocaleString()}`;
+                        
+                        // Add priority-based styling
+                        const modal = document.querySelector('#announcementModal .modal-content');
+                        modal.classList.remove('border-warning', 'border-danger');
+                        
+                        if (data.priority === 'HIGH') {
+                            modal.classList.add('border-danger');
+                            modal.style.borderLeft = '5px solid var(--danger-color)';
+                        } else if (data.priority === 'MEDIUM') {
+                            modal.classList.add('border-warning');
+                            modal.style.borderLeft = '5px solid var(--warning-color)';
+                        } else {
+                            modal.style.borderLeft = '5px solid var(--primary-color)';
+                        }
+                        
+                        // Handle acknowledge button
+                        const acknowledgeBtn = document.getElementById('acknowledgeAnnouncement');
+                        if (data.requires_acknowledgment) {
+                            acknowledgeBtn.style.display = 'block';
+                            acknowledgeBtn.onclick = function() {
+                                acknowledgeAnnouncement(data.id);
+                            };
+                        } else {
+                            acknowledgeBtn.style.display = 'none';
+                        }
+                        
+                        // Show the modal
+                        const announcementModal = new bootstrap.Modal(document.getElementById('announcementModal'));
+                        announcementModal.show();
+                    })
+                    .catch(error => {
+                        console.error('Error fetching announcement details:', error);
+                    });
+            }
+            
+            // Function to acknowledge announcement
+            function acknowledgeAnnouncement(announcementId) {
+                fetch(`/api/announcements/${announcementId}/acknowledge/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Close the modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('announcementModal'));
+                    if (modal) {
+                        modal.hide();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error acknowledging announcement:', error);
+                });
+            }
+            
+            // Helper function to get CSRF token
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+        });
+    </script>
+    
     {% block extra_js %}{% endblock %}
 </body>
 </html> 

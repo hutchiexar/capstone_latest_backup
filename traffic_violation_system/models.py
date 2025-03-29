@@ -8,23 +8,49 @@ from PIL import Image
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 import json
+import os
+import uuid
+from django.core.exceptions import ValidationError
 
 
 
 class Violator(models.Model):
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
-    license_number = models.CharField(max_length=20)
+    license_number = models.CharField(max_length=20, blank=True, null=True)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name} - {self.license_number}"
+        return f"{self.first_name} {self.last_name} - {self.license_number or 'No License'}"
 
     class Meta:
-        unique_together = ['license_number']  # Ensure unique license numbers
+        indexes = [
+            models.Index(fields=['first_name', 'last_name']),
+            models.Index(fields=['license_number']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['license_number'],
+                name='unique_non_empty_license',
+                condition=models.Q(license_number__isnull=False) & ~models.Q(license_number='')
+            )
+        ]
+
+
+def get_ncap_image_path(instance, filename):
+    """
+    Custom function to generate a clean filename for NCAP violation images.
+    Uses UUID to ensure uniqueness and removes special characters.
+    """
+    # Get the file extension
+    ext = filename.split('.')[-1]
+    # Generate a new filename with UUID for uniqueness
+    new_filename = f"ncap_{uuid.uuid4().hex[:10]}.{ext}"
+    # Return the upload path
+    return os.path.join('violations', new_filename)
 
 
 class Violation(models.Model):
@@ -66,16 +92,19 @@ class Violation(models.Model):
         ('Commercial', 'Commercial')
     ]
 
-    violator = models.ForeignKey(Violator, on_delete=models.CASCADE)
+    violator = models.ForeignKey(Violator, on_delete=models.CASCADE, related_name='violations')
+    user_account = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='account_violations',
+                                   help_text="If the violator is a registered user, link violation to their account")
+    enforcer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='issued_violations')
     violation_date = models.DateTimeField(default=timezone.now)
     location = models.CharField(max_length=200)
     violation_type = models.CharField(max_length=100, choices=VIOLATION_CHOICES)
     fine_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    image = models.ImageField(upload_to='violations/', null=True, blank=True)
+    is_tdz_violation = models.BooleanField(default=False, help_text="Whether the violation occurred in a Traffic Discipline Zone, which doubles the fine")
+    image = models.ImageField(upload_to=get_ncap_image_path, null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     description = models.TextField(blank=True)
     payment_due_date = models.DateField(null=True, blank=True)
-    enforcer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='issued_violations')
     enforcer_signature_date = models.DateTimeField(null=True, blank=True)
     violator_signature = models.ImageField(upload_to='signatures/', null=True, blank=True)
     violator_signature_date = models.DateTimeField(null=True, blank=True)
@@ -122,7 +151,20 @@ class Violation(models.Model):
         self.violation_types = json.dumps(types_list)
 
     def get_violation_types(self):
-        return json.loads(self.violation_types)
+        try:
+            types = json.loads(self.violation_types)
+            if types and len(types) > 0:
+                return types
+            elif self.violation_type:
+                # Fallback to the single violation_type field if JSON field is empty
+                return [self.get_violation_type_display() or self.violation_type]
+            else:
+                return []
+        except (json.JSONDecodeError, TypeError):
+            # Fallback if the JSON is invalid
+            if self.violation_type:
+                return [self.get_violation_type_display() or self.violation_type]
+            return []
 
 
 class Payment(models.Model):
@@ -147,9 +189,10 @@ class UserProfile(models.Model):
     ]
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    enforcer_id = models.CharField(max_length=10, unique=True)
+    enforcer_id = models.CharField(max_length=10, unique=True, blank=True, null=True)  # Allow blank/null temporarily during creation
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
     phone_number = models.CharField(max_length=15)
+    contact_number = models.CharField(max_length=15, blank=True, null=True)
     address = models.TextField()
     qr_code = models.ImageField(upload_to='qr_codes/', blank=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='USER')
@@ -158,6 +201,8 @@ class UserProfile(models.Model):
     last_location_update = models.DateTimeField(null=True, blank=True)
     is_active_duty = models.BooleanField(default=False)
     license_number = models.CharField(max_length=20, null=True, blank=True)
+    is_operator = models.BooleanField(default=False)
+    operator_since = models.DateTimeField(null=True, blank=True)
 
     def get_permissions(self):
         permissions = {
@@ -198,23 +243,60 @@ class UserProfile(models.Model):
         return permissions.get(self.role, [])
 
     def __str__(self):
-        return f"{self.user.get_full_name()} - {self.enforcer_id}"
+        return f"{self.user.get_full_name()} - {self.enforcer_id or 'No ID'}"
 
     def save(self, *args, **kwargs):
+        # Generate enforcer_id if it's not set
+        if not self.enforcer_id:
+            # Try to generate an enforcer ID or use a fallback
+            try:
+                from django.utils import timezone
+                import random
+                prefix = 'ENF'
+                # Create a more unique fallback ID using timestamp and random number
+                timestamp = int(timezone.now().timestamp())
+                random_suffix = random.randint(1000, 9999)
+                self.enforcer_id = f"{prefix}{timestamp % 10000}{random_suffix}"
+                
+                # Check if this enforcer_id already exists, and if so, generate a new one
+                collision_count = 0
+                while UserProfile.objects.filter(enforcer_id=self.enforcer_id).exists():
+                    random_suffix = random.randint(1000, 9999)
+                    self.enforcer_id = f"{prefix}{timestamp % 10000}{random_suffix}"
+                    collision_count += 1
+                    if collision_count > 10:  # Prevent infinite loops
+                        self.enforcer_id = f"{prefix}{timestamp}{random_suffix}"
+                        break
+            except Exception as e:
+                # Last resort fallback
+                import uuid
+                self.enforcer_id = f"ENF{str(uuid.uuid4())[:7]}"
+        
+        # Validate license number format for regular users
+        if self.role == 'USER' and self.license_number:
+            import re
+            if not re.match(r'^[A-Z0-9-]+$', self.license_number):
+                raise ValidationError('License number should contain only uppercase letters, numbers, and hyphens')
+                
+        # Generate QR code for profile
         if not self.qr_code:
-            qr = qrcode.QRCode(
-                version=1,
-                error_correction=qrcode.constants.ERROR_CORRECT_L,
-                box_size=10,
-                border=4,
-            )
-            qr.add_data(f"Enforcer ID: {self.enforcer_id}\nName: {self.user.get_full_name()}")
-            qr.make(fit=True)
+            try:
+                qr = qrcode.QRCode(
+                    version=1,
+                    error_correction=qrcode.constants.ERROR_CORRECT_L,
+                    box_size=10,
+                    border=4,
+                )
+                qr.add_data(f"Enforcer ID: {self.enforcer_id}\nName: {self.user.get_full_name()}")
+                qr.make(fit=True)
 
-            img = qr.make_image(fill_color="black", back_color="white")
-            blob = BytesIO()
-            img.save(blob, 'PNG')
-            self.qr_code.save(f'qr_{self.enforcer_id}.png', File(blob), save=False)
+                img = qr.make_image(fill_color="black", back_color="white")
+                blob = BytesIO()
+                img.save(blob, 'PNG')
+                self.qr_code.save(f'qr_{self.enforcer_id}.png', File(blob), save=False)
+            except Exception as e:
+                # Handle exception if QR code generation fails
+                pass
         
         super().save(*args, **kwargs)
 
@@ -259,20 +341,211 @@ class ActivityLog(models.Model):
 
 
 class Announcement(models.Model):
+    CATEGORY_CHOICES = [
+        ('GENERAL', 'General'),
+        ('POLICY', 'Policy Update'),
+        ('SYSTEM', 'System Update'),
+        ('EMERGENCY', 'Emergency'),
+        ('EVENT', 'Event'),
+    ]
+    
+    AUDIENCE_CHOICES = [
+        ('ALL', 'All Users'),
+        ('ADMIN', 'Administrators'),
+        ('ENFORCER', 'Traffic Enforcers'),
+        ('SUPERVISOR', 'Supervisors'),
+        ('TREASURER', 'Treasurers'),
+        ('CLERK', 'Office Clerks'),
+        ('USER', 'Regular Users'),
+    ]
+    
+    PRIORITY_CHOICES = [
+        ('LOW', 'Low'),
+        ('MEDIUM', 'Medium'),
+        ('HIGH', 'High')
+    ]
+    
     title = models.CharField(max_length=200)
     content = models.TextField()
+    rich_content = models.TextField(blank=True, null=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
-    priority = models.CharField(max_length=20, choices=[
-        ('LOW', 'Low'),
-        ('MEDIUM', 'Medium'),
-        ('HIGH', 'High')
-    ], default='MEDIUM')
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='MEDIUM')
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='GENERAL')
+    target_audience = models.CharField(max_length=20, choices=AUDIENCE_CHOICES, default='ALL')
+    is_popup = models.BooleanField(default=False)
+    requires_acknowledgment = models.BooleanField(default=False)
+    publish_date = models.DateTimeField(null=True, blank=True)
+    expiration_date = models.DateTimeField(null=True, blank=True)
+    geographic_area = models.CharField(max_length=255, blank=True, null=True)
+    view_count = models.PositiveIntegerField(default=0)
 
     class Meta:
         ordering = ['-created_at']
 
     def __str__(self):
         return self.title
+        
+    def get_category_display(self):
+        """Return the display value for the category"""
+        for code, name in self.CATEGORY_CHOICES:
+            if code == self.category:
+                return name
+        return self.category
+
+
+class AnnouncementAcknowledgment(models.Model):
+    """Model to track which users have acknowledged which announcements"""
+    announcement = models.ForeignKey(Announcement, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    acknowledged_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ['announcement', 'user']
+        verbose_name = 'Announcement Acknowledgment'
+        verbose_name_plural = 'Announcement Acknowledgments'
+        
+    def __str__(self):
+        return f"{self.user.username} acknowledged {self.announcement.title}"
+
+class LocationHistory(models.Model):
+    """Model to track location history for enforcers"""
+    user_profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='location_history')
+    latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    accuracy = models.FloatField(blank=True, null=True)
+    heading = models.FloatField(blank=True, null=True)
+    speed = models.FloatField(blank=True, null=True)
+    is_active_duty = models.BooleanField(default=True)
+    battery_level = models.FloatField(blank=True, null=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    device_info = models.JSONField(blank=True, null=True)
+    
+    class Meta:
+        verbose_name = 'Location History'
+        verbose_name_plural = 'Location Histories'
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['timestamp']),
+            models.Index(fields=['user_profile', 'timestamp']),
+        ]
+        
+    def __str__(self):
+        return f"{self.user_profile.user.get_full_name()} - {self.timestamp}"
+
+
+class OperatorType(models.Model):
+    """Model to store different types of operators (Potpot, Jeepney, Tricycle, etc.)"""
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Operator Type'
+        verbose_name_plural = 'Operator Types'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class Operator(models.Model):
+    """Model to store operator information"""
+    last_name = models.CharField(max_length=100, db_index=True)
+    first_name = models.CharField(max_length=100, db_index=True)
+    middle_initial = models.CharField(max_length=10, blank=True, null=True)
+    address = models.TextField()
+    old_pd_number = models.CharField(max_length=50, blank=True, null=True)
+    new_pd_number = models.CharField(max_length=50, unique=True)
+    # Foreign key to operator type (will be added later as requested)
+    # operator_type = models.ForeignKey(OperatorType, on_delete=models.PROTECT, related_name='operators')
+    # Foreign key to user account (will be added later as requested)
+    # user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='operator_profile')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Operator'
+        verbose_name_plural = 'Operators'
+        ordering = ['last_name', 'first_name']
+        indexes = [
+            models.Index(fields=['last_name', 'first_name']),
+            models.Index(fields=['new_pd_number']),
+        ]
+
+    def __str__(self):
+        return f"{self.last_name}, {self.first_name} {self.middle_initial or ''} - {self.new_pd_number}"
+
+    def full_name(self):
+        mi = f" {self.middle_initial}." if self.middle_initial else ""
+        return f"{self.first_name}{mi} {self.last_name}"
+
+
+class Vehicle(models.Model):
+    """Model to store vehicle information linked to an operator"""
+    operator = models.ForeignKey(Operator, on_delete=models.CASCADE)
+    old_pd_number = models.CharField(max_length=50, blank=True, null=True)
+    new_pd_number = models.CharField(max_length=50, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Vehicle'
+        verbose_name_plural = 'Vehicles'
+        ordering = ['operator__last_name', 'operator__first_name', 'new_pd_number']
+        
+    def __str__(self):
+        return f"{self.new_pd_number} - {self.operator.full_name()}"
+
+class OperatorApplication(models.Model):
+    """Model to store operator applications with necessary documentation"""
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('APPROVED', 'Approved'),
+        ('REJECTED', 'Rejected')
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='operator_applications')
+    business_permit = models.FileField(upload_to='permits/')
+    other_documents = models.FileField(upload_to='operator_docs/', blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    notes = models.TextField(blank=True)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    processed_at = models.DateTimeField(null=True, blank=True)
+    processed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, 
+                                     related_name='processed_applications')
+    
+    class Meta:
+        verbose_name = 'Operator Application'
+        verbose_name_plural = 'Operator Applications'
+        ordering = ['-submitted_at']
+    
+    def __str__(self):
+        return f"Application by {self.user.username} ({self.get_status_display()})"
+
+class Driver(models.Model):
+    """Model representing a driver"""
+    last_name = models.CharField(max_length=100)
+    first_name = models.CharField(max_length=100)
+    middle_initial = models.CharField(max_length=10, blank=True, null=True)
+    address = models.TextField()
+    old_pd_number = models.CharField(max_length=20, blank=True, null=True)
+    new_pd_number = models.CharField(max_length=20, unique=True)
+    operator = models.ForeignKey(Operator, on_delete=models.SET_NULL, null=True, blank=True, related_name='drivers')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['last_name', 'first_name']
+
+    def __str__(self):
+        return f"{self.last_name}, {self.first_name} ({self.new_pd_number})"
+    
+    def get_full_name(self):
+        """Return the driver's full name"""
+        if self.middle_initial:
+            return f"{self.first_name} {self.middle_initial}. {self.last_name}"
+        return f"{self.first_name} {self.last_name}"

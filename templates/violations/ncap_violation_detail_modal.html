@@ -104,6 +104,75 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Enforcer Information -->
+            <div class="info-card enforcer-card">
+                <div class="info-header">
+                    <span class="material-icons">badge</span>
+                    <h6>Enforcer Information</h6>
+                </div>
+                <div class="info-content">
+                    <div class="enforcer-grid">
+                        {% if violation.enforcer %}
+                        <div class="info-group">
+                            <label>Enforcer Name</label>
+                            <div class="info-value">{{ violation.enforcer.get_full_name }}</div>
+                        </div>
+                        <div class="info-group">
+                            <label>Enforcer ID</label>
+                            <div class="info-value">{{ violation.enforcer.userprofile.enforcer_id }}</div>
+                        </div>
+                        {% else %}
+                        <div class="info-group">
+                            <div class="info-value text-muted">No enforcer information available</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Violation History -->
+            {% if previous_violations %}
+            <div class="info-card">
+                <div class="info-header">
+                    <span class="material-icons">history</span>
+                    <h6>Violation History</h6>
+                    {% if previous_violations|length > 3 %}
+                    <span class="badge bg-warning text-dark ms-2">Repeat Violator</span>
+                    {% endif %}
+                </div>
+                <div class="info-content">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Violation Type</th>
+                                    <th>Status</th>
+                                    <th>Fine</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for prev_violation in previous_violations %}
+                                <tr>
+                                    <td>{{ prev_violation.violation_date|date:"M d, Y" }}</td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 150px;" data-bs-toggle="tooltip" title="{{ prev_violation.violation_type }}">
+                                            {{ prev_violation.violation_type|truncatechars:25 }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% include 'includes/status_badge.html' with status=prev_violation.status display_text=prev_violation.get_status_display %}
+                                    </td>
+                                    <td>₱{{ prev_violation.fine_amount }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -183,13 +252,13 @@
 
 /* Modal Body Layout */
 .modal-body {
-    padding: 1.5rem;
+    padding: 1rem;
 }
 
 .violation-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
+    gap: 1rem;
 }
 
 /* Info Cards */
@@ -208,7 +277,7 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 1rem 1.25rem;
+    padding: 0.75rem 1rem;
     background: rgba(0,0,0,0.02);
     border-bottom: 1px solid rgba(0,0,0,0.06);
 }
@@ -226,13 +295,13 @@
 }
 
 .info-content {
-    padding: 1.25rem;
+    padding: 0.75rem 1rem;
 }
 
 /* Image Container */
 .image-container {
     width: 100%;
-    max-height: 600px;
+    max-height: 500px;
     border-radius: 8px;
     overflow: hidden;
     background: #f8f9fa;
@@ -275,7 +344,10 @@
 
 /* Info Groups */
 .info-group {
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
 }
 
 .info-group:last-child {
@@ -283,19 +355,33 @@
 }
 
 .info-group label {
-    display: block;
+    display: inline-block;
     font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--text-light);
-    margin-bottom: 0.25rem;
-    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 0;
+    margin-right: 0.5rem;
+    min-width: 100px;
+    text-transform: capitalize;
     letter-spacing: 0.5px;
 }
 
+.info-group label::after {
+    content: ":";
+}
+
 .info-value {
+    flex: 1;
     font-size: 0.9375rem;
     color: var(--text-dark);
     line-height: 1.5;
+}
+
+/* Enforcer Grid */
+.enforcer-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
 }
 
 /* Special Styles */
@@ -365,7 +451,7 @@
     }
 
     .image-container {
-        max-height: 400px;
+        max-height: 350px;
         aspect-ratio: 4/3;
     }
 }
@@ -386,6 +472,28 @@
 
 .modal-body::-webkit-scrollbar-thumb:hover {
     background: #999;
+}
+
+.timeline {
+    position: relative;
+    padding: 1rem 0;
+}
+
+.timeline:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 1.25rem;
+    height: 100%;
+    width: 2px;
+    background: #e2e8f0;
+    z-index: 0;
+}
+
+.timeline-item {
+    display: flex;
+    margin-bottom: 1rem;
+    position: relative;
 }
 </style>
 
