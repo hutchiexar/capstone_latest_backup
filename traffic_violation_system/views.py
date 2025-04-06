@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.db.models import Sum, Count, Q, F, Value, BooleanField, Case, When, IntegerField
 from django.db.models.functions import Concat, TruncDate, TruncMonth, TruncWeek
 from django.utils import timezone
-from .models import Violation, Payment, UserProfile, ActivityLog, Violator, Announcement, AnnouncementAcknowledgment, LocationHistory, Operator, Vehicle, OperatorApplication, Driver
+from .models import Violation, Payment, UserProfile, ActivityLog, Violator, Announcement, AnnouncementAcknowledgment, LocationHistory, Operator, Vehicle, OperatorApplication, Driver, ViolationCertificate, DriverVehicleAssignment
 from .user_portal.models import UserNotification, UserReport
 from django.conf import settings
 from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest, Http404
@@ -36,7 +36,7 @@ from .forms import (
     NCAPViolationForm, OperatorForm, ImportOperatorsForm,
     ViolationForm, PaymentForm, ProfileUpdateForm, UserUpdateForm, 
     ViolatorForm, SignatureForm, OperatorForm,
-    OperatorImportForm, OperatorApplicationForm, DriverImportForm, DriverForm
+    OperatorImportForm, OperatorApplicationForm, DriverImportForm, DriverForm, VehicleForm, DriverVehicleAssignmentForm
 )
 from django.core.exceptions import PermissionDenied
 import logging
@@ -51,9 +51,23 @@ import re
 import sys
 import openpyxl
 from decimal import Decimal
+from django import forms
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User, Group
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment
 
 # Initialize logger
 logger = logging.getLogger(__name__)
+
+def get_client_ip(request):
+    """Get the client's IP address from the request"""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
 
 # Define choices after importing models but before any views
 VIOLATION_CHOICES = [
@@ -339,57 +353,129 @@ def payment_webhook(request):
 
 @login_required
 def upload_violation(request):
+    """View for enforcer to upload a violation (NCAP)"""
     if request.method == 'POST':
         try:
-            # Create or get violator
-            violator, created = Violator.objects.get_or_create(
-                license_number=request.POST.get('license_number'),
-                defaults={
-                    'first_name': 'Unknown',
-                    'last_name': 'Driver',
-                }
-            )
-
-            # Create violation
+            # Extract form data
+            data = request.POST
+            
+            # Get selected IDs if present
+            selected_operator_id = data.get('selected_operator_id', '')
+            selected_driver_id = data.get('selected_driver_id', '')
+            
+            # Create a new violator or get an existing one
+            try:
+                violator = Violator.objects.get(license_number=data.get('license_number'))
+                # Update violator details
+                violator.first_name = data.get('driver_name', '').split()[0] if data.get('driver_name') else ''
+                violator.last_name = ' '.join(data.get('driver_name', '').split()[1:]) if data.get('driver_name') and len(data.get('driver_name', '').split()) > 1 else ''
+                violator.address = data.get('driver_address', '')
+                violator.save()
+            except Violator.DoesNotExist:
+                # Create new violator
+                violator = Violator.objects.create(
+                    license_number=data.get('license_number', ''),
+                    first_name=data.get('driver_name', '').split()[0] if data.get('driver_name') else '',
+                    last_name=' '.join(data.get('driver_name', '').split()[1:]) if data.get('driver_name') and len(data.get('driver_name', '').split()) > 1 else '',
+                    address=data.get('driver_address', '')
+                )
+            
+            # Create a new violation
             violation = Violation.objects.create(
+                violation_type=data.get('violation_type', ''),
+                location=data.get('location', ''),
+                violation_date=process_date_time(data.get('violation_date', ''), data.get('violation_time', '')),
+                fine_amount=Decimal(data.get('fine_amount', 0)),
+                plate_number=data.get('plate_number', ''),
+                vehicle_type=data.get('vehicle_type', ''),
+                color=data.get('color', ''),  # Correct field name is 'color' not 'vehicle_color'
+                classification=data.get('classification', ''),
                 violator=violator,
-                location=request.POST.get('location'),
-                fine_amount=request.POST.get('fine_amount'),
-                is_tdz_violation=request.POST.get('is_tdz_violation') == 'on',
-                vehicle_type=request.POST.get('vehicle_type'),
-                plate_number=request.POST.get('plate_number'),
-                color=request.POST.get('color'),
-                classification=request.POST.get('classification'),
-                registration_number=request.POST.get('registration_number'),
-                registration_date=request.POST.get('registration_date') or None,
-                vehicle_owner=request.POST.get('vehicle_owner'),
-                vehicle_owner_address=request.POST.get('vehicle_owner_address'),
-                status='PENDING',
                 enforcer=request.user,
-                enforcer_signature_date=timezone.now(),
-                user_account=user_account  # Link to user account if provided
+                potpot_number=data.get('potpot_number', ''),
+                operator_address=data.get('operator_address', ''),
+                status='PENDING'
             )
             
+            # Link to operator if selected
+            if selected_operator_id:
+                try:
+                    operator = Operator.objects.get(pk=selected_operator_id)
+                    violation.operator_name = f"{operator.first_name} {operator.last_name}"
+                    violation.operator_id = operator.new_pd_number
+                    violation.operator_address = operator.address
+                    violation.save()
+                except Operator.DoesNotExist:
+                    pass
+            
+            # Link to driver if selected
+            if selected_driver_id:
+                try:
+                    driver = Driver.objects.get(pk=selected_driver_id)
+                    # Removed setting violator.pd_number as that field doesn't exist in Violator model
+                except Driver.DoesNotExist:
+                    pass
+            
+            # Process images
+            process_violation_images(request, violation)
+            
+            # Create certificate if certificate text is provided
+            if data.get('certificate_text'):
+                ViolationCertificate.objects.create(
+                    violation=violation,
+                    operations_officer=data.get('operations_officer', ''),
+                    ctm_officer=data.get('cttm_officer', ''),
+                    certificate_text=data.get('certificate_text', '')
+                )
+            
+            # Log activity
             log_activity(
                 user=request.user,
-                action='Uploaded NCAP Violation',
-                details=f'NCAP Violation uploaded for {violation.violator.license_number}',
+                action='Created Violation',
+                details=f'Violation created for {violation.violator.license_number}',
                 category='violation'
             )
             
-            # Store current page in session
-            request.session['current_page'] = 'ncap_violations_list'
-            messages.success(request, 'NCAP Violation uploaded successfully.')
-            return redirect('ncap_violations_list')
+            # Check if this is an AJAX request
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                # Return a JSON response for AJAX requests
+                return JsonResponse({
+                    'success': True,
+                    'message': "Violation has been recorded successfully.",
+                    'redirect_url': reverse('violations_list')
+                })
+            else:
+                # Regular form submission - show message and redirect
+                messages.success(request, "Violation has been recorded successfully.")
+                return redirect('violations_list')
             
         except Exception as e:
-            messages.error(request, f'Error uploading NCAP violation: {str(e)}')
-            return redirect('upload_violation')
-            
-    context = {
-        'violation_choices': Violation.VIOLATION_CHOICES
-    }
-    return render(request, 'violations/upload_violation.html', context)
+            # Log the error
+            logger.error(f"Error in upload_violation: {str(e)}")
+            messages.error(request, f"An error occurred: {str(e)}")
+    
+    # Prepare context for GET request
+    violation_choices = [
+        ('Driving without license', 'Driving without license'),
+        ('Reckless driving', 'Reckless driving'),
+        ('Driving under influence', 'Driving under influence'),
+        ('Speeding', 'Speeding'),
+        ('No helmet', 'No helmet'),
+        ('No seatbelt', 'No seatbelt'),
+        ('Illegal parking', 'Illegal parking'),
+        ('Invalid registration', 'Invalid registration'),
+        ('Overloading', 'Overloading'),
+        ('Driving against traffic', 'Driving against traffic'),
+        ('Using mobile phone while driving', 'Using mobile phone while driving'),
+        ('Disobeying traffic signs', 'Disobeying traffic signs'),
+        ('No plate number', 'No plate number'),
+        ('Improper turn', 'Improper turn'),
+        ('Defective parts/accessories', 'Defective parts/accessories'),
+    ]
+    
+    return render(request, 'violations/upload_violation.html', {
+        'violation_choices': violation_choices
+    })
 
 
 def process_violation_image(image_path):
@@ -435,15 +521,19 @@ def issue_ticket(request):
                     print(f"User account with ID {user_account_id} not found")
                     user_account = None
             
-            try:
-                violator = Violator.objects.get(license_number=license_number)
+            # Use filter().first() instead of get() to handle multiple records
+            violator = None
+            if license_number:
+                violator = Violator.objects.filter(license_number=license_number).first()
+            
+            if violator:
                 # Update violator information
                 violator.first_name = request.POST.get('first_name')
                 violator.last_name = request.POST.get('last_name')
                 violator.phone_number = request.POST.get('phone_number')
                 violator.address = request.POST.get('address')
                 violator.save()
-            except Violator.DoesNotExist:
+            else:
                 # Create new violator if not found
                 violator = Violator.objects.create(
                     first_name=request.POST.get('first_name'),
@@ -594,11 +684,15 @@ def issue_ticket(request):
 
 def custom_logout(request):
     logout(request)
+    # First create the redirect response
     response = redirect('login')
     # Add cache control headers to prevent back button from showing authenticated pages
     response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     response['Pragma'] = 'no-cache'
     response['Expires'] = '0'
+    
+    # Add success query parameter to trigger SweetAlert
+    response['Location'] = response['Location'] + '?logout=success'
     return response
 
 
@@ -617,11 +711,13 @@ def login_view(request):
                 del request.session['next']  # Clear the stored URL
                 return redirect(next_url)
                 
-            # Default redirects based on user role
+            # Default redirects based on user role with success parameter
             if user.userprofile.role == 'USER':
-                return redirect('user_portal:user_dashboard')
+                # Add success parameter to show SweetAlert on redirect
+                return redirect(f'{reverse("user_portal:user_dashboard")}?login=success')
             else:
-                return redirect('admin_dashboard')
+                # Add success parameter to show SweetAlert on redirect
+                return redirect(f'{reverse("admin_dashboard")}?login=success')
         else:
             messages.error(request, 'Invalid username or password.')
     
@@ -875,7 +971,9 @@ def create_user(request):
             # Store current page in session
             request.session['current_page'] = 'users_list'
             messages.success(request, 'User created successfully!')
-            return redirect('users_list')
+            # Correctly add query parameter to redirect
+            from django.urls import reverse
+            return redirect(reverse('users_list') + '?success=created')
         except Exception as e:
             # If there's an error, delete the user to maintain consistency
             if 'user' in locals():
@@ -1111,8 +1209,8 @@ def violation_detail_modal(request, violation_id):
     try:
         violation = get_object_or_404(Violation, id=violation_id)
         
-        # Check if it's an NCAP violation by checking for image
-        is_ncap = bool(violation.image)
+        # Check if it's an NCAP violation by checking for any images
+        is_ncap = bool(violation.image) or bool(violation.driver_photo) or bool(violation.vehicle_photo) or bool(violation.secondary_photo)
         
         # Get previous violations for the same violator
         previous_violations = Violation.objects.filter(
@@ -1132,6 +1230,7 @@ def violation_detail_modal(request, violation_id):
         
         return render(request, template_name, context)
     except Exception as e:
+        print(f"Error loading violation details: {e}")
         return HttpResponse(
             '<div class="alert alert-danger">Error loading violation details. Please try again.</div>', 
             status=500
@@ -1139,8 +1238,13 @@ def violation_detail_modal(request, violation_id):
 
 @login_required
 def violations_list(request):
-    # Get all violations excluding NCAP violations (those with images)
-    violations = Violation.objects.filter(image='').select_related('violator', 'enforcer').order_by('-violation_date')
+    # Get all violations EXCLUDING NCAP violations (those with any type of image)
+    violations = Violation.objects.filter(
+        Q(image='') | Q(image__isnull=True),
+        Q(driver_photo='') | Q(driver_photo__isnull=True),
+        Q(vehicle_photo='') | Q(vehicle_photo__isnull=True),
+        Q(secondary_photo='') | Q(secondary_photo__isnull=True)
+    ).select_related('violator', 'enforcer').order_by('-violation_date')
     
     # Enhanced search functionality
     search_query = request.GET.get('search', '').strip()
@@ -1222,23 +1326,40 @@ def update_violation_status(request, violation_id):
 @login_required
 def user_detail_modal(request, user_id):
     try:
-        profile = get_object_or_404(UserProfile, id=user_id)
+        # Get the User object first, then its profile
+        user = get_object_or_404(User, id=user_id)
+        profile = user.userprofile
+        
+        # Log the user ID for debugging
+        logger.debug(f"Fetching user modal for User ID: {user_id}, Username: {user.username}")
+        
         context = {
             'profile': profile,
-            'is_modal': True
+            'user': user,
+            'is_modal': True,
+            'debug_user_id': user_id  # Add this for debugging
         }
         return render(request, 'users/user_detail.html', context)
     except Exception as e:
+        logger.error(f"Error in user_detail_modal for user_id {user_id}: {str(e)}")
         return HttpResponse(
-            '<div class="alert alert-danger">Error loading user details. Please try again.</div>', 
+            f'<div class="alert alert-danger">Error loading user details (ID: {user_id}). Error: {str(e)}</div>', 
             status=500
         )
 
 @login_required
 def ncap_violations_list(request):
-    # Get violations with images (NCAP violations)
-    violations = Violation.objects.exclude(
-        Q(image='') | Q(image__isnull=True)
+    # Get violations with any images (NCAP violations)
+    violations = Violation.objects.filter(
+        Q(image__isnull=False) | 
+        Q(driver_photo__isnull=False) | 
+        Q(vehicle_photo__isnull=False) | 
+        Q(secondary_photo__isnull=False)
+    ).exclude(
+        Q(image='') & 
+        Q(driver_photo='') & 
+        Q(vehicle_photo='') & 
+        Q(secondary_photo='')
     ).select_related('violator', 'enforcer').order_by('-violation_date')
     
     # Enhanced search functionality
@@ -1553,8 +1674,7 @@ def create_announcement(request):
     if request.method == 'POST':
         title = request.POST.get('title')
         content = request.POST.get('content')
-        rich_content = request.POST.get('rich_content')
-        priority = request.POST.get('priority', 'MEDIUM')
+        priority = request.POST.get('priority')
         category = request.POST.get('category', 'GENERAL')
         target_audience = request.POST.get('target_audience', 'ALL')
         geographic_area = request.POST.get('geographic_area')
@@ -1576,7 +1696,6 @@ def create_announcement(request):
             announcement = Announcement.objects.create(
                 title=title,
                 content=content,
-                rich_content=rich_content,
                 priority=priority,
                 category=category,
                 target_audience=target_audience,
@@ -1584,9 +1703,9 @@ def create_announcement(request):
                 is_active=is_active,
                 is_popup=is_popup,
                 requires_acknowledgment=requires_acknowledgment,
+                created_by=request.user,
                 publish_date=publish_date,
-                expiration_date=expiration_date,
-                created_by=request.user
+                expiration_date=expiration_date
             )
             
             # Create notifications if send_as_notification is checked or if it's a popup
@@ -1613,7 +1732,6 @@ def edit_announcement(request, announcement_id):
     if request.method == 'POST':
         title = request.POST.get('title')
         content = request.POST.get('content')
-        rich_content = request.POST.get('rich_content')
         priority = request.POST.get('priority')
         category = request.POST.get('category', 'GENERAL')
         target_audience = request.POST.get('target_audience', 'ALL')
@@ -1635,7 +1753,6 @@ def edit_announcement(request, announcement_id):
         if title and content:
             announcement.title = title
             announcement.content = content
-            announcement.rich_content = rich_content
             announcement.priority = priority
             announcement.category = category
             announcement.target_audience = target_audience
@@ -1705,6 +1822,27 @@ def delete_announcement(request, announcement_id):
     return redirect('announcements_list')
 
 @login_required
+def mark_announcement_seen(request, announcement_id):
+    """Mark a popup announcement as seen in the session to prevent it from showing again"""
+    try:
+        # Initialize seen_popup_announcements list if it doesn't exist
+        if 'seen_popup_announcements' not in request.session:
+            request.session['seen_popup_announcements'] = []
+        
+        # Add this announcement ID to the list if not already there
+        seen_announcements = request.session['seen_popup_announcements']
+        if announcement_id not in seen_announcements:
+            seen_announcements.append(announcement_id)
+            request.session['seen_popup_announcements'] = seen_announcements
+            request.session.modified = True
+            print(f"Added announcement {announcement_id} to seen list for user {request.user.username}")
+        
+        return JsonResponse({'status': 'success'})
+    except Exception as e:
+        print(f"Error marking announcement as seen: {str(e)}")
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@login_required
 def get_popup_announcement(request):
     """API endpoint to get the latest popup announcement"""
     try:
@@ -1714,7 +1852,15 @@ def get_popup_announcement(request):
         # Debug info
         print(f"Checking popup announcements for user {request.user.username}, role: {user_role}")
         
+        # Initialize seen announcements list in session if not present
+        if 'seen_popup_announcements' not in request.session:
+            request.session['seen_popup_announcements'] = []
+        
+        seen_announcements = request.session['seen_popup_announcements']
+        print(f"User has seen these announcements: {seen_announcements}")
+        
         # Get the latest active popup announcement for this user's role
+        # that hasn't been seen by this user yet
         announcement = Announcement.objects.filter(
             is_active=True, 
             is_popup=True
@@ -1726,6 +1872,9 @@ def get_popup_announcement(request):
             Q(publish_date__isnull=True) | Q(publish_date__lte=current_time)
         ).filter(
             Q(expiration_date__isnull=True) | Q(expiration_date__gt=current_time)
+        ).exclude(
+            # Exclude announcements already seen in this session
+            id__in=seen_announcements
         ).order_by('-created_at').first()
         
         if announcement:
@@ -1752,7 +1901,7 @@ def get_popup_announcement(request):
             data = {
                 'id': announcement.id,
                 'title': announcement.title,
-                'content': announcement.rich_content if announcement.rich_content else announcement.content,
+                'content': announcement.content,  # Use content directly without data-* attributes
                 'priority': announcement.priority,
                 'created_at': announcement.created_at.strftime('%Y-%m-%d %H:%M:%S'),
                 'created_by': f"{announcement.created_by.first_name} {announcement.created_by.last_name}",
@@ -2234,9 +2383,25 @@ def record_payment(request, violation_id):
     
     if request.method == 'POST':
         try:
-            receipt_number = request.POST.get('receipt_number')
-            receipt_date = request.POST.get('receipt_date')
-            remarks = request.POST.get('remarks')
+            # Handle JSON request
+            if request.content_type == 'application/json':
+                data = json.loads(request.body)
+                receipt_number = data.get('receipt_number')
+                receipt_date = data.get('receipt_date')
+                payment_amount = data.get('payment_amount')
+                remarks = data.get('remarks')
+            else:
+                # Handle form data
+                receipt_number = request.POST.get('receipt_number')
+                receipt_date = request.POST.get('receipt_date')
+                payment_amount = request.POST.get('payment_amount')
+                remarks = request.POST.get('remarks')
+            
+            if not all([receipt_number, receipt_date, payment_amount]):
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Missing required fields'
+                }, status=400)
             
             violation.status = 'PAID'
             violation.receipt_number = receipt_number
@@ -2244,7 +2409,7 @@ def record_payment(request, violation_id):
             violation.payment_date = timezone.now()
             violation.payment_remarks = remarks
             violation.processed_by = request.user
-            violation.payment_amount = violation.fine_amount
+            violation.payment_amount = payment_amount
             violation.save()
             
             # Log the activity
@@ -2255,11 +2420,29 @@ def record_payment(request, violation_id):
                 category='violation'
             )
             
+            # Return JSON response for AJAX requests
+            if request.content_type == 'application/json':
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Payment recorded successfully'
+                })
+            
+            # For form submissions, redirect
             messages.success(request, 'Payment recorded successfully.')
             return redirect('payment_processing')
+            
         except Exception as e:
+            # Return JSON error response for AJAX requests
+            if request.content_type == 'application/json':
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Error recording payment: {str(e)}'
+                }, status=400)
+            
+            # For form submissions, show error message
             messages.error(request, f'Error recording payment: {str(e)}')
     
+    # For GET requests, render the template
     context = {
         'violation': violation,
         'today': timezone.now()
@@ -2574,71 +2757,74 @@ def get_announcement_details(request, announcement_id):
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
+@login_required
 def save_ncap_violation(request):
+    """View to save a new NCAP violation"""
     if request.method == 'POST':
         form = NCAPViolationForm(request.POST, request.FILES)
+        
+        # Get selected IDs if present
+        selected_operator_id = request.POST.get('selected_operator_id', '')
+        selected_driver_id = request.POST.get('selected_driver_id', '')
+        
         if form.is_valid():
-            try:
-                # Process the uploaded image if it exists
-                if 'image' in request.FILES:
-                    image = request.FILES['image']
-                    # Check if file extension is valid
-                    valid_extensions = ['.jpg', '.jpeg', '.png', '.webp']
-                    ext = os.path.splitext(image.name)[1].lower()
-                    
-                    if not any(ext == valid_ext for valid_ext in valid_extensions):
-                        messages.error(request, f"Unsupported file type. Please upload a JPG, PNG, or WEBP image.")
-                        return redirect('create_ncap_violation')
-                    
-                    # Check file size (limit to 5MB)
-                    if image.size > 5 * 1024 * 1024:  # 5MB in bytes
-                        messages.error(request, "Image file is too large. Please upload an image less than 5MB.")
-                        return redirect('create_ncap_violation')
-                
-                # Save the violation
-                violation = form.save(commit=False)
-                violation.enforcer = request.user
-                violation.save()
-                
-                # Log the activity
-                log_activity(
-                    user=request.user,
-                    action='Created NCAP Violation',
-                    details=f'NCAP Violation created for {violation.violator.license_number}',
-                    category='violation'
-                )
-                
-                messages.success(request, "NCAP violation has been recorded successfully.")
-                return redirect('ncap_violations_list')
-                
-            except Exception as e:
-                # Log the error for debugging
-                import traceback
-                logger.error(f"Error saving NCAP violation: {str(e)}")
-                logger.error(traceback.format_exc())
-                
-                # Provide a user-friendly error message
-                error_message = str(e)
-                if "filename" in error_message.lower():
-                    messages.error(request, "Error saving the image file. Please try with a different image or a simpler filename.")
-                else:
-                    messages.error(request, f"An error occurred while saving the violation: {error_message}")
-                
-                return redirect('create_ncap_violation')
+            violation = form.save(commit=False)
+            
+            # Set the enforcer to the current user
+            violation.enforcer = request.user
+            
+            # Get or create the violator
+            violator, created = Violator.objects.get_or_create(
+                license_number=form.cleaned_data['license_number'],
+                defaults={
+                    'first_name': form.cleaned_data['first_name'],
+                    'last_name': form.cleaned_data['last_name']
+                }
+            )
+            
+            # Update violator information if it already exists
+            if not created:
+                violator.first_name = form.cleaned_data['first_name']
+                violator.last_name = form.cleaned_data['last_name']
+                violator.save()
+            
+            violation.violator = violator
+            
+            # Link to operator if selected
+            if selected_operator_id:
+                try:
+                    operator = Operator.objects.get(pk=selected_operator_id)
+                    violation.operator_name = f"{operator.first_name} {operator.last_name}"
+                    violation.operator_id = operator.new_pd_number
+                    violation.operator_address = operator.address
+                except Operator.DoesNotExist:
+                    pass
+            
+            # Link to driver if selected
+            if selected_driver_id:
+                try:
+                    driver = Driver.objects.get(pk=selected_driver_id)
+                    # If driver data exists, add it to violation
+                    violation.driver_name = f"{driver.first_name} {driver.last_name}"
+                    violation.pd_number = driver.new_pd_number
+                except Driver.DoesNotExist:
+                    pass
+            
+            # Save the violation
+            violation.save()
+            
+            messages.success(request, "NCAP violation recorded successfully!")
+            return redirect('ncap_violations_list')
         else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f"{field}: {error}")
+            messages.error(request, "Please correct the errors below.")
     else:
         form = NCAPViolationForm()
     
-    # Return to the form with context
-    context = {
+    return render(request, 'violations/create_ncap_violation.html', {
         'form': form,
         'title': 'Create NCAP Violation',
         'button_text': 'Record Violation'
-    }
-    return render(request, 'violations/create_ncap_violation.html', context)
+    })
 
 @login_required
 def create_ncap_violation(request):
@@ -3120,6 +3306,16 @@ def operator_apply(request):
     if request.user.userprofile.is_operator:
         messages.info(request, 'You are already registered as an operator.')
         return redirect('operator_dashboard')
+    
+    # Check if user already has a pending application
+    has_pending_application = OperatorApplication.objects.filter(
+        user=request.user,
+        status='PENDING'
+    ).exists()
+    
+    if has_pending_application and not request.path == '/operator/application/status/':
+        messages.info(request, 'You already have a pending operator application. Please check the status before submitting another application.')
+        return redirect('operator_application_status')
             
     if request.method == 'POST':
         form = OperatorApplicationForm(request.POST, request.FILES)
@@ -3128,25 +3324,23 @@ def operator_apply(request):
             application.user = request.user
             application.save()
             
-            messages.success(request, 'Your application has been submitted successfully. We will review it shortly.')
-            return redirect('operator_application_status')
+            # Use URL parameter instead of Django messages
+            return redirect(f"{reverse('operator_application_status')}?application=success")
     else:
         form = OperatorApplicationForm()
             
     return render(request, 'operators/operator_apply.html', {
-        'form': form
+        'form': form,
+        'has_pending_application': has_pending_application
     })
 
 @login_required
 def operator_application_status(request):
-    try:
-        application = OperatorApplication.objects.filter(user=request.user).latest('submitted_at')
-        return render(request, 'operators/operator_application_status.html', {
-            'application': application
-        })
-    except OperatorApplication.DoesNotExist:
-        messages.info(request, 'You have not submitted an operator application yet.')
-        return redirect('user_portal:user_dashboard')
+    applications = OperatorApplication.objects.filter(user=request.user).order_by('-submitted_at')
+    return render(request, 'operators/operator_application_status.html', {
+        'applications': applications,
+        'title': 'Operator Application Status'
+    })
 
 @login_required
 def operator_dashboard(request):
@@ -3155,10 +3349,58 @@ def operator_dashboard(request):
         return redirect('user_portal:user_dashboard')
             
     # Get operator-specific information
-    vehicles = Vehicle.objects.filter(operator__user=request.user)
+    try:
+        operator = Operator.objects.get(user=request.user)
+        vehicles = Vehicle.objects.filter(operator=operator)
+        
+        # Get drivers associated with this operator - use direct relationship
+        drivers = Driver.objects.filter(operator=operator).distinct()
+        
+        # Get violations for this operator's vehicles
+        violations = Violation.objects.filter(
+            operator=operator
+        ).order_by('-violation_date')
+        
+        violations_count = violations.count()
+        
+        # Get vehicles without active driver assignments
+        unassigned_vehicles = Vehicle.objects.filter(
+            operator=operator,
+            active=True
+        ).exclude(
+            id__in=DriverVehicleAssignment.objects.filter(
+                is_active=True
+            ).values('vehicle_id')
+        ).order_by('new_pd_number')
+        
+        unassigned_count = unassigned_vehicles.count()
+        
+    except Operator.DoesNotExist:
+        # Fix the inconsistency: The user has is_operator=True but no operator profile
+        # This can happen if an operator was deleted in the admin without updating the user profile
+        user_profile = request.user.userprofile
+        user_profile.is_operator = False
+        user_profile.operator_since = None
+        user_profile.save()
+        
+        # Log the issue
+        ActivityLog.objects.create(
+            user=request.user,
+            action=f"Inconsistent operator status detected and fixed",
+            details="User had is_operator=True but no Operator record existed. Status reset to non-operator.",
+            category="user"
+        )
+        
+        messages.warning(request, 'Your operator profile was not found. Your status has been reset. If you believe this is an error, please contact support.')
+        return redirect('user_portal:user_dashboard')
     
     return render(request, 'operators/operator_dashboard.html', {
-        'vehicles': vehicles
+        'vehicles': vehicles,
+        'drivers': drivers,
+        'violations': violations,
+        'violations_count': violations_count,
+        'unassigned_vehicles': unassigned_vehicles,
+        'unassigned_count': unassigned_count
     })
 
 @login_required
@@ -3167,10 +3409,17 @@ def operator_applications_manage(request):
         messages.error(request, 'You do not have permission to access this page.')
         return redirect('user_portal:user_dashboard')
             
-    applications = OperatorApplication.objects.all().order_by('-submitted_at')
+    # Get all applications ordered by submission date
+    all_applications = OperatorApplication.objects.all().order_by('-submitted_at')
+    
+    # Separate pending and processed applications
+    pending_applications = all_applications.filter(status='PENDING')
+    processed_applications = all_applications.exclude(status='PENDING')
     
     return render(request, 'operators/operator_applications_manage.html', {
-        'applications': applications
+        'pending_applications': pending_applications,
+        'processed_applications': processed_applications,
+        'title': 'Operator Applications'
     })
 
 @login_required
@@ -3178,56 +3427,231 @@ def operator_application_review(request, application_id):
     if not request.user.is_staff:
         messages.error(request, 'You do not have permission to access this page.')
         return redirect('user_portal:user_dashboard')
-            
-    application = get_object_or_404(OperatorApplication, id=application_id)
     
-    if request.method == 'POST':
-        status = request.POST.get('status')
-        notes = request.POST.get('notes', '')
+    try:
+        application = get_object_or_404(OperatorApplication, id=application_id)
         
-        if status in ['APPROVED', 'REJECTED']:
-            application.status = status
-            application.notes = notes
-            application.processed_at = timezone.now()
-            application.processed_by = request.user
-            application.save()
+        # Check if this is an AJAX request
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        
+        if request.method == 'POST':
+            status = request.POST.get('status')
+            notes = request.POST.get('notes', '')
             
-            # If approved, update user profile
-            if status == 'APPROVED':
-                user_profile = application.user.userprofile
-                user_profile.is_operator = True
-                user_profile.operator_since = timezone.now()
-                user_profile.save()
+            if status in ['APPROVED', 'REJECTED']:
+                application.status = status
+                application.notes = notes
+                application.processed_at = timezone.now()
+                application.processed_by = request.user
+                application.save()
                 
-                # Create notification for user
-                notification = UserNotification(
-                    user=application.user,
-                    message=f"Your operator application has been approved.",
-                    type='OPERATOR',
-                    reference_id=application.id
-                )
-                notification.save()
-            else:
-                # Create notification for rejection
-                notification = UserNotification(
-                    user=application.user,
-                    message=f"Your operator application has been rejected. Reason: {notes}",
-                    type='OPERATOR',
-                    reference_id=application.id
-                )
-                notification.save()
+                # If approved, update user profile and create operator entry
+                if status == 'APPROVED':
+                    user_profile = application.user.userprofile
+                    user_profile.is_operator = True
+                    user_profile.operator_since = timezone.now()
+                    user_profile.save()
+                    
+                    # Generate a unique PO number
+                    import random
+                    import string
+                    from django.db.utils import IntegrityError
+                    
+                    def generate_po_number():
+                        # Generate a numeric PO number (8 digits)
+                        length = 8
+                        while True:
+                            # Generate random numbers
+                            po_number = ''.join(random.choice('0123456789') for _ in range(length))
+                            # Make sure it doesn't start with 0
+                            if po_number[0] != '0' and not Operator.objects.filter(po_number=po_number).exists():
+                                return po_number
+                    
+                    # Create or update operator record
+                    try:
+                        operator = Operator.objects.get(user=application.user)
+                    except Operator.DoesNotExist:
+                        # Create a new operator
+                        user = application.user
+                        operator = Operator(
+                            last_name=user.last_name,
+                            first_name=user.first_name,
+                            address=user.userprofile.address if hasattr(user, 'userprofile') and hasattr(user.userprofile, 'address') else '',
+                            # Generate a unique new_pd_number if not provided
+                            new_pd_number=f"PD-{user.id}-{random.randint(1000, 9999)}",
+                            po_number=generate_po_number(),
+                            user=user
+                        )
+                        try:
+                            operator.save()
+                        except IntegrityError:
+                            # Handle the case where the PD number might not be unique
+                            operator.new_pd_number = f"PD-{user.id}-{random.randint(10000, 99999)}"
+                            operator.save()
+                    
+                    # Create notification for user
+                    notification = UserNotification(
+                        user=application.user,
+                        message=f"Your operator application has been approved. Your Permit Operator Number is: {operator.po_number}",
+                        type='OPERATOR',
+                        reference_id=application.id
+                    )
+                    notification.save()
+                else:
+                    # Create notification for rejection
+                    notification = UserNotification(
+                        user=application.user,
+                        message=f"Your operator application has been rejected. Reason: {notes}",
+                        type='OPERATOR',
+                        reference_id=application.id
+                    )
+                    notification.save()
+                
+                if is_ajax:
+                    from django.http import JsonResponse
+                    return JsonResponse({
+                        'success': True,
+                        'message': f'Application {status.lower()} successfully.'
+                    })
+                else:
+                    messages.success(request, f'Application {status.lower()} successfully.')
+                    return redirect('operator_applications_manage')
+        
+        # For AJAX GET requests, return JSON data for the modal
+        if is_ajax:
+            # Convert application data to JSON
+            from django.forms.models import model_to_dict
+            from django.http import JsonResponse
+            import traceback
             
-            messages.success(request, f'Application {status.lower()} successfully.')
-            return redirect('operator_applications_manage')
-    
-    return render(request, 'operators/operator_application_review.html', {
-        'application': application
-    })
+            try:
+                # Get user details
+                user = application.user
+                user_data = {
+                    'full_name': user.get_full_name() if hasattr(user, 'get_full_name') else f"{getattr(user, 'first_name', '')} {getattr(user, 'last_name', '')}".strip(),
+                    'username': getattr(user, 'username', ''),
+                    'email': getattr(user, 'email', ''),
+                    'phone_number': user.userprofile.phone_number if hasattr(user, 'userprofile') and hasattr(user.userprofile, 'phone_number') else '',
+                    'address': user.userprofile.address if hasattr(user, 'userprofile') and hasattr(user.userprofile, 'address') else '',
+                }
+                
+                # Get document URLs, safely handling possible errors
+                documents = {}
+                if hasattr(application, 'business_permit') and application.business_permit:
+                    try:
+                        documents['business_permit'] = application.business_permit.url
+                    except (ValueError, AttributeError):
+                        documents['business_permit'] = None
+                else:
+                    documents['business_permit'] = None
+                
+                # Add Police Clearance
+                if hasattr(application, 'police_clearance') and application.police_clearance:
+                    try:
+                        documents['police_clearance'] = application.police_clearance.url
+                    except (ValueError, AttributeError):
+                        documents['police_clearance'] = None
+                else:
+                    documents['police_clearance'] = None
+                
+                # Add Barangay Certificate
+                if hasattr(application, 'barangay_certificate') and application.barangay_certificate:
+                    try:
+                        documents['barangay_certificate'] = application.barangay_certificate.url
+                    except (ValueError, AttributeError):
+                        documents['barangay_certificate'] = None
+                else:
+                    documents['barangay_certificate'] = None
+                
+                # Add Cedula
+                if hasattr(application, 'cedula') and application.cedula:
+                    try:
+                        documents['cedula'] = application.cedula.url
+                    except (ValueError, AttributeError):
+                        documents['cedula'] = None
+                else:
+                    documents['cedula'] = None
+                
+                # Add CENRO Tickets
+                if hasattr(application, 'cenro_tickets') and application.cenro_tickets:
+                    try:
+                        documents['cenro_tickets'] = application.cenro_tickets.url
+                    except (ValueError, AttributeError):
+                        documents['cenro_tickets'] = None
+                else:
+                    documents['cenro_tickets'] = None
+                
+                if hasattr(application, 'mayors_permit') and application.mayors_permit:
+                    try:
+                        documents['mayors_permit'] = application.mayors_permit.url
+                    except (ValueError, AttributeError):
+                        documents['mayors_permit'] = None
+                else:
+                    documents['mayors_permit'] = None
+                
+                if hasattr(application, 'other_documents') and application.other_documents:
+                    try:
+                        documents['other_documents'] = application.other_documents.url
+                    except (ValueError, AttributeError):
+                        documents['other_documents'] = None
+                else:
+                    documents['other_documents'] = None
+                
+                # Get application details
+                app_data = {
+                    'id': application.id,
+                    'status': getattr(application, 'status', 'PENDING'),
+                    'submitted_at': application.submitted_at.strftime('%Y-%m-%d %H:%M:%S') if hasattr(application, 'submitted_at') and application.submitted_at else None,
+                    'processed_at': application.processed_at.strftime('%Y-%m-%d %H:%M:%S') if hasattr(application, 'processed_at') and application.processed_at else None,
+                    'notes': getattr(application, 'notes', ''),
+                    'company_name': getattr(application, 'company_name', ''),
+                }
+                
+                return JsonResponse({
+                    'application': app_data,
+                    'user': user_data,
+                    'documents': documents
+                })
+            except Exception as e:
+                # Log the error for debugging
+                print(f"Error generating application JSON: {str(e)}")
+                print(traceback.format_exc())
+                
+                # Return a more helpful error message
+                return JsonResponse({
+                    'error': f"Server error: {str(e)}",
+                    'details': "An error occurred while processing the application data."
+                }, status=500)
+        
+        # For regular requests, redirect to the manage page since we don't have the template anymore
+        messages.info(request, 'Application details can now be viewed in a modal dialog.')
+        return redirect('operator_applications_manage')
+        
+    except Exception as e:
+        import traceback
+        print(f"Unhandled exception in operator_application_review: {str(e)}")
+        print(traceback.format_exc())
+        
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            from django.http import JsonResponse
+            return JsonResponse({
+                'error': 'Server error occurred',
+                'message': str(e)
+            }, status=500)
+        
+        messages.error(request, f"An error occurred: {str(e)}")
+        return redirect('operator_applications_manage')
 
 @login_required
 def driver_import(request):
     """View to import drivers from an Excel or CSV file - reads the first available worksheet"""
+    # Check if this is an AJAX request
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    
     if not request.user.is_staff:
+        if is_ajax:
+            from django.http import JsonResponse
+            return JsonResponse({"error": "You don't have permission to import drivers."}, status=403)
         messages.error(request, "You don't have permission to import drivers.")
         return redirect('user_portal:user_dashboard')
     
@@ -3239,6 +3663,7 @@ def driver_import(request):
                 import io
                 import sys
                 import re
+                from django.http import JsonResponse
                 
                 # Get file from request
                 file = request.FILES['file']
@@ -3256,7 +3681,10 @@ def driver_import(request):
                             # Assign default column names
                             df.columns = [f"Column_{i}" for i in range(df.shape[1])]
                         except Exception as e2:
-                            messages.error(request, f"Error reading CSV file: {str(e)}")
+                            error_msg = f"Error reading CSV file: {str(e)}"
+                            if is_ajax:
+                                return JsonResponse({"error": error_msg}, status=400)
+                            messages.error(request, error_msg)
                             return redirect('driver_import')
                 elif file.name.endswith('.xlsx'):
                     # Process Excel file
@@ -3270,10 +3698,16 @@ def driver_import(request):
                             # Assign default column names
                             df.columns = [f"Column_{i}" for i in range(df.shape[1])]
                         except Exception as e2:
-                            messages.error(request, f"Error reading Excel file: {str(e)}")
+                            error_msg = f"Error reading Excel file: {str(e)}"
+                            if is_ajax:
+                                return JsonResponse({"error": error_msg}, status=400)
+                            messages.error(request, error_msg)
                             return redirect('driver_import')
                 else:
-                    messages.error(request, "Unsupported file format. Please upload a CSV or Excel file.")
+                    error_msg = "Unsupported file format. Please upload a CSV or Excel file."
+                    if is_ajax:
+                        return JsonResponse({"error": error_msg}, status=400)
+                    messages.error(request, error_msg)
                     return redirect('driver_import')
                 
                 # Debug info
@@ -3362,8 +3796,17 @@ def driver_import(request):
                 
                 if missing_columns:
                     # Print more debug info to help diagnose the issue
-                    messages.error(request, f"Could not find columns for: {', '.join(missing_columns)}. Please check your file has columns for these fields.")
-                    messages.info(request, f"Available columns in your file: {', '.join(df.columns.tolist())}")
+                    error_msg = f"Could not find columns for: {', '.join(missing_columns)}. Please check your file has columns for these fields."
+                    available_columns = f"Available columns in your file: {', '.join(df.columns.tolist())}"
+                    
+                    if is_ajax:
+                        return JsonResponse({
+                            "error": error_msg,
+                            "details": available_columns
+                        }, status=400)
+                    
+                    messages.error(request, error_msg)
+                    messages.info(request, available_columns)
                     return redirect('driver_import')
                 
                 # Create a new DataFrame with mapped columns
@@ -3428,24 +3871,59 @@ def driver_import(request):
                         data_to_import.append(driver_data)
                 
                 if not data_to_import:
-                    messages.error(request, "No valid driver data found in the file.")
+                    error_msg = "No valid driver data found in the file."
+                    if is_ajax:
+                        return JsonResponse({"error": error_msg}, status=400)
+                    
+                    messages.error(request, error_msg)
                     return redirect('driver_import')
                 
                 # Store the data in the session for confirmation
                 request.session['driver_import_data'] = data_to_import
                 
-                # Proceed to confirmation page
+                # For AJAX requests, return the data directly
+                if is_ajax:
+                    return JsonResponse(data_to_import, safe=False)
+                
+                # For regular requests, redirect to confirmation page
                 return redirect('driver_import_confirm')
                 
             except Exception as e:
-                messages.error(request, f"Error processing file: {str(e)}")
                 logger.exception("Error in driver import")
                 import traceback
                 print(traceback.format_exc(), file=sys.stderr)
+                
+                error_msg = f"Error processing file: {str(e)}"
+                if is_ajax:
+                    return JsonResponse({"error": error_msg}, status=500)
+                    
+                messages.error(request, error_msg)
                 return redirect('driver_import')
+        else:
+            # Form validation failed
+            if is_ajax:
+                errors = {field: str(error) for field, error in form.errors.items()}
+                from django.http import JsonResponse
+                return JsonResponse({"error": "Form validation failed", "errors": errors}, status=400)
+                
+            # For regular form submissions
+            for field, error_list in form.errors.items():
+                for error in error_list:
+                    messages.error(request, f"{field}: {error}")
+                    
+            return redirect('driver_import')
     else:
         form = DriverImportForm()
     
+    # For AJAX GET requests, return form structure as JSON
+    if is_ajax and request.method == 'GET':
+        from django.http import JsonResponse
+        return JsonResponse({
+            "form_fields": list(DriverImportForm.base_fields.keys()),
+            "message": "Use POST method to upload files"
+        })
+    
+    # For regular GET requests, render the form
     return render(request, 'drivers/driver_import.html', {
         'form': form
     })
@@ -3502,7 +3980,7 @@ def driver_create(request):
             )
             
             messages.success(request, f"Driver {driver.first_name} {driver.last_name} created successfully.")
-            return redirect('driver_list')
+            return redirect('admin_driver_list')
     else:
         form = DriverForm()
     
@@ -3523,7 +4001,7 @@ def driver_update(request, pk):
         driver = Driver.objects.get(pk=pk)
     except Driver.DoesNotExist:
         messages.error(request, "Driver not found.")
-        return redirect('driver_list')
+        return redirect('admin_driver_list')
     
     if request.method == 'POST':
         form = DriverForm(request.POST, instance=driver)
@@ -3538,7 +4016,7 @@ def driver_update(request, pk):
             )
             
             messages.success(request, f"Driver {updated_driver.first_name} {updated_driver.last_name} updated successfully.")
-            return redirect('driver_list')
+            return redirect('admin_driver_list')
     else:
         form = DriverForm(instance=driver)
     
@@ -3573,7 +4051,7 @@ def driver_delete(request, pk):
         )
         
         messages.success(request, f"Driver {driver_details} deleted successfully.")
-        return redirect('driver_list')
+        return redirect('admin_driver_list')
     
     return render(request, 'drivers/driver_confirm_delete.html', {
         'driver': driver
@@ -3582,7 +4060,13 @@ def driver_delete(request, pk):
 @login_required
 def driver_import_confirm(request):
     """View to confirm the import of drivers from Excel/CSV file"""
+    # Check if request is AJAX
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    
     if not request.user.is_staff:
+        if is_ajax:
+            from django.http import JsonResponse
+            return JsonResponse({"error": "You do not have permission to access this page."}, status=403)
         messages.error(request, 'You do not have permission to access this page.')
         return redirect('user_portal:user_dashboard')
         
@@ -3590,6 +4074,9 @@ def driver_import_confirm(request):
     driver_data = request.session.get('driver_import_data', [])
     
     if not driver_data:
+        if is_ajax:
+            from django.http import JsonResponse
+            return JsonResponse({"error": "No driver data to import. Please upload a file first."}, status=400)
         messages.error(request, "No driver data to import. Please upload a file first.")
         return redirect('driver_import')
     
@@ -3739,6 +4226,18 @@ def driver_import_confirm(request):
             timestamp=timezone.now()
         )
         
+        # If AJAX request, return JSON response
+        if is_ajax:
+            from django.http import JsonResponse
+            return JsonResponse({
+                "success": True,
+                "total": len(driver_data),
+                "new": imported_count,
+                "updated": updated_count,
+                "errors": error_count,
+                "error_details": error_messages[:5] if error_messages else []
+            })
+        
         # Show success message
         if error_count > 0:
             messages.warning(request, f"Imported {imported_count} drivers, updated {updated_count} drivers, with {error_count} errors. Check the logs for details.")
@@ -3749,7 +4248,20 @@ def driver_import_confirm(request):
         else:
             messages.success(request, f"Successfully imported {imported_count} new drivers and updated {updated_count} existing drivers.")
         
-        return redirect('driver_list')
+        return redirect('admin_driver_list')
+    
+    # For GET requests
+    if is_ajax:
+        from django.http import JsonResponse
+        return JsonResponse({
+            "driver_data": driver_data,
+            "summary": {
+                "new_count": new_count,
+                "update_count": update_count,
+                "error_count": error_count,
+                "total_count": len(driver_data)
+            }
+        })
     
     # Render the confirmation template
     return render(request, 'drivers/driver_import_confirm.html', {
@@ -3763,52 +4275,74 @@ def driver_import_confirm(request):
 @login_required
 def driver_export_excel(request):
     """View to export drivers as Excel file"""
-    if not request.user.is_staff:
-        messages.error(request, "You don't have permission to export drivers.")
-        return redirect('user_portal:user_dashboard')
+    # Create a new workbook and select the active worksheet
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Drivers"
     
+    # Set up the column headers
+    headers = [
+        'Driver ID', 'Name', 'License Number', 'Gender', 'Birthday', 
+        'Contact Number', 'Address', 'Operator', 'Status'
+    ]
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num)
+        cell.value = header
+        # Header style
+        cell.font = Font(bold=True)
+        cell.fill = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid")
+        cell.alignment = Alignment(horizontal="center")
+    
+    # Add the data
     try:
-        import pandas as pd
-        from io import BytesIO
+        # Include operator filtering if parameter exists
+        operator_id = request.GET.get('operator_id')
         
-        # Get all drivers ordered by last name, first name
-        drivers = Driver.objects.all().order_by('last_name', 'first_name')
+        if operator_id:
+            try:
+                # Get drivers for a specific operator
+                operator = Operator.objects.get(id=operator_id)
+                drivers = Driver.objects.filter(operator=operator).select_related('operator')
+                filename = f"{operator.name.replace(' ', '_')}_drivers_{timezone.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+            except Operator.DoesNotExist:
+                messages.error(request, f"Operator with ID {operator_id} not found.")
+                return redirect('admin_driver_list')
+        else:
+            # Get all drivers
+            drivers = Driver.objects.all().select_related('operator')
+            filename = f"all_drivers_{timezone.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
         
-        # Create data for Excel file
-        data = []
-        for driver in drivers:
-            data.append({
-                'LASTNAME': driver.last_name,
-                'FIRST NAME': driver.first_name,
-                'M.I.': driver.middle_initial,
-                'ADDRESS': driver.address,
-                'OLD P.D NO.': driver.old_pd_number or '',
-                'NEW P.D NO.': driver.new_pd_number,
-                'OPERATOR': driver.operator.new_pd_number if driver.operator else ''
-            })
+        # Add each driver to the worksheet
+        for row_num, driver in enumerate(drivers, 2):
+            ws.cell(row=row_num, column=1).value = driver.id
+            ws.cell(row=row_num, column=2).value = driver.name
+            ws.cell(row=row_num, column=3).value = driver.license_number
+            ws.cell(row=row_num, column=4).value = driver.get_gender_display()
+            ws.cell(row=row_num, column=5).value = driver.birthday.strftime('%Y-%m-%d') if driver.birthday else ""
+            ws.cell(row=row_num, column=6).value = driver.contact_number
+            ws.cell(row=row_num, column=7).value = driver.address
+            ws.cell(row=row_num, column=8).value = driver.operator.name if driver.operator else "Not assigned"
+            ws.cell(row=row_num, column=9).value = "Active" if driver.is_active else "Inactive"
         
-        # Create DataFrame
-        df = pd.DataFrame(data)
+        # Auto-adjust column widths
+        for col in ws.columns:
+            max_length = 0
+            column = col[0].column_letter
+            for cell in col:
+                if cell.value:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+            adjusted_width = (max_length + 2)
+            ws.column_dimensions[column].width = adjusted_width
         
-        # Create Excel file
-        output = BytesIO()
-        with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            # Write drivers data
-            df.to_excel(writer, sheet_name='Drivers', index=False)
-            
-            # Create a template sheet for import
-            template_df = pd.DataFrame(columns=[
-                'LASTNAME', 'FIRST NAME', 'M.I.', 'ADDRESS', 'OLD P.D NO.', 'NEW P.D NO.'
-            ])
-            template_df.to_excel(writer, sheet_name='Template', index=False)
-        
-        # Prepare response
-        output.seek(0)
+        # Create response
         response = HttpResponse(
-            output.read(),
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
-        response['Content-Disposition'] = 'attachment; filename=drivers.xlsx'
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        # Save workbook to response
+        wb.save(response)
         
         # Log activity
         ActivityLog.objects.create(
@@ -3821,208 +4355,929 @@ def driver_export_excel(request):
     except Exception as e:
         messages.error(request, f"Error exporting drivers: {str(e)}")
         logger.error(f"Error exporting drivers: {str(e)}")
-        return redirect('driver_list')
+        return redirect('admin_driver_list')
 
 @login_required
-def admin_reports_dashboard(request):
-    # Check if user is admin
-    if request.user.userprofile.role != 'ADMIN':
-        messages.error(request, 'You do not have permission to access this page.')
-        return redirect('admin_dashboard')
+def api_search_operators(request):
+    """API endpoint for searching operators"""
+    query = request.GET.get('q', '')
     
-    # Get filters from request
-    status_filter = request.GET.get('status', '')
+    if len(query) < 3:
+        return JsonResponse([], safe=False)
+        
+    # Search for operators by new_pd_number, old_pd_number, or name
+    operators = Operator.objects.filter(
+        Q(new_pd_number__icontains=query) | 
+        Q(old_pd_number__icontains=query) | 
+        Q(last_name__icontains=query) |
+        Q(first_name__icontains=query)
+    )[:10]  # Limit to 10 results
+    
+    # Format the results
+    results = []
+    for operator in operators:
+        results.append({
+            'id': operator.id,
+            'first_name': operator.first_name,
+            'last_name': operator.last_name,
+            'middle_initial': operator.middle_initial,
+            'address': operator.address,
+            'old_pd_number': operator.old_pd_number,
+            'new_pd_number': operator.new_pd_number,
+        })
+    
+    return JsonResponse(results, safe=False)
+
+@login_required
+def api_search_drivers(request):
+    """API endpoint to search for drivers by PD number"""
+    query = request.GET.get('q', '')
+    
+    if len(query) < 3:
+        return JsonResponse([], safe=False)
+        
+    # Search for drivers by new_pd_number, old_pd_number, or name
+    drivers = Driver.objects.filter(
+        Q(new_pd_number__icontains=query) | 
+        Q(old_pd_number__icontains=query) | 
+        Q(last_name__icontains=query) |
+        Q(first_name__icontains=query)
+    )[:10]  # Limit to 10 results
+    
+    # Format the results
+    results = []
+    for driver in drivers:
+        driver_data = {
+            'id': driver.id,
+            'first_name': driver.first_name,
+            'last_name': driver.last_name,
+            'middle_initial': driver.middle_initial,
+            'address': driver.address,
+            'old_pd_number': driver.old_pd_number,
+            'new_pd_number': driver.new_pd_number,
+        }
+        
+        # Add operator info if available
+        if driver.operator:
+            driver_data['operator'] = {
+                'id': driver.operator.id,
+                'first_name': driver.operator.first_name,
+                'last_name': driver.operator.last_name,
+                'new_pd_number': driver.operator.new_pd_number,
+            }
+        
+        results.append(driver_data)
+    
+    return JsonResponse(results, safe=False)
+
+def process_violation_images(request, violation):
+    """Process uploaded images for a violation"""
+    try:
+        driver_photo = request.FILES.get('driver_photo')
+        vehicle_photo = request.FILES.get('vehicle_photo')
+        secondary_photo = request.FILES.get('secondary_photo')
+        
+        if driver_photo:
+            violation.driver_photo = driver_photo
+            
+        if vehicle_photo:
+            violation.vehicle_photo = vehicle_photo
+            
+        if secondary_photo:
+            violation.secondary_photo = secondary_photo
+            
+        # Save the violation with the attached images
+        violation.save()
+        
+    except Exception as e:
+        logger.error(f"Error processing violation images: {str(e)}")
+        # Don't raise the exception, just log it
+        pass
+
+def process_date_time(date_str, time_str):
+    """Process date and time strings into a datetime object"""
+    try:
+        if date_str:
+            date_obj = timezone.datetime.strptime(date_str, '%Y-%m-%d').date()
+            
+            if time_str:
+                # Parse time if provided
+                time_obj = timezone.datetime.strptime(time_str, '%H:%M').time()
+                return timezone.datetime.combine(date_obj, time_obj)
+            else:
+                # Default to midnight if no time is provided
+                return timezone.datetime.combine(date_obj, timezone.datetime.min.time())
+        
+        # Default to now if no date is provided
+        return timezone.now()
+    except Exception as e:
+        logger.error(f"Error processing date/time: {str(e)}")
+        return timezone.now()
+
+@login_required
+def vehicle_list(request):
+    """View to list all vehicles for an operator"""
+    # Check if user is an operator
+    try:
+        operator = Operator.objects.get(user=request.user)
+    except Operator.DoesNotExist:
+        messages.error(request, "You must be a registered operator to view vehicles.")
+        return redirect('operator_dashboard')
+    
+    # Get all vehicles for this operator
+    vehicles = Vehicle.objects.filter(operator=operator).order_by('-created_at')
+    
+    return render(request, 'operators/vehicle_list.html', {
+        'vehicles': vehicles,
+        'operator': operator
+    })
+
+
+@login_required
+def driver_list(request):
+    """View to list all drivers for an operator"""
+    # Check if user is an operator
+    try:
+        operator = Operator.objects.get(user=request.user)
+    except Operator.DoesNotExist:
+        messages.error(request, "You must be a registered operator to view drivers.")
+        return redirect('operator_dashboard')
+    
+    # Get all drivers for this operator
+    drivers = Driver.objects.filter(operator=operator).order_by('last_name', 'first_name')
+    
+    return render(request, 'operators/driver_list.html', {
+        'drivers': drivers,
+        'operator': operator
+    })
+
+@login_required
+def operator_vehicle_list(request):
+    """View to list all vehicles for an operator"""
+    # Check if user is an operator
+    try:
+        operator = Operator.objects.get(user=request.user)
+    except Operator.DoesNotExist:
+        messages.error(request, "You must be a registered operator to view vehicles.")
+        return redirect('operator_dashboard')
+    
+    # Get all vehicles for this operator
+    vehicles = Vehicle.objects.filter(operator=operator).order_by('-created_at')
+    
+    return render(request, 'operators/vehicle_list.html', {
+        'vehicles': vehicles,
+        'operator': operator
+    })
+
+
+@login_required
+def operator_register_vehicle(request):
+    """View for operators to register a new vehicle"""
+    try:
+        operator = Operator.objects.get(user=request.user)
+    except Operator.DoesNotExist:
+        messages.error(request, "You must be a registered operator to add vehicles.")
+        return redirect('operator_dashboard')
+    
+    if request.method == 'POST':
+        form = VehicleForm(request.POST, operator=operator)
+        if form.is_valid():
+            vehicle = form.save(commit=False)
+            vehicle.operator = operator
+            vehicle.save()
+            
+            # Log the activity
+            ActivityLog.objects.create(
+                user=request.user,
+                action=f"Registered new vehicle with PD number {vehicle.new_pd_number}",
+                ip_address=get_client_ip(request)
+            )
+            
+            messages.success(request, f"Vehicle successfully registered with PD number {vehicle.new_pd_number}")
+            return redirect('operator_dashboard')  # Redirect to dashboard instead of vehicle list
+    else:
+        form = VehicleForm(operator=operator)
+    
+    return render(request, 'operators/vehicle_form.html', {
+        'form': form,
+        'is_create': True,
+        'title': 'Register New Vehicle',
+        'submit_text': 'Register Vehicle'
+    })
+
+
+@login_required
+def operator_edit_vehicle(request, vehicle_id):
+    """View for operators to edit a vehicle"""
+    # Check if user is an operator
+    try:
+        operator = Operator.objects.get(user=request.user)
+    except Operator.DoesNotExist:
+        messages.error(request, "You must be a registered operator to edit vehicles.")
+        return redirect('operator_dashboard')
+    
+    # Get the vehicle or return 404
+    vehicle = get_object_or_404(Vehicle, id=vehicle_id, operator=operator)
+    
+    if request.method == 'POST':
+        form = VehicleForm(request.POST, instance=vehicle, operator=operator)
+        if form.is_valid():
+            form.save()
+            
+            # Log the activity
+            ActivityLog.objects.create(
+                user=request.user,
+                action=f"Updated vehicle with PD number {vehicle.new_pd_number}",
+                ip_address=get_client_ip(request)
+            )
+            
+            messages.success(request, "Vehicle details updated successfully")
+            return redirect('vehicle_list')
+    else:
+        form = VehicleForm(instance=vehicle, operator=operator)
+    
+    return render(request, 'operators/vehicle_form.html', {
+        'form': form,
+        'is_create': False,
+        'title': 'Edit Vehicle',
+        'submit_text': 'Update Vehicle',
+        'vehicle': vehicle
+    })
+
+
+@login_required
+def operator_delete_vehicle(request, vehicle_id):
+    """View for operators to delete a vehicle"""
+    # Check if user is an operator
+    try:
+        operator = Operator.objects.get(user=request.user)
+    except Operator.DoesNotExist:
+        messages.error(request, "You must be a registered operator to delete vehicles.")
+        return redirect('operator_dashboard')
+    
+    # Get the vehicle or return 404
+    vehicle = get_object_or_404(Vehicle, id=vehicle_id, operator=operator)
+    
+    if request.method == 'POST':
+        pd_number = vehicle.new_pd_number
+        
+        # Check if there are any active driver assignments
+        active_assignments = DriverVehicleAssignment.objects.filter(vehicle=vehicle, is_active=True).exists()
+        if active_assignments:
+            messages.error(request, "Cannot delete vehicle with active driver assignments. Please end all driver assignments first.")
+            return redirect('vehicle_list')
+        
+        # Deactivate rather than delete
+        vehicle.active = False
+        vehicle.save()
+        
+        # Log the activity
+        ActivityLog.objects.create(
+            user=request.user,
+            action=f"Deactivated vehicle with PD number {pd_number}",
+            ip_address=get_client_ip(request)
+        )
+        
+        messages.success(request, f"Vehicle with PD number {pd_number} has been deactivated")
+        return redirect('vehicle_list')
+    
+    return render(request, 'operators/vehicle_delete.html', {
+        'vehicle': vehicle
+    })
+
+
+@login_required
+def operator_driver_list(request):
+    """View to list all drivers for an operator"""
+    # Check if user is an operator
+    try:
+        operator = Operator.objects.get(user=request.user)
+    except Operator.DoesNotExist:
+        messages.error(request, "You must be a registered operator to view drivers.")
+        return redirect('operator_dashboard')
+    
+    # Get all drivers for this operator
+    drivers = Driver.objects.filter(operator=operator).order_by('last_name', 'first_name')
+    
+    return render(request, 'operators/driver_list.html', {
+        'drivers': drivers,
+        'operator': operator
+    })
+
+
+@login_required
+def operator_register_driver(request):
+    """View for operators to register a new driver"""
+    try:
+        operator = Operator.objects.get(user=request.user)
+    except Operator.DoesNotExist:
+        messages.error(request, "You must be a registered operator to add drivers.")
+        return redirect('operator_dashboard')
+    
+    if request.method == 'POST':
+        form = DriverForm(request.POST, operator=operator)
+        if form.is_valid():
+            driver = form.save(commit=False)
+            driver.operator = operator
+            driver.save()
+            
+            # Log the activity
+            ActivityLog.objects.create(
+                user=request.user,
+                action=f"Registered new driver {driver.get_full_name()} with PD number {driver.new_pd_number}",
+                ip_address=get_client_ip(request)
+            )
+            
+            messages.success(request, f"Driver {driver.get_full_name()} successfully registered with PD number {driver.new_pd_number}")
+            return redirect('operator_dashboard')  # Redirect to dashboard
+    else:
+        form = DriverForm(operator=operator)
+    
+    return render(request, 'operators/driver_form.html', {
+        'form': form,
+        'is_create': True,
+        'title': 'Register New Driver',
+        'submit_text': 'Register Driver',
+        'cancel_url': 'operator_dashboard'  # Add cancel URL for the form
+    })
+
+
+@login_required
+def operator_edit_driver(request, driver_id):
+    """View for operators to edit a driver"""
+    try:
+        operator = Operator.objects.get(user=request.user)
+    except Operator.DoesNotExist:
+        messages.error(request, "You must be a registered operator to edit drivers.")
+        return redirect('operator_dashboard')
+    
+    driver = get_object_or_404(Driver, id=driver_id, operator=operator)
+    
+    if request.method == 'POST':
+        form = DriverForm(request.POST, instance=driver, operator=operator)
+        if form.is_valid():
+            form.save()
+            
+            # Log the activity
+            ActivityLog.objects.create(
+                user=request.user,
+                action=f"Updated driver {driver.get_full_name()} with PD number {driver.new_pd_number}",
+                ip_address=get_client_ip(request)
+            )
+            
+            messages.success(request, f"Driver {driver.get_full_name()} updated successfully")
+            return redirect('operator_dashboard')  # Redirect to dashboard
+    else:
+        form = DriverForm(instance=driver, operator=operator)
+    
+    return render(request, 'operators/driver_form.html', {
+        'form': form,
+        'driver': driver,
+        'is_create': False,
+        'title': f'Edit Driver: {driver.get_full_name()}',
+        'submit_text': 'Save Changes',
+        'cancel_url': 'operator_dashboard'  # Add cancel URL for the form
+    })
+
+
+@login_required
+def operator_delete_driver(request, driver_id):
+    """View for operators to delete a driver"""
+    try:
+        operator = Operator.objects.get(user=request.user)
+    except Operator.DoesNotExist:
+        messages.error(request, "You must be a registered operator to delete drivers.")
+        return redirect('operator_dashboard')
+    
+    driver = get_object_or_404(Driver, id=driver_id, operator=operator)
+    
+    if request.method == 'POST':
+        driver_name = driver.get_full_name()
+        pd_number = driver.new_pd_number
+        
+        # Check if there are any active vehicle assignments
+        active_assignments = DriverVehicleAssignment.objects.filter(driver=driver, is_active=True).exists()
+        if active_assignments:
+            messages.error(request, "Cannot delete driver with active vehicle assignments. Please end all vehicle assignments first.")
+            return redirect('operator_dashboard')
+        
+        # Deactivate rather than delete
+        driver.active = False
+        driver.save()
+        
+        # Log the activity
+        ActivityLog.objects.create(
+            user=request.user,
+            action=f"Deactivated driver {driver_name} with PD number {pd_number}",
+            ip_address=get_client_ip(request)
+        )
+        
+        messages.success(request, f"Driver {driver_name} has been deactivated")
+        return redirect('operator_dashboard')
+    
+    return render(request, 'operators/driver_confirm_delete.html', {
+        'driver': driver,
+        'cancel_url': 'operator_dashboard'  # Add cancel URL for the confirmation page
+    })
+
+
+@login_required
+def operator_assign_driver_to_vehicle(request):
+    """View for operators to assign a driver to a vehicle"""
+    try:
+        operator = Operator.objects.get(user=request.user)
+    except Operator.DoesNotExist:
+        messages.error(request, "You must be a registered operator to assign drivers to vehicles.")
+        return redirect('operator_dashboard')
+    
+    # Pre-select driver or vehicle if provided in query parameters
+    initial_data = {}
+    if request.GET.get('driver'):
+        try:
+            driver_id = int(request.GET.get('driver'))
+            driver = get_object_or_404(Driver, id=driver_id, operator=operator)
+            initial_data['driver'] = driver.id
+        except (ValueError, TypeError):
+            pass
+    
+    if request.GET.get('vehicle'):
+        try:
+            vehicle_id = int(request.GET.get('vehicle'))
+            vehicle = get_object_or_404(Vehicle, id=vehicle_id, operator=operator)
+            initial_data['vehicle'] = vehicle.id
+        except (ValueError, TypeError):
+            pass
+    
+    if request.method == 'POST':
+        form = DriverVehicleAssignmentForm(request.POST, operator=operator)
+        if form.is_valid():
+            driver = form.cleaned_data['driver']
+            vehicle = form.cleaned_data['vehicle']
+            
+            # Check if there's already an active assignment for this vehicle
+            existing_assignment = DriverVehicleAssignment.objects.filter(
+                vehicle=vehicle,
+                is_active=True
+            ).first()
+            
+            if existing_assignment:
+                # End the existing assignment
+                existing_assignment.end_assignment()
+                messages.info(request, f"Previous assignment of {existing_assignment.driver.get_full_name()} to this vehicle has been ended.")
+            
+            # Create the new assignment
+            assignment = form.save(commit=False)
+            assignment.created_by = request.user
+            assignment.save()
+            
+            # Log the activity
+            ActivityLog.objects.create(
+                user=request.user,
+                action=f"Assigned driver {driver.get_full_name()} to vehicle {vehicle.new_pd_number}",
+                ip_address=get_client_ip(request)
+            )
+            
+            messages.success(request, f"Driver {driver.get_full_name()} has been assigned to vehicle {vehicle.new_pd_number}")
+            return redirect('operator_dashboard')  # Redirect to dashboard instead of assignment list
+    else:
+        form = DriverVehicleAssignmentForm(operator=operator, initial=initial_data)
+    
+    return render(request, 'operators/assignment_form.html', {
+        'form': form,
+        'title': 'Assign Driver to Vehicle',
+        'submit_text': 'Assign Driver'
+    })
+
+
+@login_required
+def operator_end_driver_assignment(request, assignment_id):
+    """View for operators to end a driver-vehicle assignment"""
+    # Check if user is an operator
+    try:
+        operator = Operator.objects.get(user=request.user)
+    except Operator.DoesNotExist:
+        messages.error(request, "You must be a registered operator to manage driver assignments.")
+        return redirect('operator_dashboard')
+    
+    # Get the assignment or return 404
+    assignment = get_object_or_404(
+        DriverVehicleAssignment, 
+        id=assignment_id,
+        vehicle__operator=operator,
+        is_active=True
+    )
+    
+    if request.method == 'POST':
+        # End the assignment
+        driver_name = assignment.driver.get_full_name()
+        vehicle_pd = assignment.vehicle.new_pd_number
+        
+        assignment.end_assignment()
+        
+        # Log the activity
+        ActivityLog.objects.create(
+            user=request.user,
+            action=f"Ended assignment of driver {driver_name} from vehicle {vehicle_pd}",
+            ip_address=get_client_ip(request)
+        )
+        
+        messages.success(request, f"Driver {driver_name} has been unassigned from vehicle {vehicle_pd}")
+        return redirect('assignment_list')
+    
+    return render(request, 'operators/end_assignment.html', {
+        'assignment': assignment
+    })
+
+
+@login_required
+def operator_assignment_list(request):
+    """View to list all driver-vehicle assignments for an operator"""
+    # Check if user is an operator
+    try:
+        operator = Operator.objects.get(user=request.user)
+    except Operator.DoesNotExist:
+        messages.error(request, "You must be a registered operator to view assignments.")
+        return redirect('operator_dashboard')
+    
+    # Get active and inactive assignments
+    active_assignments = DriverVehicleAssignment.objects.filter(
+        vehicle__operator=operator,
+        is_active=True
+    ).select_related('driver', 'vehicle').order_by('-start_date')
+    
+    past_assignments = DriverVehicleAssignment.objects.filter(
+        vehicle__operator=operator,
+        is_active=False
+    ).select_related('driver', 'vehicle').order_by('-end_date')[:10]  # Limit to last 10
+    
+    return render(request, 'operators/assignment_list.html', {
+        'active_assignments': active_assignments,
+        'past_assignments': past_assignments,
+        'operator': operator
+    })
+
+# Add a simple redirect for driver_list
+@login_required
+def driver_list(request):
+    """Simple redirect to operator dashboard"""
+    return redirect('operator_dashboard')
+
+# Update the driver_list redirect to check for admin access
+@login_required
+def driver_list(request):
+    """Enhanced driver list view that checks for admin access"""
+    # If user is admin/staff, use the admin driver list view
+    if request.user.is_staff:
+        return redirect('admin_driver_list')
+    # Otherwise redirect to operator dashboard for non-admin users
+    return redirect('operator_dashboard')
+
+@login_required
+def admin_driver_list(request):
+    """View to display a list of all drivers with search and pagination"""
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to view the list of drivers.")
+        return redirect('user_portal:user_dashboard')
+    
+    # Get search query
+    search_query = request.GET.get('q', '')
+    
+    # Get all drivers ordered by last name, first name
+    drivers = Driver.objects.all().order_by('last_name', 'first_name')
+    
+    # Apply search filter if provided
+    if search_query:
+        drivers = drivers.filter(
+            Q(last_name__icontains=search_query) | 
+            Q(first_name__icontains=search_query) |
+            Q(new_pd_number__icontains=search_query) |
+            Q(old_pd_number__icontains=search_query)
+        )
+    
+    # Pagination - 20 drivers per page
+    paginator = Paginator(drivers, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'drivers/driver_list.html', {
+        'drivers': page_obj,
+        'query': search_query,
+    })
+
+@user_passes_test(lambda u: u.is_staff)
+def admin_report_list(request):
+    """View all user reports in admin panel with filtering and search options."""
+    # Get search parameters
+    q = request.GET.get('q', '')
+    status = request.GET.get('status', '')
+    report_type = request.GET.get('type', '')
     date_from = request.GET.get('date_from', '')
     date_to = request.GET.get('date_to', '')
-    user_id = request.GET.get('user_id', '')
-    violation_type = request.GET.get('type', '')
     
-    # Get all reports
+    # Start with all reports
     reports = UserReport.objects.all().select_related('user', 'assigned_to')
     
-    # Apply filters if provided
-    if status_filter:
-        reports = reports.filter(status=status_filter)
+    # Apply filters
+    if q:
+        reports = reports.filter(
+            Q(subject__icontains=q) | 
+            Q(description__icontains=q) |
+            Q(user__username__icontains=q) |
+            Q(user__first_name__icontains=q) |
+            Q(user__last_name__icontains=q)
+        )
+    
+    if status:
+        reports = reports.filter(status=status)
+    
+    if report_type:
+        reports = reports.filter(type=report_type)
     
     if date_from:
         try:
-            date_from = datetime.strptime(date_from, '%Y-%m-%d')
+            date_from = datetime.strptime(date_from, '%Y-%m-%d').date()
             reports = reports.filter(created_at__gte=date_from)
         except ValueError:
             pass
     
     if date_to:
         try:
-            date_to = datetime.strptime(date_to, '%Y-%m-%d')
-            # Add a day to include the end date fully
-            date_to = date_to + timedelta(days=1)
-            reports = reports.filter(created_at__lt=date_to)
+            date_to = datetime.strptime(date_to, '%Y-%m-%d').date()
+            reports = reports.filter(created_at__lte=date_to)
         except ValueError:
             pass
     
-    if user_id:
-        reports = reports.filter(user_id=user_id)
+    # Order by most recent
+    reports = reports.order_by('-created_at')
     
-    if violation_type:
-        reports = reports.filter(type=violation_type)
+    # Pagination
+    paginator = Paginator(reports, 15)  # Show 15 reports per page
+    page = request.GET.get('page', 1)
     
-    # Calculate statistics for summary cards
-    total_reports = UserReport.objects.count()
-    pending_reports = UserReport.objects.filter(status='PENDING').count()
-    in_progress_reports = UserReport.objects.filter(status='IN_PROGRESS').count()
-    resolved_reports = UserReport.objects.filter(status='RESOLVED').count()
-    closed_reports = UserReport.objects.filter(status='CLOSED').count()
+    try:
+        reports = paginator.page(page)
+    except PageNotAnInteger:
+        reports = paginator.page(1)
+    except EmptyPage:
+        reports = paginator.page(paginator.num_pages)
     
     context = {
         'reports': reports,
-        'total_reports': total_reports,
-        'pending_reports': pending_reports,
-        'in_progress_reports': in_progress_reports,
-        'resolved_reports': resolved_reports,
-        'closed_reports': closed_reports,
-        'report_types': UserReport.REPORT_TYPES,
         'status_choices': UserReport.STATUS_CHOICES,
-        'selected_status': status_filter,
-        'selected_type': violation_type,
-        'date_from': date_from if isinstance(date_from, str) else date_from.strftime('%Y-%m-%d') if date_from else '',
-        'date_to': date_to if isinstance(date_to, str) else (date_to - timedelta(days=1)).strftime('%Y-%m-%d') if date_to else '',
-        'user_id': user_id
+        'report_types': UserReport.REPORT_TYPES,
+        'current_filters': {
+            'q': q,
+            'status': status,
+            'type': report_type,
+            'date_from': date_from,
+            'date_to': date_to,
+        }
     }
     
-    return render(request, 'admin/reports_dashboard.html', context)
+    # Check if this is an AJAX request
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return render(request, 'admin/reports/report_list_partial.html', context)
+    
+    return render(request, 'admin/reports/report_list.html', context)
 
+@user_passes_test(lambda u: u.is_staff)
+def admin_report_view(request, report_id):
+    """View a single report in a modal or detailed page."""
+    report = get_object_or_404(UserReport, id=report_id)
+    
+    context = {
+        'report': report,
+    }
+    
+    # If this is an AJAX request, return the modal content
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return render(request, 'admin/reports/report_modal.html', context)
+    
+    # Otherwise, return the full page
+    return render(request, 'admin/reports/report_detail.html', context)
 
-@login_required
-def update_report(request, report_id):
-    # Check if user is admin
-    if request.user.userprofile.role != 'ADMIN':
-        return JsonResponse({'status': 'error', 'message': 'Permission denied'}, status=403)
+@user_passes_test(lambda u: u.is_staff)
+def admin_report_dispute(request, report_id):
+    """Dispute a report with an optional reason."""
+    report = get_object_or_404(UserReport, id=report_id)
     
-    # Only allow POST requests
-    if request.method != 'POST':
-        return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
-    
-    try:
-        report = UserReport.objects.get(id=report_id)
-    except UserReport.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Report not found'}, status=404)
-    
-    # Get data from request
-    status = request.POST.get('status')
-    notes = request.POST.get('notes', '')
-    notify_user = request.POST.get('notify_user') == 'true'
-    
-    # Validate status
-    if status not in [s[0] for s in UserReport.STATUS_CHOICES]:
-        return JsonResponse({'status': 'error', 'message': 'Invalid status'}, status=400)
-    
-    # Update report
-    old_status = report.status
-    report.status = status
-    
-    # Add notes if provided
-    if notes:
-        if report.resolution_notes:
-            report.resolution_notes += f"\n\n{timezone.now().strftime('%Y-%m-%d %H:%M')} - {request.user.get_full_name()}:\n{notes}"
-        else:
-            report.resolution_notes = f"{timezone.now().strftime('%Y-%m-%d %H:%M')} - {request.user.get_full_name()}:\n{notes}"
-    
-    # If status is resolved or closed, add resolution timestamp
-    if status in ['RESOLVED', 'CLOSED'] and not report.resolved_at:
-        report.resolved_at = timezone.now()
-    
-    # Assign to current user if status is changed to in progress
-    if status == 'IN_PROGRESS' and old_status != 'IN_PROGRESS':
-        report.assigned_to = request.user
-    
-    report.save()
-    
-    # Create notification for user if requested
-    if notify_user:
-        status_display = dict(UserReport.STATUS_CHOICES)[status]
-        message = f'Your report "{report.subject}" has been updated to {status_display}.'
-        if notes:
-            message += f' Admin notes: {notes}'
+    if request.method == 'POST':
+        reason = request.POST.get('reason', '')
         
+        # Update report status to disputed
+        report.status = 'CLOSED'
+        report.resolution_notes = reason
+        report.resolved_at = timezone.now()
+        report.assigned_to = request.user
+        report.save()
+        
+        # Create notification for the user
         UserNotification.objects.create(
             user=report.user,
-            type='SYSTEM',
-            message=message
+            type='STATUS',
+            message=f'Your report "{report.subject}" has been disputed. Reason: {reason}'
         )
+        
+        # Return a JSON response for AJAX requests
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'message': 'Report has been disputed successfully.',
+                'status': 'CLOSED',
+                'resolved_at': report.resolved_at.strftime('%Y-%m-%d %H:%M'),
+                'assigned_to': report.assigned_to.get_full_name() or report.assigned_to.username
+            })
+        
+        messages.success(request, 'Report has been disputed successfully.')
+        return redirect('admin_report_list')
     
-    # Log the activity
-    ActivityLog.objects.create(
-        user=request.user,
-        action=f'Updated report #{report.id} status from {old_status} to {status}',
-        object_id=report.id,
-        object_type='UserReport'
-    )
-    
-    return JsonResponse({
-        'status': 'success',
-        'message': 'Report updated successfully',
-        'report': {
-            'id': report.id,
-            'status': status,
-            'status_display': dict(UserReport.STATUS_CHOICES)[status],
-            'assigned_to': report.assigned_to.get_full_name() if report.assigned_to else None,
-            'resolution_notes': report.resolution_notes,
-            'resolved_at': report.resolved_at.strftime('%Y-%m-%d %H:%M') if report.resolved_at else None
-        }
-    })
-
-
-@login_required
-def get_report_details(request, report_id):
-    # Check if user is admin
-    if request.user.userprofile.role != 'ADMIN':
-        return JsonResponse({'status': 'error', 'message': 'Permission denied'}, status=403)
-    
-    try:
-        report = UserReport.objects.select_related('user', 'assigned_to', 'user__userprofile').get(id=report_id)
-    except UserReport.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Report not found'}, status=404)
-    
-    # Format the user and report details for JSON response
-    user_profile = report.user.userprofile
-    
-    # Build report data
-    report_data = {
-        'id': report.id,
-        'user': {
-            'id': report.user.id,
-            'full_name': report.user.get_full_name(),
-            'username': report.user.username,
-            'email': report.user.email,
-            'license_number': user_profile.license_number,
-            'phone_number': user_profile.phone_number,
-            'avatar_url': user_profile.avatar.url if user_profile.avatar else None
-        },
-        'type': report.type,
-        'type_display': report.get_type_display(),
-        'subject': report.subject,
-        'description': report.description,
-        'location': report.location,
-        'incident_date': report.incident_date.strftime('%Y-%m-%d %H:%M') if report.incident_date else None,
-        'status': report.status,
-        'status_display': report.get_status_display(),
-        'created_at': report.created_at.strftime('%Y-%m-%d %H:%M'),
-        'updated_at': report.updated_at.strftime('%Y-%m-%d %H:%M'),
-        'assigned_to': report.assigned_to.get_full_name() if report.assigned_to else None,
-        'resolution_notes': report.resolution_notes,
-        'resolved_at': report.resolved_at.strftime('%Y-%m-%d %H:%M') if report.resolved_at else None
+    # If this is a GET request, return the dispute form
+    context = {
+        'report': report,
     }
     
-    # Add attachment info if present
-    if report.attachment:
-        report_data['attachment'] = {
-            'url': report.attachment.url,
-            'filename': report.attachment.name.split('/')[-1]
-        }
-    else:
-        report_data['attachment'] = None
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return render(request, 'admin/reports/report_dispute_modal.html', context)
     
-    return JsonResponse({
-        'status': 'success',
-        'report': report_data
-    })
+    return render(request, 'admin/reports/report_dispute.html', context)
+
+@user_passes_test(lambda u: u.is_staff)
+def admin_report_update_status(request, report_id):
+    """Update the status of a report."""
+    report = get_object_or_404(UserReport, id=report_id)
+    
+    if request.method == 'POST':
+        status = request.POST.get('status')
+        notes = request.POST.get('notes', '')
+        
+        # Validate the status
+        valid_statuses = [status for status, _ in UserReport.STATUS_CHOICES]
+        if status not in valid_statuses:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Invalid status value.',
+                }, status=400)
+            
+            messages.error(request, 'Invalid status value.')
+            return redirect('admin_report_list')
+        
+        # Update the report
+        report.status = status
+        
+        # If resolving or closing, add resolution details
+        if status in ['RESOLVED', 'CLOSED']:
+            report.resolution_notes = notes
+            report.resolved_at = timezone.now()
+            report.assigned_to = request.user
+        else:
+            # For other statuses, just update the assigned admin
+            report.assigned_to = request.user
+        
+        report.save()
+        
+        # Create notification for the user
+        status_display = dict(UserReport.STATUS_CHOICES).get(status, status)
+        UserNotification.objects.create(
+            user=report.user,
+            type='STATUS',
+            message=f'Your report "{report.subject}" status has been updated to {status_display}.'
+        )
+        
+        # Return a JSON response for AJAX requests
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'message': f'Report status updated to {status_display}.',
+                'status': status,
+                'status_display': status_display,
+                'resolved_at': report.resolved_at.strftime('%Y-%m-%d %H:%M') if report.resolved_at else None,
+                'assigned_to': report.assigned_to.get_full_name() or report.assigned_to.username
+            })
+        
+        messages.success(request, f'Report status updated to {status_display}.')
+        return redirect('admin_report_list')
+    
+    # If this is a GET request, return the status update form
+    context = {
+        'report': report,
+        'status_choices': UserReport.STATUS_CHOICES,
+    }
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return render(request, 'admin/reports/report_status_modal.html', context)
+    
+    return render(request, 'admin/reports/report_status.html', context)
+
+@user_passes_test(lambda u: u.is_staff)
+def admin_report_export(request):
+    """Export reports to Excel."""
+    import xlwt
+    from django.http import HttpResponse
+    
+    # Get filtered reports based on query parameters
+    q = request.GET.get('q', '')
+    status = request.GET.get('status', '')
+    report_type = request.GET.get('type', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    
+    # Start with all reports
+    reports = UserReport.objects.all().select_related('user', 'assigned_to')
+    
+    # Apply filters
+    if q:
+        reports = reports.filter(
+            Q(subject__icontains=q) | 
+            Q(description__icontains=q) |
+            Q(user__username__icontains=q) |
+            Q(user__first_name__icontains=q) |
+            Q(user__last_name__icontains=q)
+        )
+    
+    if status:
+        reports = reports.filter(status=status)
+    
+    if report_type:
+        reports = reports.filter(type=report_type)
+    
+    if date_from:
+        try:
+            date_from = datetime.strptime(date_from, '%Y-%m-%d').date()
+            reports = reports.filter(created_at__gte=date_from)
+        except ValueError:
+            pass
+    
+    if date_to:
+        try:
+            date_to = datetime.strptime(date_to, '%Y-%m-%d').date()
+            reports = reports.filter(created_at__lte=date_to)
+        except ValueError:
+            pass
+    
+    # Create a workbook and add a worksheet
+    workbook = xlwt.Workbook(encoding='utf-8')
+    worksheet = workbook.add_sheet('Reports')
+    
+    # Define styles
+    header_style = xlwt.easyxf('font: bold on; pattern: pattern solid, fore_colour gray25;')
+    date_style = xlwt.easyxf(num_format_str='dd/mm/yyyy hh:mm')
+    
+    # Write header row
+    header_row = [
+        'ID', 'User', 'Type', 'Subject', 'Description', 'Location', 
+        'Incident Date', 'Status', 'Created At', 'Updated At', 
+        'Assigned To', 'Resolution Notes', 'Resolved At'
+    ]
+    
+    for col_num, column_title in enumerate(header_row):
+        worksheet.write(0, col_num, column_title, header_style)
+    
+    # Write data rows
+    for row_num, report in enumerate(reports, 1):
+        # Format dates and handle nulls
+        incident_date = report.incident_date.strftime('%Y-%m-%d %H:%M') if report.incident_date else ''
+        created_at = report.created_at.strftime('%Y-%m-%d %H:%M') if report.created_at else ''
+        updated_at = report.updated_at.strftime('%Y-%m-%d %H:%M') if report.updated_at else ''
+        resolved_at = report.resolved_at.strftime('%Y-%m-%d %H:%M') if report.resolved_at else ''
+        
+        # Get report type and status display names
+        report_type_display = dict(UserReport.REPORT_TYPES).get(report.type, report.type)
+        status_display = dict(UserReport.STATUS_CHOICES).get(report.status, report.status)
+        
+        # Format user and assigned_to names
+        user_name = f"{report.user.get_full_name()} ({report.user.username})" if report.user else ''
+        assigned_to = f"{report.assigned_to.get_full_name()} ({report.assigned_to.username})" if report.assigned_to else ''
+        
+        # Write the data row
+        row = [
+            report.id,
+            user_name,
+            report_type_display,
+            report.subject,
+            report.description,
+            report.location,
+            incident_date,
+            status_display,
+            created_at,
+            updated_at,
+            assigned_to,
+            report.resolution_notes,
+            resolved_at
+        ]
+        
+        for col_num, cell_value in enumerate(row):
+            worksheet.write(row_num, col_num, cell_value)
+    
+    # Set column widths
+    column_widths = [10, 30, 20, 40, 50, 30, 20, 15, 20, 20, 30, 50, 20]
+    for i, width in enumerate(column_widths):
+        worksheet.col(i).width = 256 * width  # 256 is the width of one character
+    
+    # Create the HttpResponse with Excel content type
+    response = HttpResponse(content_type='application/ms-excel')
+    response['Content-Disposition'] = 'attachment; filename=Reports.xls'
+    
+    # Save the workbook to the response
+    workbook.save(response)
+    return response

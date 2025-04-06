@@ -1,0 +1,226 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="max-age=86400, public">
+    <title>Traffic Violation System</title>
+    
+    <!-- Preload critical fonts and resources -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" as="style">
+    
+    <!-- Critical CSS -->
+    <style>
+        /* Tiny CSS reset and critical styles */
+        body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#F5F7FA;color:#0f172a}
+        .container{width:100%;max-width:1200px;margin:0 auto;padding:0 15px}
+        .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    </style>
+    
+    <!-- Deferred non-critical CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"></noscript>
+    
+    <link rel="stylesheet" href="{% static 'dist/styles.min.css' %}" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="{% static 'dist/styles.min.css' %}"></noscript>
+    
+    <!-- Load icon font with reduced subset -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons&display=swap" media="print" onload="this.media='all'" rel="stylesheet">
+    <noscript><link href="https://fonts.googleapis.com/icon?family=Material+Icons&display=swap" rel="stylesheet"></noscript>
+    
+    <!-- Delayed Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" 
+          media="print" onload="this.media='all'" rel="stylesheet">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
+    
+    <!-- Font Awesome with reduced subset -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" 
+          media="print" onload="this.media='all'" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"></noscript>
+    
+    <!-- Network connection detection -->
+    <script>
+        // Add classes for slow connections
+        function detectConnectionSpeed() {
+            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            if (connection) {
+                if ((connection.type === 'cellular' && connection.effectiveType && 
+                    (connection.effectiveType === '2g' || connection.effectiveType === 'slow-2g')) ||
+                    (connection.downlink && connection.downlink < 0.5)) {
+                    document.documentElement.classList.add('slow-connection');
+                    document.documentElement.classList.add('reduce-motion');
+                }
+            }
+        }
+        detectConnectionSpeed();
+    </script>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body {% if request.user.is_authenticated and request.user.user_type %}data-role="{{ request.user.user_type }}"{% endif %} {% if update_location_url %}data-update-location-url="{{ update_location_url }}"{% endif %} class="{% block body_class %}{% endblock %}">
+    
+    {% block content %}{% endblock %}
+    
+    <!-- Critical JS -->
+    <script>
+        // Inline critical JS here
+        // This function helps ensure smooth loading of the page
+        function onDOMReady(fn) {
+            if (document.readyState !== 'loading') {
+                fn();
+            } else {
+                document.addEventListener('DOMContentLoaded', fn);
+            }
+        }
+    </script>
+    
+    <!-- Core Bootstrap JS - deferred -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" defer></script>
+    
+    <!-- Main JS - deferred -->
+    <script src="{% static 'dist/lazy-loading.min.js' %}" defer></script>
+    
+    <!-- Framer motion included only if needed -->
+    {% if use_framer_motion %}
+    <script src="{% static 'dist/framer-motion-modals.min.js' %}" defer></script>
+    {% endif %}
+    
+    <!-- Page-specific scripts -->
+    {% if use_operator_details %}
+    <script src="{% static 'dist/operator-details.min.js' %}" defer></script>
+    {% endif %}
+    
+    {% block extra_js %}{% endblock %}
+    
+    <!-- Load all images with lazy loading -->
+    <script>
+        onDOMReady(function() {
+            // Add lazy loading to all images
+            document.querySelectorAll('img:not([loading])').forEach(function(img) {
+                if (!img.hasAttribute('loading')) {
+                    img.setAttribute('loading', 'lazy');
+                }
+                
+                // If the image isn't already set up for lazy loading via our script
+                if (!img.classList.contains('lazy-load') && !img.hasAttribute('data-src')) {
+                    const originalSrc = img.getAttribute('src');
+                    if (originalSrc && !originalSrc.startsWith('data:')) {
+                        img.classList.add('lazy-load');
+                        img.setAttribute('data-src', originalSrc);
+                        img.setAttribute('src', 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"%3E%3C/svg%3E');
+                    }
+                }
+            });
+        });
+    </script>
+    
+    <script>
+        // Location tracking for enforcers (kept from original)
+        onDOMReady(function() {
+            const userRole = document.body.getAttribute('data-role');
+            if (userRole === 'ENFORCER') {
+                initLocationTracking();
+            }
+        });
+
+        function initLocationTracking() {
+            // Get the update location URL from data attribute
+            const locationUpdateUrl = document.body.getAttribute('data-update-location-url');
+            
+            // Function to get CSRF token
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+
+            function updateLocation(position) {
+                const data = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    accuracy: position.coords.accuracy,
+                    speed: position.coords.speed || null,
+                    heading: position.coords.heading || null,
+                    is_active: true
+                };
+
+                fetch(locationUpdateUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Success - silent
+                    }
+                })
+                .catch(error => {
+                    // Retry after 5 seconds on failure
+                    setTimeout(trackLocation, 5000);
+                });
+            }
+
+            function handleLocationError(error) {
+                switch(error.code) {
+                    case error.POSITION_UNAVAILABLE:
+                    case error.TIMEOUT:
+                        // Retry with different options
+                        navigator.geolocation.getCurrentPosition(updateLocation, function(){}, {
+                            enableHighAccuracy: false,
+                            timeout: 10000,
+                            maximumAge: 30000
+                        });
+                        break;
+                }
+            }
+
+            function trackLocation() {
+                if ("geolocation" in navigator) {
+                    navigator.geolocation.getCurrentPosition(updateLocation, handleLocationError, {
+                        enableHighAccuracy: true,
+                        timeout: 5000,
+                        maximumAge: 0
+                    });
+                }
+            }
+
+            // Initial location update
+            trackLocation();
+            
+            // For slow connections, update less frequently
+            const updateInterval = document.documentElement.classList.contains('slow-connection') ? 60000 : 30000;
+            
+            // Set up periodic updates
+            setInterval(trackLocation, updateInterval);
+
+            // Update location when tab becomes visible
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden) {
+                    trackLocation();
+                }
+            });
+        }
+    </script>
+</body>
+</html> 

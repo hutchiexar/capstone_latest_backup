@@ -15,9 +15,9 @@ def user_notifications(request):
             is_read=False
         ).count()
         
-        # Get recent notifications for the dropdown menu (limit to 5)
+        # Get recent notifications for the dropdown menu (increased from 5 to 10)
         context['recent_notifications'] = UserNotification.objects.filter(
             user=request.user
-        ).order_by('-created_at')[:5]
+        ).order_by('-created_at')[:10]
     
     return context 

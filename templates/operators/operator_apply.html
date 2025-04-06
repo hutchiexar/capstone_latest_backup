@@ -382,96 +382,221 @@
             </div>
         </div>
 
+        <!-- Pending Application Message -->
+        {% if has_pending_application %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card section-card shadow-lg" style="border-left: 4px solid var(--warning-color); background-color: #FFF9E6;">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-start">
+                            <div class="me-3" style="color: var(--warning-color);">
+                                <span class="material-icons fs-1">pending_actions</span>
+                            </div>
+                            <div>
+                                <h5 class="fw-bold mb-3">You Already Have a Pending Application</h5>
+                                <p class="mb-3">Your operator application is currently being reviewed. Please check the status page for updates.</p>
+                                <a href="{% url 'operator_application_status' %}" class="btn btn-warning">
+                                    <span class="material-icons me-2">fact_check</span>
+                                    Check Application Status
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Application Form - Only shown if no pending application exists -->
+        {% if not has_pending_application %}
         <div class="row">
             <div class="col-12">
                 <div class="card section-card shadow-lg">
-        <div class="card-body p-4">
-                        <h5 class="section-title">
+                    <div class="card-body p-4">
+                        <h2 class="section-title">
                             <span class="material-icons">assignment</span>
                             Operator Application Form
-                        </h5>
+                        </h2>
                         
-                        <div class="alert alert-info-custom d-flex mb-4">
-                            <span class="material-icons align-self-start">info</span>
-                <div>
+                        <div class="alert alert-info-custom d-flex align-items-start">
+                            <span class="material-icons d-none d-sm-block">info</span>
+                            <div>
                                 <strong>Important Information</strong>
-                    <ul class="mb-0 mt-2">
-                        <li>You must provide a valid business permit to operate public utility vehicles</li>
-                        <li>Applications are reviewed by our administrators</li>
-                        <li>Once approved, you'll be able to register your vehicles in the system</li>
-                        <li>The approval process typically takes 1-3 business days</li>
-                    </ul>
-                </div>
-            </div>
-            
-                        <form method="post" enctype="multipart/form-data" id="operatorForm">
-                {% csrf_token %}
-                
-                <div class="mb-4">
-                                <label class="file-upload-label">
+                                <ul class="mt-2 mb-0">
+                                    <li>You must provide a valid business permit to operate public utility vehicles</li>
+                                    <li>Applications are reviewed by our administrators</li>
+                                    <li>Once approved, you'll be able to register your vehicles in the system</li>
+                                    <li>The approval process typically takes 1-3 business days</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <form method="post" enctype="multipart/form-data" class="mt-4">
+                            {% csrf_token %}
+                            
+                            <!-- Business Permit -->
+                            <div class="mb-4">
+                                <div class="file-upload-label">
                                     <span class="material-icons">description</span>
-                                    Business Permit <span class="text-danger">*</span>
-                    </label>
-                                <div class="file-upload-container" id="businessPermitContainer">
-                                    <input type="file" id="{{ form.business_permit.id_for_label }}" name="{{ form.business_permit.html_name }}" accept="image/*,.pdf" required>
-                                    <span class="material-icons file-upload-icon">upload_file</span>
-                                    <div class="file-upload-text" id="businessPermitText">Drag & drop business permit or click to browse</div>
+                                    Business Permit*
+                                </div>
+                                <div class="file-upload-container">
+                                    <input type="file" name="business_permit" required id="id_business_permit" accept=".jpg,.jpeg,.png,.pdf">
+                                    <div class="file-upload-icon">
+                                        <span class="material-icons">upload_file</span>
+                                    </div>
+                                    <div class="file-upload-text">Drag & drop business permit or click to browse</div>
                                     <div class="file-upload-hint">Please upload a clear image of your business permit (JPG, PNG, PDF)</div>
                                 </div>
-                    <div class="form-text">{{ form.business_permit.help_text }}</div>
-                    {% if form.business_permit.errors %}
-                                <div class="invalid-feedback">
-                        {% for error in form.business_permit.errors %}
-                        {{ error }}
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-                
-                <div class="mb-4">
-                                <label class="file-upload-label">
-                                    <span class="material-icons">description</span>
-                                    Other Supporting Documents
-                    </label>
-                                <div class="file-upload-container" id="supportingDocsContainer">
-                                    <input type="file" id="{{ form.other_documents.id_for_label }}" name="{{ form.other_documents.html_name }}" accept="image/*,.pdf">
-                                    <span class="material-icons file-upload-icon">upload_file</span>
-                                    <div class="file-upload-text" id="supportingDocsText">Drag & drop supporting documents or click to browse</div>
-                                    <div class="file-upload-hint">Optional: Upload any additional supporting documents (JPG, PNG, PDF)</div>
+                                {% if form.business_permit.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.business_permit.errors }}
                                 </div>
-                    <div class="form-text">{{ form.other_documents.help_text }}</div>
-                    {% if form.other_documents.errors %}
-                                <div class="invalid-feedback">
-                        {% for error in form.other_documents.errors %}
-                        {{ error }}
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-                
-                {% if form.non_field_errors %}
-                <div class="alert alert-danger">
-                    {% for error in form.non_field_errors %}
-                    {{ error }}
-                    {% endfor %}
-                </div>
-                {% endif %}
-                
-                            <div class="d-flex justify-content-end button-group">
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Police Clearance -->
+                            <div class="mb-4">
+                                <div class="file-upload-label">
+                                    <span class="material-icons">security</span>
+                                    Police Clearance*
+                                </div>
+                                <div class="file-upload-container">
+                                    <input type="file" name="police_clearance" required id="id_police_clearance" accept=".jpg,.jpeg,.png">
+                                    <div class="file-upload-icon">
+                                        <span class="material-icons">upload_file</span>
+                                    </div>
+                                    <div class="file-upload-text">Drag & drop police clearance or click to browse</div>
+                                    <div class="file-upload-hint">Please upload a clear image of your police clearance (JPG, PNG)</div>
+                                </div>
+                                {% if form.police_clearance.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.police_clearance.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Barangay Certificate -->
+                            <div class="mb-4">
+                                <div class="file-upload-label">
+                                    <span class="material-icons">location_city</span>
+                                    Barangay Certificate*
+                                </div>
+                                <div class="file-upload-container">
+                                    <input type="file" name="barangay_certificate" required id="id_barangay_certificate" accept=".jpg,.jpeg,.png">
+                                    <div class="file-upload-icon">
+                                        <span class="material-icons">upload_file</span>
+                                    </div>
+                                    <div class="file-upload-text">Drag & drop barangay certificate or click to browse</div>
+                                    <div class="file-upload-hint">Please upload a clear image of your barangay certificate (JPG, PNG)</div>
+                                </div>
+                                {% if form.barangay_certificate.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.barangay_certificate.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Cedula (Community Tax Certificate) -->
+                            <div class="mb-4">
+                                <div class="file-upload-label">
+                                    <span class="material-icons">receipt</span>
+                                    Cedula (Community Tax Certificate)*
+                                </div>
+                                <div class="file-upload-container">
+                                    <input type="file" name="cedula" required id="id_cedula" accept=".jpg,.jpeg,.png">
+                                    <div class="file-upload-icon">
+                                        <span class="material-icons">upload_file</span>
+                                    </div>
+                                    <div class="file-upload-text">Drag & drop cedula or click to browse</div>
+                                    <div class="file-upload-hint">Please upload a clear image of your community tax certificate (JPG, PNG)</div>
+                                </div>
+                                {% if form.cedula.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.cedula.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- CENRO Tickets -->
+                            <div class="mb-4">
+                                <div class="file-upload-label">
+                                    <span class="material-icons">eco</span>
+                                    CENRO Tickets/Permits*
+                                </div>
+                                <div class="file-upload-container">
+                                    <input type="file" name="cenro_tickets" required id="id_cenro_tickets" accept=".jpg,.jpeg,.png">
+                                    <div class="file-upload-icon">
+                                        <span class="material-icons">upload_file</span>
+                                    </div>
+                                    <div class="file-upload-text">Drag & drop CENRO tickets or click to browse</div>
+                                    <div class="file-upload-hint">Please upload a clear image of your CENRO tickets/permits (JPG, PNG)</div>
+                                </div>
+                                {% if form.cenro_tickets.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.cenro_tickets.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Mayor's Permit (Optional) -->
+                            <div class="mb-4">
+                                <div class="file-upload-label">
+                                    <span class="material-icons">description</span>
+                                    Mayor's Permit (Optional)
+                                </div>
+                                <div class="file-upload-container">
+                                    <input type="file" name="mayors_permit" id="id_mayors_permit" accept=".jpg,.jpeg,.png,.pdf">
+                                    <div class="file-upload-icon">
+                                        <span class="material-icons">upload_file</span>
+                                    </div>
+                                    <div class="file-upload-text">Drag & drop mayor's permit or click to browse</div>
+                                    <div class="file-upload-hint">Please upload a clear image if available (JPG, PNG, PDF)</div>
+                                </div>
+                                {% if form.mayors_permit.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.mayors_permit.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Other Documents (Optional) -->
+                            <div class="mb-4">
+                                <div class="file-upload-label">
+                                    <span class="material-icons">description</span>
+                                    Other Supporting Documents (Optional)
+                                </div>
+                                <div class="file-upload-container">
+                                    <input type="file" name="other_documents" id="id_other_documents" accept=".jpg,.jpeg,.png,.pdf">
+                                    <div class="file-upload-icon">
+                                        <span class="material-icons">upload_file</span>
+                                    </div>
+                                    <div class="file-upload-text">Drag & drop other documents or click to browse</div>
+                                    <div class="file-upload-hint">Please upload any additional supporting documents (JPG, PNG, PDF)</div>
+                                </div>
+                                {% if form.other_documents.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.other_documents.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="d-flex justify-content-end mt-4">
                                 <a href="{% url 'user_portal:user_dashboard' %}" class="btn btn-outline-secondary me-2">
                                     <span class="material-icons">close</span>
                                     Cancel
                                 </a>
-                                <button type="submit" class="btn btn-primary" id="submitButton">
+                                <button type="submit" class="btn btn-primary">
                                     <span class="material-icons">send</span>
                                     Submit Application
-                    </button>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-            </form>
+            </div>
         </div>
-    </div>
-</div>
-        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
@@ -494,37 +619,73 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 800);
     
     // Form submission
-    const form = document.getElementById('operatorForm');
-    const submitButton = document.getElementById('submitButton');
+    const form = document.querySelector('form');
+    const submitButton = document.querySelector('button[type="submit"]');
     
-    form.addEventListener('submit', function(event) {
-        // Show loading state
-        submitButton.disabled = true;
-        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Submitting...';
-    });
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            // Show loading state
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Submitting...';
+        });
+    }
     
-    // File upload preview - Business Permit
-    const businessPermitInput = document.getElementById('{{ form.business_permit.id_for_label }}');
-    const businessPermitText = document.getElementById('businessPermitText');
+    // Function to handle file input preview text
+    function setupFileUploadPreview(inputId, defaultText) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        
+        const container = input.closest('.file-upload-container');
+        if (!container) return;
+        
+        const textElement = container.querySelector('.file-upload-text');
+        if (!textElement) return;
+        
+        input.addEventListener('change', function() {
+            if (input.files.length > 0) {
+                textElement.textContent = `Selected file: ${input.files[0].name}`;
+                container.style.borderColor = 'var(--success-color)';
+                container.style.backgroundColor = 'rgba(12, 170, 29, 0.05)';
+            } else {
+                textElement.textContent = defaultText;
+                container.style.borderColor = '';
+                container.style.backgroundColor = '';
+            }
+        });
+    }
     
-    businessPermitInput.addEventListener('change', function() {
-        if (businessPermitInput.files.length > 0) {
-            businessPermitText.textContent = `Selected file: ${businessPermitInput.files[0].name}`;
-        } else {
-            businessPermitText.textContent = 'Drag & drop business permit or click to browse';
-        }
-    });
+    // Setup file upload previews for all document inputs
+    setupFileUploadPreview('id_business_permit', 'Drag & drop business permit or click to browse');
+    setupFileUploadPreview('id_police_clearance', 'Drag & drop police clearance or click to browse');
+    setupFileUploadPreview('id_barangay_certificate', 'Drag & drop barangay certificate or click to browse');
+    setupFileUploadPreview('id_cedula', 'Drag & drop cedula or click to browse');
+    setupFileUploadPreview('id_cenro_tickets', 'Drag & drop CENRO tickets or click to browse');
+    setupFileUploadPreview('id_mayors_permit', 'Drag & drop mayor\'s permit or click to browse');
+    setupFileUploadPreview('id_other_documents', 'Drag & drop other documents or click to browse');
     
-    // File upload preview - Supporting Documents
-    const supportingDocsInput = document.getElementById('{{ form.other_documents.id_for_label }}');
-    const supportingDocsText = document.getElementById('supportingDocsText');
-    
-    supportingDocsInput.addEventListener('change', function() {
-        if (supportingDocsInput.files.length > 0) {
-            supportingDocsText.textContent = `Selected file: ${supportingDocsInput.files[0].name}`;
-        } else {
-            supportingDocsText.textContent = 'Drag & drop supporting documents or click to browse';
-        }
+    // Add visual feedback when dragging files over upload areas
+    const fileContainers = document.querySelectorAll('.file-upload-container');
+    fileContainers.forEach(container => {
+        container.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.style.borderColor = 'var(--primary-color)';
+            this.style.backgroundColor = 'var(--primary-light)';
+        });
+        
+        container.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            // Only reset if no file is selected
+            const input = this.querySelector('input[type="file"]');
+            if (!input || !input.files || input.files.length === 0) {
+                this.style.borderColor = '';
+                this.style.backgroundColor = '';
+            }
+        });
+        
+        container.addEventListener('drop', function(e) {
+            e.preventDefault();
+            // The change event on the input will handle the visual update
+        });
     });
 });
 </script>

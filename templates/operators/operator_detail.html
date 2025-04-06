@@ -67,6 +67,16 @@
                         <div class="col-md-4 text-muted">New P.D. Number:</div>
                         <div class="col-md-8">{{ operator.new_pd_number }}</div>
                     </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4 text-muted">Permit Operator Number:</div>
+                        <div class="col-md-8">
+                            {% if operator.po_number %}
+                            <span class="badge bg-primary px-3 py-2 fs-6 fw-medium">{{ operator.po_number }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary px-3 py-2">Not assigned</span>
+                            {% endif %}
+                        </div>
+                    </div>
                     <div class="row">
                         <div class="col-md-4 text-muted">Registration Date:</div>
                         <div class="col-md-8">{{ operator.created_at|date:"F j, Y" }}</div>

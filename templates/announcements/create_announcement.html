@@ -1,6 +1,10 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<!-- Add SweetAlert2 library -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+
 <div class="container-fluid py-4">
     <!-- Create Announcement Form -->
     <div class="row">
@@ -238,10 +242,68 @@
                                         Main Content <span class="text-danger">*</span>
                                         <i class="material-icons tooltip-icon" data-bs-toggle="tooltip" title="The main text of your announcement - this is required">help_outline</i>
                                     </label>
-                                    <textarea class="form-control" id="content" name="content" rows="12" required
-                                            placeholder="Write your announcement content here..."></textarea>
-                                    <div class="form-text">Provide clear and detailed information about your announcement</div>
+                                    
+                                    <!-- Rich Text Editor Toolbar -->
+                                    <div class="rich-text-toolbar border rounded-top p-2 bg-light" id="formatting-toolbar">
+                                        <div class="btn-group me-2">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" data-command="bold" title="Bold">
+                                                <span class="material-icons fs-6">format_bold</span>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" data-command="italic" title="Italic">
+                                                <span class="material-icons fs-6">format_italic</span>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" data-command="underline" title="Underline">
+                                                <span class="material-icons fs-6">format_underlined</span>
+                                            </button>
                                 </div>
+                                        
+                                        <div class="btn-group me-2">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" data-command="insertUnorderedList" title="Bullet List">
+                                                <span class="material-icons fs-6">format_list_bulleted</span>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" data-command="insertOrderedList" title="Numbered List">
+                                                <span class="material-icons fs-6">format_list_numbered</span>
+                                            </button>
+                                        </div>
+                                        
+                                        <div class="btn-group me-2">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <span class="material-icons fs-6">title</span>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="#" data-command="formatBlock" data-value="h2">Heading 1</a></li>
+                                                <li><a class="dropdown-item" href="#" data-command="formatBlock" data-value="h3">Heading 2</a></li>
+                                                <li><a class="dropdown-item" href="#" data-command="formatBlock" data-value="h4">Heading 3</a></li>
+                                                <li><a class="dropdown-item" href="#" data-command="formatBlock" data-value="p">Normal</a></li>
+                                            </ul>
+                                        </div>
+                                        
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" data-command="createLink" title="Insert Link">
+                                                <span class="material-icons fs-6">link</span>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" data-command="removeFormat" title="Clear Formatting">
+                                                <span class="material-icons fs-6">format_clear</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Rich Text Editor Content Area -->
+                                    <div class="rich-text-editor border border-top-0 rounded-bottom p-2" id="editor" contenteditable="true" style="min-height: 250px; overflow-y: auto;"></div>
+                                    
+                                    <!-- Hidden input that will hold the HTML content for form submission -->
+                                    <input type="hidden" id="content" name="content" required>
+                                    
+                                    <div class="form-text mt-2">Provide clear and detailed information about your announcement</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Conditional Fields -->
+                        <div class="conditional-fields" id="popupAcknowledgeFields">
+                            <div class="alert alert-info mb-4">
+                                <span class="material-icons me-2">info</span>
+                                <strong>Popup Announcements:</strong> When an announcement is shown as a popup, it appears over the main content of the page, ensuring users see it immediately.
                             </div>
                         </div>
 
@@ -719,11 +781,102 @@ textarea {
         font-size: 1.25rem;
     }
 }
+
+/* Rich Text Editor Styles */
+.rich-text-toolbar {
+    background-color: #f8f9fa;
+    border-bottom: none !important;
+}
+
+.rich-text-editor {
+    min-height: 150px;
+    padding: 0.75rem;
+    background-color: white;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.rich-text-editor:focus {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.1);
+}
+
+.rich-text-editor.is-invalid {
+    border-color: #dc3545 !important;
+}
+
+/* Placeholder for empty editor */
+.rich-text-editor:empty:before,
+.rich-text-editor.empty:before {
+    content: attr(data-placeholder);
+    color: #6c757d;
+    opacity: 0.7;
+}
+
+/* Formatting styles */
+.rich-text-editor h2 {
+    font-size: 1.5rem;
+    margin-bottom: 0.75rem;
+    color: #333;
+}
+
+.rich-text-editor h3 {
+    font-size: 1.3rem;
+    margin-bottom: 0.75rem;
+    color: #333;
+}
+
+.rich-text-editor h4 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.rich-text-editor p {
+    margin-bottom: 0.75rem;
+}
+
+.rich-text-editor ul, .rich-text-editor ol {
+    margin-bottom: 0.75rem;
+    padding-left: 1.5rem;
+}
+
+.rich-text-editor a {
+    color: var(--primary-color);
+    text-decoration: underline;
+}
+
+/* Fix for Firefox contenteditable */
+.rich-text-editor br {
+    display: block;
+    content: "";
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+}
+
+.dropdown-item[data-command="formatBlock"][data-value="h2"] {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.dropdown-item[data-command="formatBlock"][data-value="h3"] {
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+
+.dropdown-item[data-command="formatBlock"][data-value="h4"] {
+    font-size: 1.05rem;
+    font-weight: 600;
+}
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize tooltips
+    // Initialize tooltips and other existing functionality first
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl)
@@ -778,10 +931,104 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    /* Rich Text Editor Functionality */
+    
+    // Set up rich text editor
+    const editor = document.getElementById('editor');
+    const toolbar = document.getElementById('formatting-toolbar');
+    const contentTextarea = document.getElementById('content');
+    
+    // If there's already content in the textarea (e.g., when editing), load it into the editor
+    if (contentTextarea.value) {
+        editor.innerHTML = contentTextarea.value;
+    } else {
+        // Initialize with a paragraph tag if empty
+        editor.innerHTML = '<p><br></p>';
+    }
+    
+    // Add placeholder behavior
+    editor.dataset.placeholder = 'Write your announcement content here...';
+    if (editor.innerHTML === '<p><br></p>' || editor.innerHTML === '') {
+        editor.classList.add('empty');
+    }
+    
+    // Execute command when a toolbar button is clicked
+    toolbar.addEventListener('click', function(e) {
+        const target = e.target.closest('button, a');
+        if (!target) return;
+        
+            e.preventDefault();
+            
+        const command = target.dataset.command;
+        if (!command) return;
+        
+        if (command === 'createLink') {
+            const url = prompt('Enter the URL:');
+            if (url) {
+                document.execCommand(command, false, url);
+            }
+        } else if (command === 'formatBlock') {
+            document.execCommand(command, false, target.dataset.value);
+        } else {
+            document.execCommand(command, false, null);
+        }
+        
+        // Focus back on the editor
+        editor.focus();
+    });
+    
+    // Prevent default action when pressing Enter in a heading
+    editor.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            const selection = window.getSelection();
+            const range = selection.getRangeAt(0);
+            const startNode = range.startContainer;
+            
+            // Check if we're in a heading element
+            const headingParent = startNode.parentElement.closest('h1, h2, h3, h4, h5, h6');
+            if (headingParent) {
+                // Insert a paragraph after the heading
+                e.preventDefault();
+                const paragraph = document.createElement('p');
+                paragraph.innerHTML = '<br>';
+                headingParent.parentNode.insertBefore(paragraph, headingParent.nextSibling);
+                
+                // Move cursor to the new paragraph
+                const newRange = document.createRange();
+                newRange.setStart(paragraph, 0);
+                newRange.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(newRange);
+            }
+        }
+    });
+    
+    // Track when the editor changes
+    editor.addEventListener('input', function() {
+        // Clear invalid state when user starts typing
+        editor.classList.remove('is-invalid');
+        
+        // If empty, add the placeholder styling
+        if (editor.innerHTML.trim() === '' || editor.innerHTML === '<br>') {
+            editor.classList.add('empty');
+        } else {
+            editor.classList.remove('empty');
+        }
+    });
+    
+    // Handle pasting to strip unwanted formatting
+    editor.addEventListener('paste', function(e) {
+        e.preventDefault();
+        const text = e.clipboardData.getData('text/plain');
+        document.execCommand('insertText', false, text);
+    });
+    
     // Form submission with validation
     document.getElementById('announcementForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
         const title = document.getElementById('title').value.trim();
-        const content = document.getElementById('content').value.trim();
+        const editorContent = document.getElementById('editor').innerHTML.trim();
         let isValid = true;
         
         if (!title) {
@@ -789,36 +1036,22 @@ document.addEventListener('DOMContentLoaded', function() {
             isValid = false;
         }
         
-        if (!content) {
-            document.getElementById('content').classList.add('is-invalid');
+        // Transfer the HTML content from the editor to the hidden textarea
+        contentTextarea.value = editorContent;
+        
+        if (!editorContent || editorContent === '<br>' || editorContent === '<p></p>') {
+            editor.classList.add('is-invalid');
             isValid = false;
         }
         
         if (!isValid) {
-            e.preventDefault();
-            
-            // Show validation error message
-            const errorToast = document.createElement('div');
-            errorToast.className = 'toast-notification error';
-            errorToast.innerHTML = `
-                <div class="toast-icon">
-                    <span class="material-icons">error</span>
-                </div>
-                <div class="toast-content">
-                    <h6>Form Validation Error</h6>
-                    <p>Please fill in all required fields.</p>
-                </div>
-                <button class="toast-close">&times;</button>
-            `;
-            document.body.appendChild(errorToast);
-            
-            // Remove toast after 5 seconds
-            setTimeout(() => {
-                errorToast.classList.add('hide');
-                setTimeout(() => {
-                    errorToast.remove();
-                }, 300);
-            }, 5000);
+            // Show validation error with SweetAlert
+            Swal.fire({
+                icon: 'error',
+                title: 'Form Validation Error',
+                text: 'Please fill in all required fields.',
+                confirmButtonText: 'OK'
+            });
             
             // Focus first invalid input
             document.querySelector('.is-invalid').focus();
@@ -826,125 +1059,43 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
         }
         
-        // Show loading state
-        const submitBtn = this.querySelector('button[type="submit"]');
-        const originalText = submitBtn.innerHTML;
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span><span>Processing...</span>';
-        
-        return true;
+        // Show loading state with SweetAlert
+        Swal.fire({
+            title: 'Publishing Announcement...',
+            text: 'Please wait while we process your submission',
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+                
+                // Submit the form
+                this.submit();
+            }
+        });
     });
     
     // Show conditional fields based on selections
-    document.getElementById('is_popup').addEventListener('change', function() {
-        const requireAcknowledgment = document.getElementById('requires_acknowledgment');
+    const isPopupCheckbox = document.getElementById('is_popup');
+    const requireAcknowledgment = document.getElementById('requires_acknowledgment');
+    const popupAcknowledgeFields = document.getElementById('popupAcknowledgeFields');
+    
+    isPopupCheckbox.addEventListener('change', function() {
         if (this.checked) {
+            // If popup is enabled, show the conditional fields and enable acknowledgment option
+            popupAcknowledgeFields.style.display = 'block';
+            requireAcknowledgment.disabled = false;
             requireAcknowledgment.parentElement.parentElement.classList.remove('opacity-50');
         } else {
+            // If popup is disabled, hide the conditional fields and disable acknowledgment
+            popupAcknowledgeFields.style.display = 'none';
             requireAcknowledgment.checked = false;
+            requireAcknowledgment.disabled = true;
             requireAcknowledgment.parentElement.parentElement.classList.add('opacity-50');
         }
     });
     
-    // Initialize conditional fields
-    document.getElementById('is_popup').dispatchEvent(new Event('change'));
+    // Initialize conditional fields state
+    isPopupCheckbox.dispatchEvent(new Event('change'));
 });
 </script>
-
-<style>
-/* Toast notification styling */
-.toast-notification {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    display: flex;
-    align-items: flex-start;
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    padding: 12px 16px;
-    z-index: 9999;
-    max-width: 350px;
-    animation: slide-in 0.3s ease forwards;
-}
-
-.toast-notification.error {
-    border-left: 4px solid var(--danger);
-}
-
-.toast-notification.success {
-    border-left: 4px solid var(--success);
-}
-
-.toast-icon {
-    margin-right: 12px;
-}
-
-.toast-icon .material-icons {
-    font-size: 24px;
-    color: var(--danger);
-}
-
-.toast-notification.success .toast-icon .material-icons {
-    color: var(--success);
-}
-
-.toast-content {
-    flex: 1;
-}
-
-.toast-content h6 {
-    margin: 0 0 4px 0;
-    font-size: 0.95rem;
-    font-weight: 600;
-}
-
-.toast-content p {
-    margin: 0;
-    font-size: 0.85rem;
-    color: var(--text-muted);
-}
-
-.toast-close {
-    background: none;
-    border: none;
-    font-size: 18px;
-    color: var(--text-muted);
-    cursor: pointer;
-    padding: 0 0 0 12px;
-}
-
-.toast-notification.hide {
-    animation: slide-out 0.3s ease forwards;
-}
-
-@keyframes slide-in {
-    0% {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    100% {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-@keyframes slide-out {
-    0% {
-        transform: translateX(0);
-        opacity: 1;
-    }
-    100% {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-}
-
-/* Spinner styling */
-.spinner-border {
-    width: 1em;
-    height: 1em;
-    border-width: 0.2em;
-}
-</style>
 {% endblock %} 

@@ -1,0 +1,101 @@
+<div class="p-4 bg-white">
+    <form id="status-update-form">
+        {% csrf_token %}
+        <!-- Status Select -->
+        <div class="mb-4">
+            <label for="status" class="form-label fw-medium">Update Report Status</label>
+            <select class="form-select form-select-lg mb-3" id="status" name="status" required>
+                {% for status_code, status_name in status_choices %}
+                <option value="{{ status_code }}" {% if report.status == status_code %}selected{% endif %}>
+                    {{ status_name }}
+                </option>
+                {% endfor %}
+            </select>
+            
+            <!-- Status Indicators -->
+            <div class="d-flex flex-wrap gap-2 mt-2">
+                <div class="d-flex align-items-center px-3 py-2 rounded-3 bg-light">
+                    <span class="material-icons text-warning me-2">schedule</span>
+                    <span class="fw-medium">Pending</span>
+                </div>
+                <div class="d-flex align-items-center px-3 py-2 rounded-3 bg-light">
+                    <span class="material-icons text-primary me-2">sync</span>
+                    <span class="fw-medium">In Progress</span>
+                </div>
+                <div class="d-flex align-items-center px-3 py-2 rounded-3 bg-light">
+                    <span class="material-icons text-success me-2">check_circle</span>
+                    <span class="fw-medium">Resolved</span>
+                </div>
+                <div class="d-flex align-items-center px-3 py-2 rounded-3 bg-light">
+                    <span class="material-icons text-secondary me-2">cancel</span>
+                    <span class="fw-medium">Closed</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Resolution Notes -->
+        <div class="mb-4">
+            <label for="notes" class="form-label fw-medium">Resolution Notes</label>
+            <textarea class="form-control" id="notes" name="notes" rows="5" 
+                      placeholder="Add any notes or resolution details to be shared with the user...">{{ report.resolution_notes }}</textarea>
+            <div class="form-text mt-2">
+                These notes will be visible to the user and will help explain the status change.
+            </div>
+        </div>
+        
+        <!-- Notification Alert -->
+        <div class="alert alert-info d-flex align-items-start p-3 rounded-3 border-start border-info border-4">
+            <span class="material-icons fs-4 me-3 mt-1">notifications_active</span>
+            <div>
+                <h6 class="fw-bold mb-1">User Notification</h6>
+                <p class="mb-0">The user will be automatically notified via email and the system's notification feature when you update this report's status.</p>
+            </div>
+        </div>
+        
+        <!-- Current Report Info -->
+        <div class="card bg-light border-0 rounded-3 mt-4">
+            <div class="card-body">
+                <h6 class="fw-bold mb-3 d-flex align-items-center">
+                    <span class="material-icons me-2">info</span>
+                    Current Report Information
+                </h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="text-muted small">Report ID</label>
+                            <p class="mb-0 fw-medium">#{{ report.id }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="text-muted small">Current Status</label>
+                            <div class="d-flex align-items-center">
+                                <span class="material-icons me-2 {% if report.status == 'PENDING' %}text-warning
+                                       {% elif report.status == 'IN_PROGRESS' %}text-primary
+                                       {% elif report.status == 'RESOLVED' %}text-success
+                                       {% elif report.status == 'CLOSED' %}text-secondary
+                                       {% endif %}">
+                                    {% if report.status == 'PENDING' %}schedule
+                                    {% elif report.status == 'IN_PROGRESS' %}sync
+                                    {% elif report.status == 'RESOLVED' %}check_circle
+                                    {% elif report.status == 'CLOSED' %}cancel
+                                    {% endif %}
+                                </span>
+                                <span class="{% if report.status == 'PENDING' %}text-warning
+                                       {% elif report.status == 'IN_PROGRESS' %}text-primary
+                                       {% elif report.status == 'RESOLVED' %}text-success
+                                       {% elif report.status == 'CLOSED' %}text-secondary
+                                       {% endif %} fw-medium">
+                                    {{ report.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Hidden fields -->
+        <input type="hidden" name="report_id" value="{{ report.id }}">
+    </form>
+</div> 

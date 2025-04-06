@@ -1,0 +1,97 @@
+<div class="p-4 bg-white">
+    <form id="dispute-form">
+        {% csrf_token %}
+        <!-- Alert section -->
+        <div class="alert alert-warning d-flex align-items-start p-3 rounded-3 border-start border-warning border-4">
+            <span class="material-icons fs-4 me-3 mt-1">warning</span>
+            <div>
+                <h6 class="fw-bold mb-1">Important</h6>
+                <p class="mb-0">Disputing a report should only be done when the report violates terms of service or contains 
+                inappropriate content. This action cannot be undone and will be reviewed by administrators.</p>
+            </div>
+        </div>
+        
+        <!-- Dispute Reason -->
+        <div class="mb-4 mt-4">
+            <label for="reason" class="form-label fw-medium">Dispute Reason</label>
+            <textarea class="form-control" id="reason" name="reason" rows="4" required
+                      placeholder="Explain why this report is being disputed..."></textarea>
+            <div class="form-text mt-2">
+                Provide a clear explanation of why this report is being disputed. This information will be reviewed by administrators.
+            </div>
+        </div>
+        
+        <!-- Report Summary -->
+        <div class="card bg-light border-0 rounded-3 mt-4">
+            <div class="card-body">
+                <h6 class="fw-bold mb-3 d-flex align-items-center">
+                    <span class="material-icons me-2">description</span>
+                    Report Summary
+                </h6>
+                
+                <div class="mb-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="material-icons me-2 text-muted">subject</span>
+                        <label class="text-muted small mb-0">Subject</label>
+                    </div>
+                    <p class="mb-0 fw-medium">{{ report.subject }}</p>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="material-icons me-2 text-muted">category</span>
+                        <label class="text-muted small mb-0">Type</label>
+                    </div>
+                    <div>
+                        <span class="badge rounded-pill 
+                            {% if report.report_type == 'COMPLAINT' %}bg-danger
+                            {% elif report.report_type == 'SUGGESTION' %}bg-info
+                            {% elif report.report_type == 'INQUIRY' %}bg-primary
+                            {% elif report.report_type == 'DISPUTE' %}bg-warning
+                            {% else %}bg-secondary{% endif %} px-3 py-2 fw-normal">
+                            <span class="material-icons align-middle me-1" style="font-size:16px">
+                                {% if report.report_type == 'COMPLAINT' %}error
+                                {% elif report.report_type == 'SUGGESTION' %}lightbulb
+                                {% elif report.report_type == 'INQUIRY' %}help
+                                {% elif report.report_type == 'DISPUTE' %}gavel
+                                {% else %}label{% endif %}
+                            </span>
+                            {{ report.get_report_type_display }}
+                        </span>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="material-icons me-2 text-muted">description</span>
+                        <label class="text-muted small mb-0">Description</label>
+                    </div>
+                    <div class="position-relative">
+                        <p class="mb-0">{{ report.description|truncatechars:200 }}</p>
+                        {% if report.description|length > 200 %}
+                        <span class="badge bg-secondary position-absolute" style="right:0; bottom:0">Text truncated</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Hidden fields -->
+        <input type="hidden" name="report_id" value="{{ report.id }}">
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const showFullButton = document.getElementById('show-full-description');
+    const fullDescription = document.getElementById('full-description');
+    
+    if (showFullButton && fullDescription) {
+        showFullButton.addEventListener('click', function() {
+            fullDescription.classList.toggle('d-none');
+            showFullButton.textContent = fullDescription.classList.contains('d-none') ? 
+                'View Full Description' : 'Hide Full Description';
+        });
+    }
+});
+</script> 

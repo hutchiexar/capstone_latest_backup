@@ -1,5 +1,8 @@
 {% extends 'base.html' %}
 
+<!-- Add MicroModal.js with defer to ensure it loads completely -->
+<script src="https://unpkg.com/micromodal/dist/micromodal.min.js" defer></script>
+
 {% block content %}
 <div class="container-fluid py-4">
     <!-- Header Section -->
@@ -64,7 +67,7 @@
                         </td>
                         <td>{{ violation.receipt_date|date:"M d, Y" }}</td>
                         <td>
-                            <a href="#" onclick="showViolationDetail('{{ violation.id }}')" class="text-decoration-none text-dark">
+                            <a href="#" class="text-decoration-none text-dark violation-detail-link" data-violation-id="{{ violation.id }}">
                                 #{{ violation.id }}
                             </a>
                         </td>
@@ -81,18 +84,12 @@
                         <td class="text-end">
                             <div class="action-buttons">
                                 <button type="button" 
-                                        class="btn btn-action btn-view" 
-                                        data-bs-toggle="tooltip" 
-                                        data-bs-placement="top" 
-                                        title="View Details"
-                                        onclick="showViolationDetail({{ violation.id }})">
+                                        class="btn btn-action btn-view violation-detail-btn" 
+                                        data-violation-id="{{ violation.id }}">
                                     <i class="fas fa-eye"></i>
                                 </button>
                                 <a href="{% url 'print_receipt' violation.id %}" 
                                    class="btn btn-action btn-print"
-                                   data-bs-toggle="tooltip"
-                                   data-bs-placement="top"
-                                   title="Print Receipt"
                                    target="_blank">
                                     <i class="fas fa-print"></i>
                                 </a>
@@ -122,18 +119,32 @@
     </div>
 </div>
 
-<!-- Violation Detail Modal -->
-<div class="modal fade" id="violationDetailModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">
-                    <i class="material-icons align-middle me-2" style="font-size: 1.3rem;">receipt_long</i>
+<!-- Violation Detail Modal (MicroModal) -->
+<div class="modal micromodal-slide" id="modal-violation-detail" aria-hidden="true">
+    <div class="modal__overlay" tabindex="-1" data-micromodal-close>
+        <div class="modal__container modal-lg" role="dialog" aria-modal="true" aria-labelledby="modal-violation-detail-title">
+            <header class="modal__header bg-primary text-white">
+                <h5 class="modal__title" id="modal-violation-detail-title">
+                    <span class="material-icons me-2">receipt_long</span>
                     Violation Details
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button class="modal__close" aria-label="Close modal" data-micromodal-close></button>
+            </header>
+            <div class="modal__content" id="modal-violation-detail-content">
+                <!-- Content will be loaded via AJAX -->
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="mt-3">Loading violation details...</div>
+                </div>
             </div>
-            <div class="modal-body"></div>
+            <footer class="modal__footer">
+                <button class="btn btn-primary" data-micromodal-close>
+                    <span class="material-icons me-1 align-middle" style="font-size: 18px;">close</span>
+                    Close
+                </button>
+            </footer>
         </div>
     </div>
 </div>
@@ -350,59 +361,336 @@
 .table-responsive::-webkit-scrollbar-thumb:hover {
     background: #999;
 }
+
+/* MicroModal Styles */
+.modal__overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.modal__container {
+  background-color: #fff;
+  padding: 0;
+  max-width: 90%;
+  width: 900px;
+  max-height: 90vh;
+  border-radius: 12px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2),
+    0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.modal-lg {
+  max-width: 90%;
+  width: 900px;
+}
+
+.modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+}
+
+.modal__title {
+  margin-top: 0;
+  margin-bottom: 0;
+  font-weight: 600;
+  font-size: 1.25rem;
+  line-height: 1.25;
+  color: white;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+}
+
+.modal__close {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  position: relative;
+  width: 32px;
+  height: 32px;
+  transition: all 0.2s ease;
+  border-radius: 50%;
+}
+
+.modal__close:hover {
+  background-color: rgba(255,255,255,0.1);
+}
+
+.modal__close:before,
+.modal__close:after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 18px;
+  background-color: white;
+  top: 7px;
+  left: 15px;
+}
+
+.modal__close:before {
+  transform: rotate(45deg);
+}
+
+.modal__close:after {
+  transform: rotate(-45deg);
+}
+
+.modal__content {
+  padding: 0;
+  line-height: 1.5;
+  color: rgba(0, 0, 0, 0.8);
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid #eaeaea;
+  background-color: #f8f9fa;
+}
+
+.micromodal-slide {
+  display: none;
+}
+
+.micromodal-slide.is-open {
+  display: block;
+}
+
+.micromodal-slide[aria-hidden="false"] .modal__overlay {
+  animation: mmfadeIn .35s cubic-bezier(0, 0, .2, 1);
+}
+
+.micromodal-slide[aria-hidden="false"] .modal__container {
+  animation: mmslideIn .35s cubic-bezier(0, 0, .2, 1);
+}
+
+.micromodal-slide[aria-hidden="true"] .modal__overlay {
+  animation: mmfadeOut .35s cubic-bezier(0, 0, .2, 1);
+}
+
+.micromodal-slide[aria-hidden="true"] .modal__container {
+  animation: mmslideOut .35s cubic-bezier(0, 0, .2, 1);
+}
+
+.micromodal-slide .modal__container,
+.micromodal-slide .modal__overlay {
+  will-change: transform;
+}
+
+@keyframes mmfadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes mmfadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes mmslideIn {
+  from { transform: translateY(15%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes mmslideOut {
+  from { transform: translateY(0); }
+  to { transform: translateY(-10%); }
+}
 </style>
 
 <script>
-// Initialize DataTable
-$(document).ready(function() {
-    const table = $('#paymentsTable').DataTable({
-        pageLength: 10,
-        order: [[1, "desc"]],
-        dom: 'rt<"bottom d-flex justify-content-between align-items-center pt-3"ip>',
-        responsive: true,
-        language: {
-            search: "",
-            searchPlaceholder: "Search records...",
-            zeroRecords: "No matching records found",
-            info: "Showing _START_ to _END_ of _TOTAL_ records",
-            infoEmpty: "No records available",
-            infoFiltered: "(filtered from _MAX_ total records)"
+// Initialize MicroModal when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, setting up MicroModal...');
+    
+    // Initialize MicroModal with specific options for closing
+    try {
+        if (typeof MicroModal !== 'undefined') {
+            console.log('MicroModal is defined, initializing...');
+            MicroModal.init({
+                openTrigger: 'data-micromodal-trigger',
+                closeTrigger: 'data-micromodal-close',
+                disableScroll: true,
+                disableFocus: false,
+                awaitOpenAnimation: true,
+                awaitCloseAnimation: true,
+                debugMode: true,
+                onShow: modal => console.log(`Modal ${modal.id} is shown`),
+                onClose: modal => console.log(`Modal ${modal.id} is hidden`)
+            });
+            
+            // Add manual close handler for all close buttons
+            document.querySelectorAll('[data-micromodal-close]').forEach(element => {
+                console.log('Adding close handler to:', element);
+                element.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const modalId = this.closest('.modal').id;
+                    console.log(`Manual close requested for ${modalId}`);
+                    MicroModal.close(modalId);
+                });
+            });
+            
+            // Add global keyboard event listener for ESC key
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    console.log('ESC key detected, closing any open modals');
+                    const openModals = document.querySelectorAll('.modal.is-open');
+                    openModals.forEach(modal => {
+                        MicroModal.close(modal.id);
+                    });
+                }
+            });
+            
+            console.log('MicroModal initialization complete');
+        } else {
+            console.error('MicroModal is not loaded! Falling back to standard functionality.');
         }
+    } catch (error) {
+        console.error('Error initializing MicroModal:', error);
+    }
+    
+    // Add click event listeners for violation detail buttons and links
+    document.querySelectorAll('.violation-detail-btn, .violation-detail-link').forEach(element => {
+        element.addEventListener('click', function(e) {
+            e.preventDefault();
+            const violationId = this.getAttribute('data-violation-id');
+            showViolationDetail(violationId);
+        });
     });
 
-    // Custom search functionality
-    $('#searchInput').on('keyup', function() {
-        table.search($(this).val()).draw();
-    });
+    // Add a manual close button event for the modal
+    const closeModalBtn = document.querySelector('#modal-violation-detail .btn[data-micromodal-close]');
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', function() {
+            closeViolationModal();
+        });
+    }
+
+    // Initialize DataTable
+    if(typeof $.fn.DataTable !== 'undefined') {
+        const table = $('#paymentsTable').DataTable({
+            pageLength: 10,
+            order: [[1, "desc"]],
+            dom: 'rt<"bottom d-flex justify-content-between align-items-center pt-3"ip>',
+            responsive: true,
+            language: {
+                search: "",
+                searchPlaceholder: "Search records...",
+                zeroRecords: "No matching records found",
+                info: "Showing _START_ to _END_ of _TOTAL_ records",
+                infoEmpty: "No records available",
+                infoFiltered: "(filtered from _MAX_ total records)"
+            }
+        });
+
+        // Custom search functionality
+        $('#searchInput').on('keyup', function() {
+            table.search($(this).val()).draw();
+        });
+    }
 });
 
+// Helper function to close the modal
+function closeViolationModal() {
+    console.log('Closing violation modal manually');
+    if (typeof MicroModal !== 'undefined') {
+        MicroModal.close('modal-violation-detail');
+    } else {
+        // Fallback
+        const modal = document.getElementById('modal-violation-detail');
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+}
+
 function showViolationDetail(violationId) {
-    const modalBody = document.querySelector('#violationDetailModal .modal-body');
-    const modal = new bootstrap.Modal(document.getElementById('violationDetailModal'));
+    console.log('Loading violation details for ID:', violationId);
     
-    modalBody.innerHTML = `
+    const modalContent = document.getElementById('modal-violation-detail-content');
+    modalContent.innerHTML = `
         <div class="text-center py-5">
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
+            <div class="mt-3">Loading details for violation #${violationId}...</div>
         </div>
     `;
     
-    modal.show();
-
-    fetch(`/violation/${violationId}/modal/`)
-        .then(response => response.text())
-        .then(html => {
-            modalBody.innerHTML = html;
-        })
-        .catch(error => {
-            modalBody.innerHTML = `
-                <div class="alert alert-danger">
-                    <i class="material-icons me-2">error</i>
-                    Error loading violation details: ${error.message}
-                </div>
-            `;
+    // Open the modal safely with MicroModal
+    if (typeof MicroModal !== 'undefined') {
+        console.log('Opening modal with MicroModal');
+        MicroModal.show('modal-violation-detail');
+    } else {
+        // Fallback if MicroModal isn't available
+        console.warn('MicroModal not available, using fallback');
+        const modal = document.getElementById('modal-violation-detail');
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+    }
+    
+    // Add a timestamp to prevent caching
+    const timestamp = new Date().getTime();
+    const url = `/violation/${violationId}/modal/?t=${timestamp}`;
+    
+    console.log('Fetching URL:', url);
+    
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'Cache-Control': 'no-cache',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        }
+        return response.text();
+    })
+    .then(html => {
+        console.log('Response received, length:', html.length);
+        modalContent.innerHTML = html;
+        
+        // Reinitialize close buttons within the loaded content
+        const closeButtons = modalContent.querySelectorAll('[data-micromodal-close]');
+        closeButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                closeViolationModal();
+            });
         });
+    })
+    .catch(error => {
+        console.error('Error fetching violation details:', error);
+        modalContent.innerHTML = `
+            <div class="alert alert-danger m-3">
+                <span class="material-icons me-2">error_outline</span>
+                <div>Error loading violation details: ${error.message}</div>
+                <div class="mt-2">Requested Violation ID: ${violationId}</div>
+                <div class="mt-3">
+                    <button class="btn btn-outline-secondary" onclick="closeViolationModal()">
+                        <span class="material-icons me-1">close</span> Close
+                    </button>
+                </div>
+            </div>
+        `;
+    });
 }
 
 function printReceipt(violationId) {

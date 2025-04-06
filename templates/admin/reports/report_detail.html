@@ -1,0 +1,410 @@
+{% extends 'admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}Report #{{ report.id }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Breadcrumb -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'admin_report_list' %}">Reports</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Report #{{ report.id }}</li>
+                </ol>
+            </nav>
+            <h1 class="h3 mb-0 text-gray-800">Report Details</h1>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'admin_report_list' %}" class="btn btn-outline-secondary d-inline-flex align-items-center">
+                <span class="material-icons me-1">arrow_back</span> Back to Reports
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Report Details -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex align-items-center">
+                    <span class="material-icons text-primary me-2">description</span>
+                    <h6 class="m-0 font-weight-bold">Report Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-1">{{ report.subject }}</h5>
+                            <span class="badge rounded-pill {% if report.type == 'COMPLAINT' %}text-bg-danger
+                                   {% elif report.type == 'SUGGESTION' %}text-bg-info
+                                   {% elif report.type == 'INQUIRY' %}text-bg-primary
+                                   {% elif report.type == 'DISPUTE' %}text-bg-warning
+                                   {% endif %}">
+                                {{ report.get_type_display }}
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center text-muted small mb-3">
+                            <span class="me-2">
+                                <span class="material-icons" style="font-size: 1rem;">person</span>
+                                {{ report.user.get_full_name }}
+                            </span>
+                            <span class="me-2">•</span>
+                            <span>
+                                <span class="material-icons" style="font-size: 1rem;">calendar_today</span>
+                                {{ report.created_at|date:"M d, Y H:i" }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-2">Description</h6>
+                        <div class="p-3 bg-light rounded">
+                            <p class="mb-0">{{ report.description|linebreaks }}</p>
+                        </div>
+                    </div>
+
+                    {% if report.location %}
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-2">Location</h6>
+                        <div class="p-3 bg-light rounded">
+                            <p class="mb-0">{{ report.location }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if report.incident_date %}
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-2">Incident Date</h6>
+                        <div class="p-3 bg-light rounded">
+                            <p class="mb-0">{{ report.incident_date|date:"M d, Y H:i" }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if report.attachment %}
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-2">Attachment</h6>
+                        <div class="p-3 bg-light rounded d-flex align-items-center">
+                            <span class="material-icons me-2">attach_file</span>
+                            <a href="{{ report.attachment.url }}" target="_blank" download>Download Attachment</a>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if report.resolved_at %}
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-2">Resolution Details</h6>
+                        <div class="p-3 bg-light rounded">
+                            <div class="mb-2">
+                                <strong>Resolved at:</strong> {{ report.resolved_at|date:"M d, Y H:i" }}
+                            </div>
+                            {% if report.resolution_notes %}
+                            <div>
+                                <strong>Notes:</strong>
+                                <p class="mb-0">{{ report.resolution_notes|linebreaks }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar with Status and Actions -->
+        <div class="col-lg-4">
+            <!-- Status Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex align-items-center">
+                    <span class="material-icons text-primary me-2">info</span>
+                    <h6 class="m-0 font-weight-bold">Status</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <span class="badge rounded-pill {% if report.status == 'PENDING' %}text-bg-warning
+                                   {% elif report.status == 'IN_PROGRESS' %}text-bg-primary
+                                   {% elif report.status == 'RESOLVED' %}text-bg-success
+                                   {% elif report.status == 'CLOSED' %}text-bg-secondary
+                                   {% endif %} me-2" style="font-size: 1rem; padding: 8px 12px;">
+                                {{ report.get_status_display }}
+                            </span>
+                        </div>
+
+                        {% if report.assigned_to %}
+                        <div class="mb-3">
+                            <span class="text-muted">Assigned to:</span>
+                            <div class="d-flex align-items-center mt-1">
+                                <span class="material-icons me-1">person</span>
+                                {{ report.assigned_to.get_full_name }}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div>
+                            <span class="text-muted">Last updated:</span>
+                            <div class="d-flex align-items-center mt-1">
+                                <span class="material-icons me-1">update</span>
+                                {{ report.updated_at|date:"M d, Y H:i" }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-primary d-flex align-items-center justify-content-center" 
+                                data-micromodal-trigger="modal-update-status">
+                            <span class="material-icons me-1">update</span> Update Status
+                        </button>
+                        
+                        {% if report.status == 'PENDING' or report.status == 'IN_PROGRESS' %}
+                        <button type="button" class="btn btn-danger d-flex align-items-center justify-content-center" 
+                                data-micromodal-trigger="modal-dispute-report">
+                            <span class="material-icons me-1">gavel</span> Dispute Report
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Information Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex align-items-center">
+                    <span class="material-icons text-primary me-2">person</span>
+                    <h6 class="m-0 font-weight-bold">Reported By</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-column">
+                        <h6 class="mb-1">{{ report.user.get_full_name }}</h6>
+                        <a href="mailto:{{ report.user.email }}" class="text-primary mb-2">{{ report.user.email }}</a>
+                        
+                        <div class="d-flex align-items-center text-muted small mb-2">
+                            <span class="material-icons me-1" style="font-size: 1rem;">event</span>
+                            <span>Member since: {{ report.user.date_joined|date:"M d, Y" }}</span>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <a href="{% url 'user_detail' report.user.id %}" class="btn btn-sm btn-outline-primary">
+                                View User Profile
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status Update Modal -->
+<div class="modal micromodal-slide" id="modal-update-status" aria-hidden="true">
+    <div class="modal-overlay" tabindex="-1" data-micromodal-close>
+        <div class="modal-container" role="dialog" aria-modal="true" aria-labelledby="modal-update-status-title">
+            <header class="modal-header">
+                <h2 class="modal-title" id="modal-update-status-title">
+                    Update Report Status
+                </h2>
+                <button class="modal-close" aria-label="Close modal" data-micromodal-close></button>
+            </header>
+            <main class="modal-content" id="modal-update-status-content">
+                {% include 'admin/reports/report_status_modal.html' %}
+            </main>
+            <footer class="modal-footer">
+                <button class="btn btn-secondary" data-micromodal-close aria-label="Close this dialog window">Cancel</button>
+                <button class="btn btn-primary" id="update-status-submit" data-report-id="{{ report.id }}">Update Status</button>
+            </footer>
+        </div>
+    </div>
+</div>
+
+<!-- Dispute Report Modal -->
+<div class="modal micromodal-slide" id="modal-dispute-report" aria-hidden="true">
+    <div class="modal-overlay" tabindex="-1" data-micromodal-close>
+        <div class="modal-container" role="dialog" aria-modal="true" aria-labelledby="modal-dispute-report-title">
+            <header class="modal-header">
+                <h2 class="modal-title" id="modal-dispute-report-title">
+                    Dispute Report
+                </h2>
+                <button class="modal-close" aria-label="Close modal" data-micromodal-close></button>
+            </header>
+            <main class="modal-content" id="modal-dispute-report-content">
+                {% include 'admin/reports/report_dispute_modal.html' %}
+            </main>
+            <footer class="modal-footer">
+                <button class="btn btn-secondary" data-micromodal-close aria-label="Close this dialog window">Cancel</button>
+                <button class="btn btn-danger" id="dispute-report-submit" data-report-id="{{ report.id }}">Dispute Report</button>
+            </footer>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/micromodal/dist/micromodal.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Micromodal
+        MicroModal.init({
+            onShow: modal => console.info(`${modal.id} is shown`),
+            onClose: modal => console.info(`${modal.id} is hidden`),
+            openTrigger: 'data-micromodal-trigger',
+            closeTrigger: 'data-micromodal-close',
+            disableFocus: false,
+            disableScroll: true,
+            awaitOpenAnimation: false,
+            awaitCloseAnimation: false
+        });
+
+        // Handle update status form submission
+        document.getElementById('update-status-submit').addEventListener('click', function() {
+            const reportId = this.dataset.reportId;
+            const form = document.getElementById('status-update-form');
+            
+            if (!form) {
+                console.error('Status update form not found');
+                return;
+            }
+            
+            const formData = new FormData(form);
+            
+            // Confirm before updating status
+            SwalAlert.fire({
+                title: 'Confirm Status Update',
+                text: 'Are you sure you want to update the status of this report?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, update it',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Submit the form via AJAX
+                    fetch(`/management/reports/${reportId}/update-status/`, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            // Close the modal
+                            MicroModal.close('modal-update-status');
+                            
+                            // Show success toast
+                            SwalAlert.fire({
+                                icon: 'success',
+                                title: 'Success',
+                                text: data.message,
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 3000
+                            }).then(() => {
+                                // Reload the page to reflect the changes
+                                window.location.reload();
+                            });
+                        } else {
+                            throw new Error(data.message || 'Failed to update status');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        
+                        // Show error toast
+                        SwalAlert.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: error.message || 'Failed to update status. Please try again.',
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 3000
+                        });
+                    });
+                }
+            });
+        });
+
+        // Handle dispute form submission
+        document.getElementById('dispute-report-submit').addEventListener('click', function() {
+            const reportId = this.dataset.reportId;
+            const form = document.getElementById('dispute-form');
+            
+            if (!form) {
+                console.error('Dispute form not found');
+                return;
+            }
+            
+            const formData = new FormData(form);
+            
+            // Confirm before disputing
+            SwalAlert.fire({
+                title: 'Confirm Dispute',
+                text: 'Are you sure you want to dispute this report?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, dispute it',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Submit the form via AJAX
+                    fetch(`/management/reports/${reportId}/dispute/`, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            // Close the modal
+                            MicroModal.close('modal-dispute-report');
+                            
+                            // Show success toast
+                            SwalAlert.fire({
+                                icon: 'success',
+                                title: 'Success',
+                                text: data.message,
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 3000
+                            }).then(() => {
+                                // Reload the page to reflect the changes
+                                window.location.reload();
+                            });
+                        } else {
+                            throw new Error(data.message || 'Failed to dispute report');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        
+                        // Show error toast
+                        SwalAlert.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: error.message || 'Failed to dispute report. Please try again.',
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 3000
+                        });
+                    });
+                }
+            });
+        });
+    });
+</script>
+{% endblock %} 

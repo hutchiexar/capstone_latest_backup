@@ -584,38 +584,127 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
         registerSkeleton.style.display = 'none';
         registerContent.style.display = 'block';
+        
+        // Show error message if one exists
+        {% if error_message %}
+        Swal.fire({
+            icon: 'error',
+            title: 'Oops! Something went wrong',
+            text: "{{ error_message|escapejs }}",
+            confirmButtonText: 'Try Again',
+            confirmButtonColor: '#3563E9'
+        });
+        {% endif %}
     }, 800);
     
-// Form validation
+    // Form validation
     const form = document.getElementById('registerVehicleForm');
-    const submitButton = document.getElementById('submitButton');
     
     form.addEventListener('submit', function(event) {
-            if (!form.checkValidity()) {
+        if (!form.checkValidity()) {
             event.preventDefault();
             event.stopPropagation();
+            
+            // Find first invalid field
+            const invalidFields = form.querySelectorAll(':invalid');
+            let errorMessage = 'Please fill in all required fields correctly.';
+            
+            if (invalidFields.length > 0) {
+                const firstInvalid = invalidFields[0];
+                const fieldName = firstInvalid.name.replace('_', ' ');
+                const fieldLabel = document.querySelector(`label[for="${firstInvalid.id}"]`);
+                
+                if (fieldLabel) {
+                    errorMessage = `Please check the "${fieldLabel.textContent}" field.`;
+                } else {
+                    errorMessage = `Please check the "${fieldName}" field.`;
+                }
+                
+                // Scroll to the first invalid field
+                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => firstInvalid.focus(), 500);
+            }
+            
+            // Use SweetAlert for validation errors
+            Swal.fire({
+                icon: 'warning',
+                title: 'Form Validation',
+                text: errorMessage,
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#3563E9'
+            });
         } else {
             // Show loading state
-            submitButton.disabled = true;
-            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Registering...';
+            const submitBtn = document.getElementById('submitButton');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Registering...';
+            
+            // Show a "please wait" message
+            Swal.fire({
+                title: 'Processing',
+                html: 'Please wait while we register your vehicle...',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
         }
         
         form.classList.add('was-validated');
     });
     
-    // File upload preview
+    // Handle OR/CR image upload
     const fileInput = document.getElementById('or_cr_image');
     const fileUploadText = document.querySelector('.file-upload-text');
     
-    fileInput.addEventListener('change', function(e) {
-        if (fileInput.files.length > 0) {
-            fileUploadText.textContent = `Selected file: ${fileInput.files[0].name}`;
+    fileInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+            const file = this.files[0];
+            
+            // Validate file size (Max 5MB)
+            const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+            if (file.size > maxSize) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'File Too Large',
+                    html: `<p>The file you selected is too large.</p>
+                           <p>Maximum file size is 5MB. Your file is ${(file.size / (1024 * 1024)).toFixed(2)}MB.</p>
+                           <p>Please select a smaller image or compress it first.</p>`,
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#3563E9'
+                });
+                
+                this.value = '';
+                fileUploadText.textContent = 'Drag & drop OR/CR image or click to browse';
+                return;
+            }
+            
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+            if (!validTypes.includes(file.type)) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid File Type',
+                    html: `<p>Please select a valid file type.</p>
+                           <p>Accepted file types: JPG, PNG, PDF</p>`,
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#3563E9'
+                });
+                
+                this.value = '';
+                fileUploadText.textContent = 'Drag & drop OR/CR image or click to browse';
+                return;
+            }
+            
+            // Update file name display
+            fileUploadText.textContent = `Selected file: ${file.name}`;
         } else {
             fileUploadText.textContent = 'Drag & drop OR/CR image or click to browse';
         }
     });
 
-// Date validation
+    // Date validation
     const registrationDate = document.getElementById('registration_date');
     const expiryDate = document.getElementById('expiry_date');
     
@@ -633,6 +722,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Set expiry date min to registration date on page load
     expiryDate.min = registrationDate.value;
+    
+    // Prepopulate form fields from previous submission if available
+    {% if form_data %}
+    // Populate text/select fields
+    const fields = ['or_number', 'cr_number', 'plate_number', 'vehicle_type', 'make', 
+                    'model', 'year_model', 'color', 'classification'];
+    
+    fields.forEach(field => {
+        const element = document.getElementById(field);
+        if (element) {
+            {% for field_name, field_value in form_data.items %}
+            if (field === "{{ field_name|escapejs }}") {
+                element.value = "{{ field_value|escapejs }}";
+            }
+            {% endfor %}
+        }
+    });
+    
+    // Handle dates separately
+    {% if form_data.registration_date %}
+    document.getElementById('registration_date').value = "{{ form_data.registration_date|escapejs }}";
+    {% endif %}
+    
+    {% if form_data.expiry_date %}
+    document.getElementById('expiry_date').value = "{{ form_data.expiry_date|escapejs }}";
+    {% endif %}
+    {% endif %}
 });
 </script>
 {% endblock %} 

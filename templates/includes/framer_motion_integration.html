@@ -1,0 +1,94 @@
+{% load static %}
+
+<!-- Framer Motion CSS -->
+<link rel="stylesheet" href="{% static 'css/framer-motion-animations.css' %}">
+
+<!-- Framer Motion Integration -->
+<script src="{% static 'js/framer-motion-modals.js' %}"></script>
+
+<!-- Set animation types for specific modals -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Map of modal IDs to animation types
+        const modalAnimations = {
+            // User portal modals
+            'userDetailModal': 'slideUp',
+            'registrationModal': 'slideRight',
+            'violationDetailModal': 'scale',
+            'paymentModal': 'spring',
+            'previewModal': 'scale',
+            'operatorDetailModal': 'slideUp',
+            'popupAnnouncementModal': 'spring',
+            'announcementModal': 'slideDown',
+            'confirmationModal': 'scale',
+            'deleteModal': 'slideLeft',
+            
+            // Additional modals from various pages
+            'statusChangeModal': 'slideUp',
+            'imagePreviewModal': 'spring',
+            'adjudicationModal': 'slideRight',
+            'rejectionModal': 'scale',
+            
+            // Admin modals
+            'reportDetailsModal': 'slideRight',
+            'userStatusModal': 'scale',
+            'deleteConfirmModal': 'fade',
+            'exportDataModal': 'spring',
+            'filterModal': 'slideDown',
+            'importModal': 'spring'
+        };
+        
+        // Apply animations to all modals with default animation if not specified
+        document.querySelectorAll('.modal').forEach(modal => {
+            if (!modal.dataset.animation) {
+                const modalId = modal.id;
+                if (modalId && modalAnimations[modalId]) {
+                    modal.dataset.animation = modalAnimations[modalId];
+                } else {
+                    // Apply default animation based on modal content/purpose
+                    if (modal.querySelector('.modal-title')?.textContent.toLowerCase().includes('confirm')) {
+                        modal.dataset.animation = 'scale';
+                    } else if (modal.querySelector('.modal-title')?.textContent.toLowerCase().includes('preview') || 
+                               modal.querySelector('.modal-body img')) {
+                        modal.dataset.animation = 'spring';
+                    } else if (modal.classList.contains('detail-modal') || 
+                               modal.querySelector('.modal-title')?.textContent.toLowerCase().includes('detail')) {
+                        modal.dataset.animation = 'slideRight';
+                    } else {
+                        modal.dataset.animation = 'slideUp';
+                    }
+                }
+            }
+        });
+        
+        // Apply staggered animations to list items in modals
+        const applyStaggeredAnimations = () => {
+            // Find all modals that are currently visible
+            const visibleModals = document.querySelectorAll('.modal.show');
+            
+            visibleModals.forEach(modal => {
+                // Select common list elements that might need animation
+                const listItems = modal.querySelectorAll('.list-group-item, .registration-item, .info-item, .detail-item, .modal-list-item, .row:not(.no-animation) > .col-md-6 > div, .mb-2, .form-group');
+                
+                // Apply animation class if not already applied
+                listItems.forEach((item, index) => {
+                    if (!item.classList.contains('modal-list-item')) {
+                        item.classList.add('modal-list-item');
+                        // Limit animation delays to prevent too much staggering
+                        if (index < 10) {
+                            item.style.animationDelay = `${0.1 + (index * 0.05)}s`;
+                        } else {
+                            item.style.animationDelay = '0.6s';
+                        }
+                    }
+                });
+            });
+        };
+        
+        // Apply on initial load
+        applyStaggeredAnimations();
+        
+        // Apply when any modal is shown
+        document.addEventListener('shown.bs.modal', applyStaggeredAnimations);
+    });
+</script> 

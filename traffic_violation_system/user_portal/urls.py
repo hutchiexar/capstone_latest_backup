@@ -16,14 +16,20 @@ urlpatterns = [
     path('notifications/<int:notification_id>/mark-read/', views.mark_notification_read, name='mark_notification_read'),
     path('notifications/', views.user_notifications, name='user_notifications'),
     path('notifications/mark-all-read/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
+    path('notifications/<int:notification_id>/detail/', views.notification_detail, name='notification_detail'),
+    path('notifications/load-more/', views.load_more_notifications, name='load_more_notifications'),
+    # Debug endpoints
+    path('notifications/create-test/', views.create_test_notification, name='create_test_notification'),
+    path('notifications/debug/', views.debug_notifications, name='debug_notifications'),
     path('vehicles/', views.vehicle_list, name='vehicle_list'),
     path('vehicles/register/', views.register_vehicle, name='register_vehicle'),
     path('vehicles/<int:vehicle_id>/', views.vehicle_detail, name='vehicle_detail'),
     path('admin/user-management/', views.user_management, name='user_management'),
     path('admin/regular-users/', views.regular_users_list, name='regular_users_list'),
     
-    # Operator lookup URLs
-    path('operator-lookup/', views.operator_lookup, name='operator_lookup'),
-    path('operator-lookup/search/', views.operator_lookup_search, name='operator_lookup_search'),
-    path('operator-lookup/history/', views.operator_lookup_history, name='operator_lookup_history'),
+    # Educational materials routes
+    path('education/', views.education_topics, name='education_topics'),
+    path('education/topic/<int:topic_id>/', views.education_topic_detail, name='education_topic_detail'),
+    path('education/bookmarks/', views.education_bookmarks, name='education_bookmarks'),
+    path('education/progress/', views.education_progress, name='education_progress'),
 ] 

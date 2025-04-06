@@ -1,0 +1,1016 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --brand-primary: #0d6efd;
+        --brand-success: #198754;
+        --brand-danger: #dc3545;
+        --brand-warning: #ffc107;
+        --brand-light: #f8f9fa;
+        --brand-dark: #212529;
+        --spacing-sm: 0.5rem;
+        --spacing-md: 1rem;
+        --spacing-lg: 1.5rem;
+        --spacing-xl: 2rem;
+        --radius-sm: 0.25rem;
+        --radius-md: 0.5rem;
+        --radius-lg: 0.75rem;
+        --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.08);
+        --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+        --transition-fast: 200ms;
+        --transition-normal: 300ms;
+    }
+
+    /* Typography enhancements */
+    .page-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: #212529;
+    }
+    
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: #212529;
+    }
+    
+    .text-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #6c757d;
+    }
+    
+    /* Card enhancements */
+    .app-card {
+        background-color: #fff;
+        border-radius: var(--radius-md);
+        border: none;
+        box-shadow: var(--shadow-sm);
+        transition: box-shadow var(--transition-fast) ease;
+        margin-bottom: var(--spacing-lg);
+        overflow: hidden;
+    }
+    
+    .app-card:hover {
+        box-shadow: var(--shadow-md);
+    }
+    
+    .app-card-header {
+        padding: var(--spacing-md) var(--spacing-lg);
+        background-color: rgba(13, 110, 253, 0.03);
+        border-bottom: 1px solid rgba(13, 110, 253, 0.1);
+    }
+    
+    .app-card-body {
+        padding: var(--spacing-lg);
+    }
+    
+    /* Data display */
+    .info-group {
+        background-color: var(--brand-light);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-md);
+        transition: transform var(--transition-fast) ease;
+    }
+    
+    .info-group:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .info-label {
+        display: flex;
+        align-items: center;
+        color: #6c757d;
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+    
+    .info-value {
+        font-size: 1rem;
+        color: #212529;
+        word-break: break-word;
+    }
+    
+    /* Decision UI */
+    .decision-container {
+        margin-bottom: var(--spacing-lg);
+    }
+    
+    .decision-option {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .decision-label {
+        display: flex;
+        align-items: center;
+        padding: var(--spacing-md) var(--spacing-lg);
+        border: 2px solid #e9ecef;
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        margin-bottom: var(--spacing-md);
+        transition: all var(--transition-normal) ease;
+    }
+    
+    .decision-label:hover {
+        background-color: rgba(0, 0, 0, 0.01);
+        border-color: #dee2e6;
+    }
+    
+    .decision-option:checked + .decision-label {
+        background-color: rgba(13, 110, 253, 0.05);
+        border-color: var(--brand-primary);
+    }
+    
+    .decision-option:focus + .decision-label {
+        outline: 2px solid rgba(13, 110, 253, 0.25);
+        outline-offset: 2px;
+    }
+    
+    .decision-option:checked + .decision-label[for="approve"] {
+        background-color: rgba(25, 135, 84, 0.05);
+        border-color: var(--brand-success);
+    }
+    
+    .decision-option:checked + .decision-label[for="reject"] {
+        background-color: rgba(220, 53, 69, 0.05);
+        border-color: var(--brand-danger);
+    }
+    
+    .decision-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        background-color: #f8f9fa;
+        border-radius: 50%;
+        margin-right: var(--spacing-md);
+        color: #6c757d;
+        transition: all var(--transition-normal) ease;
+    }
+    
+    .decision-option:checked + .decision-label .decision-icon.approve {
+        background-color: var(--brand-success);
+        color: white;
+    }
+    
+    .decision-option:checked + .decision-label .decision-icon.reject {
+        background-color: var(--brand-danger);
+        color: white;
+    }
+    
+    .decision-content {
+        flex: 1;
+    }
+    
+    .decision-title {
+        font-weight: 600;
+        color: #212529;
+        margin-bottom: 0.25rem;
+    }
+    
+    .decision-description {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    
+    /* Document cards */
+    .document-card {
+        height: 100%;
+        border-radius: var(--radius-md);
+        border: 1px solid #eaecef;
+        overflow: hidden;
+        transition: all var(--transition-normal) ease;
+    }
+    
+    .document-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--brand-primary);
+    }
+    
+    .document-thumbnail {
+        height: 120px;
+        background-color: rgba(13, 110, 253, 0.03);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-bottom: 1px solid #eaecef;
+    }
+    
+    .document-thumbnail .material-icons {
+        font-size: 48px;
+        color: #6c757d;
+    }
+    
+    .document-info {
+        padding: var(--spacing-md);
+    }
+    
+    .document-title {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+    
+    .document-meta {
+        font-size: 0.75rem;
+        color: #6c757d;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .document-meta .material-icons {
+        font-size: 0.875rem;
+        margin-right: 0.25rem;
+    }
+    
+    /* Applicant profile */
+    .profile-container {
+        text-align: center;
+        margin-bottom: var(--spacing-lg);
+    }
+    
+    .profile-avatar {
+        position: relative;
+        margin-bottom: var(--spacing-md);
+    }
+    
+    .avatar-border {
+        width: 120px;
+        height: 120px;
+        border: 4px solid white;
+        border-radius: 50%;
+        box-shadow: var(--shadow-md);
+        margin: 0 auto;
+        overflow: hidden;
+        background-color: #e9ecef;
+    }
+    
+    .avatar-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .avatar-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .avatar-status {
+        position: absolute;
+        bottom: 5px;
+        right: calc(50% - 60px);
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background-color: var(--brand-warning);
+        border: 2px solid white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+    
+    .profile-name {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+    
+    .profile-username {
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+    }
+    
+    .profile-badge {
+        display: inline-block;
+        padding: 0.35rem 0.75rem;
+        border-radius: 30px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background-color: rgba(255, 193, 7, 0.15);
+        color: #997404;
+        margin-bottom: var(--spacing-md);
+    }
+    
+    /* Application Timeline */
+    .app-timeline {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: var(--spacing-lg) 0;
+    }
+    
+    .timeline-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .timeline-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #f8f9fa;
+        border: 2px solid #dee2e6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 0.5rem;
+        color: #6c757d;
+        font-size: 1.25rem;
+        transition: all var(--transition-normal) ease;
+    }
+    
+    .timeline-text {
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: #6c757d;
+        text-align: center;
+        max-width: 80px;
+        transition: all var(--transition-normal) ease;
+    }
+    
+    .timeline-connector {
+        height: 3px;
+        background-color: #dee2e6;
+        flex-grow: 1;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .timeline-step.active .timeline-icon {
+        background-color: var(--brand-primary);
+        border-color: var(--brand-primary);
+        color: white;
+        box-shadow: 0 0 0 5px rgba(13, 110, 253, 0.1);
+    }
+    
+    .timeline-step.active .timeline-text {
+        color: var(--brand-primary);
+        font-weight: 600;
+    }
+    
+    .timeline-step.completed .timeline-icon {
+        background-color: var(--brand-success);
+        border-color: var(--brand-success);
+        color: white;
+    }
+    
+    .timeline-step.completed + .timeline-connector {
+        background-color: var(--brand-success);
+    }
+    
+    /* Form Controls */
+    .form-label {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #495057;
+    }
+    
+    .form-control:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+    
+    .form-text {
+        margin-top: 0.375rem;
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    
+    .notes-container {
+        position: relative;
+    }
+    
+    .char-count {
+        position: absolute;
+        bottom: 0.5rem;
+        right: 0.5rem;
+        font-size: 0.75rem;
+        color: #6c757d;
+        background-color: rgba(255, 255, 255, 0.85);
+        padding: 0.125rem 0.375rem;
+        border-radius: var(--radius-sm);
+    }
+    
+    /* Buttons */
+    .btn {
+        font-weight: 500;
+        padding: 0.5rem 1.25rem;
+        border-radius: var(--radius-md);
+        transition: all var(--transition-fast) ease;
+    }
+    
+    .btn-icon {
+        display: flex;
+        align-items: center;
+    }
+    
+    .btn-icon .material-icons {
+        margin-right: 0.5rem;
+    }
+    
+    .btn-primary {
+        background-color: var(--brand-primary);
+        border-color: var(--brand-primary);
+    }
+    
+    .btn-primary:hover, .btn-primary:focus {
+        background-color: #0b5ed7;
+        border-color: #0a58ca;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .btn-outline-secondary {
+        color: #6c757d;
+        border-color: #6c757d;
+    }
+    
+    .btn-outline-secondary:hover {
+        color: #fff;
+        background-color: #6c757d;
+        border-color: #6c757d;
+    }
+    
+    /* Loading skeleton styles for initial content loading */
+    .skeleton-loader {
+        width: 100%;
+    }
+    
+    .skeleton-row {
+        display: flex;
+        margin-bottom: 0.5rem;
+        padding: 1rem;
+    }
+    
+    .skeleton-cell {
+        height: 24px;
+        background-color: #e9ecef;
+        border-radius: var(--radius-sm);
+        margin-right: 0.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .skeleton-cell::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, 
+            rgba(255, 255, 255, 0) 0%, 
+            rgba(255, 255, 255, 0.4) 50%, 
+            rgba(255, 255, 255, 0) 100%);
+        animation: shimmer 1.5s infinite;
+    }
+    
+    @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+    
+    /* Utilities */
+    .fadeIn {
+        animation: fadeIn 0.4s ease-in;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .text-divider {
+        display: flex;
+        align-items: center;
+        margin: var(--spacing-md) 0;
+        color: #6c757d;
+        font-size: 0.875rem;
+    }
+    
+    .text-divider::before, .text-divider::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background-color: #e9ecef;
+    }
+    
+    .text-divider::before {
+        margin-right: 0.75rem;
+    }
+    
+    .text-divider::after {
+        margin-left: 0.75rem;
+    }
+    
+    /* Media queries for responsiveness */
+    @media (max-width: 768px) {
+        .app-card-body {
+            padding: var(--spacing-md);
+        }
+        
+        .document-card {
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .app-timeline {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .timeline-step {
+            flex-direction: row;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+        
+        .timeline-icon {
+            margin-bottom: 0;
+            margin-right: 1rem;
+        }
+        
+        .timeline-connector {
+            height: 30px;
+            width: 2px;
+            margin-left: 20px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Debug info - Remove in production -->
+    <div class="alert alert-info mb-4 fade-in">
+        <strong>Debug Info:</strong> Application ID: {{ application.id }} | User: {{ application.user.username }}
+    </div>
+
+    <!-- Header Section -->
+    <div class="app-card fadeIn">
+        <div class="app-card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="page-title">Review Operator Application</h1>
+                    <p class="text-muted mb-0">Review application details and make a decision</p>
+                </div>
+                <a href="{% url 'operator_applications_manage' %}" class="btn btn-outline-secondary btn-icon">
+                    <span class="material-icons">arrow_back</span>
+                    Back to Applications
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Skeleton Loader (for initial load) -->
+    <div id="reviewSkeletonLoader">
+        <div class="row">
+            <!-- Left Column Skeleton -->
+            <div class="col-lg-5 col-md-6">
+                <div class="app-card mb-4">
+                    <div class="app-card-body">
+                        <div class="text-center mb-4">
+                            <div class="skeleton-cell mx-auto" style="width: 120px; height: 120px; border-radius: 50%;"></div>
+                            <div class="skeleton-cell mx-auto mt-3" style="width: 60%;"></div>
+                            <div class="skeleton-cell mx-auto mt-2" style="width: 40%;"></div>
+                        </div>
+                        
+                        <div class="skeleton-cell mb-4" style="width: 100%; height: 40px;"></div>
+                        
+                        {% for i in '1234' %}
+                        <div class="mb-4">
+                            <div class="skeleton-cell" style="width: 30%; height: 16px;"></div>
+                            <div class="skeleton-cell mt-2" style="width: 100%; height: 40px;"></div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="app-card">
+                    <div class="app-card-body">
+                        <div class="skeleton-cell mb-3" style="width: 40%; height: 24px;"></div>
+                        
+                        <div class="row">
+                            {% for i in '123' %}
+                            <div class="col-md-6 mb-3">
+                                <div class="skeleton-cell" style="width: 100%; height: 160px;"></div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column Skeleton -->
+            <div class="col-lg-7 col-md-6">
+                <div class="app-card">
+                    <div class="app-card-body">
+                        <div class="skeleton-cell mb-4" style="width: 40%; height: 24px;"></div>
+                        
+                        <div class="skeleton-cell mb-4" style="width: 100%; height: 80px;"></div>
+                        
+                        <div class="mb-4">
+                            <div class="skeleton-cell" style="width: 30%; height: 16px;"></div>
+                            <div class="skeleton-cell mt-2" style="width: 100%; height: 120px;"></div>
+                            <div class="skeleton-cell mt-2" style="width: 100%; height: 120px;"></div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="skeleton-cell" style="width: 30%; height: 16px;"></div>
+                            <div class="skeleton-cell mt-2" style="width: 100%; height: 120px;"></div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-end">
+                            <div class="skeleton-cell" style="width: 100px; height: 40px;"></div>
+                            <div class="skeleton-cell ms-2" style="width: 150px; height: 40px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actual Content -->
+    <div id="reviewContent" class="d-none">
+        <div class="row">
+            <!-- Applicant Information Column -->
+            <div class="col-lg-5 col-md-6">
+                <div class="app-card mb-4">
+                    <div class="app-card-header">
+                        <h2 class="section-title mb-0">
+                            <span class="material-icons me-2">person</span>
+                            Applicant Information
+                        </h2>
+                    </div>
+                    <div class="app-card-body">
+                        <div class="profile-container">
+                            <div class="profile-avatar">
+                                <div class="avatar-border">
+                                    {% if application.user.userprofile.avatar %}
+                                    <img src="{{ application.user.userprofile.avatar.url }}" alt="User Avatar" class="avatar-image">
+                                    {% else %}
+                                    <div class="avatar-placeholder">
+                                        <span class="material-icons" style="font-size: 48px; color: #aaa;">person</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="avatar-status">
+                                    <span class="material-icons" style="font-size: 16px;">hourglass_top</span>
+                                </div>
+                            </div>
+                            <h3 class="profile-name">{{ application.user.get_full_name }}</h3>
+                            <p class="profile-username">@{{ application.user.username }}</p>
+                            <div class="profile-badge">
+                                <span class="material-icons me-1" style="font-size: 12px; vertical-align: middle;">schedule</span>
+                                Pending Review
+                            </div>
+                        </div>
+
+                        <div class="app-timeline">
+                            <div class="timeline-step completed">
+                                <div class="timeline-icon">
+                                    <span class="material-icons" style="font-size: 18px;">description</span>
+                                </div>
+                                <div class="timeline-text">Application Submitted</div>
+                            </div>
+                            <div class="timeline-connector"></div>
+                            <div class="timeline-step active">
+                                <div class="timeline-icon">
+                                    <span class="material-icons" style="font-size: 18px;">rate_review</span>
+                                </div>
+                                <div class="timeline-text">Under Review</div>
+                            </div>
+                            <div class="timeline-connector"></div>
+                            <div class="timeline-step">
+                                <div class="timeline-icon">
+                                    <span class="material-icons" style="font-size: 18px;">check_circle</span>
+                                </div>
+                                <div class="timeline-text">Decision Made</div>
+                            </div>
+                        </div>
+
+                        <div class="info-group">
+                            <div class="info-label">
+                                <span class="material-icons me-2" style="font-size: 16px;">email</span>
+                                Email Address
+                            </div>
+                            <div class="info-value">{{ application.user.email }}</div>
+                        </div>
+
+                        <div class="info-group">
+                            <div class="info-label">
+                                <span class="material-icons me-2" style="font-size: 16px;">phone</span>
+                                Phone Number
+                            </div>
+                            <div class="info-value">{{ application.user.userprofile.phone_number }}</div>
+                        </div>
+
+                        <div class="info-group">
+                            <div class="info-label">
+                                <span class="material-icons me-2" style="font-size: 16px;">location_on</span>
+                                Address
+                            </div>
+                            <div class="info-value">{{ application.user.userprofile.address }}</div>
+                        </div>
+
+                        <div class="info-group">
+                            <div class="info-label">
+                                <span class="material-icons me-2" style="font-size: 16px;">event</span>
+                                Application Date
+                            </div>
+                            <div class="info-value">{{ application.submitted_at|date:"F d, Y g:i A" }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Documents Card -->
+                <div class="app-card">
+                    <div class="app-card-header">
+                        <h2 class="section-title mb-0">
+                            <span class="material-icons me-2">description</span>
+                            Submitted Documents
+                        </h2>
+                    </div>
+                    <div class="app-card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="document-card">
+                                    <div class="document-thumbnail">
+                                        <span class="material-icons" style="font-size: 40px; color: #0d6efd;">business</span>
+                                    </div>
+                                    <div class="document-info">
+                                        <h4 class="document-title">Business Permit</h4>
+                                        <div class="document-meta">
+                                            <span class="material-icons">check_circle</span>
+                                            Required document
+                                        </div>
+                                        <a href="{{ application.business_permit.url }}" target="_blank" class="btn btn-sm btn-primary w-100 btn-icon">
+                                            <span class="material-icons" style="font-size: 16px;">visibility</span>
+                                            View Document
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {% if application.mayors_permit %}
+                            <div class="col-md-6 mb-3">
+                                <div class="document-card">
+                                    <div class="document-thumbnail">
+                                        <span class="material-icons" style="font-size: 40px; color: #0d6efd;">gavel</span>
+                                    </div>
+                                    <div class="document-info">
+                                        <h4 class="document-title">Mayor's Permit</h4>
+                                        <div class="document-meta">
+                                            <span class="material-icons">info</span>
+                                            Supporting document
+                                        </div>
+                                        <a href="{{ application.mayors_permit.url }}" target="_blank" class="btn btn-sm btn-primary w-100 btn-icon">
+                                            <span class="material-icons" style="font-size: 16px;">visibility</span>
+                                            View Document
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% if application.other_documents %}
+                            <div class="col-md-6">
+                                <div class="document-card">
+                                    <div class="document-thumbnail">
+                                        <span class="material-icons" style="font-size: 40px; color: #0d6efd;">folder</span>
+                                    </div>
+                                    <div class="document-info">
+                                        <h4 class="document-title">Additional Documents</h4>
+                                        <div class="document-meta">
+                                            <span class="material-icons">attach_file</span>
+                                            Supplementary files
+                                        </div>
+                                        <a href="{{ application.other_documents.url }}" target="_blank" class="btn btn-sm btn-primary w-100 btn-icon">
+                                            <span class="material-icons" style="font-size: 16px;">visibility</span>
+                                            View Document
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Review Form Column -->
+            <div class="col-lg-7 col-md-6">
+                <div class="app-card">
+                    <div class="app-card-header">
+                        <h2 class="section-title mb-0">
+                            <span class="material-icons me-2">fact_check</span>
+                            Application Review
+                        </h2>
+                    </div>
+                    <div class="app-card-body">
+                        <form method="post" id="reviewForm">
+                            {% csrf_token %}
+                            
+                            <div class="alert alert-info d-flex align-items-start mb-4">
+                                <span class="material-icons me-2 mt-1">info</span>
+                                <div>
+                                    <strong>Important Notice:</strong>
+                                    <p class="mb-0 mt-1">Carefully review all submitted documents before making a decision. Approving this application will create an operator profile for this user and grant them operator privileges in the system.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="decision-container">
+                                <label class="form-label mb-3">Decision <span class="text-danger">*</span></label>
+                                
+                                <input type="radio" class="decision-option" id="approve" name="status" value="APPROVED" required>
+                                <label for="approve" class="decision-label">
+                                    <div class="decision-icon approve">
+                                        <span class="material-icons">check_circle</span>
+                                    </div>
+                                    <div class="decision-content">
+                                        <div class="decision-title">Approve Application</div>
+                                        <div class="decision-description">Create operator profile and grant privileges</div>
+                                    </div>
+                                </label>
+                                
+                                <input type="radio" class="decision-option" id="reject" name="status" value="REJECTED">
+                                <label for="reject" class="decision-label">
+                                    <div class="decision-icon reject">
+                                        <span class="material-icons">cancel</span>
+                                    </div>
+                                    <div class="decision-content">
+                                        <div class="decision-title">Reject Application</div>
+                                        <div class="decision-description">Deny operator privileges to this user</div>
+                                    </div>
+                                </label>
+                            </div>
+                            
+                            <div class="mb-4 notes-container">
+                                <label for="reviewNotes" class="form-label">
+                                    Review Notes
+                                    <span id="requiredNotesMark" class="text-danger d-none">*</span>
+                                </label>
+                                <textarea class="form-control" id="reviewNotes" name="notes" rows="5" placeholder="Add your review notes here..." maxlength="500"></textarea>
+                                <div class="form-text" id="notesHelp">
+                                    <span id="rejectNoteText" class="d-none text-danger">If rejecting, please provide a reason. </span>
+                                    These notes will be visible to the applicant.
+                                </div>
+                                <div class="char-count">
+                                    <span id="charCount">0</span>/500
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                                <button type="button" class="btn btn-outline-secondary btn-icon px-4 py-2 me-md-2" id="cancelBtn">
+                                    <span class="material-icons">close</span>
+                                    Cancel
+                                </button>
+                                <button type="submit" class="btn btn-primary btn-icon px-4 py-2" id="submitBtn">
+                                    <span class="material-icons">check_circle</span>
+                                    Submit Review
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notification Toast -->
+    <div id="notificationBox" class="notification-box notification-info">
+        <div class="notification-icon">
+            <span class="material-icons">info</span>
+        </div>
+        <div class="notification-content">
+            <h6 class="mb-1" id="notificationTitle">Info</h6>
+            <p class="mb-0 small" id="notificationMessage">This is a notification message.</p>
+        </div>
+    </div>
+    
+    <!-- Confirmation Modal -->
+    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmationModalLabel">Confirm Decision</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="confirmationModalBody">
+                    Are you sure you want to proceed with this decision?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="finalSubmitBtn">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Review page loaded');
+        
+        // Show skeleton loader initially
+        const skeletonLoader = document.getElementById('reviewSkeletonLoader');
+        const reviewContent = document.getElementById('reviewContent');
+        
+        // Show content after brief delay
+        setTimeout(function() {
+            skeletonLoader.style.display = 'none';
+            reviewContent.classList.remove('d-none');
+            reviewContent.classList.add('fadeIn');
+            console.log('Content displayed');
+        }, 800);
+        
+        // Cancel button handler
+        document.getElementById('cancelBtn').addEventListener('click', function() {
+            window.location.href = "{% url 'operator_applications_manage' %}";
+        });
+        
+        // Decision option handlers for better UI feedback
+        const notesField = document.getElementById('reviewNotes');
+        const notesHelp = document.getElementById('notesHelp');
+        const requiredMark = document.getElementById('requiredNotesMark');
+        const rejectNoteText = document.getElementById('rejectNoteText');
+        
+        document.querySelectorAll('.decision-option').forEach(function(option) {
+            option.addEventListener('change', function() {
+                // Update notes requirement based on selection
+                if (this.value === 'REJECTED') {
+                    notesField.setAttribute('required', 'required');
+                    notesField.placeholder = 'Please explain why this application is being rejected...';
+                    requiredMark.classList.remove('d-none');
+                    rejectNoteText.classList.remove('d-none');
+                } else {
+                    notesField.removeAttribute('required');
+                    notesField.placeholder = 'Add your review notes here...';
+                    requiredMark.classList.add('d-none');
+                    rejectNoteText.classList.add('d-none');
+                }
+            });
+        });
+        
+        // Character counter for notes
+        notesField.addEventListener('input', function() {
+            const charCount = this.value.length;
+            document.getElementById('charCount').textContent = charCount;
+            
+            if (charCount >= 450) {
+                document.getElementById('charCount').style.color = '#dc3545';
+            } else {
+                document.getElementById('charCount').style.color = '';
+            }
+        });
+        
+        // Form submission
+        document.getElementById('reviewForm').addEventListener('submit', function(e) {
+            const selectedOption = document.querySelector('input[name="status"]:checked');
+            const notes = notesField.value.trim();
+            
+            if (!selectedOption) {
+                e.preventDefault();
+                alert('Please select a decision (Approve or Reject).');
+                return;
+            }
+            
+            if (selectedOption.value === 'REJECTED' && !notes) {
+                e.preventDefault();
+                alert('Please provide rejection reasons in the notes field.');
+                notesField.focus();
+                return;
+            }
+            
+            // Form is valid, show loading state
+            document.getElementById('submitBtn').innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Processing...';
+            document.getElementById('submitBtn').disabled = true;
+        });
+    });
+</script>
+{% endblock %} 

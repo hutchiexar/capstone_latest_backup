@@ -22,10 +22,28 @@
                 <div class="card-body p-0 position-relative">
                     <div id="map" style="height: calc(100vh - 12rem); width: 100%; border-radius: 4px;"></div>
                     
+                    <!-- Map Skeleton Loader -->
+                    <div id="mapSkeleton" class="map-skeleton">
+                        <div class="map-loading-indicator">
+                            <div class="map-loading-spinner"></div>
+                            <span class="map-loading-text">Loading map data...</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Connection Status Indicator -->
+                    <div id="connectionStatus" class="connection-status">
+                        <span class="status-indicator online">
+                            <span class="material-icons">wifi</span>
+                            <span class="status-text">Online</span>
+                        </span>
+                    </div>
+                    
                     <!-- Map Controls -->
                     <div class="map-controls">
                         <!-- Focus Button -->
-                        <button id="focusMyLocation" class="btn btn-light shadow-sm position-absolute" style="bottom: 20px; right: 10px; z-index: 1000;">
+                        <button id="focusMyLocation" class="btn btn-light shadow-sm position-absolute" 
+                                style="bottom: 20px; right: 10px; z-index: 1000;"
+                                aria-label="Focus on my location">
                             <span class="material-icons">my_location</span>
                         </button>
                     </div>
@@ -93,13 +111,13 @@
 
                     <!-- Filters -->
                     <div class="d-flex gap-2 mb-3">
-                        <button class="btn btn-sm btn-filter active" data-filter="all">
+                        <button class="btn btn-sm btn-filter active" data-filter="all" aria-pressed="true">
                             All
                         </button>
-                        <button class="btn btn-sm btn-filter" data-filter="active">
+                        <button class="btn btn-sm btn-filter" data-filter="active" aria-pressed="false">
                             Active
                         </button>
-                        <button class="btn btn-sm btn-filter" data-filter="inactive">
+                        <button class="btn btn-sm btn-filter" data-filter="inactive" aria-pressed="false">
                             Inactive
                         </button>
                     </div>
@@ -109,15 +127,18 @@
                         <span class="input-group-text border-0 bg-light">
                             <span class="material-icons" style="font-size: 1.2rem;">search</span>
                         </span>
-                        <input type="text" id="searchEnforcer" class="form-control border-0 bg-light" placeholder="Search enforcer...">
+                        <input type="text" id="searchEnforcer" class="form-control border-0 bg-light" 
+                               placeholder="Search enforcer..." aria-label="Search for an enforcer">
                     </div>
                     
                     <!-- Sort Options -->
                     <div class="dropdown mb-3">
-                        <button class="btn btn-sm btn-light dropdown-toggle w-100 d-flex align-items-center justify-content-between" type="button" data-bs-toggle="dropdown">
+                        <button class="btn btn-sm btn-light dropdown-toggle w-100 d-flex align-items-center justify-content-between" 
+                                type="button" data-bs-toggle="dropdown" aria-expanded="false" 
+                                aria-label="Sort enforcers list">
                             <span>Sort by: <span id="currentSort">Name (A-Z)</span></span>
                         </button>
-                        <ul class="dropdown-menu w-100">
+                        <ul class="dropdown-menu w-100" aria-labelledby="sortDropdown">
                             <li><a class="dropdown-item sort-option" data-sort="name-asc" href="#">Name (A-Z)</a></li>
                             <li><a class="dropdown-item sort-option" data-sort="name-desc" href="#">Name (Z-A)</a></li>
                             <li><a class="dropdown-item sort-option" data-sort="status" href="#">Status (Active first)</a></li>
@@ -128,6 +149,43 @@
 
                     <!-- Enforcers List -->
                     <div id="enforcersList" class="enforcer-list" style="height: calc(100vh - 27rem); overflow-y: auto;">
+                        <!-- Skeleton Loaders for Enforcer Items -->
+                        <div id="enforcersSkeletonList">
+                            <!-- Skeleton Item 1 -->
+                            <div class="skeleton-enforcer-item">
+                                <div class="skeleton skeleton-avatar"></div>
+                                <div class="skeleton-details">
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-text short"></div>
+                                </div>
+                            </div>
+                            <!-- Skeleton Item 2 -->
+                            <div class="skeleton-enforcer-item">
+                                <div class="skeleton skeleton-avatar"></div>
+                                <div class="skeleton-details">
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-text short"></div>
+                                </div>
+                            </div>
+                            <!-- Skeleton Item 3 -->
+                            <div class="skeleton-enforcer-item">
+                                <div class="skeleton skeleton-avatar"></div>
+                                <div class="skeleton-details">
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-text short"></div>
+                                </div>
+                            </div>
+                            <!-- Skeleton Item 4 -->
+                            <div class="skeleton-enforcer-item">
+                                <div class="skeleton skeleton-avatar"></div>
+                                <div class="skeleton-details">
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-text short"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- No Enforcers Message -->
                         <div id="noEnforcersMessage" class="text-center p-4 d-none">
                             <div class="text-muted">
                                 <span class="material-icons d-block mb-2" style="font-size: 2.5rem; opacity: 0.5;">person_off</span>
@@ -152,6 +210,55 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Enable debug mode for troubleshooting
+    const DEBUG = true;
+    
+    // Debug logger
+    function debug(...args) {
+        if (DEBUG) console.log('[EnforcerMap]', ...args);
+    }
+    
+    debug('Initializing enforcer map interface...');
+    
+    // State management
+    const state = {
+        isLoading: true,
+        isOnline: navigator.onLine,
+        lastUpdated: new Date(),
+        enforcerData: {},
+        markers: {},
+        sortMethod: 'name-asc',
+        filter: 'all',
+        searchTerm: '',
+        userLocation: null
+    };
+    
+    // DOM elements
+    const elements = {
+        mapSkeleton: document.getElementById('mapSkeleton'),
+        enforcersList: document.getElementById('enforcersList'),
+        enforcersSkeletonList: document.getElementById('enforcersSkeletonList'),
+        noEnforcersMessage: document.getElementById('noEnforcersMessage'),
+        activeCount: document.getElementById('activeCount'),
+        inactiveCount: document.getElementById('inactiveCount'),
+        lastUpdated: document.getElementById('lastUpdated'),
+        connectionStatus: document.getElementById('connectionStatus'),
+        searchInput: document.getElementById('searchEnforcer'),
+        filterButtons: document.querySelectorAll('.btn-filter'),
+        sortOptions: document.querySelectorAll('.sort-option'),
+        currentSort: document.getElementById('currentSort'),
+        focusLocationBtn: document.getElementById('focusMyLocation')
+    };
+    
+    // Log element initialization status
+    if (DEBUG) {
+        debug('DOM Elements initialized:', 
+            'mapSkeleton:', !!elements.mapSkeleton,
+            'enforcersList:', !!elements.enforcersList,
+            'enforcersSkeletonList:', !!elements.enforcersSkeletonList
+        );
+    }
+
     // Initialize map
     mapboxgl.accessToken = 'pk.eyJ1IjoiaHV0Y2hpZWpuIiwiYSI6ImNtNTU4c2Q4bDJ0NWUyc3E3ODZ3NDE4OHMifQ.QCNNzPpqWTN--G08-S71pQ';
     const map = new mapboxgl.Map({
@@ -203,29 +310,81 @@ document.addEventListener('DOMContentLoaded', function() {
         return el;
     }
 
-    // Update enforcers list
+    // Update enforcers list with skeleton loading and lazy loading
     function updateEnforcersList(locations) {
-        const listContainer = document.getElementById('enforcersList');
-        const noEnforcersMessage = document.getElementById('noEnforcersMessage');
-        const searchTerm = document.getElementById('searchEnforcer').value.toLowerCase();
+        // Show skeleton loaders during fetch
+        if (state.isLoading) {
+            if (elements.enforcersSkeletonList) {
+                elements.enforcersSkeletonList.classList.remove('d-none');
+            }
+            return;
+        } else {
+            if (elements.enforcersSkeletonList) {
+                elements.enforcersSkeletonList.classList.add('d-none');
+            }
+        }
         
-        // Sort enforcers: active first, then by name
-        const sortedLocations = [...locations].sort((a, b) => {
-            if (a.is_active !== b.is_active) return b.is_active - a.is_active;
-            return a.name.localeCompare(b.name);
-        });
-
+        // Update counts
+        const activeEnforcers = locations.filter(e => e.is_active);
+        if (elements.activeCount) elements.activeCount.textContent = activeEnforcers.length;
+        if (elements.inactiveCount) elements.inactiveCount.textContent = locations.length - activeEnforcers.length;
+        
+        // Update last updated time
+        state.lastUpdated = new Date();
+        if (elements.lastUpdated) elements.lastUpdated.textContent = `Last updated: ${state.lastUpdated.toLocaleTimeString()}`;
+        
+        const searchTerm = elements.searchInput ? elements.searchInput.value.toLowerCase() : '';
+        let filteredLocations = [...locations];
+        
+        // Apply search filter
+        if (searchTerm) {
+            filteredLocations = filteredLocations.filter(enforcer => 
+                enforcer.name.toLowerCase().includes(searchTerm) || 
+                enforcer.enforcer_id.toLowerCase().includes(searchTerm)
+            );
+        }
+        
+        // Apply active/inactive filter
+        if (state.filter !== 'all') {
+            const isActive = state.filter === 'active';
+            filteredLocations = filteredLocations.filter(enforcer => enforcer.is_active === isActive);
+        }
+        
+        // Sort the list based on current sort method
+        filteredLocations = sortEnforcers(filteredLocations, state.sortMethod);
+        
+        // Generate HTML for the list
         let html = '';
-        sortedLocations.forEach(enforcer => {
-            if (!searchTerm || enforcer.name.toLowerCase().includes(searchTerm) || 
-                enforcer.enforcer_id.toLowerCase().includes(searchTerm)) {
+        
+        if (filteredLocations.length === 0) {
+            // Show no enforcers message
+            elements.noEnforcersMessage.classList.remove('d-none');
+        } else {
+            elements.noEnforcersMessage.classList.add('d-none');
+            
+            // Create list items with lazy loading
+            filteredLocations.forEach(enforcer => {
+                const avatarSrc = enforcer.avatar_url || generateAvatarSvg(enforcer.name);
+                const lastUpdateTime = new Date(enforcer.last_update).toLocaleTimeString([], { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                
                 html += `
                     <div class="enforcer-item ${enforcer.is_active ? 'active' : 'inactive'}" 
-                         data-id="${enforcer.id}" onclick="focusEnforcer(${enforcer.id})">
+                         data-id="${enforcer.id}" 
+                         onclick="focusEnforcer(${enforcer.id})"
+                         tabindex="0"
+                         role="button"
+                         aria-label="Focus on ${enforcer.name}">
                         <div class="d-flex align-items-center gap-3">
                             <div class="avatar-container">
-                                <img src="${enforcer.avatar_url || generateAvatarSvg(enforcer.name)}" 
-                                     alt="${enforcer.name}" class="rounded-circle">
+                                <img src="${generateAvatarSvg(enforcer.name)}" 
+                                     data-src="${avatarSrc}"
+                                     alt="${enforcer.name}" 
+                                     class="rounded-circle lazy-image"
+                                     loading="lazy"
+                                     onload="this.classList.add('loaded')">
                                 <span class="status-badge ${enforcer.is_active ? 'active' : 'inactive'}"></span>
                             </div>
                             <div class="enforcer-details">
@@ -233,57 +392,123 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <div class="d-flex align-items-center gap-2">
                                     <small class="text-muted">${enforcer.enforcer_id}</small>
                                     <small class="text-muted">•</small>
-                                    <small class="text-muted">${new Date(enforcer.last_update).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>
+                                    <small class="text-muted">${lastUpdateTime}</small>
                                 </div>
                             </div>
                         </div>
                     </div>
                 `;
-            }
-        });
-
-        // Show/hide no enforcers message
-        if (locations.length === 0) {
-            noEnforcersMessage.classList.remove('d-none');
-            html = '';
-        } else {
-            noEnforcersMessage.classList.add('d-none');
+            });
         }
-
-        listContainer.innerHTML = html + noEnforcersMessage.outerHTML;
+        
+        // Update the list
+        const listContent = document.createElement('div');
+        listContent.innerHTML = html;
+        
+        // Replace content (faster than innerHTML)
+        while (elements.enforcersList.firstChild) {
+            if (elements.enforcersList.firstChild.id === 'noEnforcersMessage' || 
+                elements.enforcersList.firstChild.id === 'enforcersSkeletonList') {
+                break;
+            }
+            elements.enforcersList.removeChild(elements.enforcersList.firstChild);
+        }
+        
+        // Add new content at the beginning
+        Array.from(listContent.children).reverse().forEach(child => {
+            elements.enforcersList.insertBefore(child, elements.enforcersList.firstChild);
+        });
+        
+        // Initialize tooltips
+        initializeTooltips();
+        
+        // Lazy load images
+        setTimeout(lazyLoadImages, 100);
     }
 
-    // Focus on enforcer
-    window.focusEnforcer = function(id) {
-        const enforcer = enforcerData[id];
-        if (enforcer) {
-            map.flyTo({
-                center: [enforcer.longitude, enforcer.latitude],
-                zoom: 16,
-                duration: 1000,
-                essential: true
-            });
-            
-            // Highlight the marker
-            const marker = markers[id];
-            if (marker) {
-                marker.getElement().classList.add('highlighted');
-                setTimeout(() => {
-                    marker.getElement().classList.remove('highlighted');
-                }, 2000);
-            }
+    // Helper function to sort enforcers
+    function sortEnforcers(enforcers, sortMethod) {
+        const sorted = [...enforcers];
+        
+        switch (sortMethod) {
+            case 'name-asc':
+                sorted.sort((a, b) => a.name.localeCompare(b.name));
+                break;
+            case 'name-desc':
+                sorted.sort((a, b) => b.name.localeCompare(a.name));
+                break;
+            case 'status':
+                sorted.sort((a, b) => {
+                    if (a.is_active !== b.is_active) return b.is_active - a.is_active;
+                    return a.name.localeCompare(b.name);
+                });
+                break;
+            case 'recent':
+                sorted.sort((a, b) => new Date(b.last_update) - new Date(a.last_update));
+                break;
+            case 'distance':
+                if (state.userLocation) {
+                    sorted.sort((a, b) => {
+                        const distA = calculateDistance(
+                            state.userLocation[1], 
+                            state.userLocation[0], 
+                            a.latitude, 
+                            a.longitude
+                        );
+                        const distB = calculateDistance(
+                            state.userLocation[1], 
+                            state.userLocation[0], 
+                            b.latitude, 
+                            b.longitude
+                        );
+                        return distA - distB;
+                    });
+                }
+                break;
         }
-    };
+        
+        return sorted;
+    }
+
+    // Calculate distance between two points using Haversine formula
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371; // Radius of the earth in km
+        const dLat = deg2rad(lat2 - lat1);
+        const dLon = deg2rad(lon2 - lon1);
+        const a = 
+            Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+            Math.sin(dLon/2) * Math.sin(dLon/2); 
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+        const d = R * c; // Distance in km
+        return d;
+    }
+
+    function deg2rad(deg) {
+        return deg * (Math.PI/180);
+    }
+
+    // Initialize tooltips
+    function initializeTooltips() {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl, {
+                delay: { show: 500, hide: 100 }
+            });
+        });
+    }
 
     // Update markers on the map
     function updateMarkers(locations) {
+        debug(`Updating markers for ${locations.length} locations`);
+        
         // Remove old markers
         Object.values(markers).forEach(marker => marker.remove());
         markers = {};
 
         // Update enforcer data and list
         locations.forEach(enforcer => {
-            enforcerData[enforcer.id] = enforcer;
+            state.enforcerData[enforcer.id] = enforcer;
         });
         updateEnforcersList(locations);
 
@@ -351,7 +576,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             } else {
                 // Create individual enforcer marker
-                const enforcer = enforcerData[cluster.properties.id];
+                const enforcer = state.enforcerData[cluster.properties.id];
                 const el = createMarkerElement(enforcer);
                 
                 // Add click event for marker only
@@ -424,8 +649,13 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <div>
                                         <div class="info-label">Location</div>
                                         <div class="info-value">${locationData.mainLocation}</div>
-                                        ${locationData.fullAddress !== locationData.mainLocation ? 
-                                            `<div class="full-address small text-muted">${locationData.fullAddress}</div>` : ''}
+                                        <div class="location-details">
+                                            <div class="location-part"><span class="location-label">Street:</span> ${locationData.street || 'N/A'}</div>
+                                            <div class="location-part"><span class="location-label">Barangay:</span> ${locationData.barangay || 'N/A'}</div>
+                                            <div class="location-part"><span class="location-label">Municipality:</span> ${locationData.municipality || 'N/A'}</div>
+                                            <div class="location-part"><span class="location-label">Province:</span> ${locationData.province || 'N/A'}</div>
+                                            <div class="location-part"><span class="location-label">Country:</span> ${locationData.country || 'N/A'}</div>
+                                        </div>
                                     </div>
                                 </div>
                                 ${locationData.nearbyLandmark ? `
@@ -493,27 +723,177 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Fetch enforcer locations
+    // Fetch enforcer locations with improved loading and error handling
     async function fetchLocations() {
         try {
-            const response = await fetch('{% url "get_enforcer_locations" %}');
+            debug('Fetching enforcer locations...');
+            
+            // Show loading state
+            state.isLoading = true;
+            
+            // Make sure elements are accessible
+            if (elements.mapSkeleton) {
+                elements.mapSkeleton.classList.remove('hidden');
+                debug('Map skeleton shown');
+            } else {
+                debug('Map skeleton element not found');
+            }
+            
+            updateEnforcersList([]); // This will show the skeleton loaders
+            
+            debug('Sending fetch request...');
+            const response = await fetch('{% url "get_enforcer_locations" %}', {
+                headers: {
+                    'Cache-Control': 'no-cache',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                signal: AbortSignal.timeout(8000) // 8 second timeout
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Server responded with ${response.status}`);
+            }
+            
+            debug('Received response, processing data...');
             const data = await response.json();
+            
+            // Set loading to false immediately to avoid stuck state
+            state.isLoading = false;
+            debug('Loading state set to false');
+            
+            // Hide map skeleton on first successful load
+            if (elements.mapSkeleton) {
+                elements.mapSkeleton.classList.add('hidden');
+                debug('Map skeleton hidden');
+            }
+            
+            // Update connection status
+            updateConnectionStatus(true);
+            
             if (data.status === 'success') {
+                debug(`Received ${data.locations.length} enforcer locations`);
+                
+                // Update markers and list
                 updateMarkers(data.locations);
+                
+                // Update last fetch time for auto-refresh
+                state.lastUpdated = new Date();
+                if (elements.lastUpdated) {
+                    elements.lastUpdated.textContent = `Last updated: ${state.lastUpdated.toLocaleTimeString()}`;
+                }
+                
+                // Lazy load any images
+                setTimeout(lazyLoadImages, 200);
+            } else {
+                console.error('Error in response:', data.message || 'Unknown error');
+                showErrorNotification('Could not load enforcer data');
             }
         } catch (error) {
             console.error('Error fetching locations:', error);
+            debug('Error in fetch operation:', error.message);
+            
+            // Always set loading to false to avoid stuck state
+            state.isLoading = false;
+            
+            // Update UI for offline state or error
+            updateConnectionStatus(false);
+            showErrorNotification(`Failed to load data: ${error.message}`);
+            
+            // Hide map skeleton even on error
+            if (elements.mapSkeleton) {
+                elements.mapSkeleton.classList.add('hidden');
+                debug('Map skeleton hidden (error case)');
+            }
+            
+            // Try to render with existing data if available
+            if (Object.keys(state.enforcerData).length > 0) {
+                debug('Rendering with existing data');
+                updateMarkers(Object.values(state.enforcerData));
+            }
         }
+    }
+    
+    // Update connection status indicator
+    function updateConnectionStatus(isOnline) {
+        state.isOnline = isOnline;
+        
+        if (!elements.connectionStatus) return;
+        
+        elements.connectionStatus.innerHTML = `
+            <span class="status-indicator ${isOnline ? 'online' : 'offline'}">
+                <span class="material-icons">${isOnline ? 'wifi' : 'wifi_off'}</span>
+                <span class="status-text">${isOnline ? 'Online' : 'Offline'}</span>
+            </span>
+        `;
+        
+        // Auto-hide after 3 seconds if online
+        if (isOnline) {
+            setTimeout(() => {
+                if (elements.connectionStatus) {
+                    elements.connectionStatus.classList.add('fade-out');
+                }
+            }, 3000);
+        } else {
+            if (elements.connectionStatus) {
+                elements.connectionStatus.classList.remove('fade-out');
+            }
+        }
+    }
+    
+    // Show error notification
+    function showErrorNotification(message) {
+        // Create notification element if it doesn't exist
+        let notification = document.getElementById('errorNotification');
+        if (!notification) {
+            notification = document.createElement('div');
+            notification.id = 'errorNotification';
+            notification.className = 'error-notification';
+            document.body.appendChild(notification);
+        }
+        
+        notification.innerHTML = `
+            <div class="notification-content">
+                <span class="material-icons">error</span>
+                <span>${message}</span>
+            </div>
+            <button class="notification-close" onclick="this.parentElement.classList.remove('show')">
+                <span class="material-icons">close</span>
+            </button>
+        `;
+        
+        // Show notification
+        notification.classList.add('show');
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            notification.classList.remove('show');
+        }, 5000);
     }
 
     // Initialize map controls
     map.addControl(new mapboxgl.NavigationControl(), 'top-left');
     map.addControl(new mapboxgl.ScaleControl(), 'bottom-left');
 
-    // Set up auto-refresh
+    // Set up auto-refresh and initialize data
     map.on('load', () => {
+        debug('Map loaded, initializing data...');
+        
+        // Initial fetch
         fetchLocations();
+        
+        // Add a safety timeout to ensure the map skeleton is removed
+        // even if there's an unexpected error
+        setTimeout(() => {
+            if (elements.mapSkeleton && !elements.mapSkeleton.classList.contains('hidden')) {
+                debug('Safety timeout: forcing map skeleton to hide');
+                elements.mapSkeleton.classList.add('hidden');
+                state.isLoading = false;
+            }
+        }, 10000); // 10 second timeout
+        
+        // Set up interval for updates
         updateInterval = setInterval(fetchLocations, 10000); // Update every 10 seconds
+        debug('Auto-refresh interval set up');
     });
 
     // Clean up on page unload
@@ -523,7 +903,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Search functionality
     document.getElementById('searchEnforcer').addEventListener('input', function() {
-        const locations = Object.values(enforcerData);
+        const locations = Object.values(state.enforcerData);
         updateEnforcersList(locations);
     });
 
@@ -641,7 +1021,7 @@ document.addEventListener('DOMContentLoaded', function() {
     async function reverseGeocode(longitude, latitude) {
         try {
             const response = await fetch(
-                `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${mapboxgl.accessToken}&language=en&types=address,place,poi,neighborhood,locality`
+                `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${mapboxgl.accessToken}&language=en&types=address,place,poi,neighborhood,locality,region,country`
             );
             const data = await response.json();
             
@@ -652,26 +1032,145 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Extract relevant parts (street, place, etc.)
                 const locationParts = mainLocation.split(',').map(part => part.trim());
                 
-                // Return formatted location
-                if (locationParts.length >= 2) {
-                    return {
-                        mainLocation: locationParts[0],
-                        fullAddress: mainLocation,
-                        nearbyLandmark: data.features.find(f => f.place_type.includes('poi'))?.text || null
-                    };
-                } else {
-                    return {
-                        mainLocation: mainLocation,
-                        fullAddress: mainLocation,
-                        nearbyLandmark: null
-                    };
+                // Initialize address parts with defaults
+                let street = '';
+                let barangay = '';
+                let municipality = '';
+                let province = '';
+                let country = '';
+                
+                // Extract country first (usually the last part)
+                if (locationParts.length > 0) {
+                    const lastPart = locationParts[locationParts.length - 1];
+                    // Check if last part is likely a country
+                    if (lastPart && (lastPart === "Philippines" || 
+                                     lastPart === "United States" || 
+                                     lastPart === "Malaysia" || 
+                                     lastPart.length < 20)) {
+                        country = lastPart;
+                    }
                 }
+                
+                // Special handling for Philippines addresses
+                if (country === "Philippines") {
+                    // Try to extract different parts based on context
+                    
+                    // Find province (typically second to last part)
+                    if (locationParts.length > 1) {
+                        // Province is often before country
+                        const provinceIndex = locationParts.length - 2;
+                        if (provinceIndex >= 0) {
+                            const possibleProvince = locationParts[provinceIndex];
+                            // Some known provinces in Philippines
+                            const knownProvinces = ["Negros Occidental", "Negros Oriental", "Cebu", "Iloilo", "Batangas", "Cavite"];
+                            if (knownProvinces.some(p => possibleProvince.includes(p)) || 
+                                possibleProvince.includes("Province")) {
+                                province = possibleProvince;
+                            }
+                        }
+                    }
+                    
+                    // Find municipality (typically before province)
+                    if (locationParts.length > 2) {
+                        // Municipality is often third from last
+                        const municipalityIndex = locationParts.length - 3;
+                        if (municipalityIndex >= 0) {
+                            municipality = locationParts[municipalityIndex];
+                        }
+                    }
+                    
+                    // Find barangay (often has "Barangay" or "Brgy." in the name)
+                    for (let i = 0; i < locationParts.length - 2; i++) {
+                        if (locationParts[i].toLowerCase().includes("barangay") || 
+                            locationParts[i].includes("Brgy.")) {
+                            barangay = locationParts[i];
+                            break;
+                        }
+                    }
+                    
+                    // The first part is usually street or location name if not already identified as barangay
+                    if (locationParts.length > 0 && !locationParts[0].toLowerCase().includes("barangay")) {
+                        street = locationParts[0];
+                    }
+                    
+                    // If we couldn't identify specific parts, make best guesses based on position
+                    if (!street && locationParts.length > 0) street = locationParts[0];
+                    if (!barangay && locationParts.length > 2) barangay = locationParts[1];
+                    if (!municipality && locationParts.length > 2) municipality = locationParts[locationParts.length - 3];
+                    if (!province && locationParts.length > 1) province = locationParts[locationParts.length - 2];
+                } else {
+                    // Generic address parsing for non-Philippines addresses
+                    
+                    // First part is usually street
+                    if (locationParts.length > 0) street = locationParts[0];
+                    
+                    // Last part is country
+                    if (locationParts.length > 0) {
+                        country = locationParts[locationParts.length - 1];
+                    }
+                    
+                    // Second to last might be province/state/region
+                    if (locationParts.length > 1) {
+                        province = locationParts[locationParts.length - 2];
+                    }
+                    
+                    // Third to last might be city/municipality
+                    if (locationParts.length > 2) {
+                        municipality = locationParts[locationParts.length - 3];
+                    }
+                    
+                    // Fourth to last might be district/neighborhood/barangay
+                    if (locationParts.length > 3) {
+                        barangay = locationParts[locationParts.length - 4];
+                    }
+                }
+                
+                // Check for structured address in context
+                const feature = data.features[0];
+                if (feature.context) {
+                    for (const contextItem of feature.context) {
+                        const id = contextItem.id || '';
+                        
+                        if (id.includes('country')) {
+                            country = contextItem.text;
+                        } else if (id.includes('region')) {
+                            province = contextItem.text;
+                        } else if (id.includes('place')) {
+                            municipality = contextItem.text;
+                        } else if (id.includes('neighborhood') || id.includes('locality')) {
+                            barangay = contextItem.text;
+                        }
+                    }
+                }
+                
+                // For the main feature, check if it's a street
+                if (feature.place_type && 
+                    (feature.place_type.includes('address') || 
+                     feature.place_type.includes('street'))) {
+                    street = feature.text || street;
+                }
+                
+                return {
+                    mainLocation: locationParts[0] || '',
+                    fullAddress: mainLocation,
+                    street: street,
+                    barangay: barangay,
+                    municipality: municipality,
+                    province: province,
+                    country: country,
+                    nearbyLandmark: data.features.find(f => f.place_type.includes('poi'))?.text || null
+                };
             }
             
             // Fallback to coordinates if geocoding fails
             return {
                 mainLocation: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
                 fullAddress: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
+                street: '',
+                barangay: '',
+                municipality: '',
+                province: '',
+                country: '',
                 nearbyLandmark: null
             };
         } catch (error) {
@@ -680,10 +1179,55 @@ document.addEventListener('DOMContentLoaded', function() {
             return {
                 mainLocation: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
                 fullAddress: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
+                street: '',
+                barangay: '',
+                municipality: '',
+                province: '',
+                country: '',
                 nearbyLandmark: null
             };
         }
     }
+
+    // Lazy load images when they become visible
+    function lazyLoadImages() {
+        const lazyImages = document.querySelectorAll('.lazy-image:not(.loaded)');
+        lazyImages.forEach(img => {
+            if (img.dataset.src) {
+                // Create a new image to preload
+                const tempImg = new Image();
+                tempImg.onload = function() {
+                    img.src = img.dataset.src;
+                    img.classList.add('loaded');
+                };
+                tempImg.src = img.dataset.src;
+            } else {
+                img.classList.add('loaded');
+            }
+        });
+    }
+
+    // Focus on enforcer
+    window.focusEnforcer = function(id) {
+        const enforcer = state.enforcerData[id];
+        if (enforcer) {
+            map.flyTo({
+                center: [enforcer.longitude, enforcer.latitude],
+                zoom: 16,
+                duration: 1000,
+                essential: true
+            });
+            
+            // Highlight the marker
+            const marker = markers[id];
+            if (marker) {
+                marker.getElement().classList.add('highlighted');
+                setTimeout(() => {
+                    marker.getElement().classList.remove('highlighted');
+                }, 2000);
+            }
+        }
+    };
 });
 </script>
 
@@ -1398,5 +1942,438 @@ document.addEventListener('DOMContentLoaded', function() {
     filter: grayscale(0.8);
     opacity: 0.8;
 }
+
+/* Skeleton loader animations */
+@keyframes shimmer {
+    0% {
+        background-position: -468px 0;
+    }
+    100% {
+        background-position: 468px 0;
+    }
+}
+
+.skeleton {
+    position: relative;
+    overflow: hidden;
+    background: #f0f3f5;
+    border-radius: 4px;
+}
+
+.skeleton::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0) 0%, 
+        rgba(255, 255, 255, 0.6) 50%, 
+        rgba(255, 255, 255, 0) 100%);
+    animation: shimmer 1.5s infinite;
+    background-size: 600px 100%;
+}
+
+.skeleton-card {
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+}
+
+.skeleton-text {
+    height: 10px;
+    margin-bottom: 8px;
+    width: 100%;
+}
+
+.skeleton-text.short {
+    width: 60%;
+}
+
+.skeleton-text.medium {
+    width: 80%;
+}
+
+.skeleton-circle {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+}
+
+.skeleton-enforcer-item {
+    padding: 1rem;
+    border-radius: 12px;
+    margin-bottom: 0.75rem;
+    background: #f8fafc;
+    border: 1px solid rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.skeleton-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.skeleton-details {
+    flex: 1;
+}
+
+/* Map skeleton loader */
+.map-skeleton {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #f0f3f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    border-radius: 4px;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.map-skeleton.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.map-loading-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.map-loading-indicator .material-icons {
+    font-size: 48px;
+    color: var(--primary-color);
+    opacity: 0.7;
+}
+
+.map-loading-text {
+    font-size: 16px;
+    font-weight: 500;
+    color: #64748b;
+}
+
+.map-loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(66, 133, 244, 0.3);
+    border-radius: 50%;
+    border-top-color: #4285F4;
+    animation: map-spinner 1s linear infinite;
+}
+
+@keyframes map-spinner {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Lazy loading for images */
+.lazy-image {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.lazy-image.loaded {
+    opacity: 1;
+}
+
+/* Pulse animation for active markers */
+@keyframes pulse-ring {
+    0% {
+        transform: translate(-50%, -50%) scale(0.9);
+        opacity: 0.8;
+    }
+    70% {
+        transform: translate(-50%, -50%) scale(1.3);
+        opacity: 0;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1.3);
+        opacity: 0;
+    }
+}
+
+/* Improved accessibility - Focus states */
+.btn:focus, 
+.btn:focus-visible,
+.action-btn:focus,
+.action-btn:focus-visible,
+#searchEnforcer:focus,
+#searchEnforcer:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(66, 133, 244, 0.2);
+}
+
+/* Animated transitions for better UX */
+.enforcer-item,
+.map-controls button,
+.dropdown-menu,
+.action-btn,
+.status-card {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Connection status indicator */
+.connection-status {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 5;
+    background: white;
+    border-radius: 20px;
+    padding: 6px 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.connection-status.fade-out {
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.status-indicator.online {
+    color: #22c55e;
+}
+
+.status-indicator.offline {
+    color: #ef4444;
+}
+
+.status-indicator .material-icons {
+    font-size: 16px;
+}
+
+/* Error notification */
+.error-notification {
+    position: fixed;
+    bottom: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #fee2e2;
+    color: #b91c1c;
+    border-radius: 8px;
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 9999;
+    transition: bottom 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    max-width: 90%;
+    width: 400px;
+}
+
+.error-notification.show {
+    bottom: 20px;
+}
+
+.notification-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.notification-close {
+    background: transparent;
+    border: none;
+    color: #b91c1c;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notification-close .material-icons {
+    font-size: 18px;
+}
+
+/* Enhanced keyboard focus styles for accessibility */
+.enforcer-item:focus-visible,
+.btn-filter:focus-visible,
+.dropdown-toggle:focus-visible,
+.dropdown-item:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Smooth animations for state changes */
+@keyframes fade-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-out {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-10px); }
+}
+
+.fade-in {
+    animation: fade-in 0.3s ease forwards;
+}
+
+.fade-out {
+    animation: fade-out 0.3s ease forwards;
+}
+
+/* Enhanced responsive styles */
+@media (max-width: 768px) {
+    .map-skeleton .map-loading-text {
+        font-size: 14px;
+    }
+    
+    .enforcer-item {
+        padding: 0.75rem;
+    }
+    
+    .avatar-container {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .status-legend small {
+        font-size: 10px;
+    }
+    
+    #focusMyLocation {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+@media (max-width: 576px) {
+    .status-card {
+        padding: 10px;
+    }
+    
+    .status-card h3 {
+        font-size: 1.5rem;
+    }
+    
+    .enforcer-list {
+        height: calc(100vh - 30rem) !important;
+    }
+}
+
+.location-details {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #4b5563;
+    border-left: 2px solid #e5e7eb;
+    padding-left: 8px;
+}
+
+.location-part {
+    margin-bottom: 4px;
+}
+
+.location-label {
+    font-weight: 500;
+    color: #6b7280;
+}
 </style>
+{% endblock %}
+
+{% block extra_js_bottom %}
+<script>
+    // Setup event listeners when document is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set up filter buttons
+        const filterButtons = document.querySelectorAll('.btn-filter');
+        filterButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                // Update active state
+                filterButtons.forEach(btn => {
+                    btn.classList.remove('active');
+                    btn.setAttribute('aria-pressed', 'false');
+                });
+                this.classList.add('active');
+                this.setAttribute('aria-pressed', 'true');
+                
+                // Apply filter
+                state.filter = this.dataset.filter;
+                
+                // Update list
+                const locations = Object.values(state.enforcerData);
+                updateEnforcersList(locations);
+            });
+        });
+        
+        // Set up sort options
+        const sortOptions = document.querySelectorAll('.sort-option');
+        sortOptions.forEach(option => {
+            option.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Update selected sort
+                state.sortMethod = this.dataset.sort;
+                document.getElementById('currentSort').textContent = this.textContent;
+                
+                // Update list
+                const locations = Object.values(state.enforcerData);
+                updateEnforcersList(locations);
+            });
+        });
+        
+        // Set up search input
+        const searchInput = document.getElementById('searchEnforcer');
+        searchInput.addEventListener('input', function() {
+            state.searchTerm = this.value;
+            const locations = Object.values(state.enforcerData);
+            updateEnforcersList(locations);
+        });
+        
+        // Monitor connection status
+        window.addEventListener('online', () => {
+            updateConnectionStatus(true);
+            fetchLocations(); // Refresh data when back online
+        });
+        
+        window.addEventListener('offline', () => {
+            updateConnectionStatus(false);
+        });
+        
+        // Enable keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            // Focus on search box with / key
+            if (e.key === '/' && document.activeElement !== searchInput) {
+                e.preventDefault();
+                searchInput.focus();
+            }
+            
+            // Allow ESC to close notifications
+            if (e.key === 'Escape') {
+                const notification = document.getElementById('errorNotification');
+                if (notification && notification.classList.contains('show')) {
+                    notification.classList.remove('show');
+                }
+            }
+        });
+    });
+</script>
 {% endblock %} 

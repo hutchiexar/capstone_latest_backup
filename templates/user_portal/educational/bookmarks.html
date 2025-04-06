@@ -1,0 +1,174 @@
+{% extends 'user_portal/base_user.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .topic-card {
+        transition: all 0.3s ease;
+        border-left: 3px solid transparent;
+        height: 100%;
+    }
+    .topic-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        border-left-color: var(--primary-color);
+    }
+    .topic-card .card-footer {
+        background-color: rgba(var(--primary-rgb), 0.05);
+    }
+    .category-badge {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        background-color: rgba(var(--primary-rgb), 0.1);
+        color: var(--primary-color);
+    }
+    .card-body img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 6px;
+    }
+    .action-btn {
+        transition: all 0.3s ease;
+    }
+    .action-btn:hover {
+        transform: translateY(-2px);
+    }
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+    .empty-state-icon {
+        font-size: 4rem;
+        color: var(--primary-color);
+        opacity: 0.2;
+        margin-bottom: 1rem;
+    }
+</style>
+{{ block.super }}
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">
+            <span class="material-icons me-2">bookmark</span>
+            My Bookmarked Topics
+        </h1>
+        <a href="{% url 'educational:topic_list' %}" class="btn btn-outline-primary">
+            <span class="material-icons me-1">arrow_back</span>
+            Back to All Topics
+        </a>
+    </div>
+
+    {% if bookmarked_topics %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for bookmark in bookmarked_topics %}
+                <div class="col">
+                    <div class="card topic-card h-100">
+                        <div class="card-body">
+                            <span class="category-badge mb-2 d-inline-block">{{ bookmark.topic.category.title }}</span>
+                            <h5 class="card-title mb-2">{{ bookmark.topic.title }}</h5>
+                            <p class="card-text text-muted mb-3">
+                                {{ bookmark.topic.content|striptags|truncatechars:120 }}
+                            </p>
+                            <div class="d-grid">
+                                <a href="{% url 'educational:topic_detail' topic_id=bookmark.topic.id %}" class="btn btn-outline-primary action-btn">
+                                    <span class="material-icons me-1">visibility</span>
+                                    View Topic
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-footer d-flex justify-content-between align-items-center">
+                            <small class="text-muted">Bookmarked on {{ bookmark.created_at|date:"M d, Y" }}</small>
+                            
+                            <form method="post" action="{% url 'educational:toggle_bookmark' topic_id=bookmark.topic.id %}" class="bookmark-form">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-link text-danger p-0 action-btn" title="Remove bookmark">
+                                    <span class="material-icons">bookmark_remove</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card">
+            <div class="card-body empty-state">
+                <div class="empty-state-icon">
+                    <span class="material-icons">bookmark_border</span>
+                </div>
+                <h3 class="mb-3">No Bookmarked Topics</h3>
+                <p class="text-muted mb-4">You haven't bookmarked any educational topics yet. Browse through our resources and save topics that interest you.</p>
+                <a href="{% url 'educational:topic_list' %}" class="btn btn-primary btn-lg">
+                    <span class="material-icons me-1">menu_book</span>
+                    Browse Topics
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // AJAX for bookmark removal
+        document.querySelectorAll('.bookmark-form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const topicCard = this.closest('.col');
+                
+                fetch(this.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': this.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && !data.is_bookmarked) {
+                        // Animate the removal
+                        topicCard.style.opacity = '0';
+                        topicCard.style.transform = 'scale(0.8)';
+                        setTimeout(() => {
+                            topicCard.remove();
+                            
+                            // Check if there are any cards left
+                            if (document.querySelectorAll('.topic-card').length === 0) {
+                                // Show empty state
+                                const container = document.querySelector('.container');
+                                const rowEl = document.querySelector('.row');
+                                rowEl.remove();
+                                
+                                const emptyState = document.createElement('div');
+                                emptyState.className = 'card';
+                                emptyState.innerHTML = `
+                                    <div class="card-body empty-state">
+                                        <div class="empty-state-icon">
+                                            <span class="material-icons">bookmark_border</span>
+                                        </div>
+                                        <h3 class="mb-3">No Bookmarked Topics</h3>
+                                        <p class="text-muted mb-4">You haven't bookmarked any educational topics yet. Browse through our resources and save topics that interest you.</p>
+                                        <a href="{% url 'educational:topic_list' %}" class="btn btn-primary btn-lg">
+                                            <span class="material-icons me-1">menu_book</span>
+                                            Browse Topics
+                                        </a>
+                                    </div>
+                                `;
+                                container.appendChild(emptyState);
+                            }
+                        }, 300);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            });
+        });
+    });
+</script>
+{% endblock %} 

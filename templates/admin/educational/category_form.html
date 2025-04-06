@@ -1,0 +1,126 @@
+{% extends 'admin/base_admin.html' %}
+{% load static %}
+
+{% block admin_content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="admin-section-title mb-0">
+                {% if is_edit %}Edit Category{% else %}Create New Category{% endif %}
+            </h2>
+            <p class="text-muted">
+                {% if is_edit %}Update existing category details{% else %}Add a new category for educational topics{% endif %}
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'educational:admin_category_list' %}" class="btn btn-outline-secondary d-flex align-items-center">
+                <span class="material-icons me-2">arrow_back</span> Back to Categories
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% if is_edit %}Edit{% else %}Create{% endif %} Category</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% if is_edit %}{% url 'educational:admin_category_edit' category_id=category.id %}{% else %}{% url 'educational:admin_category_create' %}{% endif %}">
+                        {% csrf_token %}
+                        
+                        <!-- Title -->
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Category Title <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                placeholder="e.g., Road Safety, Traffic Rules" 
+                                value="{% if is_edit %}{{ category.title }}{% endif %}" 
+                                required>
+                            <div class="form-text">Give your category a clear, descriptive name</div>
+                        </div>
+                        
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="4" 
+                                placeholder="Brief description of what topics this category will include">{% if is_edit %}{{ category.description }}{% endif %}</textarea>
+                            <div class="form-text">A short description helps explain what topics should be included in this category</div>
+                        </div>
+                        
+                        <!-- Display Order -->
+                        <div class="mb-3">
+                            <label for="order" class="form-label">Display Order</label>
+                            <input type="number" class="form-control" id="order" name="order" 
+                                min="0" placeholder="0" value="{% if is_edit %}{{ category.order }}{% else %}0{% endif %}">
+                            <div class="form-text">Lower numbers will appear first in lists (0 is first)</div>
+                        </div>
+                        
+                        <!-- Buttons -->
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a href="{% url 'educational:admin_category_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                {% if is_edit %}Update Category{% else %}Create Category{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Category Tips</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item border-0 ps-0">
+                            <div class="d-flex">
+                                <span class="material-icons me-3 text-primary">tips_and_updates</span>
+                                <p class="mb-0">Use clear, concise category names that represent a specific area of focus.</p>
+                            </div>
+                        </li>
+                        <li class="list-group-item border-0 ps-0">
+                            <div class="d-flex">
+                                <span class="material-icons me-3 text-primary">tips_and_updates</span>
+                                <p class="mb-0">Order your categories logically, from fundamental to advanced topics.</p>
+                            </div>
+                        </li>
+                        <li class="list-group-item border-0 ps-0">
+                            <div class="d-flex">
+                                <span class="material-icons me-3 text-primary">tips_and_updates</span>
+                                <p class="mb-0">Add descriptive details to help users understand what to expect.</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            {% if is_edit %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Topics in this Category</h5>
+                </div>
+                <div class="card-body">
+                    {% if category.topics_count > 0 %}
+                    <p class="mb-3">This category contains <strong>{{ category.topics_count }}</strong> topic(s).</p>
+                    <div class="d-grid">
+                        <a href="{% url 'educational:admin_topic_list' %}?category={{ category.id }}" class="btn btn-outline-primary">
+                            <span class="material-icons me-2">visibility</span> View Topics
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info mb-0">
+                        <div class="d-flex align-items-center">
+                            <span class="material-icons me-2">info</span>
+                            <span>This category doesn't have any topics yet.</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

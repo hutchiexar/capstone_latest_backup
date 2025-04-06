@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
-from .models import Violator, Violation, Payment, UserProfile, ActivityLog, Operator, Vehicle, OperatorApplication, Driver
+from .models import Violator, Violation, Payment, UserProfile, ActivityLog, Operator, Vehicle, OperatorApplication, Driver, DriverVehicleAssignment
 from django.utils import timezone
 
 # Define inline admin classes
@@ -70,7 +70,8 @@ class OperatorApplicationAdmin(admin.ModelAdmin):
             'fields': ('user', 'status', 'submitted_at', 'processed_at', 'processed_by')
         }),
         ('Documents', {
-            'fields': ('business_permit', 'other_documents')
+            'fields': ('business_permit', 'police_clearance', 'barangay_certificate', 
+                      'cedula', 'cenro_tickets', 'mayors_permit', 'other_documents')
         }),
         ('Notes', {
             'fields': ('notes',)
@@ -104,10 +105,65 @@ admin.site.unregister(User)
 admin.site.register(User, UserAdmin)
 admin.site.register(OperatorApplication, OperatorApplicationAdmin)
 
-# Register Driver
+# Register Vehicle with improved admin
+@admin.register(Vehicle)
+class VehicleAdmin(admin.ModelAdmin):
+    list_display = ('new_pd_number', 'operator', 'vehicle_type', 'plate_number', 'capacity', 'active', 'created_at')
+    list_filter = ('vehicle_type', 'active', 'operator')
+    search_fields = ('new_pd_number', 'old_pd_number', 'plate_number', 'operator__last_name', 'operator__first_name')
+    date_hierarchy = 'created_at'
+    
+    fieldsets = (
+        ('Operator Information', {
+            'fields': ('operator',)
+        }),
+        ('PD Number Information', {
+            'fields': ('new_pd_number', 'old_pd_number')
+        }),
+        ('Vehicle Details', {
+            'fields': ('vehicle_type', 'plate_number', 'engine_number', 'chassis_number', 'capacity', 'year_model', 'color')
+        }),
+        ('Additional Information', {
+            'fields': ('notes', 'active')
+        }),
+    )
+
+# Update Driver admin
 @admin.register(Driver)
 class DriverAdmin(admin.ModelAdmin):
-    list_display = ('last_name', 'first_name', 'middle_initial', 'address', 'old_pd_number', 'new_pd_number', 'operator')
-    list_filter = ('operator',)
-    search_fields = ('last_name', 'first_name', 'address', 'old_pd_number', 'new_pd_number')
+    list_display = ('last_name', 'first_name', 'middle_initial', 'new_pd_number', 'license_number', 'operator', 'active')
+    list_filter = ('operator', 'active')
+    search_fields = ('last_name', 'first_name', 'address', 'new_pd_number', 'license_number', 'contact_number')
     ordering = ('last_name', 'first_name')
+    
+    fieldsets = (
+        ('Personal Information', {
+            'fields': ('last_name', 'first_name', 'middle_initial', 'address')
+        }),
+        ('PD Number Information', {
+            'fields': ('new_pd_number', 'old_pd_number')
+        }),
+        ('Driver Details', {
+            'fields': ('license_number', 'contact_number', 'emergency_contact', 'emergency_contact_number')
+        }),
+        ('Operator Information', {
+            'fields': ('operator', 'active')
+        }),
+    )
+
+# Register DriverVehicleAssignment
+@admin.register(DriverVehicleAssignment)
+class DriverVehicleAssignmentAdmin(admin.ModelAdmin):
+    list_display = ('driver', 'vehicle', 'start_date', 'end_date', 'is_active')
+    list_filter = ('is_active', 'vehicle__operator')
+    search_fields = ('driver__last_name', 'driver__first_name', 'vehicle__new_pd_number')
+    date_hierarchy = 'start_date'
+    
+    fieldsets = (
+        ('Assignment Details', {
+            'fields': ('driver', 'vehicle', 'notes')
+        }),
+        ('Assignment Status', {
+            'fields': ('start_date', 'end_date', 'is_active', 'created_by')
+        }),
+    )

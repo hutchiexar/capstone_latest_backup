@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+    <!-- Admin-specific styles -->
+    <style>
+        .admin-section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+    </style>
+    {{ block.super }}
+{% endblock %}
+
+{% block content %}
+    <!-- Admin content goes here -->
+    {% block admin_content %}{% endblock %}
+{% endblock %}
+
+{% block extra_js %}
+    <!-- Framer Motion Integration for admin modals -->
+    {% include 'includes/framer_motion_integration.html' %}
+    
+    <!-- Admin-specific scripts -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add additional animation settings for admin-specific modals
+            const adminModalAnimations = {
+                'reportDetailsModal': 'slideRight',
+                'userStatusModal': 'scale',
+                'deleteConfirmModal': 'fade',
+                'exportDataModal': 'spring'
+            };
+            
+            // Apply animations to admin modals
+            for (const [modalId, animationType] of Object.entries(adminModalAnimations)) {
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.dataset.animation = animationType;
+                }
+            }
+            
+            // Enhance all modal lists with staggered animations
+            document.querySelectorAll('.modal .list-group-item').forEach((item, index) => {
+                item.classList.add('modal-list-item');
+            });
+            
+            // Add admin-modal class to all modals in admin pages
+            document.querySelectorAll('.modal').forEach(modal => {
+                if (!modal.classList.contains('admin-modal')) {
+                    modal.classList.add('admin-modal');
+                }
+            });
+            
+            // Apply admin-modal class to dynamically created modals using MutationObserver
+            const observer = new MutationObserver(mutations => {
+                mutations.forEach(mutation => {
+                    if (mutation.addedNodes.length) {
+                        mutation.addedNodes.forEach(node => {
+                            if (node.nodeType === 1 && node.classList && node.classList.contains('modal')) {
+                                if (!node.classList.contains('admin-modal')) {
+                                    node.classList.add('admin-modal');
+                                }
+                            }
+                        });
+                    }
+                });
+            });
+            
+            observer.observe(document.body, { childList: true, subtree: true });
+        });
+    </script>
+    
+    {{ block.super }}
+{% endblock %} 

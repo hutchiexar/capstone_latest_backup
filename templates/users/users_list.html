@@ -12,7 +12,7 @@
                         </div>
                         <div>
                             <h4 class="mb-0">User Management</h4>
-                            <p class="text-muted mb-0 small">Total Users: {{ user_profiles.count }}</p>
+                            <p class="text-muted mb-0 small">Showing Administrative Users Only (Excluding Regular Users)</p>
                         </div>
                     </div>
                     {% if user.userprofile.role in 'ADMIN,SUPERVISOR' %}
@@ -88,6 +88,7 @@
                         </thead>
                         <tbody>
                             {% for user in user_profiles %}
+                            {% if user.role != 'USER' %}
                             <tr>
                                 <td class="ps-4">
                                     <div class="table-profile">
@@ -135,26 +136,25 @@
                                                 class="btn btn-action btn-view"
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#userDetailModal"
-                                                data-user-id="{{ user.id }}"
-                                                title="View Details">
+                                                data-user-id="{{ user.id }}">
                                             <span class="material-icons">visibility</span>
                                         </button>
                                         <a href="{% url 'edit_user' user.id %}" 
-                                        class="btn btn-action btn-edit"
-                                        title="Edit User">
+                                        class="btn btn-action btn-edit">
                                             <span class="material-icons">edit</span>
                                         </a>
                                         {% if user.user.username != request.user.username %}
                                         <button type="button"
                                                 class="btn btn-action btn-toggle-status"
-                                                onclick="toggleUserStatus({{ user.id }}, '{{ user.user.is_active|yesno:'deactivate,activate' }}')"
-                                                title="{{ user.user.is_active|yesno:'Deactivate,Activate' }} User">
+                                                data-user-id="{{ user.id }}"
+                                                data-action="{{ user.user.is_active|yesno:'deactivate,activate' }}">
                                             <span class="material-icons">{{ user.user.is_active|yesno:'block,check_circle' }}</span>
                                         </button>
                                         {% endif %}
                                     </div>
                                 </td>
                             </tr>
+                            {% endif %}
                             {% empty %}
                             <tr>
                                 <td colspan="5" class="text-center py-5">
@@ -179,14 +179,52 @@
     </div>
 
     <!-- User Detail Modal -->
-    <div class="modal fade" id="userDetailModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content border-0 shadow">
-                <div class="modal-header border-0 bg-light">
-                    <h5 class="modal-title">User Details</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="modal fade" id="userDetailModal" tabindex="-1" aria-labelledby="userDetailModalLabel" aria-hidden="true" data-animation="fade">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content border-0">
+                <div class="modal-header border-0 py-3">
+                    <h5 class="modal-title d-flex align-items-center" id="userDetailModalLabel">
+                        <span class="material-icons me-2" style="color: var(--primary-color)">person</span>
+                        User Details
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body p-0" style="min-height: 300px;"></div>
+                <div class="modal-body p-0">
+                    <!-- Skeleton Loader for Modal -->
+                    <div id="userDetailSkeletonLoader">
+                        <div class="p-4">
+                            <div class="d-flex mb-4">
+                                <div class="skeleton-circle me-3"></div>
+                                <div class="flex-grow-1">
+                                    <div class="skeleton-line w-50"></div>
+                                    <div class="skeleton-line w-25 mt-2"></div>
+                                </div>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="skeleton-line w-25"></div>
+                                    <div class="skeleton-line w-75 mt-2"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="skeleton-line w-25"></div>
+                                    <div class="skeleton-line w-75 mt-2"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="skeleton-line w-25"></div>
+                                    <div class="skeleton-line w-75 mt-2"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="skeleton-line w-25"></div>
+                                    <div class="skeleton-line w-75 mt-2"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="userDetailContent"></div>
+                </div>
+                <div class="modal-footer border-0 py-3">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
             </div>
         </div>
     </div>
@@ -307,6 +345,11 @@
         color: #1d4ed8;
     }
 
+    .role-clerk {
+        background-color: #f0fdfa;
+        color: #0d9488;
+    }
+
     /* Status Badge Styles */
     .status-badge {
         padding: 0.4rem 0.75rem;
@@ -368,6 +411,52 @@
         font-size: 1.25rem;
     }
 
+    /* Skeleton Loader Styles */
+    .skeleton-loader {
+        width: 100%;
+    }
+
+    .skeleton-row {
+        display: flex;
+        margin-bottom: 0.75rem;
+        width: 100%;
+    }
+
+    .skeleton-cell {
+        height: 1.5rem;
+        background-color: #f3f4f6;
+        border-radius: 4px;
+        margin-right: 0.5rem;
+        opacity: 0.7;
+        animation: skeleton-pulse 1.5s ease-in-out infinite;
+    }
+
+    .skeleton-line {
+        height: 0.85rem;
+        background-color: #f3f4f6;
+        border-radius: 4px;
+        opacity: 0.7;
+        animation: skeleton-pulse 1.5s ease-in-out infinite;
+    }
+
+    .skeleton-circle {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background-color: #f3f4f6;
+        opacity: 0.7;
+        animation: skeleton-pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes skeleton-pulse {
+        0%, 100% {
+            opacity: 0.5;
+        }
+        50% {
+            opacity: 0.8;
+        }
+    }
+
     /* Search Input Styles */
     .input-group-text {
         color: #6b7280;
@@ -394,6 +483,91 @@
         object-fit: cover;
     }
 
+    /* Modal Enhancements */
+    .modal-content {
+        border: none;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .modal-header {
+        background-color: white;
+        padding: 1rem 1.5rem;
+    }
+
+    .modal-body {
+        padding: 0;
+        max-height: 65vh;
+        overflow-y: auto;
+    }
+
+    .modal-footer {
+        background-color: white;
+        padding: 1rem 1.5rem;
+    }
+
+    /* Animation for modal */
+    .modal.fade .modal-dialog {
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        transform: translateY(-10px);
+    }
+
+    .modal.show .modal-dialog {
+        transform: translateY(0);
+    }
+
+    /* User detail modal specific styles */
+    #userDetailModal .modal-dialog {
+        max-width: 500px;
+        margin: 1.5rem auto;
+    }
+
+    #userDetailModal .modal-content {
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    #userDetailModal .modal-title {
+        font-weight: 600;
+        color: #111827;
+    }
+
+    #userDetailModal .skeleton-circle {
+        width: 48px;
+        height: 48px;
+    }
+
+    /* Updated card styling inside modal */
+    #userDetailContent .card {
+        border: 1px solid #f3f4f6;
+        border-radius: 8px;
+        box-shadow: none;
+        margin-bottom: 1rem;
+    }
+
+    #userDetailContent .card-header {
+        background-color: #f9fafb;
+        border-bottom: 1px solid #f3f4f6;
+        padding: 0.75rem 1.25rem;
+        font-weight: 600;
+    }
+
+    #userDetailContent .card-body {
+        padding: 1rem 1.25rem;
+    }
+
+    #userDetailContent .form-label {
+        font-weight: 500;
+        color: #6b7280;
+        margin-bottom: 0.25rem;
+    }
+
+    #userDetailContent .form-control-plaintext {
+        padding: 0.25rem 0;
+        color: #111827;
+        font-weight: 500;
+    }
+
     /* Responsive Styles */
     @media (max-width: 768px) {
         .card-body {
@@ -414,75 +588,10 @@
         }
     }
 
-    /* Add these new styles */
-    .btn-toggle-status {
-        transition: all 0.2s ease;
-    }
-
-    .btn-toggle-status:hover {
-        transform: scale(1.1);
-    }
-
-    .btn-toggle-status .material-icons {
-        font-size: 1.25rem;
-    }
-
-    /* Status colors */
-    .btn-toggle-status[title*="Activate"] {
-        color: var(--success);
-    }
-
-    .btn-toggle-status[title*="Deactivate"] {
-        color: var(--danger);
-    }
-
-    /* Toast notification styles */
-    .alert {
-        z-index: 1060;
-    }
-
-    .alert-success {
-        background-color: var(--success);
-        color: white;
-        box-shadow: 0 2px 15px rgba(0,0,0,0.1);
-    }
-
-    .alert .material-icons {
-        vertical-align: middle;
-        font-size: 1.1rem;
-    }
-
-    .modal {
-        padding: 0 !important;
-    }
-
-    .modal-open {
-        overflow-y: auto !important;
-        padding-right: 0 !important;
-    }
-
-    .modal-open .modal {
-        overflow-x: hidden;
-        overflow-y: auto;
-        padding-right: 0 !important;
-    }
-
-    .modal-dialog {
-        margin: 1.75rem auto;
-        max-width: 800px;
-    }
-
-    .modal-content {
-        border: none;
-        border-radius: 12px;
-        box-shadow: 0 2px 20px rgba(0, 0, 0, 0.15);
-    }
-
-    /* Prevent table row spacing changes */
+    /* Ensure Table Style Consistency */
     .table {
         width: 100% !important;
         margin-bottom: 0 !important;
-        table-layout: fixed !important;
     }
 
     .table td {
@@ -497,239 +606,23 @@
         overflow-x: auto !important;
         overflow-y: hidden !important;
         position: relative !important;
-        padding-right: 0 !important;
-    }
-
-    /* Fixed Table Layout */
-    .table {
-        width: 100% !important;
-        margin: 0 !important;
-        table-layout: fixed !important;
-        border-collapse: separate !important;
-        border-spacing: 0 !important;
-    }
-
-    /* Fixed Column Widths */
-    .table th:nth-child(1),
-    .table td:nth-child(1) {
-        width: 35% !important;
-        min-width: 250px !important;
-        max-width: 35% !important;
-    }
-
-    .table th:nth-child(2),
-    .table td:nth-child(2) {
-        width: 15% !important;
-        min-width: 120px !important;
-        max-width: 15% !important;
-    }
-
-    .table th:nth-child(3),
-    .table td:nth-child(3) {
-        width: 15% !important;
-        min-width: 120px !important;
-        max-width: 15% !important;
-    }
-
-    .table th:nth-child(4),
-    .table td:nth-child(4) {
-        width: 20% !important;
-        min-width: 150px !important;
-        max-width: 20% !important;
-    }
-
-    .table th:nth-child(5),
-    .table td:nth-child(5) {
-        width: 15% !important;
-        min-width: 120px !important;
-        max-width: 15% !important;
-    }
-
-    /* Fixed Cell Content */
-    .table th,
-    .table td {
-        padding: 1rem 0.75rem !important;
-        vertical-align: middle !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        position: relative !important;
-        box-sizing: border-box !important;
     }
 
     /* Profile Layout Fixes */
     .d-flex {
         display: flex !important;
         align-items: center !important;
-        gap: 1rem !important;
-        width: 100% !important;
-        position: relative !important;
     }
 
     .avatar-container {
         flex-shrink: 0 !important;
-        width: 40px !important;
-        height: 40px !important;
-        position: relative !important;
-    }
-
-    /* Modal Fixes */
-    .modal {
-        padding: 0 !important;
-        margin: 0 !important;
-        box-sizing: border-box !important;
-        overflow-y: hidden !important;
-    }
-
-    .modal-open {
-        overflow: hidden !important;
-        padding-right: 0 !important;
-        width: 100% !important;
-        position: fixed !important;
-        height: 100% !important;
-    }
-
-    .modal-dialog {
-        margin: 1.75rem auto !important;
-        max-width: 800px !important;
-        width: calc(100% - 2rem) !important;
-        position: relative !important;
-    }
-
-    .modal-content {
-        border: none !important;
-        border-radius: 12px !important;
-        box-shadow: 0 2px 20px rgba(0, 0, 0, 0.15) !important;
-        max-height: calc(100vh - 3.5rem) !important;
-        overflow-y: auto !important;
-        position: relative !important;
-    }
-
-    .modal-body {
-        padding: 0 !important;
-        overflow-y: auto !important;
-        position: relative !important;
-    }
-
-    /* Prevent Body Scroll Lock */
-    body.modal-open {
-        position: fixed !important;
-        width: 100% !important;
-        height: 100% !important;
-        padding-right: 0 !important;
-    }
-
-    /* Card Fixes */
-    .card {
-        position: relative !important;
-        width: 100% !important;
-        margin-bottom: 1rem !important;
-    }
-
-    .card-body {
-        position: relative !important;
-        width: 100% !important;
-    }
-
-    /* Action Buttons Container */
-    .action-buttons {
-        display: flex !important;
-        gap: 0.5rem !important;
-        justify-content: flex-end !important;
-        min-width: 120px !important;
-        position: relative !important;
-        flex-shrink: 0 !important;
-    }
-
-    /* Prevent Content Jump */
-    html {
-        overflow-y: scroll !important;
-        width: 100vw !important;
-        position: relative !important;
-    }
-
-    /* Container Width Fix */
-    .container-fluid {
-        width: 100% !important;
-        max-width: 100% !important;
-        padding-right: 1rem !important;
-        padding-left: 1rem !important;
-        position: relative !important;
-    }
-
-    /* Wrapper Fix */
-    #wrapper {
-        width: 100% !important;
-        position: relative !important;
-        overflow-x: hidden !important;
-    }
-
-    /* Page Content Fix */
-    #page-content-wrapper {
-        width: 100% !important;
-        position: relative !important;
-        overflow-x: hidden !important;
-    }
-
-    /* Profile and Avatar Container Fixes */
-    .d-flex.align-items-center {
-        display: flex !important;
-        align-items: center !important;
-        gap: 1rem !important;
-        width: 100% !important;
-        min-height: 48px !important;
-    }
-
-    /* Avatar Container */
-    .avatar-container {
-        flex: 0 0 40px !important;
         width: 40px !important;
         height: 40px !important;
         position: relative !important;
         margin-right: 1rem !important;
     }
 
-    .avatar-container img,
-    .avatar-placeholder {
-        width: 40px !important;
-        height: 40px !important;
-        object-fit: cover !important;
-        flex-shrink: 0 !important;
-    }
-
-    /* User Info Container */
-    .user-info-container {
-        flex: 1 1 auto !important;
-        min-width: 0 !important;
-        overflow: hidden !important;
-    }
-
-    .user-info-container h6 {
-        margin: 0 !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-    }
-
-    .user-info-container .small {
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-    }
-
-    /* Ensure consistent spacing */
-    .table td:first-child {
-        padding-left: 1.5rem !important;
-    }
-
-    /* Prevent text wrapping in cells */
-    .table td > * {
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-    }
-
-    /* Fix avatar placeholder */
+    /* Avatar Styling */
     .avatar-placeholder {
         display: flex !important;
         align-items: center !important;
@@ -740,140 +633,221 @@
         border-radius: 50% !important;
     }
 
-    /* Mobile Responsiveness */
-    @media (max-width: 576px) {
-        .btn-primary {
-            height: 38px;
-            padding: 0.5rem 1rem;
-            font-size: 0.875rem;
-        }
-        
-        .btn-primary .material-icons {
-            font-size: 18px;
-        }
+    /* Button Transitions */
+    .btn-toggle-status {
+        transition: all 0.2s ease !important;
+    }
+
+    .btn-toggle-status:hover {
+        transform: scale(1.1) !important;
+    }
+
+    /* Status Colors */
+    .btn-toggle-status[title*="Activate"] {
+        color: var(--success) !important;
+    }
+
+    .btn-toggle-status[title*="Deactivate"] {
+        color: var(--danger) !important;
     }
     </style>
 
     <script>
-    // Function to show user details in modal
+    // Function to show user details in modal with enhanced loading state
     function showUserDetail(userId) {
-        const modalBody = document.querySelector('#userDetailModal .modal-body');
-        modalBody.innerHTML = `
-            <div class="d-flex align-items-center justify-content-center" style="min-height: 300px;">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-            </div>
-        `;
+        // Show skeleton loader and hide content
+        const skeletonLoader = document.getElementById('userDetailSkeletonLoader');
+        const contentContainer = document.getElementById('userDetailContent');
+        
+        if (skeletonLoader) skeletonLoader.classList.remove('d-none');
+        if (contentContainer) contentContainer.innerHTML = '';
         
         fetch(`/users/${userId}/modal/`)
-            .then(response => response.text())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.text();
+            })
             .then(html => {
-                modalBody.innerHTML = html;
+                // Hide skeleton and show content
+                if (skeletonLoader) skeletonLoader.classList.add('d-none');
+                if (contentContainer) contentContainer.innerHTML = html;
+                
+                // Initialize any components that might be in the loaded content
+                initializeLoadedComponents();
             })
             .catch(error => {
-                modalBody.innerHTML = `
-                    <div class="d-flex align-items-center justify-content-center" style="min-height: 300px;">
-                        <div class="alert alert-danger m-3">
-                            <span class="material-icons me-2">error_outline</span>
-                            Error loading user details: ${error.message}
+                console.error('Error loading user details:', error);
+                
+                // Hide skeleton loader
+                if (skeletonLoader) skeletonLoader.classList.add('d-none');
+                
+                // Show error message in content area
+                if (contentContainer) {
+                    contentContainer.innerHTML = `
+                        <div class="p-5 text-center">
+                            <span class="material-icons text-danger mb-3" style="font-size: 3rem;">error_outline</span>
+                            <h5 class="mb-2">Error Loading Details</h5>
+                            <p class="text-muted mb-0">Failed to load user details. Please try again.</p>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
+                
+                // Also show a toast notification
+                if (typeof showToast === 'function') {
+                    showToast('error', `Failed to load user details: ${error.message}`);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: `Failed to load user details: ${error.message}`
+                    });
+                }
             });
     }
 
-    // Function to toggle user status
+    // Function to initialize components in dynamically loaded content
+    function initializeLoadedComponents() {
+        // Find and initialize any components that need JavaScript initialization
+        // For example: tooltips, popovers, etc.
+        // Tooltip initialization removed
+        /* 
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        */
+    }
+
+    // Function to toggle user status with improved feedback
     function toggleUserStatus(userId, action) {
-        if (!confirm(`Are you sure you want to ${action} this user?`)) {
-            return;
-        }
+        Swal.fire({
+            title: 'Confirm Action',
+            text: `Are you sure you want to ${action} this user?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, proceed',
+            cancelButtonText: 'Cancel',
+            buttonsStyling: true,
+            customClass: {
+                confirmButton: 'btn btn-primary',
+                cancelButton: 'btn btn-danger'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const button = event.target.closest('button');
+                const originalHtml = button.innerHTML;
+                
+                // Disable button and show spinner
+                button.disabled = true;
+                button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
 
-        const button = event.target.closest('button');
-        const originalHtml = button.innerHTML;
-        button.disabled = true;
-        button.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-
-        fetch(`/users/${userId}/toggle-status/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRFToken': '{{ csrf_token }}'
+                fetch(`/users/${userId}/toggle-status/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        // Show success message and reload
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: `User status has been ${action}d successfully.`,
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            window.location.reload();
+                        });
+                    } else {
+                        throw new Error(data.error || 'Error updating user status');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    
+                    // Show error message
+                    if (typeof showToast === 'function') {
+                        showToast('error', error.message || 'Failed to update user status. Please try again.');
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: error.message || 'Failed to update user status. Please try again.'
+                        });
+                    }
+                })
+                .finally(() => {
+                    // Re-enable button and restore original content
+                    button.disabled = false;
+                    button.innerHTML = originalHtml;
+                });
             }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Use the global showToast function from base template
-                if (typeof showToast === 'function') {
-                    showToast('success', data.message);
-                }
-                setTimeout(() => window.location.reload(), 1500);
-            } else {
-                if (typeof showToast === 'function') {
-                    showToast('error', data.error || 'Error updating user status');
-                } else {
-                    alert(data.error || 'Error updating user status');
-                }
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            if (typeof showToast === 'function') {
-                showToast('error', 'Failed to update user status. Please try again.');
-            } else {
-                alert('Failed to update user status. Please try again.');
-            }
-        })
-        .finally(() => {
-            button.disabled = false;
-            button.innerHTML = originalHtml;
         });
     }
 
-    // Initialize modal functionality when DOM is loaded
+    // Initialize when DOM is loaded
     document.addEventListener('DOMContentLoaded', function() {
+        // Check for success parameter in URL for user creation
+        const urlParams = new URLSearchParams(window.location.search);
+        const successParam = urlParams.get('success');
+        
+        // Only show the URL-based success message if there are no Django messages
+        if (successParam === 'created' && !document.querySelector('.messages script')) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: 'User created successfully!',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            
+            // Clean up URL after showing message
+            const url = new URL(window.location.href);
+            url.searchParams.delete('success');
+            window.history.replaceState({}, document.title, url);
+        }
+        
+        // Add event listeners to all toggle status buttons
+        document.querySelectorAll('.btn-toggle-status').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const userId = this.getAttribute('data-user-id');
+                const action = this.getAttribute('data-action');
+                toggleUserStatus(userId, action);
+            });
+        });
+        
+        // Initialize modal events
         const userDetailModal = document.getElementById('userDetailModal');
         if (userDetailModal) {
-            // Load user details when modal is shown
             userDetailModal.addEventListener('show.bs.modal', function(event) {
                 const button = event.relatedTarget;
                 const userId = button.getAttribute('data-user-id');
                 showUserDetail(userId);
-                
-                // Fix for layout shift - measure scrollbar width once before modal opens
-                if (!document.documentElement.style.getPropertyValue('--scrollbar-width')) {
-                    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-                    document.documentElement.style.setProperty('--scrollbar-width', `${scrollbarWidth}px`);
-                }
             });
 
-            // After modal is hidden
+            // Reset modal content when hidden
             userDetailModal.addEventListener('hidden.bs.modal', function() {
-                // Only remove the scrollbar width property when needed
-                // Don't manipulate other body styles to avoid layout shifts
-                if (!document.querySelector('.modal.show')) {
-                    document.documentElement.style.removeProperty('--scrollbar-width');
-                }
+                const contentContainer = document.getElementById('userDetailContent');
+                if (contentContainer) contentContainer.innerHTML = '';
             });
-        }
-        
-        // Ensure table layout remains consistent
-        const tableContainer = document.querySelector('.table-responsive');
-        if (tableContainer) {
-            const resizeObserver = new ResizeObserver(entries => {
-                for (let entry of entries) {
-                    const table = entry.target.querySelector('.table');
-                    if (table) {
-                        table.style.width = `${entry.contentRect.width}px`;
-                    }
-                }
-            });
-            resizeObserver.observe(tableContainer);
         }
     });
 
-    // Make toggleUserStatus available globally
+    // Make functions available globally
+    window.showUserDetail = showUserDetail;
     window.toggleUserStatus = toggleUserStatus;
     </script>
     {% endblock %} 

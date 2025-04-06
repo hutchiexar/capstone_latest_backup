@@ -3,90 +3,345 @@
 
 {% block title %}Operator Dashboard{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Enhanced styling for Operator Dashboard */
+    .dashboard-card {
+        border: none;
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 25px rgba(0, 0, 0, 0.05);
+    }
+    
+    .stat-card-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 16px;
+    }
+    
+    .stat-card-title {
+        font-size: 14px;
+        color: var(--neutral-gray);
+        margin-bottom: 4px;
+    }
+    
+    .stat-card-value {
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 2px;
+        color: var(--dark-blue);
+    }
+    
+    .stat-card-description {
+        font-size: 12px;
+        color: var(--neutral-gray);
+    }
+    
+    .action-tabs {
+        padding: 0 1rem;
+        margin-top: 1rem;
+    }
+    
+    .action-tabs .nav-item button {
+        padding: 1rem 1.5rem;
+        border: none;
+        border-radius: 0;
+        color: var(--neutral-gray);
+        font-weight: 500;
+        position: relative;
+        transition: all 0.3s ease;
+    }
+    
+    .action-tabs .nav-item button.active {
+        color: var(--primary-color);
+        background: transparent;
+        font-weight: 600;
+    }
+    
+    .action-tabs .nav-item button.active::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background-color: var(--primary-color);
+        border-radius: 3px 3px 0 0;
+    }
+    
+    .action-tabs .nav-item button:hover:not(.active) {
+        color: var(--primary-color);
+        background: rgba(var(--primary-rgb), 0.05);
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(53, 99, 233, 0.05);
+    }
+    
+    .verified-badge {
+        background-color: var(--primary-light);
+        color: var(--primary-color);
+        border-radius: 50px;
+        padding: 8px 16px;
+        display: inline-flex;
+        align-items: center;
+        font-weight: 500;
+    }
+    
+    .verified-badge .material-icons {
+        margin-right: 8px;
+        font-size: 18px;
+    }
+    
+    /* Skeleton Loading */
+    .skeleton {
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 4px;
+    }
+    
+    @keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+    }
+    
+    .skeleton-row td {
+        padding: 16px 4px;
+    }
+    
+    .skeleton-row .skeleton-text {
+        height: 20px;
+        width: 100%;
+    }
+    
+    .skeleton-row .skeleton-text.sm {
+        width: 60%;
+    }
+    
+    .skeleton-card {
+        height: 100px;
+    }
+    
+    .skeleton-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+    }
+    
+    .skeleton-btn {
+        height: 36px;
+        width: 100px;
+        border-radius: 4px;
+    }
+    
+    /* Fade in animation for content */
+    .content-loaded {
+        animation: fadeIn 0.5s ease forwards;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    /* Empty state styling */
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 48px 0;
+    }
+    
+    .empty-state-icon {
+        width: 64px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #c0c0c0;
+        margin-bottom: 16px;
+        font-size: 64px;
+    }
+    
+    .empty-state-text {
+        font-size: 16px;
+        color: var(--neutral-gray);
+        margin-bottom: 24px;
+    }
+    
+    /* Stats styling to match user dashboard */
+    .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 16px;
+    }
+    
+    /* Header styling */
+    .page-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+    
+    .page-header-icon {
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 12px;
+    }
+    
+    .table > :not(caption) > * > * {
+        border-bottom-width: 1px;
+        border-bottom-color: #f0f0f0;
+    }
+    
+    .table > thead {
+        border-bottom: 2px solid #e0e0e0;
+    }
+    
+    .btn-group .btn {
+        padding: 0.25rem 0.5rem;
+        line-height: 1;
+    }
+    
+    .btn-group .material-icons {
+        font-size: 20px;
+    }
+    
+    .badge {
+        padding: 0.5em 0.75em;
+    }
+    
+    /* Update tab content styling */
+    .tab-content {
+        background: #fff;
+        border-radius: 0 0 16px 16px;
+    }
+    
+    .tab-pane {
+        animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid py-4">
-    <!-- Header Section -->
-    <div class="card shadow-sm border-0 rounded-3 mb-4">
+<div class="container py-4">
+    <!-- Header -->
+    <div class="card dashboard-card mb-4">
         <div class="card-body p-4">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <div class="d-flex align-items-center">
-                        <span class="material-icons me-2" style="color: var(--primary-color)">dashboard</span>
-                        <h4 class="mb-0">Operator Dashboard</h4>
-                    </div>
-                    <p class="text-muted mt-2 mb-0">Manage your registered vehicles and view operation statistics</p>
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <span class="material-icons" style="font-size: 36px; color: var(--primary-color);">dashboard</span>
                 </div>
                 <div>
-                    <a href="{% url 'user_portal:user_dashboard' %}" class="btn btn-outline-secondary d-flex align-items-center px-4 py-2">
-                        <span class="material-icons fs-5 me-2">arrow_back</span> Back to Home
-                    </a>
+                    <h2 class="fw-bold mb-0">Operator Dashboard</h2>
+                    <p class="text-muted mb-0">Manage your registered vehicles and drivers</p>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Operator Status and Stats -->
-    <div class="row mb-4">
-        <div class="col-md-4 mb-4 mb-md-0">
-            <div class="card h-100 shadow-sm border-0 rounded-3">
-                <div class="card-body p-4">
-                    <div class="d-flex align-items-center mb-3">
-                        <span class="material-icons me-2 fs-1" style="color: var(--primary-color)">verified</span>
-                        <div>
-                            <h5 class="mb-0">Verified Operator</h5>
-                            <p class="text-muted mb-0">Since {{ user.userprofile.operator_since|date:"F d, Y" }}</p>
-                        </div>
+    
+    <!-- Operator Info Box -->
+    <div class="card dashboard-card mb-4">
+        <div class="card-body p-4">
+            <div class="row">
+                <div class="col-md-4 mb-4 mb-md-0">
+                    <div class="verified-badge mb-3">
+                        <span class="material-icons">verified</span>
+                        <span>Verified Operator</span>
                     </div>
+                    <p class="text-muted">Since {{ user.userprofile.operator_since|date:"F d, Y" }}</p>
                     <hr>
                     <div class="d-flex align-items-center mb-2">
-                        <span class="material-icons me-2" style="color: #6c757d">person</span>
-                        <p class="mb-0">{{ user.get_full_name }}</p>
+                        <span class="material-icons me-2" style="color: var(--neutral-gray)">person</span>
+                        <p class="mb-0 fw-medium">{{ user.get_full_name }}</p>
                     </div>
                     <div class="d-flex align-items-center mb-2">
-                        <span class="material-icons me-2" style="color: #6c757d">email</span>
+                        <span class="material-icons me-2" style="color: var(--neutral-gray)">email</span>
                         <p class="mb-0">{{ user.email }}</p>
                     </div>
                     <div class="d-flex align-items-center">
-                        <span class="material-icons me-2" style="color: #6c757d">phone</span>
+                        <span class="material-icons me-2" style="color: var(--neutral-gray)">phone</span>
                         <p class="mb-0">{{ user.userprofile.phone_number }}</p>
                     </div>
                 </div>
-            </div>
-        </div>
-        
-        <div class="col-md-8">
-            <div class="card h-100 shadow-sm border-0 rounded-3">
-                <div class="card-body p-4">
-                    <h5 class="d-flex align-items-center mb-3">
-                        <span class="material-icons me-2" style="color: var(--primary-color)">analytics</span>
-                        Operation Statistics
-                    </h5>
-                    <div class="row">
-                        <div class="col-md-4 mb-3 mb-md-0">
-                            <div class="border rounded p-3 text-center h-100">
-                                <div class="d-flex justify-content-center">
-                                    <span class="material-icons fs-1 mb-2" style="color: var(--primary-color)">directions_car</span>
+                
+                <div class="col-md-8">
+                    <h5 class="fw-bold mb-3">Operation Statistics</h5>
+                    
+                    <!-- Operation Statistics -->
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <div class="stat-icon bg-primary-light">
+                                    <span class="material-icons text-primary">directions_car</span>
                                 </div>
-                                <h6 class="mb-2">Registered Vehicles</h6>
-                                <h2 class="mb-0">{{ vehicles.count }}</h2>
+                                <div>
+                                    <div class="stat-card-title">Registered Vehicles</div>
+                                    <div class="stat-card-value">{{ vehicles.count }}</div>
+                                    <div class="stat-card-description">Total registered vehicles</div>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-4 mb-3 mb-md-0">
-                            <div class="border rounded p-3 text-center h-100">
-                                <div class="d-flex justify-content-center">
-                                    <span class="material-icons fs-1 mb-2" style="color: #ffc107">warning</span>
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <div class="stat-icon bg-success-light">
+                                    <span class="material-icons text-success">person</span>
                                 </div>
-                                <h6 class="mb-2">Active Violations</h6>
-                                <h2 class="mb-0">0</h2>
+                                <div>
+                                    <div class="stat-card-title">Registered Drivers</div>
+                                    <div class="stat-card-value">{{ drivers.count }}</div>
+                                    <div class="stat-card-description">Total active drivers</div>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="border rounded p-3 text-center h-100">
-                                <div class="d-flex justify-content-center">
-                                    <span class="material-icons fs-1 mb-2" style="color: #28a745">payments</span>
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <div class="stat-icon bg-warning-light">
+                                    <span class="material-icons text-warning">warning</span>
                                 </div>
-                                <h6 class="mb-2">Payments Made</h6>
-                                <h2 class="mb-0">0</h2>
+                                <div>
+                                    <div class="stat-card-title">Active Violations</div>
+                                    <div class="stat-card-value">{{ violations_count }}</div>
+                                    <div class="stat-card-description">Pending violations</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <div class="stat-icon bg-danger-light">
+                                    <span class="material-icons text-danger">error_outline</span>
+                                </div>
+                                <div>
+                                    <div class="stat-card-title">Unassigned Vehicles</div>
+                                    <div class="stat-card-value">{{ unassigned_count }}</div>
+                                    <div class="stat-card-description">Vehicles without drivers</div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -95,71 +350,367 @@
         </div>
     </div>
 
-    <!-- Vehicles List Card -->
-    <div class="card shadow-sm border-0 rounded-3">
-        <div class="card-header bg-transparent border-0 py-3">
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
-                    <span class="material-icons me-2" style="color: var(--primary-color)">directions_car</span>
-                    <h5 class="mb-0">Your Vehicles</h5>
-                </div>
-                <a href="#" class="btn btn-primary d-flex align-items-center px-3 py-2">
-                    <span class="material-icons fs-5 me-2">add</span> Register New Vehicle
-                </a>
-            </div>
-        </div>
-
+    <!-- Wrap tabs and content in a card -->
+    <div class="card dashboard-card">
         <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="border-top-0 px-4 py-3">#</th>
-                            <th class="border-top-0 px-4 py-3">Old P.D. Number</th>
-                            <th class="border-top-0 px-4 py-3">New P.D. Number</th>
-                            <th class="border-top-0 px-4 py-3">Status</th>
-                            <th class="border-top-0 px-4 py-3">Registered On</th>
-                            <th class="border-top-0 px-4 py-3 text-end">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for vehicle in vehicles %}
-                        <tr>
-                            <td class="px-4 py-3">{{ forloop.counter }}</td>
-                            <td class="px-4 py-3">{{ vehicle.old_pd_number|default:"-" }}</td>
-                            <td class="px-4 py-3 fw-medium">{{ vehicle.new_pd_number }}</td>
-                            <td class="px-4 py-3">
-                                <span class="badge bg-success p-2">Active</span>
-                            </td>
-                            <td class="px-4 py-3">{{ vehicle.created_at|date:"F d, Y" }}</td>
-                            <td class="px-4 py-3 text-end">
-                                <div class="btn-group">
-                                    <a href="#" class="btn btn-sm btn-outline-primary d-flex align-items-center p-2 me-1">
-                                        <span class="material-icons fs-5">edit</span>
-                                    </a>
-                                    <a href="#" class="btn btn-sm btn-outline-danger d-flex align-items-center p-2">
-                                        <span class="material-icons fs-5">delete</span>
-                                    </a>
+            <!-- Tabs -->
+            <ul class="nav nav-tabs action-tabs border-0" id="operatorTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="vehicles-tab" data-bs-toggle="tab" data-bs-target="#vehicles" type="button" role="tab">
+                        <span class="material-icons align-middle me-2">directions_car</span>
+                        Vehicles
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="drivers-tab" data-bs-toggle="tab" data-bs-target="#drivers" type="button" role="tab">
+                        <span class="material-icons align-middle me-2">person</span>
+                        Drivers
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="violations-tab" data-bs-toggle="tab" data-bs-target="#violations" type="button" role="tab">
+                        <span class="material-icons align-middle me-2">warning</span>
+                        Violations
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="unassigned-tab" data-bs-toggle="tab" data-bs-target="#unassigned" type="button" role="tab">
+                        <span class="material-icons align-middle me-2">error_outline</span>
+                        Unassigned Vehicles
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content p-4" id="operatorTabsContent">
+                <!-- Vehicles Tab -->
+                <div class="tab-pane fade show active" id="vehicles" role="tabpanel">
+                    <div class="card shadow-sm border-0 rounded-3">
+                        <div class="card-header bg-white border-0 py-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <span class="material-icons me-2 text-primary">directions_car</span>
+                                    <h5 class="mb-0 fw-bold">Your Vehicles</h5>
                                 </div>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center py-5">
-                                <div class="d-flex flex-column align-items-center py-4">
-                                    <span class="material-icons" style="font-size: 64px; color: #c0c0c0;">directions_car_off</span>
-                                    <p class="mt-3 mb-0 fs-5">No vehicles registered yet.</p>
-                                    <a href="#" class="btn btn-primary d-flex align-items-center mt-3">
-                                        <span class="material-icons me-2">add</span> Register Your First Vehicle
-                                    </a>
+                                <a href="{% url 'register_vehicle' %}" class="btn btn-primary d-flex align-items-center">
+                                    <span class="material-icons me-2">add</span>
+                                    Register New Vehicle
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th class="px-4 py-3">P.D. Number</th>
+                                            <th class="px-4 py-3">Type</th>
+                                            <th class="px-4 py-3">Plate Number</th>
+                                            <th class="px-4 py-3">Status</th>
+                                            <th class="px-4 py-3 text-end">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for vehicle in vehicles %}
+                                        <tr>
+                                            <td class="px-4 py-3 fw-medium">{{ vehicle.new_pd_number }}</td>
+                                            <td class="px-4 py-3">{{ vehicle.vehicle_type }}</td>
+                                            <td class="px-4 py-3">{{ vehicle.plate_number }}</td>
+                                            <td class="px-4 py-3">
+                                                <span class="badge {% if vehicle.active %}bg-success{% else %}bg-danger{% endif %} rounded-pill">
+                                                    {% if vehicle.active %}Active{% else %}Inactive{% endif %}
+                                                </span>
+                                            </td>
+                                            <td class="px-4 py-3 text-end">
+                                                <div class="btn-group">
+                                                    <a href="{% url 'edit_vehicle' vehicle.id %}" class="btn btn-outline-primary btn-sm">
+                                                        <span class="material-icons fs-5">edit</span>
+                                                    </a>
+                                                    <a href="{% url 'assign_driver_to_vehicle' %}?vehicle={{ vehicle.id }}" 
+                                                       class="btn btn-outline-success btn-sm">
+                                                        <span class="material-icons fs-5">person_add</span>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="5" class="text-center py-4">
+                                                <div class="d-flex flex-column align-items-center">
+                                                    <span class="material-icons text-muted mb-2" style="font-size: 48px;">directions_car</span>
+                                                    <p class="text-muted mb-3">No vehicles registered yet</p>
+                                                    <a href="{% url 'register_vehicle' %}" class="btn btn-primary">
+                                                        <span class="material-icons me-2">add</span>
+                                                        Register Your First Vehicle
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Drivers Tab -->
+                <div class="tab-pane fade" id="drivers" role="tabpanel">
+                    <div class="card dashboard-card">
+                        <div class="card-header bg-white py-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="m-0">Your Drivers</h5>
+                                <a href="{% url 'register_driver' %}" class="btn btn-primary">
+                                    <span class="material-icons me-2">person_add</span>
+                                    Register New Driver
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            {% if drivers %}
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>P.D. Number</th>
+                                            <th>License Number</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for driver in drivers %}
+                                        <tr>
+                                            <td>{{ driver.first_name }} {{ driver.last_name }}</td>
+                                            <td>{{ driver.new_pd_number }}</td>
+                                            <td>{{ driver.license_number|default:"Not provided" }}</td>
+                                            <td>
+                                                {% if driver.active %}
+                                                <span class="badge bg-success">Active</span>
+                                                {% else %}
+                                                <span class="badge bg-danger">Inactive</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group">
+                                                    <a href="{% url 'edit_driver' driver.id %}" class="btn btn-sm btn-outline-primary">
+                                                        <span class="material-icons">edit</span>
+                                                    </a>
+                                                    <a href="{% url 'assign_driver_to_vehicle' %}?driver={{ driver.id }}" class="btn btn-sm btn-outline-success">
+                                                        <span class="material-icons">directions_car</span>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="empty-state">
+                                <div class="empty-state-icon">
+                                    <span class="material-icons">person</span>
                                 </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                                <div class="empty-state-text">No drivers registered yet</div>
+                                <a href="{% url 'register_driver' %}" class="btn btn-primary">
+                                    <span class="material-icons me-2">person_add</span>
+                                    Register New Driver
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Violations Tab -->
+                <div class="tab-pane fade" id="violations" role="tabpanel">
+                    <div class="card dashboard-card">
+                        <div class="card-header bg-white py-3">
+                            <h5 class="m-0">Recent Violations</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            {% if violations %}
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Vehicle</th>
+                                            <th>Driver</th>
+                                            <th>Violation</th>
+                                            <th>Status</th>
+                                            <th>Fine Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for violation in violations %}
+                                        <tr>
+                                            <td>{{ violation.violation_date|date:"M d, Y" }}</td>
+                                            <td>{{ violation.plate_number }}</td>
+                                            <td>{{ violation.violator.first_name }} {{ violation.violator.last_name }}</td>
+                                            <td>{{ violation.violation_type }}</td>
+                                            <td>
+                                                <span class="badge bg-{{ violation.status|lower }}-light text-{{ violation.status|lower }}">
+                                                    {{ violation.status }}
+                                                </span>
+                                            </td>
+                                            <td>₱{{ violation.fine_amount }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="empty-state">
+                                <div class="empty-state-icon">
+                                    <span class="material-icons">check_circle</span>
+                                </div>
+                                <div class="empty-state-text">No violations recorded</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Unassigned Vehicles Tab -->
+                <div class="tab-pane fade" id="unassigned" role="tabpanel">
+                    <div class="card dashboard-card">
+                        <div class="card-header bg-white py-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="m-0">Vehicles Without Drivers</h5>
+                                <div class="alert alert-warning py-2 px-3 mb-0">
+                                    <span class="material-icons align-middle me-2">info</span>
+                                    These vehicles need driver assignments
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            {% if unassigned_vehicles %}
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th>P.D. Number</th>
+                                            <th>Type</th>
+                                            <th>Plate Number</th>
+                                            <th>Registration Date</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for vehicle in unassigned_vehicles %}
+                                        <tr>
+                                            <td>{{ vehicle.new_pd_number }}</td>
+                                            <td>{{ vehicle.vehicle_type }}</td>
+                                            <td>{{ vehicle.plate_number }}</td>
+                                            <td>{{ vehicle.created_at|date:"M d, Y" }}</td>
+                                            <td>
+                                                <a href="{% url 'assign_driver_to_vehicle' %}?vehicle={{ vehicle.id }}" 
+                                                   class="btn btn-primary btn-sm">
+                                                    <span class="material-icons me-2">person_add</span>
+                                                    Assign Driver
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="empty-state">
+                                <div class="empty-state-icon">
+                                    <span class="material-icons">check_circle</span>
+                                </div>
+                                <div class="empty-state-text">All vehicles have assigned drivers</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+// Add these styles dynamically
+document.head.insertAdjacentHTML('beforeend', `
+<style>
+    .btn-light {
+        background-color: #f8f9fa;
+        border: none;
+        border-radius: 4px;
+        margin-right: 4px;
+    }
+    .btn-light.active {
+        background-color: #e9ecef;
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+    .tab-section {
+        animation: fadeIn 0.3s ease-in;
+    }
+    .card-header {
+        background-color: white;
+        border-bottom: 1px solid #dee2e6;
+    }
+</style>
+`);
+
+// Tab switching function
+function switchTab(tabName) {
+    console.log('Switching to tab:', tabName);
+    
+    // Hide all tab containers
+    document.querySelectorAll('#vehicles-container, #drivers-container, #violations-container').forEach(container => {
+        container.style.display = 'none';
+    });
+    
+    // Show selected tab container
+    document.getElementById(tabName + '-container').style.display = 'block';
+    
+    // Handle loading state
+    const loadingElement = document.getElementById(tabName + 'Loading');
+    const contentElement = document.getElementById(tabName + 'Content');
+    
+    if (loadingElement && contentElement) {
+        // Show loading first
+        loadingElement.style.display = 'block';
+        contentElement.style.display = 'none';
+        
+        // After a delay, show the content
+        setTimeout(() => {
+            loadingElement.style.display = 'none';
+            contentElement.style.display = 'block';
+        }, 500);
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, starting content transition');
+    
+    // Show vehicle content by default and hide loaders after delay
+    setTimeout(() => {
+        // Show stats
+        const statsLoading = document.getElementById('statsLoading');
+        const statsContent = document.getElementById('statsContent');
+        
+        if (statsLoading) statsLoading.style.display = 'none';
+        if (statsContent) statsContent.style.display = 'flex';
+        
+        // Show vehicle content
+        const vehiclesLoading = document.getElementById('vehiclesLoading');
+        const vehiclesContent = document.getElementById('vehiclesContent');
+        
+        if (vehiclesLoading) vehiclesLoading.style.display = 'none';
+        if (vehiclesContent) vehiclesContent.style.display = 'block';
+        
+        console.log('Initial content shown');
+    }, 1000);
+});
+</script>
+{% endblock %}
 {% endblock %} 

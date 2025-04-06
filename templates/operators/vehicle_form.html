@@ -1,0 +1,183 @@
+{% extends 'user_portal/base_user.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-header bg-transparent d-flex align-items-center px-4 py-3 border-bottom">
+            <span class="material-icons me-2" style="color: var(--primary-color); font-size: 24px;">
+                {% if is_create %}directions_car{% else %}edit{% endif %}
+            </span>
+            <h4 class="mb-0 fw-bold">{{ title }}</h4>
+        </div>
+        <div class="card-body p-4">
+            <form method="POST" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                {% if form.errors %}
+                <div class="alert alert-danger">
+                    <p class="mb-0"><strong>Please correct the following errors:</strong></p>
+                    <ul class="mb-0">
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <li>{{ field.label }}: {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                
+                <!-- Vehicle Information -->
+                <div class="mb-4">
+                    <h5 class="fw-bold mb-3">Vehicle Information</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.plate_number.id_for_label }}" class="form-label">Plate Number</label>
+                            {{ form.plate_number }}
+                            {% if form.plate_number.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.plate_number.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.vehicle_type.id_for_label }}" class="form-label">Vehicle Type</label>
+                            {{ form.vehicle_type }}
+                            {% if form.vehicle_type.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.vehicle_type.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Registration Information -->
+                <div class="mb-4">
+                    <h5 class="fw-bold mb-3">Registration Information</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.registration_number.id_for_label }}" class="form-label">Registration Number</label>
+                            {{ form.registration_number }}
+                            {% if form.registration_number.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.registration_number.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.registration_date.id_for_label }}" class="form-label">Registration Date</label>
+                            {{ form.registration_date }}
+                            {% if form.registration_date.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.registration_date.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Additional Details -->
+                <div class="mb-4">
+                    <h5 class="fw-bold mb-3">Additional Details</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.color.id_for_label }}" class="form-label">Color</label>
+                            {{ form.color }}
+                            {% if form.color.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.color.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.classification.id_for_label }}" class="form-label">Classification</label>
+                            {{ form.classification }}
+                            {% if form.classification.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.classification.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Status -->
+                <div class="mb-4">
+                    <div class="form-check">
+                        {{ form.active }}
+                        <label class="form-check-label" for="{{ form.active.id_for_label }}">
+                            This vehicle is currently active
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="d-flex justify-content-end">
+                    <a href="{% url 'operator_dashboard' %}" class="btn btn-outline-secondary d-flex align-items-center px-4 py-2 me-2">
+                        <span class="material-icons fs-5 me-2">arrow_back</span> Back to Dashboard
+                    </a>
+                    <button type="submit" class="btn btn-primary d-flex align-items-center px-4 py-2">
+                        <span class="material-icons fs-5 me-2">{% if is_create %}add{% else %}save{% endif %}</span> {{ submit_text }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Help Panel -->
+    <div class="card shadow-sm border-0 rounded-3 mt-4">
+        <div class="card-header bg-transparent d-flex align-items-center px-4 py-3 border-bottom">
+            <span class="material-icons me-2" style="color: var(--primary-color); font-size: 24px;">help_outline</span>
+            <h5 class="mb-0 fw-bold">About Vehicle Registration</h5>
+        </div>
+        <div class="card-body p-4">
+            <p class="mb-2"><strong>PD Number Generation:</strong> The system automatically generates a unique PD number for your vehicle.</p>
+            <p class="mb-2"><strong>Driver Assignments:</strong> After registration, you can assign drivers to this vehicle from your dashboard.</p>
+            <p class="mb-0"><strong>Requirements:</strong> Make sure to keep registration information up-to-date for regulatory compliance.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Form validation script
+    (function () {
+        'use strict'
+        
+        // Fetch all forms we want to apply validation to
+        var forms = document.querySelectorAll('.needs-validation')
+        
+        // Loop over them and prevent submission
+        Array.prototype.slice.call(forms)
+            .forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                    }
+                    
+                    form.classList.add('was-validated')
+                }, false)
+            })
+    })()
+</script>
+{% endblock %} 

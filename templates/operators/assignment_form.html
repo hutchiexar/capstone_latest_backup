@@ -1,0 +1,144 @@
+{% extends 'user_portal/base_user.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-header bg-transparent d-flex align-items-center px-4 py-3 border-bottom">
+            <span class="material-icons me-2" style="color: var(--primary-color); font-size: 24px;">assignment</span>
+            <h4 class="mb-0 fw-bold">{{ title }}</h4>
+        </div>
+        <div class="card-body p-4">
+            <form method="POST" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                {% if form.errors %}
+                <div class="alert alert-danger">
+                    <p class="mb-0"><strong>Please correct the following errors:</strong></p>
+                    <ul class="mb-0">
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <li>{{ field.label }}: {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                
+                <div class="alert alert-info">
+                    <div class="d-flex">
+                        <span class="material-icons me-2">info</span>
+                        <div>
+                            <p class="mb-1"><strong>Note:</strong> If the vehicle already has an assigned driver, the previous assignment will be automatically ended.</p>
+                            <p class="mb-0">All assignments are tracked with timestamps for auditing purposes.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Assignment Information -->
+                <div class="mb-4">
+                    <h5 class="fw-bold mb-3">Assignment Details</h5>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.driver.id_for_label }}" class="form-label">Driver</label>
+                        {{ form.driver }}
+                        {% if form.driver.help_text %}
+                            <div class="form-text">{{ form.driver.help_text }}</div>
+                        {% endif %}
+                        {% if form.driver.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.driver.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.vehicle.id_for_label }}" class="form-label">Vehicle</label>
+                        {{ form.vehicle }}
+                        {% if form.vehicle.help_text %}
+                            <div class="form-text">{{ form.vehicle.help_text }}</div>
+                        {% endif %}
+                        {% if form.vehicle.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.vehicle.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
+                        {{ form.notes }}
+                        {% if form.notes.help_text %}
+                            <div class="form-text">{{ form.notes.help_text }}</div>
+                        {% endif %}
+                        {% if form.notes.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.notes.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="d-flex justify-content-end">
+                    <a href="{% url 'assignment_list' %}" class="btn btn-outline-secondary d-flex align-items-center px-4 py-2 me-2">
+                        <span class="material-icons fs-5 me-2">close</span> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary d-flex align-items-center px-4 py-2">
+                        <span class="material-icons fs-5 me-2">link</span> {{ submit_text|default:"Assign Driver" }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Help Panel -->
+    <div class="card shadow-sm border-0 rounded-3 mt-4">
+        <div class="card-header bg-transparent d-flex align-items-center px-4 py-3 border-bottom">
+            <span class="material-icons me-2" style="color: var(--primary-color); font-size: 24px;">help_outline</span>
+            <h5 class="mb-0 fw-bold">About Driver-Vehicle Assignments</h5>
+        </div>
+        <div class="card-body p-4">
+            <p class="mb-2"><strong>Assignment System:</strong> This system maintains a complete history of which drivers operated which vehicles, with timestamps for start and end dates.</p>
+            <p class="mb-2"><strong>One Driver Per Vehicle:</strong> Each vehicle can only have one active driver at a time. Making a new assignment will automatically end any previous assignment.</p>
+            <p class="mb-0"><strong>Audit Trails:</strong> All assignments and reassignments are logged for regulatory compliance purposes.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Form validation script
+    (function () {
+        'use strict'
+        
+        // Fetch all forms we want to apply validation to
+        var forms = document.querySelectorAll('.needs-validation')
+        
+        // Loop over them and prevent submission
+        Array.prototype.slice.call(forms)
+            .forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                    }
+                    
+                    form.classList.add('was-validated')
+                }, false)
+            })
+    })()
+</script>
+{% endblock %} 

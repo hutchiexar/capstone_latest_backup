@@ -56,6 +56,7 @@ urlpatterns = [
     path('announcements/<int:announcement_id>/resend-notification/', views.resend_announcement_notification, name='resend_announcement_notification'),
     path('api/announcements/popup/', views.get_popup_announcement, name='get_popup_announcement'),
     path('api/announcements/<int:announcement_id>/acknowledge/', views.acknowledge_announcement, name='api_acknowledge_announcement'),
+    path('api/announcements/<int:announcement_id>/mark-seen/', views.mark_announcement_seen, name='mark_announcement_seen'),
     path('announcements/<int:announcement_id>/reset-popup/', views.reset_popup_announcement, name='reset_popup_announcement'),
     path('user/notifications/<int:notification_id>/mark-read/', views.mark_notification_read, name='mark_notification_read'),
     path('announcements/api/<int:announcement_id>/', views.get_announcement_details, name='get_announcement_details'),
@@ -100,10 +101,12 @@ urlpatterns = [
 
     # Dashboard URL
     path('dashboard/', views.admin_dashboard, name='admin_dashboard'),
-    path('reports/dashboard/', views.admin_reports_dashboard, name='admin_reports_dashboard'),
-
+    
     # Add this line in the urlpatterns list
     path('user/', include('traffic_violation_system.user_portal.urls', namespace='user_portal')),
+
+    # Educational materials app
+    path('educational/', include('traffic_violation_system.educational.urls', namespace='educational')),
 
     path('scan-document/', views.scan_document, name='scan_document'),
     
@@ -122,15 +125,6 @@ urlpatterns = [
     path('operators/import/confirm/', views.operator_import_confirm, name='operator_import_confirm'),
     path('operators/export/excel/', views.operator_export_excel, name='operator_export_excel'),
     
-    # Driver Management
-    path('drivers/', views.driver_list, name='driver_list'),
-    path('drivers/create/', views.driver_create, name='driver_create'),
-    path('drivers/<int:pk>/update/', views.driver_update, name='driver_update'),
-    path('drivers/<int:pk>/delete/', views.driver_delete, name='driver_delete'),
-    path('drivers/import/', views.driver_import, name='driver_import'),
-    path('drivers/import/confirm/', views.driver_import_confirm, name='driver_import_confirm'),
-    path('drivers/export/excel/', views.driver_export_excel, name='driver_export_excel'),
-    
     # Operator Application System
     path('operator/apply/', views.operator_apply, name='operator_apply'),
     path('operator/application/status/', views.operator_application_status, name='operator_application_status'),
@@ -141,7 +135,39 @@ urlpatterns = [
     # API Endpoints
     path('api/', include('api.urls')),
 
-    # Reports management
-    path('admin/reports/update/<int:report_id>/', views.update_report, name='update_report'),
-    path('admin/reports/detail/<int:report_id>/', views.get_report_details, name='get_report_details'),
+    # Add API endpoints for searching operators and drivers
+    path('api/search-operators/', views.api_search_operators, name='api_search_operators'),
+    path('api/search-drivers/', views.api_search_drivers, name='api_search_drivers'),
+
+    # Vehicle and Driver Routes - fix to use operator_ prefix and appropriate view names
+    path('operator/vehicles/register/', views.operator_register_vehicle, name='register_vehicle'),
+    path('operator/vehicles/<int:vehicle_id>/edit/', views.operator_edit_vehicle, name='edit_vehicle'),
+    path('operator/vehicles/<int:vehicle_id>/delete/', views.operator_delete_vehicle, name='delete_vehicle'),
+
+    path('operator/drivers/register/', views.operator_register_driver, name='register_driver'),
+    path('operator/drivers/<int:driver_id>/edit/', views.operator_edit_driver, name='edit_driver'),
+    path('operator/drivers/<int:driver_id>/delete/', views.operator_delete_driver, name='delete_driver'),
+
+    path('operator/assignments/', views.operator_assignment_list, name='assignment_list'),
+    path('operator/assignments/create/', views.operator_assign_driver_to_vehicle, name='assign_driver_to_vehicle'),
+    path('operator/assignments/<int:assignment_id>/end/', views.operator_end_driver_assignment, name='end_driver_assignment'),
+
+    # Admin driver management routes
+    path('management/drivers/', views.admin_driver_list, name='admin_driver_list'),
+    path('management/drivers/export/', views.driver_export_excel, name='driver_export_excel'),
+    path('management/drivers/create/', views.driver_create, name='driver_create'),
+    path('management/drivers/<int:pk>/update/', views.driver_update, name='driver_update'),
+    path('management/drivers/<int:pk>/delete/', views.driver_delete, name='driver_delete'),
+    path('management/drivers/import/', views.driver_import, name='driver_import'),
+    path('management/drivers/import/confirm/', views.driver_import_confirm, name='driver_import_confirm'),
+
+    # Admin report management routes
+    path('management/reports/', views.admin_report_list, name='admin_report_list'),
+    path('management/reports/<int:report_id>/dispute/', views.admin_report_dispute, name='admin_report_dispute'),
+    path('management/reports/<int:report_id>/update-status/', views.admin_report_update_status, name='admin_report_update_status'),
+    path('management/reports/<int:report_id>/view/', views.admin_report_view, name='admin_report_view'),
+    path('management/reports/export/', views.admin_report_export, name='admin_report_export'),
+
+    # General driver route that redirects based on user role
+    path('driver/', views.driver_list, name='driver_list'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

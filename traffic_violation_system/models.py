@@ -53,6 +53,39 @@ def get_ncap_image_path(instance, filename):
     return os.path.join('violations', new_filename)
 
 
+class Operator(models.Model):
+    """Model to store operator information"""
+    last_name = models.CharField(max_length=100, db_index=True)
+    first_name = models.CharField(max_length=100, db_index=True)
+    middle_initial = models.CharField(max_length=10, blank=True, null=True)
+    address = models.TextField()
+    old_pd_number = models.CharField(max_length=50, blank=True, null=True)
+    new_pd_number = models.CharField(max_length=50, unique=True)
+    po_number = models.CharField(max_length=20, unique=True, blank=True, null=True, verbose_name="Permit Operator Number")
+    # Foreign key to operator type (will be added later as requested)
+    # operator_type = models.ForeignKey(OperatorType, on_delete=models.PROTECT, related_name='operators')
+    # Foreign key to user account (will be added later as requested)
+    user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='operator_profile')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Operator'
+        verbose_name_plural = 'Operators'
+        ordering = ['last_name', 'first_name']
+        indexes = [
+            models.Index(fields=['last_name', 'first_name']),
+            models.Index(fields=['new_pd_number']),
+        ]
+
+    def __str__(self):
+        return f"{self.last_name}, {self.first_name} {self.middle_initial or ''} - {self.new_pd_number}"
+
+    def full_name(self):
+        mi = f" {self.middle_initial}." if self.middle_initial else ""
+        return f"{self.first_name}{mi} {self.last_name}"
+
+
 class Violation(models.Model):
     STATUS_CHOICES = [
         ('PENDING', 'Pending'),
@@ -92,6 +125,27 @@ class Violation(models.Model):
         ('Commercial', 'Commercial')
     ]
 
+    # Driver's Details
+    novr_number = models.CharField(max_length=50, blank=True, null=True)
+    pin_number = models.CharField(max_length=50, blank=True, null=True)
+    pd_number = models.CharField(max_length=50, blank=True, null=True)
+    driver_photo = models.ImageField(upload_to='driver_photos/', blank=True, null=True)
+    driver_address = models.TextField(blank=True, null=True)
+    
+    # Operator's Details
+    potpot_number = models.CharField(max_length=50, blank=True, null=True)
+    operator = models.ForeignKey(Operator, on_delete=models.SET_NULL, null=True, blank=True, related_name='violations')
+    operator_address = models.TextField(blank=True, null=True)
+    
+    # Additional Violation Details
+    street_name = models.CharField(max_length=200, blank=True, null=True)
+    landmark = models.CharField(max_length=200, blank=True, null=True)
+    violation_code = models.CharField(max_length=10, blank=True, null=True)
+    violation_time = models.TimeField(null=True, blank=True)
+    vehicle_photo = models.ImageField(upload_to='vehicle_photos/', blank=True, null=True)
+    secondary_photo = models.ImageField(upload_to='secondary_photos/', blank=True, null=True)
+    
+    # Existing Fields
     violator = models.ForeignKey(Violator, on_delete=models.CASCADE, related_name='violations')
     user_account = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='account_violations',
                                    help_text="If the violator is a registered user, link violation to their account")
@@ -332,6 +386,7 @@ class ActivityLog(models.Model):
     action = models.CharField(max_length=255)
     details = models.TextField(blank=True)
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='general')
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
     
     class Meta:
         ordering = ['-timestamp']
@@ -367,7 +422,6 @@ class Announcement(models.Model):
     
     title = models.CharField(max_length=200)
     content = models.TextField()
-    rich_content = models.TextField(blank=True, null=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -452,43 +506,27 @@ class OperatorType(models.Model):
         return self.name
 
 
-class Operator(models.Model):
-    """Model to store operator information"""
-    last_name = models.CharField(max_length=100, db_index=True)
-    first_name = models.CharField(max_length=100, db_index=True)
-    middle_initial = models.CharField(max_length=10, blank=True, null=True)
-    address = models.TextField()
-    old_pd_number = models.CharField(max_length=50, blank=True, null=True)
-    new_pd_number = models.CharField(max_length=50, unique=True)
-    # Foreign key to operator type (will be added later as requested)
-    # operator_type = models.ForeignKey(OperatorType, on_delete=models.PROTECT, related_name='operators')
-    # Foreign key to user account (will be added later as requested)
-    # user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='operator_profile')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name = 'Operator'
-        verbose_name_plural = 'Operators'
-        ordering = ['last_name', 'first_name']
-        indexes = [
-            models.Index(fields=['last_name', 'first_name']),
-            models.Index(fields=['new_pd_number']),
-        ]
-
-    def __str__(self):
-        return f"{self.last_name}, {self.first_name} {self.middle_initial or ''} - {self.new_pd_number}"
-
-    def full_name(self):
-        mi = f" {self.middle_initial}." if self.middle_initial else ""
-        return f"{self.first_name}{mi} {self.last_name}"
-
-
 class Vehicle(models.Model):
     """Model to store vehicle information linked to an operator"""
     operator = models.ForeignKey(Operator, on_delete=models.CASCADE)
     old_pd_number = models.CharField(max_length=50, blank=True, null=True)
     new_pd_number = models.CharField(max_length=50, unique=True)
+    vehicle_type = models.CharField(max_length=100, choices=[
+        ('Jeepney', 'Jeepney'),
+        ('Tricycle', 'Tricycle'),
+        ('Taxi', 'Taxi'),
+        ('Bus', 'Bus'),
+        ('Van', 'Van'),
+        ('Other', 'Other')
+    ], default='Tricycle')
+    plate_number = models.CharField(max_length=20, blank=True, null=True)
+    engine_number = models.CharField(max_length=50, blank=True, null=True)
+    chassis_number = models.CharField(max_length=50, blank=True, null=True)
+    capacity = models.PositiveIntegerField(default=4)
+    year_model = models.CharField(max_length=4, blank=True, null=True)
+    color = models.CharField(max_length=50, blank=True, null=True)
+    active = models.BooleanField(default=True)
+    notes = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -500,6 +538,94 @@ class Vehicle(models.Model):
     def __str__(self):
         return f"{self.new_pd_number} - {self.operator.full_name()}"
 
+    def generate_pd_number(self):
+        """Generate a unique PD number for this vehicle"""
+        # Format: PD-{operator_id}-{random_6_digits}
+        import random
+        while True:
+            random_suffix = ''.join(random.choices('0123456789', k=6))
+            new_pd = f"PD-{self.operator.id}-{random_suffix}"
+            if not Vehicle.objects.filter(new_pd_number=new_pd).exists():
+                return new_pd
+
+    def save(self, *args, **kwargs):
+        # Generate PD number if not provided
+        if not self.new_pd_number:
+            self.new_pd_number = self.generate_pd_number()
+        super().save(*args, **kwargs)
+
+
+class Driver(models.Model):
+    """Model representing a driver"""
+    last_name = models.CharField(max_length=100)
+    first_name = models.CharField(max_length=100)
+    middle_initial = models.CharField(max_length=10, blank=True, null=True)
+    address = models.TextField()
+    old_pd_number = models.CharField(max_length=20, blank=True, null=True)
+    new_pd_number = models.CharField(max_length=20, unique=True)
+    license_number = models.CharField(max_length=50, blank=True, null=True)
+    contact_number = models.CharField(max_length=20, blank=True, null=True)
+    emergency_contact = models.CharField(max_length=100, blank=True, null=True)
+    emergency_contact_number = models.CharField(max_length=20, blank=True, null=True)
+    active = models.BooleanField(default=True)
+    operator = models.ForeignKey(Operator, on_delete=models.SET_NULL, null=True, blank=True, related_name='drivers')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['last_name', 'first_name']
+
+    def __str__(self):
+        return f"{self.last_name}, {self.first_name} ({self.new_pd_number})"
+    
+    def get_full_name(self):
+        """Return the driver's full name"""
+        if self.middle_initial:
+            return f"{self.first_name} {self.middle_initial}. {self.last_name}"
+        return f"{self.first_name} {self.last_name}"
+
+    def generate_pd_number(self):
+        """Generate a unique PD number for this driver"""
+        # Format: DRV-{operator_id}-{random_6_digits}
+        import random
+        while True:
+            random_suffix = ''.join(random.choices('0123456789', k=6))
+            new_pd = f"DRV-{self.operator.id if self.operator else '0'}-{random_suffix}"
+            if not Driver.objects.filter(new_pd_number=new_pd).exists():
+                return new_pd
+
+    def save(self, *args, **kwargs):
+        # Generate PD number if not provided
+        if not self.new_pd_number:
+            self.new_pd_number = self.generate_pd_number()
+        super().save(*args, **kwargs)
+
+
+class DriverVehicleAssignment(models.Model):
+    """Model to track the relationship between drivers and vehicles with history"""
+    driver = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name='vehicle_assignments')
+    vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name='driver_assignments')
+    start_date = models.DateTimeField(auto_now_add=True)
+    end_date = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    notes = models.TextField(blank=True, null=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    class Meta:
+        verbose_name = 'Driver-Vehicle Assignment'
+        verbose_name_plural = 'Driver-Vehicle Assignments'
+        ordering = ['-start_date']
+    
+    def __str__(self):
+        return f"{self.driver} assigned to {self.vehicle}"
+    
+    def end_assignment(self):
+        """End this assignment"""
+        self.end_date = timezone.now()
+        self.is_active = False
+        self.save()
+
+
 class OperatorApplication(models.Model):
     """Model to store operator applications with necessary documentation"""
     STATUS_CHOICES = [
@@ -510,6 +636,11 @@ class OperatorApplication(models.Model):
     
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='operator_applications')
     business_permit = models.FileField(upload_to='permits/')
+    police_clearance = models.FileField(upload_to='police_clearance/', null=True, blank=True, help_text="Police clearance certificate")
+    barangay_certificate = models.FileField(upload_to='barangay_certificate/', null=True, blank=True, help_text="Barangay certificate")
+    cedula = models.FileField(upload_to='cedula/', null=True, blank=True, help_text="Community Tax Certificate (Cedula)")
+    cenro_tickets = models.FileField(upload_to='cenro_tickets/', null=True, blank=True, help_text="CENRO permits/tickets")
+    mayors_permit = models.FileField(upload_to='mayors_permits/', blank=True, null=True)
     other_documents = models.FileField(upload_to='operator_docs/', blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     notes = models.TextField(blank=True)
@@ -526,26 +657,15 @@ class OperatorApplication(models.Model):
     def __str__(self):
         return f"Application by {self.user.username} ({self.get_status_display()})"
 
-class Driver(models.Model):
-    """Model representing a driver"""
-    last_name = models.CharField(max_length=100)
-    first_name = models.CharField(max_length=100)
-    middle_initial = models.CharField(max_length=10, blank=True, null=True)
-    address = models.TextField()
-    old_pd_number = models.CharField(max_length=20, blank=True, null=True)
-    new_pd_number = models.CharField(max_length=20, unique=True)
-    operator = models.ForeignKey(Operator, on_delete=models.SET_NULL, null=True, blank=True, related_name='drivers')
+
+class ViolationCertificate(models.Model):
+    """Model to store certificate information for violations"""
+    violation = models.OneToOneField(Violation, on_delete=models.CASCADE, related_name='certificate')
+    operations_officer = models.CharField(max_length=100, blank=True, null=True)
+    ctm_officer = models.CharField(max_length=100, blank=True, null=True)
+    certificate_text = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ['last_name', 'first_name']
-
-    def __str__(self):
-        return f"{self.last_name}, {self.first_name} ({self.new_pd_number})"
     
-    def get_full_name(self):
-        """Return the driver's full name"""
-        if self.middle_initial:
-            return f"{self.first_name} {self.middle_initial}. {self.last_name}"
-        return f"{self.first_name} {self.last_name}"
+    def __str__(self):
+        return f"Certificate for Violation {self.violation.id}"

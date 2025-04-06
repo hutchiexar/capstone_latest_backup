@@ -4,6 +4,9 @@
 {% block title %}Create Account - CTTMO{% endblock %}
 
 {% block content %}
+<!-- Add Micromodal.js for modal dialogs -->
+<script src="https://unpkg.com/micromodal/dist/micromodal.min.js"></script>
+
 <div class="auth-container">
     <div class="register-card">
         <!-- Logo and Title Section -->
@@ -177,7 +180,7 @@
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="termsCheck" required>
                     <label class="form-check-label small" for="termsCheck">
-                        I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms and Conditions</a>
+                        I agree to the <a href="#" data-micromodal-trigger="modal-terms">Terms and Conditions</a>
                     </label>
                     <div class="invalid-feedback">You must agree to the terms</div>
                 </div>
@@ -196,16 +199,17 @@
     </div>
 </div>
 
+<!-- Replace the Bootstrap modal with Micromodal.js implementation -->
 <!-- Terms and Conditions Modal -->
-<div class="modal fade" id="termsModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header py-2">
-                <h5 class="modal-title fs-6">Terms and Conditions</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <!-- Add your terms and conditions content here -->
+<div class="modal micromodal-slide" id="modal-terms" aria-hidden="true">
+    <div class="modal__overlay" tabindex="-1" data-micromodal-close>
+        <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="modal-terms-title">
+            <header class="modal__header">
+                <h2 class="modal__title" id="modal-terms-title">Terms and Conditions</h2>
+                <button class="modal__close" aria-label="Close modal" data-micromodal-close></button>
+            </header>
+            <main class="modal__content" id="modal-terms-content">
+                <!-- Terms and conditions content -->
                 <h6 class="fs-6 fw-bold">1. Account Registration</h6>
                 <p class="small">By registering for an account with CTTMO Traffic Violation Management System, you agree to provide accurate and complete information.</p>
                 
@@ -214,10 +218,10 @@
                 
                 <h6 class="fs-6 fw-bold">3. User Responsibilities</h6>
                 <p class="small">You are responsible for maintaining the confidentiality of your account credentials and for all activities under your account.</p>
-            </div>
-            <div class="modal-footer py-2">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
-            </div>
+            </main>
+            <footer class="modal__footer">
+                <button class="btn btn-primary" data-micromodal-close>I Understand</button>
+            </footer>
         </div>
     </div>
 </div>
@@ -429,12 +433,166 @@
         padding: 0.4rem 1rem;
     }
 }
-</style>
-{% endblock %}
 
-{% block extra_js %}
+/**************************\
+  Micromodal.js Styles
+\**************************/
+
+.modal {
+  font-family: -apple-system, BlinkMacSystemFont, avenir next, avenir, helvetica neue,
+    helvetica, ubuntu, roboto, noto, segoe ui, arial, sans-serif;
+}
+
+.modal__overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.modal__container {
+  background-color: #fff;
+  padding: 20px;
+  max-width: 90%;
+  width: 500px;
+  max-height: 90vh;
+  border-radius: 10px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  box-shadow: 0 15px 30px 0 rgba(0, 0, 0, 0.11),
+    0 5px 15px 0 rgba(0, 0, 0, 0.08);
+}
+
+.modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #eaeaea;
+  padding-bottom: 15px;
+}
+
+.modal__title {
+  margin-top: 0;
+  margin-bottom: 0;
+  font-weight: 600;
+  font-size: 1.25rem;
+  line-height: 1.25;
+  color: #00449e;
+  box-sizing: border-box;
+}
+
+.modal__close {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  position: relative;
+  width: 25px;
+  height: 25px;
+}
+
+.modal__close:before,
+.modal__close:after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 18px;
+  background-color: #333;
+  top: 3px;
+  left: 11px;
+}
+
+.modal__close:before {
+  transform: rotate(45deg);
+}
+
+.modal__close:after {
+  transform: rotate(-45deg);
+}
+
+.modal__content {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+  color: rgba(0, 0, 0, 0.8);
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 15px;
+  border-top: 1px solid #eaeaea;
+}
+
+.micromodal-slide {
+  display: none;
+}
+
+.micromodal-slide.is-open {
+  display: block;
+}
+
+.micromodal-slide[aria-hidden="false"] .modal__overlay {
+  animation: mmfadeIn .3s cubic-bezier(0, 0, .2, 1);
+}
+
+.micromodal-slide[aria-hidden="false"] .modal__container {
+  animation: mmslideIn .3s cubic-bezier(0, 0, .2, 1);
+}
+
+.micromodal-slide[aria-hidden="true"] .modal__overlay {
+  animation: mmfadeOut .3s cubic-bezier(0, 0, .2, 1);
+}
+
+.micromodal-slide[aria-hidden="true"] .modal__container {
+  animation: mmslideOut .3s cubic-bezier(0, 0, .2, 1);
+}
+
+.micromodal-slide .modal__container,
+.micromodal-slide .modal__overlay {
+  will-change: transform;
+}
+
+@keyframes mmfadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes mmfadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes mmslideIn {
+  from { transform: translateY(15%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes mmslideOut {
+  from { transform: translateY(0); }
+  to { transform: translateY(-10%); }
+}
+</style>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Micromodal
+    MicroModal.init({
+        openTrigger: 'data-micromodal-trigger',
+        closeTrigger: 'data-micromodal-close',
+        disableFocus: false,
+        disableScroll: true,
+        awaitOpenAnimation: true,
+        awaitCloseAnimation: true
+    });
+    
     // Form validation
     const form = document.getElementById('registrationForm');
     let formSubmitting = false;

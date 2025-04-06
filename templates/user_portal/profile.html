@@ -1,4 +1,4 @@
-{% extends 'user_portal/base_user.html' %}
+image.png{% extends 'user_portal/base_user.html' %}
 {% load static %}
 
 {% block title %}My Profile - CTTMO User Portal{% endblock %}
@@ -351,7 +351,14 @@
                         </div>
                             
                             <div class="text-center text-md-start">
-                                <h3 class="mb-1 fw-bold text-base text-md-lg text-lg-xl">{{ user.get_full_name }}</h3>
+                                <h3 class="mb-1 fw-bold text-base text-md-lg text-lg-xl">
+                                    {{ user.get_full_name }}
+                                    {% if user.userprofile.is_operator %}
+                                    <span class="badge bg-primary ms-2 align-middle" style="font-size: 0.7rem;">
+                                        <span class="material-icons-outlined" style="font-size: 12px; vertical-align: text-top;">verified</span> OPERATOR
+                                    </span>
+                                    {% endif %}
+                                </h3>
                                 <p class="mb-3 text-sm text-md-base opacity-80">
                                     <span class="d-inline-flex align-items-center me-3">
                                         <span class="material-icons me-1" style="font-size: 18px; color: var(--neutral-gray);">badge</span>

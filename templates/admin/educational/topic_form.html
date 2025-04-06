@@ -1,0 +1,356 @@
+{% extends 'admin/base_admin.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .content-textarea {
+        min-height: 300px;
+        font-family: Arial, sans-serif;
+        line-height: 1.5;
+    }
+    .attachment-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    .attachment-item {
+        border-left: 3px solid var(--primary-color);
+        transition: all 0.2s;
+    }
+    .attachment-item:hover {
+        background-color: rgba(var(--primary-rgb), 0.05);
+    }
+    .file-icon {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        color: #fff;
+        background-color: var(--primary-color);
+    }
+    .file-icon.pdf {
+        background-color: #dc3545;
+    }
+    .file-icon.image {
+        background-color: #198754;
+    }
+    .file-icon.video {
+        background-color: #0d6efd;
+    }
+    .file-icon.other {
+        background-color: #6c757d;
+    }
+    #attachmentPreview {
+        display: none;
+        max-width: 100%;
+        max-height: 300px;
+        margin-top: 10px;
+    }
+    .custom-file-label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+</style>
+{{ block.super }}
+{% endblock %}
+
+{% block admin_content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="admin-section-title mb-0">
+                {% if is_edit %}Edit Topic{% else %}Create New Topic{% endif %}
+            </h2>
+            <p class="text-muted">
+                {% if is_edit %}Update educational topic content{% else %}Add new educational material{% endif %}
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'educational:admin_topic_list' %}" class="btn btn-outline-secondary d-flex align-items-center">
+                <span class="material-icons me-2">arrow_back</span> Back to Topics
+            </a>
+        </div>
+    </div>
+
+    <form method="post" action="{% if is_edit %}{% url 'educational:admin_topic_edit' topic_id=topic.id %}{% else %}{% url 'educational:admin_topic_create' %}{% endif %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Topic Details Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Topic Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Title -->
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Topic Title <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                placeholder="e.g., Traffic Rules and Regulations" 
+                                value="{% if is_edit %}{{ topic.title }}{% endif %}" 
+                                required>
+                        </div>
+                        
+                        <!-- Category -->
+                        <div class="mb-3">
+                            <label for="category" class="form-label">Category <span class="text-danger">*</span></label>
+                            <select class="form-select" id="category" name="category" required>
+                                <option value="" disabled {% if not is_edit %}selected{% endif %}>Select a category</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}" {% if is_edit and topic.category.id == category.id %}selected{% endif %}>
+                                    {{ category.title }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            {% if categories|length == 0 %}
+                            <div class="alert alert-warning mt-2">
+                                <span class="material-icons me-2">warning</span>
+                                No categories available. <a href="{% url 'educational:admin_category_create' %}">Create a category</a> first.
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Content with regular textarea -->
+                        <div class="mb-3">
+                            <label for="content" class="form-label">Content <span class="text-danger">*</span></label>
+                            <textarea class="form-control content-textarea" id="content" name="content" placeholder="Write your educational content here..." required>{% if is_edit %}{{ topic.content|safe }}{% endif %}</textarea>
+                            <div class="form-text">
+                                <span class="material-icons align-middle me-1 fs-5">info</span>
+                                <span>You can use basic HTML tags for formatting (<strong>&lt;h1&gt;</strong>, <strong>&lt;p&gt;</strong>, <strong>&lt;ul&gt;</strong>, <strong>&lt;strong&gt;</strong>, etc.)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Attachments Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Attachments</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- File Upload -->
+                        <div class="mb-3">
+                            <label for="attachments" class="form-label">Add Attachments</label>
+                            <div class="input-group">
+                                <input type="file" class="form-control" id="attachments" name="attachments" multiple>
+                                <button type="button" class="btn btn-outline-primary" id="previewBtn" disabled>
+                                    Preview
+                                </button>
+                            </div>
+                            <div class="form-text">Upload PDFs, images, videos or other files. Max 10MB per file.</div>
+                            <div id="attachmentPreview" class="mt-2"></div>
+                        </div>
+
+                        <!-- Existing Attachments (if editing) -->
+                        {% if is_edit and attachments %}
+                        <div class="mt-4">
+                            <h6>Existing Attachments</h6>
+                            <div class="attachment-list">
+                                {% for attachment in attachments %}
+                                <div class="card attachment-item mb-2">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div class="d-flex align-items-center">
+                                                <div class="file-icon me-3 {% if attachment.file_type == 'PDF' %}pdf{% elif attachment.file_type == 'IMAGE' %}image{% elif attachment.file_type == 'VIDEO' %}video{% else %}other{% endif %}">
+                                                    <span class="material-icons">
+                                                        {% if attachment.file_type == 'PDF' %}picture_as_pdf
+                                                        {% elif attachment.file_type == 'IMAGE' %}image
+                                                        {% elif attachment.file_type == 'VIDEO' %}videocam
+                                                        {% else %}insert_drive_file{% endif %}
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    <p class="mb-0 fw-medium">{{ attachment.title|default:attachment.file.name }}</p>
+                                                    <small class="text-muted">{{ attachment.file_type }} • Added {{ attachment.uploaded_at|date:"M d, Y" }}</small>
+                                                </div>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="delete_attachment" value="{{ attachment.id }}" id="delete-{{ attachment.id }}">
+                                                <label class="form-check-label text-danger" for="delete-{{ attachment.id }}">
+                                                    Delete
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <!-- Publishing Options -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><span class="material-icons align-middle me-2">public</span> Publishing Options</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="is_published" name="is_published" 
+                                {% if is_edit and topic.is_published %}checked{% elif not is_edit %}checked{% endif %}>
+                            <label class="form-check-label fw-bold" for="is_published">
+                                Publish Immediately
+                            </label>
+                        </div>
+                        <div class="form-text">
+                            <span class="material-icons align-middle me-1 fs-5">info</span>
+                            <span>
+                                {% if is_edit and topic.is_published %}
+                                    This topic is currently live and visible to users.
+                                {% elif is_edit %}
+                                    This topic is currently saved as a draft.
+                                {% else %}
+                                    If unchecked, this topic will be saved as a draft and not visible to users.
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="alert alert-info mt-3">
+                            <span class="material-icons align-middle me-1">lightbulb</span>
+                            <span>Published topics appear immediately on the user portal. Make sure your content is ready before publishing.</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Actions Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary d-flex justify-content-center align-items-center gap-2">
+                                <span class="material-icons">save</span>
+                                {% if is_edit %}Update{% else %}Save{% endif %} Topic
+                            </button>
+                            {% if is_edit %}
+                            <a href="{% url 'educational:admin_topic_preview' topic_id=topic.id %}" class="btn btn-outline-secondary d-flex justify-content-center align-items-center gap-2">
+                                <span class="material-icons">visibility</span>
+                                Preview
+                            </a>
+                            <a href="{% url 'educational:admin_topic_delete' topic_id=topic.id %}" class="btn btn-outline-danger d-flex justify-content-center align-items-center gap-2">
+                                <span class="material-icons">delete</span>
+                                Delete Topic
+                            </a>
+                            {% else %}
+                            <button type="button" class="btn btn-outline-secondary d-flex justify-content-center align-items-center gap-2" id="previewContentBtn">
+                                <span class="material-icons">visibility</span>
+                                Preview Content
+                            </button>
+                            {% endif %}
+                            <a href="{% url 'educational:admin_topic_list' %}" class="btn btn-outline-secondary d-flex justify-content-center align-items-center gap-2">
+                                <span class="material-icons">cancel</span>
+                                Cancel
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Preview Modal using Micromodal.js -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="previewModalLabel">Preview Topic</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <h4 id="previewTitle"></h4>
+                <span class="badge bg-primary mb-3" id="previewCategory"></span>
+                <div id="previewContent" class="mt-3"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // File preview functionality
+        const attachmentsInput = document.getElementById('attachments');
+        const previewBtn = document.getElementById('previewBtn');
+        const previewContainer = document.getElementById('attachmentPreview');
+
+        attachmentsInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                previewBtn.disabled = false;
+            } else {
+                previewBtn.disabled = true;
+                previewContainer.style.display = 'none';
+            }
+        });
+
+        // Preview button functionality
+        previewBtn.addEventListener('click', function() {
+            const file = attachmentsInput.files[0];
+            previewContainer.innerHTML = '';
+            previewContainer.style.display = 'block';
+
+            if (file.type.startsWith('image/')) {
+                const img = document.createElement('img');
+                img.classList.add('img-fluid');
+                img.file = file;
+
+                const reader = new FileReader();
+                reader.onload = (function(aImg) {
+                    return function(e) {
+                        aImg.src = e.target.result;
+                    };
+                })(img);
+                reader.readAsDataURL(file);
+
+                previewContainer.appendChild(img);
+            } else if (file.type === 'application/pdf') {
+                previewContainer.innerHTML = `
+                    <div class="alert alert-info">
+                        <span class="material-icons me-2">picture_as_pdf</span>
+                        PDF Preview: ${file.name} (${Math.round(file.size / 1024)} KB)
+                    </div>`;
+            } else if (file.type.startsWith('video/')) {
+                previewContainer.innerHTML = `
+                    <div class="alert alert-info">
+                        <span class="material-icons me-2">videocam</span>
+                        Video File: ${file.name} (${Math.round(file.size / 1024)} KB)
+                    </div>`;
+            } else {
+                previewContainer.innerHTML = `
+                    <div class="alert alert-info">
+                        <span class="material-icons me-2">insert_drive_file</span>
+                        File: ${file.name} (${Math.round(file.size / 1024)} KB)
+                    </div>`;
+            }
+        });
+
+        // Preview Content Button
+        document.getElementById('previewContentBtn')?.addEventListener('click', function() {
+            const title = document.getElementById('title').value || 'Untitled Topic';
+            const categorySelect = document.getElementById('category');
+            const categoryText = categorySelect.options[categorySelect.selectedIndex]?.text || 'Uncategorized';
+            const content = document.getElementById('content').value;
+
+            document.getElementById('previewTitle').textContent = title;
+            document.getElementById('previewCategory').textContent = categoryText;
+            document.getElementById('previewContent').innerHTML = content;
+
+            // Show the modal
+            const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
+            previewModal.show();
+        });
+    });
+</script>
+{% endblock %} 

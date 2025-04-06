@@ -1,0 +1,1462 @@
+{% extends 'admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}Manage User Reports{% endblock %}
+
+<!-- Add MicroModal.js with defer to ensure it loads completely -->
+<script src="https://unpkg.com/micromodal/dist/micromodal.min.js" defer></script>
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <div class="icon-circle bg-primary text-white me-3">
+                        <span class="material-icons">report_problem</span>
+                    </div>
+                    <div>
+                        <h4 class="mb-0">User Reports Management</h4>
+                        <p class="text-muted mb-0 small">Total Reports: {{ reports.paginator.count }}</p>
+                    </div>
+                </div>
+                <div>
+                    <a href="{% url 'admin_report_export' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="btn btn-success d-inline-flex align-items-center">
+                        <span class="material-icons me-2">download</span>
+                        Export to Excel
+                    </a>
+                </div>
+            </div>
+
+            <!-- Search Form -->
+            <form method="get" class="mt-4">
+                <div class="row g-3">
+                    <div class="col-md-9">
+                        <div class="search-input">
+                            <span class="material-icons">search</span>
+                            <input type="text" 
+                                   name="q" 
+                                   class="form-control" 
+                                   placeholder="Search by subject, description or user..."
+                                   value="{{ current_filters.q|default:'' }}">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary w-100 h-100 d-flex align-items-center justify-content-center">
+                            <span class="material-icons me-2">search</span>
+                            Search
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card shadow-sm mb-4 filter-section" id="filterSection">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center filter-toggle" onclick="toggleFilters()">
+            <div class="d-flex align-items-center">
+                <span class="material-icons text-primary me-2">filter_list</span>
+                <h6 class="m-0 font-weight-bold">Advanced Filters</h6>
+            </div>
+            <span class="material-icons" id="filterIcon">expand_more</span>
+        </div>
+        <div class="card-body filter-body">
+            <form id="filter-form" method="get">
+                <input type="hidden" name="q" value="{{ current_filters.q|default:'' }}">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="status-filter" class="form-label small text-muted">Status</label>
+                        <select class="form-select" name="status" id="status-filter">
+                            <option value="">All Statuses</option>
+                            {% for status_code, status_name in status_choices %}
+                            <option value="{{ status_code }}" {% if current_filters.status == status_code %}selected{% endif %}>
+                                {{ status_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="type-filter" class="form-label small text-muted">Report Type</label>
+                        <select class="form-select" name="type" id="type-filter">
+                            <option value="">All Report Types</option>
+                            {% for type_code, type_name in report_types %}
+                            <option value="{{ type_code }}" {% if current_filters.type == type_code %}selected{% endif %}>
+                                {{ type_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="date-from" class="form-label small text-muted">Date Range</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light">From</span>
+                            <input type="date" class="form-control" id="date-from" name="date_from" 
+                                   value="{{ current_filters.date_from|date:'Y-m-d' }}">
+                            <span class="input-group-text bg-light">To</span>
+                            <input type="date" class="form-control" id="date-to" name="date_to"
+                                   value="{{ current_filters.date_to|date:'Y-m-d' }}">
+                        </div>
+                    </div>
+                    <div class="col-12 d-flex gap-2 mt-3">
+                        <button type="submit" class="btn btn-primary d-inline-flex align-items-center">
+                            <span class="material-icons me-1">filter_alt</span> Apply Filters
+                        </button>
+                        <a href="{% url 'admin_report_list' %}" class="btn btn-outline-secondary d-inline-flex align-items-center">
+                            <span class="material-icons me-1">clear</span> Clear Filters
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reports Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="reportsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">ID</th>
+                        <th>User</th>
+                        <th>Type</th>
+                        <th>Subject</th>
+                        <th>Status</th>
+                        <th>Date Submitted</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="reports-table-body">
+                    {% include 'admin/reports/report_list_partial.html' %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if reports.paginator.num_pages > 1 %}
+        <div class="card-footer bg-white py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="small text-muted">
+                    Showing {{ reports.start_index }} to {{ reports.end_index }} of {{ reports.paginator.count }} entries
+                </div>
+                <ul class="pagination mb-0 pagination-sm">
+                    {% if reports.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% for key, value in current_filters.items %}{% if value and key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="First">
+                            <span class="material-icons" style="font-size: 1rem;">first_page</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ reports.previous_page_number }}{% for key, value in current_filters.items %}{% if value and key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Previous">
+                            <span class="material-icons" style="font-size: 1rem;">chevron_left</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for i in reports.paginator.page_range %}
+                        {% if reports.number == i %}
+                            <li class="page-item active"><a class="page-link" href="#">{{ i }}</a></li>
+                        {% elif i > reports.number|add:'-3' and i < reports.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ i }}{% for key, value in current_filters.items %}{% if value and key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if reports.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ reports.next_page_number }}{% for key, value in current_filters.items %}{% if value and key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Next">
+                            <span class="material-icons" style="font-size: 1rem;">chevron_right</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ reports.paginator.num_pages }}{% for key, value in current_filters.items %}{% if value and key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Last">
+                            <span class="material-icons" style="font-size: 1rem;">last_page</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- View Report Modal (MicroModal) -->
+<div class="modal micromodal-slide" id="modal-view-report" aria-hidden="true">
+    <div class="modal__overlay" tabindex="-1" data-micromodal-close>
+        <div class="modal__container modal-lg" role="dialog" aria-modal="true" aria-labelledby="modal-view-report-title">
+            <header class="modal__header bg-white">
+                <h5 class="modal__title text-dark" id="modal-view-report-title">
+                    <span class="material-icons me-2 text-primary">visibility</span>
+                    Report Details
+                </h5>
+                <button class="modal__close" aria-label="Close modal" data-micromodal-close></button>
+            </header>
+            <div class="modal__content" id="modal-view-report-content">
+                <!-- Content will be loaded via AJAX -->
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="mt-3">Loading report details...</div>
+                </div>
+            </div>
+            <footer class="modal__footer">
+                <button class="btn btn-primary" onclick="closeViewModal()">
+                    <span class="material-icons me-1 align-middle" style="font-size: 18px;">close</span>
+                    Close
+                </button>
+            </footer>
+        </div>
+    </div>
+</div>
+
+<!-- Update Status Modal (MicroModal) -->
+<div class="modal micromodal-slide" id="modal-update-status" aria-hidden="true">
+    <div class="modal__overlay" tabindex="-1" data-micromodal-close>
+        <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="modal-update-status-title">
+            <header class="modal__header bg-white">
+                <h5 class="modal__title text-dark" id="modal-update-status-title">
+                    <span class="material-icons me-2 text-primary">update</span>
+                    Update Report Status
+                </h5>
+                <button class="modal__close" aria-label="Close modal" onclick="closeStatusModal()"></button>
+            </header>
+            <div class="modal__content" id="modal-update-status-content">
+                <!-- Content will be loaded via AJAX -->
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="mt-3">Loading status form...</div>
+                </div>
+            </div>
+            <footer class="modal__footer">
+                <button class="btn btn-secondary" onclick="closeStatusModal()">Cancel</button>
+                <button class="btn btn-primary" id="update-status-submit">
+                    <span class="material-icons me-1 align-middle" style="font-size: 18px;">save</span>
+                    Update Status
+                </button>
+            </footer>
+        </div>
+    </div>
+</div>
+
+<!-- Dispute Report Modal (MicroModal) -->
+<div class="modal micromodal-slide" id="modal-dispute-report" aria-hidden="true">
+    <div class="modal__overlay" tabindex="-1" data-micromodal-close>
+        <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="modal-dispute-report-title">
+            <header class="modal__header bg-white">
+                <h5 class="modal__title text-dark" id="modal-dispute-report-title">
+                    <span class="material-icons me-2 text-danger">gavel</span>
+                    Dispute Report
+                </h5>
+                <button class="modal__close" aria-label="Close modal" onclick="closeDisputeModal()"></button>
+            </header>
+            <div class="modal__content" id="modal-dispute-report-content">
+                <!-- Content will be loaded via AJAX -->
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="mt-3">Loading dispute form...</div>
+                </div>
+            </div>
+            <footer class="modal__footer">
+                <button class="btn btn-secondary" onclick="closeDisputeModal()">Cancel</button>
+                <button class="btn btn-danger" id="dispute-report-submit">
+                    <span class="material-icons me-1 align-middle" style="font-size: 18px;">gavel</span>
+                    Dispute Report
+                </button>
+            </footer>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Icon Circle */
+.icon-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-circle .material-icons {
+    font-size: 24px;
+}
+
+/* Search Input */
+.search-input {
+    position: relative;
+    width: 100%;
+}
+
+.search-input .material-icons {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6b7280;
+    font-size: 20px;
+    z-index: 1;
+}
+
+.search-input .form-control {
+    padding-left: 40px;
+    height: 42px;
+    border-color: #e5e7eb;
+    border-radius: 6px;
+}
+
+.search-input .form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.1);
+}
+
+/* Filter Section */
+.filter-section {
+    transition: all 0.3s ease;
+}
+
+.filter-section.collapsed .filter-body {
+    display: none;
+}
+
+.filter-toggle {
+    cursor: pointer;
+}
+
+/* Table Styles */
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    background-color: var(--bg-light);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+    padding: 1rem;
+    white-space: nowrap;
+}
+
+.table td {
+    padding: 1rem;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.table tbody tr:hover {
+    background-color: var(--bg-light);
+}
+
+/* Badge Styles */
+.badge {
+    padding: 0.5rem 0.75rem;
+    font-weight: 500;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+.action-btn {
+    width: 35px;
+    height: 35px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+}
+
+.action-btn .material-icons {
+    font-size: 18px;
+}
+
+/* Empty State */
+.text-muted .material-icons {
+    opacity: 0.5;
+}
+
+/* Table Container Styles */
+.table-responsive {
+    border-radius: 8px;
+    overflow: hidden;
+    max-height: calc(100vh - 280px);
+    overflow-y: auto;
+}
+
+/* Keep table header visible */
+.table thead th {
+    position: sticky;
+    top: 0;
+    background-color: #f8f9fa;
+    z-index: 1;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Custom scrollbar styles */
+.table-responsive::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+/* MicroModal Styles */
+.modal__overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.modal__container {
+  background-color: #fff;
+  padding: 0;
+  max-width: 90%;
+  width: 700px;
+  max-height: 90vh;
+  border-radius: 12px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2),
+    0 8px 20px rgba(0, 0, 0, 0.15);
+  /* Prevent modal container clicks from bubbling up to overlay */
+  z-index: 2001;
+}
+
+.modal-lg {
+  max-width: 90%;
+  width: 900px;
+}
+
+.modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+}
+
+.modal__title {
+  margin-top: 0;
+  margin-bottom: 0;
+  font-weight: 600;
+  font-size: 1.25rem;
+  line-height: 1.25;
+  color: #333;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+}
+
+.modal__close {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  position: relative;
+  width: 32px;
+  height: 32px;
+  transition: all 0.2s ease;
+  border-radius: 50%;
+}
+
+.modal__close:hover {
+  background-color: rgba(0,0,0,0.1);
+}
+
+.modal__close:before,
+.modal__close:after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 18px;
+  background-color: #333;
+  top: 7px;
+  left: 15px;
+}
+
+.modal__close:before {
+  transform: rotate(45deg);
+}
+
+.modal__close:after {
+  transform: rotate(-45deg);
+}
+
+.modal__content {
+  padding: 0;
+  line-height: 1.5;
+  color: rgba(0, 0, 0, 0.8);
+  max-height: 70vh;
+  overflow-y: auto;
+  background-color: #fff;
+}
+
+.modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid #eaeaea;
+  background-color: #f8f9fa;
+  gap: 0.5rem;
+}
+
+.micromodal-slide {
+  display: none;
+}
+
+.micromodal-slide.is-open {
+  display: block;
+}
+
+.micromodal-slide[aria-hidden="false"] .modal__overlay {
+  animation: mmfadeIn .35s cubic-bezier(0, 0, .2, 1);
+}
+
+.micromodal-slide[aria-hidden="false"] .modal__container {
+  animation: mmslideIn .35s cubic-bezier(0, 0, .2, 1);
+}
+
+.micromodal-slide[aria-hidden="true"] .modal__overlay {
+  animation: mmfadeOut .35s cubic-bezier(0, 0, .2, 1);
+}
+
+.micromodal-slide[aria-hidden="true"] .modal__container {
+  animation: mmslideOut .35s cubic-bezier(0, 0, .2, 1);
+}
+
+.micromodal-slide .modal__container,
+.micromodal-slide .modal__overlay {
+  will-change: transform;
+}
+
+@keyframes mmfadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes mmfadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes mmslideIn {
+  from { transform: translateY(15%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes mmslideOut {
+  from { transform: translateY(0); }
+  to { transform: translateY(-10%); }
+}
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Initialize MicroModal when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, setting up MicroModal...');
+    
+    // Initialize MicroModal with specific options for closing
+    try {
+        if (typeof MicroModal !== 'undefined') {
+            console.log('MicroModal is defined, initializing...');
+            MicroModal.init({
+                openTrigger: 'data-micromodal-trigger',
+                closeTrigger: 'data-micromodal-close',
+                disableScroll: true,
+                disableFocus: false,
+                awaitOpenAnimation: true,
+                awaitCloseAnimation: true,
+                debugMode: true,
+                onShow: modal => console.log(`Modal ${modal.id} is shown`),
+                onClose: modal => console.log(`Modal ${modal.id} is hidden`)
+            });
+            
+            // Prevent clicks inside modal content from closing the modal
+            document.querySelectorAll('.modal__content').forEach(content => {
+                content.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+                
+                // Also prevent form submissions when pressing Enter in input fields
+                content.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+                        e.preventDefault();
+                    }
+                });
+            });
+            
+            // Add manual close handler for all close buttons
+            document.querySelectorAll('[data-micromodal-close]').forEach(element => {
+                element.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const modalId = this.closest('.modal').id;
+                    console.log(`Manual close requested for ${modalId}`);
+                    MicroModal.close(modalId);
+                });
+            });
+            
+            // Add global keyboard event listener for ESC key
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    console.log('ESC key detected, closing any open modals');
+                    const openModals = document.querySelectorAll('.modal.is-open');
+                    openModals.forEach(modal => {
+                        MicroModal.close(modal.id);
+                    });
+                }
+            });
+            
+            console.log('MicroModal initialization complete');
+        } else {
+            console.error('MicroModal is not loaded! Falling back to standard functionality.');
+            
+            // Fallback initialization for close buttons if MicroModal isn't available
+            document.querySelectorAll('.modal__close, [data-micromodal-close]').forEach(element => {
+                element.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const modal = this.closest('.modal');
+                    if (modal) {
+                        modal.classList.remove('is-open');
+                        modal.setAttribute('aria-hidden', 'true');
+                        console.log('Closed modal with fallback method');
+                    }
+                });
+            });
+        }
+    } catch (error) {
+        console.error('Error initializing MicroModal:', error);
+    }
+    
+    // Toggle filter section
+    window.toggleFilters = function() {
+        const filterSection = document.getElementById('filterSection');
+        const filterIcon = document.getElementById('filterIcon');
+        
+        filterSection.classList.toggle('collapsed');
+        
+        if (filterSection.classList.contains('collapsed')) {
+            filterIcon.textContent = 'expand_more';
+        } else {
+            filterIcon.textContent = 'expand_less';
+        }
+    };
+    
+    // Initialize as collapsed by default
+    toggleFilters();
+    
+    // Function to open the view modal
+    window.openViewModal = function(reportId) {
+        console.log('Opening view modal for report ID:', reportId);
+        // Show loading spinner
+        document.getElementById('modal-view-report-content').innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <div class="mt-3">Loading details for report #${reportId}...</div>
+            </div>
+        `;
+        
+        // Open the modal safely with MicroModal
+        if (typeof MicroModal !== 'undefined') {
+            console.log('Opening modal with MicroModal');
+            MicroModal.show('modal-view-report');
+        } else {
+            // Fallback if MicroModal isn't available
+            console.warn('MicroModal not available, using fallback');
+            const modal = document.getElementById('modal-view-report');
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+        }
+        
+        // Add a timestamp to prevent caching
+        const timestamp = new Date().getTime();
+        const url = `/management/reports/${reportId}/view/?t=${timestamp}`;
+        
+        console.log('Fetching URL:', url);
+        
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'Cache-Control': 'no-cache',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            }
+            return response.text();
+        })
+        .then(html => {
+            console.log('Response received, length:', html.length);
+            document.getElementById('modal-view-report-content').innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error fetching report details:', error);
+            document.getElementById('modal-view-report-content').innerHTML = `
+                <div class="alert alert-danger m-3">
+                    <span class="material-icons me-2">error_outline</span>
+                    <div>Error loading report details: ${error.message}</div>
+                    <div class="mt-2">Requested Report ID: ${reportId}</div>
+                    <div class="mt-3">
+                        <button class="btn btn-outline-secondary" onclick="closeViewModal()">
+                            <span class="material-icons me-1">close</span> Close
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+    };
+    
+    // Function to close the view modal
+    window.closeViewModal = function() {
+        console.log('Closing view modal');
+        try {
+            if (typeof MicroModal !== 'undefined') {
+                MicroModal.close('modal-view-report');
+                console.log('Closed modal with MicroModal');
+            } else {
+                // Fallback
+                const modal = document.getElementById('modal-view-report');
+                modal.classList.remove('is-open');
+                modal.setAttribute('aria-hidden', 'true');
+                console.log('Closed modal with fallback method');
+            }
+        } catch (error) {
+            console.error('Error closing modal:', error);
+            // Additional fallback
+            const modal = document.getElementById('modal-view-report');
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.classList.remove('modal-open');
+                console.log('Closed modal with additional fallback');
+            }
+        }
+    };
+    
+    // Function to open the status update modal
+    window.openStatusModal = function(reportId) {
+        console.log('Opening status update modal for report ID:', reportId);
+        // Show loading spinner
+        document.getElementById('modal-update-status-content').innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <div class="mt-3">Loading status form for report #${reportId}...</div>
+            </div>
+        `;
+        
+        // Open the modal safely with MicroModal
+        try {
+            if (typeof MicroModal !== 'undefined') {
+                console.log('Opening status modal with MicroModal');
+                MicroModal.show('modal-update-status');
+            } else {
+                // Fallback if MicroModal isn't available
+                console.warn('MicroModal not available, using fallback');
+                const modal = document.getElementById('modal-update-status');
+                modal.classList.add('is-open');
+                modal.setAttribute('aria-hidden', 'false');
+                document.body.classList.add('modal-open');
+            }
+        } catch (error) {
+            console.error('Error opening status modal:', error);
+            // Additional fallback
+            const modal = document.getElementById('modal-update-status');
+            if (modal) {
+                modal.style.display = 'block';
+                modal.classList.add('is-open');
+                document.body.classList.add('modal-open');
+                console.log('Opened status modal with additional fallback');
+            }
+        }
+        
+        // Add a timestamp to prevent caching
+        const timestamp = new Date().getTime();
+        const url = `/management/reports/${reportId}/update-status/?t=${timestamp}`;
+        
+        console.log('Fetching URL:', url);
+        
+        // Fetch status update form
+        fetch(url, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Cache-Control': 'no-cache'
+            }
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            }
+            return response.text();
+        })
+        .then(html => {
+            console.log('Response received, length:', html.length);
+            document.getElementById('modal-update-status-content').innerHTML = html;
+            
+            // Store the report ID for submission
+            document.getElementById('update-status-submit').dataset.reportId = reportId;
+            
+            // Make sure the form has a CSRF token
+            const form = document.getElementById('status-update-form');
+            if (form) {
+                // Check if the form already has a CSRF token field
+                let hasCsrfToken = false;
+                const inputs = form.querySelectorAll('input');
+                for (let i = 0; i < inputs.length; i++) {
+                    if (inputs[i].name === 'csrfmiddlewaretoken') {
+                        hasCsrfToken = true;
+                        break;
+                    }
+                }
+                
+                // If no CSRF token field, add one
+                if (!hasCsrfToken) {
+                    console.log('Adding CSRF token to status update form');
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = 'csrfmiddlewaretoken';
+                    csrfInput.value = getCSRFToken();
+                    form.appendChild(csrfInput);
+                }
+            } else {
+                console.error('Status update form not found after loading content');
+            }
+            
+            // Add prevention for accidental modal closing when clicking inside content
+            const modalContent = document.getElementById('modal-update-status-content');
+            modalContent.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+            
+            // Prevent Enter key from submitting forms in inputs
+            modalContent.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+                    e.preventDefault();
+                }
+            });
+            
+            // Prevent textarea clicks from bubbling up and closing the modal
+            const textareas = modalContent.querySelectorAll('textarea');
+            textareas.forEach(textarea => {
+                textarea.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('modal-update-status-content').innerHTML = `
+                <div class="alert alert-danger m-3">
+                    <span class="material-icons me-2">error_outline</span>
+                    <div>Error loading status update form: ${error.message}</div>
+                    <div class="mt-2">Requested Report ID: ${reportId}</div>
+                    <div class="mt-3">
+                        <button class="btn btn-outline-secondary" onclick="closeStatusModal()">
+                            <span class="material-icons me-1">close</span> Close
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+    };
+    
+    // Function to open the dispute report modal
+    window.openDisputeModal = function(reportId) {
+        console.log('Opening dispute modal for report ID:', reportId);
+        // Show loading spinner
+        document.getElementById('modal-dispute-report-content').innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <div class="mt-3">Loading dispute form for report #${reportId}...</div>
+            </div>
+        `;
+        
+        // Open the modal safely with MicroModal
+        try {
+            if (typeof MicroModal !== 'undefined') {
+                console.log('Opening dispute modal with MicroModal');
+                MicroModal.show('modal-dispute-report');
+            } else {
+                // Fallback if MicroModal isn't available
+                console.warn('MicroModal not available, using fallback');
+                const modal = document.getElementById('modal-dispute-report');
+                modal.classList.add('is-open');
+                modal.setAttribute('aria-hidden', 'false');
+                document.body.classList.add('modal-open');
+            }
+        } catch (error) {
+            console.error('Error opening dispute modal:', error);
+            // Additional fallback
+            const modal = document.getElementById('modal-dispute-report');
+            if (modal) {
+                modal.style.display = 'block';
+                modal.classList.add('is-open');
+                document.body.classList.add('modal-open');
+                console.log('Opened dispute modal with additional fallback');
+            }
+        }
+        
+        // Add a timestamp to prevent caching
+        const timestamp = new Date().getTime();
+        const url = `/management/reports/${reportId}/dispute/?t=${timestamp}`;
+        
+        console.log('Fetching URL:', url);
+        
+        // Fetch dispute form
+        fetch(url, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Cache-Control': 'no-cache'
+            }
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            }
+            return response.text();
+        })
+        .then(html => {
+            console.log('Response received, length:', html.length);
+            document.getElementById('modal-dispute-report-content').innerHTML = html;
+            
+            // Store the report ID for submission
+            document.getElementById('dispute-report-submit').dataset.reportId = reportId;
+            
+            // Make sure the form has a CSRF token
+            const form = document.getElementById('dispute-form');
+            if (form) {
+                // Check if the form already has a CSRF token field
+                let hasCsrfToken = false;
+                const inputs = form.querySelectorAll('input');
+                for (let i = 0; i < inputs.length; i++) {
+                    if (inputs[i].name === 'csrfmiddlewaretoken') {
+                        hasCsrfToken = true;
+                        break;
+                    }
+                }
+                
+                // If no CSRF token field, add one
+                if (!hasCsrfToken) {
+                    console.log('Adding CSRF token to dispute form');
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = 'csrfmiddlewaretoken';
+                    csrfInput.value = getCSRFToken();
+                    form.appendChild(csrfInput);
+                }
+            } else {
+                console.error('Dispute form not found after loading content');
+            }
+            
+            // Add prevention for accidental modal closing when clicking inside content
+            const modalContent = document.getElementById('modal-dispute-report-content');
+            modalContent.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+            
+            // Prevent Enter key from submitting forms in inputs
+            modalContent.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+                    e.preventDefault();
+                }
+            });
+            
+            // Prevent textarea clicks from bubbling up and closing the modal
+            const textareas = modalContent.querySelectorAll('textarea');
+            textareas.forEach(textarea => {
+                textarea.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('modal-dispute-report-content').innerHTML = `
+                <div class="alert alert-danger m-3">
+                    <span class="material-icons me-2">error_outline</span>
+                    <div>Error loading dispute form: ${error.message}</div>
+                    <div class="mt-2">Requested Report ID: ${reportId}</div>
+                    <div class="mt-3">
+                        <button class="btn btn-outline-secondary" onclick="closeDisputeModal()">
+                            <span class="material-icons me-1">close</span> Close
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+    };
+    
+    // Handle clicks on view, update, and dispute buttons
+    document.addEventListener('click', function(e) {
+        // View button click
+        if (e.target.closest('.btn-view-report')) {
+            const btn = e.target.closest('.btn-view-report');
+            const reportId = btn.dataset.reportId;
+            openViewModal(reportId);
+        }
+        
+        // Update status button click
+        if (e.target.closest('.btn-update-status')) {
+            const btn = e.target.closest('.btn-update-status');
+            const reportId = btn.dataset.reportId;
+            openStatusModal(reportId);
+        }
+        
+        // Dispute button click
+        if (e.target.closest('.btn-dispute-report')) {
+            const btn = e.target.closest('.btn-dispute-report');
+            const reportId = btn.dataset.reportId;
+            openDisputeModal(reportId);
+        }
+    });
+    
+    // Define CSRF token function outside event handlers
+    function getCSRFToken() {
+        const name = 'csrftoken';
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Handle update status form submission
+    document.getElementById('update-status-submit').addEventListener('click', function() {
+        const reportId = this.dataset.reportId;
+        const form = document.getElementById('status-update-form');
+        
+        if (!form) {
+            console.error('Status update form not found');
+            return;
+        }
+        
+        const formData = new FormData(form);
+        const statusValue = formData.get('status');
+        const statusText = document.querySelector(`#status-update-form select[name="status"] option[value="${statusValue}"]`)?.textContent || statusValue;
+        
+        // Show confirmation dialog before submission
+        Swal.fire({
+            icon: 'question',
+            title: 'Confirm Status Update',
+            text: `Are you sure you want to update this report's status to "${statusText}"?`,
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Update Status',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // User confirmed, proceed with submission
+                submitStatusUpdate(this, reportId, formData);
+            }
+        });
+    });
+    
+    // Function to handle the actual status update submission
+    function submitStatusUpdate(button, reportId, formData) {
+        // Debug CSRF token (only showing that it exists, not the value for security)
+        const csrfToken = getCSRFToken();
+        console.log('CSRF Token for status update:', csrfToken ? `${csrfToken.substring(0, 4)}...${csrfToken.substring(csrfToken.length - 4)}` : 'Not found');
+        
+        // Show loading state
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Updating...';
+        
+        // Submit the form via AJAX
+        fetch(`/management/reports/${reportId}/update-status/`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken
+            }
+        })
+        .then(response => {
+            console.log('Status update response:', response.status, response.statusText);
+            
+            // Check response content type to determine how to parse it
+            const contentType = response.headers.get('content-type');
+            const isJson = contentType && contentType.includes('application/json');
+            
+            return response.text().then(text => {
+                console.log('Response text length:', text.length);
+                
+                // Try to parse as JSON if the content type suggests it's JSON
+                // or if it looks like JSON
+                let data;
+                try {
+                    if (text.trim().startsWith('{') || text.trim().startsWith('[') || isJson) {
+                        data = JSON.parse(text);
+                    } else {
+                        console.log('Response is not JSON:', text.substring(0, 100) + '...');
+                        // Create a structured object for non-JSON responses
+                        data = {
+                            success: response.ok,
+                            message: response.ok ? 'Status updated successfully' : 
+                                    `Server error (${response.status}): ${response.statusText}`,
+                            html: text
+                        };
+                    }
+                } catch (e) {
+                    console.error('Error parsing response:', e);
+                    console.log('Raw response text:', text.substring(0, 200) + '...');
+                    data = {
+                        success: false,
+                        message: `Error parsing server response: ${e.message}`,
+                        html: text
+                    };
+                }
+                
+                // Combine the parsed data with response information
+                return {
+                    ok: response.ok,
+                    status: response.status,
+                    statusText: response.statusText,
+                    data: data
+                };
+            });
+        })
+        .then(result => {
+            if (result.ok) {
+                // Close the modal
+                closeStatusModal();
+                
+                // Show success alert (updated to match login.html style)
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: result.data.message || 'Status updated successfully',
+                    confirmButtonText: 'OK'
+                });
+                
+                // Refresh the page to show updated data
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                // Extract error message from the response
+                let errorMessage = 'Failed to update status';
+                
+                if (result.data && result.data.message) {
+                    errorMessage = result.data.message;
+                } else if (result.statusText) {
+                    errorMessage = `Server error (${result.status}): ${result.statusText}`;
+                }
+                
+                console.error('Status update failed:', errorMessage);
+                
+                // Show detailed error alert
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: errorMessage,
+                    confirmButtonText: 'OK'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Update status error:', error);
+            
+            // Show detailed error alert
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: `Network error: ${error.message}`,
+                confirmButtonText: 'OK'
+            });
+        })
+        .finally(() => {
+            // Reset button state
+            button.disabled = false;
+            button.innerHTML = '<span class="material-icons me-1 align-middle" style="font-size: 18px;">save</span> Update Status';
+        });
+    }
+    
+    // Handle dispute form submission
+    document.getElementById('dispute-report-submit').addEventListener('click', function() {
+        const reportId = this.dataset.reportId;
+        const form = document.getElementById('dispute-form');
+        
+        if (!form) {
+            console.error('Dispute form not found');
+            return;
+        }
+        
+        const formData = new FormData(form);
+        
+        // Check if reason field is filled
+        const reason = formData.get('reason');
+        if (!reason || reason.trim() === '') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Missing Information',
+                text: 'Please provide a reason for disputing this report.',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+        
+        // Show confirmation dialog before submission
+        Swal.fire({
+            icon: 'warning',
+            title: 'Confirm Dispute',
+            text: 'Are you sure you want to dispute this report? This action will notify the user and cannot be undone.',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Dispute Report',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // User confirmed, proceed with submission
+                submitDisputeReport(this, reportId, formData);
+            }
+        });
+    });
+    
+    // Function to handle the actual dispute submission
+    function submitDisputeReport(button, reportId, formData) {
+        // Debug CSRF token (only showing that it exists, not the value for security)
+        const csrfToken = getCSRFToken();
+        console.log('CSRF Token for dispute:', csrfToken ? `${csrfToken.substring(0, 4)}...${csrfToken.substring(csrfToken.length - 4)}` : 'Not found');
+        
+        // Show loading state
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Processing...';
+        
+        // Submit the form via AJAX
+        fetch(`/management/reports/${reportId}/dispute/`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken
+            }
+        })
+        .then(response => {
+            console.log('Dispute response:', response.status, response.statusText);
+            
+            // Check response content type to determine how to parse it
+            const contentType = response.headers.get('content-type');
+            const isJson = contentType && contentType.includes('application/json');
+            
+            return response.text().then(text => {
+                console.log('Response text length:', text.length);
+                
+                // Try to parse as JSON if the content type suggests it's JSON
+                // or if it looks like JSON
+                let data;
+                try {
+                    if (text.trim().startsWith('{') || text.trim().startsWith('[') || isJson) {
+                        data = JSON.parse(text);
+                    } else {
+                        console.log('Response is not JSON:', text.substring(0, 100) + '...');
+                        // Create a structured object for non-JSON responses
+                        data = {
+                            success: response.ok,
+                            message: response.ok ? 'Report disputed successfully' : 
+                                    `Server error (${response.status}): ${response.statusText}`,
+                            html: text
+                        };
+                    }
+                } catch (e) {
+                    console.error('Error parsing response:', e);
+                    console.log('Raw response text:', text.substring(0, 200) + '...');
+                    data = {
+                        success: false,
+                        message: `Error parsing server response: ${e.message}`,
+                        html: text
+                    };
+                }
+                
+                // Combine the parsed data with response information
+                return {
+                    ok: response.ok,
+                    status: response.status,
+                    statusText: response.statusText,
+                    data: data
+                };
+            });
+        })
+        .then(result => {
+            if (result.ok) {
+                // Close the modal
+                closeDisputeModal();
+                
+                // Show success alert (updated to match login.html style)
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: result.data.message || 'Report disputed successfully',
+                    confirmButtonText: 'OK'
+                });
+                
+                // Refresh the page to show updated data
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                // Extract error message from the response
+                let errorMessage = 'Failed to dispute report';
+                
+                if (result.data && result.data.message) {
+                    errorMessage = result.data.message;
+                } else if (result.statusText) {
+                    errorMessage = `Server error (${result.status}): ${result.statusText}`;
+                }
+                
+                console.error('Dispute failed:', errorMessage);
+                
+                // Show detailed error alert
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: errorMessage,
+                    confirmButtonText: 'OK'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Dispute error:', error);
+            
+            // Show detailed error alert
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: `Network error: ${error.message}`,
+                confirmButtonText: 'OK'
+            });
+        })
+        .finally(() => {
+            // Reset button state
+            button.disabled = false;
+            button.innerHTML = '<span class="material-icons me-1 align-middle" style="font-size: 18px;">gavel</span> Dispute Report';
+        });
+    }
+
+    // Function to close the status update modal
+    window.closeStatusModal = function() {
+        console.log('Closing status update modal');
+        try {
+            if (typeof MicroModal !== 'undefined') {
+                MicroModal.close('modal-update-status');
+                console.log('Closed status modal with MicroModal');
+            } else {
+                // Fallback
+                const modal = document.getElementById('modal-update-status');
+                modal.classList.remove('is-open');
+                modal.setAttribute('aria-hidden', 'true');
+                console.log('Closed status modal with fallback method');
+            }
+        } catch (error) {
+            console.error('Error closing status modal:', error);
+            // Additional fallback
+            const modal = document.getElementById('modal-update-status');
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.classList.remove('modal-open');
+                console.log('Closed status modal with additional fallback');
+            }
+        }
+    };
+
+    // Function to close the dispute report modal
+    window.closeDisputeModal = function() {
+        console.log('Closing dispute modal');
+        try {
+            if (typeof MicroModal !== 'undefined') {
+                MicroModal.close('modal-dispute-report');
+                console.log('Closed dispute modal with MicroModal');
+            } else {
+                // Fallback
+                const modal = document.getElementById('modal-dispute-report');
+                modal.classList.remove('is-open');
+                modal.setAttribute('aria-hidden', 'true');
+                console.log('Closed dispute modal with fallback method');
+            }
+        } catch (error) {
+            console.error('Error closing dispute modal:', error);
+            // Additional fallback
+            const modal = document.getElementById('modal-dispute-report');
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.classList.remove('modal-open');
+                console.log('Closed dispute modal with additional fallback');
+            }
+        }
+    };
+
+    // Add overlay click handlers that only close when clicking outside the modal
+    document.querySelectorAll('.modal__overlay').forEach(overlay => {
+        overlay.addEventListener('click', function(e) {
+            // Only close if the click was directly on the overlay (not bubbled up)
+            if (e.target === overlay) {
+                const modalId = this.closest('.modal').id;
+                console.log(`Overlay clicked, closing ${modalId}`);
+                if (typeof MicroModal !== 'undefined') {
+                    MicroModal.close(modalId);
+                } else {
+                    const modal = document.getElementById(modalId);
+                    modal.classList.remove('is-open');
+                    modal.setAttribute('aria-hidden', 'true');
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

@@ -1,6 +1,24 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<!-- Add SweetAlert2 library -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+<!-- Fallback if CDN fails -->
+<script>
+    if (typeof Swal === 'undefined') {
+        // Create a script element and append it to the document
+        const script = document.createElement('script');
+        script.src = "https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js";
+        document.head.appendChild(script);
+        
+        const link = document.createElement('link');
+        link.rel = "stylesheet";
+        link.href = "https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css";
+        document.head.appendChild(link);
+    }
+</script>
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <div class="container-fluid py-4">
     <!-- Header Card -->
@@ -968,7 +986,9 @@ document.addEventListener('DOMContentLoaded', function() {
     nextWeek.setDate(today.getDate() + 7);
     
     const formattedDate = nextWeek.toISOString().substring(0, 10);
-    document.getElementById('paymentDue').value = formattedDate;
+    
+    const paymentDueEl = document.getElementById('paymentDue');
+    if (paymentDueEl) paymentDueEl.value = formattedDate;
     
     // Initialize violation penalties
     initializeViolations();
@@ -993,12 +1013,18 @@ document.addEventListener('DOMContentLoaded', function() {
         settledCheckbox.addEventListener('change', function() {
             if (this.checked) {
                 // Update UI when checked
-                adjudicationCard.style.opacity = '0.5';
-                settlementReasonContainer.style.display = 'block';
-                settlementReason.required = true;
-                totalPenalty.value = '0.00';
-                totalPenalty.readOnly = true;
-                settledStatus.value = "true";
+                if (adjudicationCard) adjudicationCard.style.opacity = '0.5';
+                if (settlementReasonContainer) settlementReasonContainer.style.display = 'block';
+                if (settlementReason) {
+                    settlementReason.required = true;
+                }
+                if (totalPenalty) {
+                    totalPenalty.value = '0.00';
+                    totalPenalty.readOnly = true;
+                }
+                if (settledStatus) {
+                    settledStatus.value = "true";
+                }
                 
                 // Update violations - check all as they'll all be marked as settled
                 document.querySelectorAll('.violation-checkbox').forEach(checkbox => {
@@ -1017,12 +1043,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 
             } else {
                 // Restore UI when unchecked
-                adjudicationCard.style.opacity = '1';
-                settlementReasonContainer.style.display = 'none';
-                settlementReason.required = false;
-                totalPenalty.value = document.getElementById('originalPenalty').value;
-                totalPenalty.readOnly = false;
-                settledStatus.value = "false";
+                if (adjudicationCard) adjudicationCard.style.opacity = '1';
+                if (settlementReasonContainer) settlementReasonContainer.style.display = 'none';
+                if (settlementReason) {
+                    settlementReason.required = false;
+                }
+                
+                const originalPenaltyEl = document.getElementById('originalPenalty');
+                if (totalPenalty && originalPenaltyEl) {
+                    totalPenalty.value = originalPenaltyEl.value;
+                    totalPenalty.readOnly = false;
+                }
+                
+                if (settledStatus) {
+                    settledStatus.value = "false";
+                }
                 
                 // Re-enable violation checkboxes
                 document.querySelectorAll('.violation-checkbox').forEach(checkbox => {
@@ -1179,76 +1214,144 @@ violationCheckboxes.forEach(checkbox => {
 
 // Form validation
 document.getElementById('adjudicationForm').addEventListener('submit', function(e) {
-    const totalPenalty = document.getElementById('totalPenalty').value;
-    const remarks = document.getElementById('remarks').value;
-    const paymentDue = document.getElementById('paymentDue').value;
-    const isSettled = document.getElementById('markAsSettled').checked;
-    const settlementReason = document.getElementById('settlementReason').value;
+    // Prevent default form submission - we'll handle it after validations
+    e.preventDefault();
+    
+    // Get form elements with null checks
+    const totalPenaltyEl = document.getElementById('totalPenalty');
+    const remarksEl = document.getElementById('remarks');
+    const paymentDueEl = document.getElementById('paymentDue');
+    const markAsSettledEl = document.getElementById('markAsSettled');
+    const settlementReasonEl = document.getElementById('settlementReason');
+    
+    // Safely get values with null checks
+    const totalPenalty = totalPenaltyEl ? totalPenaltyEl.value : '';
+    const remarks = remarksEl ? remarksEl.value : '';
+    const paymentDue = paymentDueEl ? paymentDueEl.value : '';
+    const isSettled = markAsSettledEl ? markAsSettledEl.checked : false;
+    const settlementReason = settlementReasonEl ? settlementReasonEl.value : '';
     const allViolationsRemoved = document.querySelectorAll('.violation-checkbox:checked').length === 0;
 
     // Validate settlement reason if marked as settled
-    if (isSettled && !settlementReason.trim()) {
-        e.preventDefault();
-        alert('Please provide a reason for settling this violation.');
+    if (isSettled && (!settlementReason || !settlementReason.trim())) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Validation Error',
+            text: 'Please provide a reason for settling this violation.',
+            confirmButtonColor: '#2563eb'
+        });
         return;
     }
 
     // Skip penalty validation if settled
     if (!isSettled && !allViolationsRemoved && (!totalPenalty || parseFloat(totalPenalty) <= 0)) {
-        e.preventDefault();
-        alert('Please enter a valid penalty amount');
+        Swal.fire({
+            icon: 'error',
+            title: 'Validation Error',
+            text: 'Please enter a valid penalty amount',
+            confirmButtonColor: '#2563eb'
+        });
         return;
     }
 
-    if (!remarks.trim()) {
-        e.preventDefault();
-        alert('Please enter your decision remarks');
+    if (!remarks || !remarks.trim()) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Validation Error',
+            text: 'Please enter your decision remarks',
+            confirmButtonColor: '#2563eb'
+        });
         return;
     }
     
     if (!paymentDue && !isSettled) {
-        e.preventDefault();
-        alert('Please set a payment due date');
+        Swal.fire({
+            icon: 'error',
+            title: 'Validation Error',
+            text: 'Please set a payment due date',
+            confirmButtonColor: '#2563eb'
+        });
         return;
     }
     
-    // All adjudications are sent for approval
-    document.getElementById('adjudicationStatus').value = "adjudicated";
-    document.getElementById('requiresApproval').value = "true";
+    // Set hidden fields with null checks
+    const adjudicationStatusEl = document.getElementById('adjudicationStatus');
+    const requiresApprovalEl = document.getElementById('requiresApproval');
+    
+    if (adjudicationStatusEl) adjudicationStatusEl.value = "adjudicated";
+    if (requiresApprovalEl) requiresApprovalEl.value = "true";
     
     // Set batch violations data if batch mode is enabled
-    if (document.getElementById('enableBatchAdjudication') && document.getElementById('enableBatchAdjudication').checked) {
+    const enableBatchAdjudicationEl = document.getElementById('enableBatchAdjudication');
+    const batchViolationIdsEl = document.getElementById('batchViolationIds');
+    
+    if (enableBatchAdjudicationEl && enableBatchAdjudicationEl.checked && batchViolationIdsEl) {
         const selectedViolations = [];
         document.querySelectorAll('.batch-violation-checkbox:checked').forEach(checkbox => {
             selectedViolations.push(checkbox.value);
         });
         
-        document.getElementById('batchViolationIds').value = JSON.stringify(selectedViolations);
+        batchViolationIdsEl.value = JSON.stringify(selectedViolations);
     }
     
     // Confirmation message based on action
+    let confirmTitle = 'Submit Adjudication Decision';
     let confirmMessage = 'This adjudication will be sent for approval. Do you want to continue?';
     
     // Specific confirmation for settlement
     if (isSettled) {
-        confirmMessage = 'You are about to mark this violation as SETTLED with zero penalty. It will be sent for approval. Do you want to continue?';
+        confirmTitle = 'Confirm Settlement';
+        confirmMessage = 'You are about to mark this violation as SETTLED with zero penalty. It will be sent for approval.';
     }
     // Specific confirmation for removing all violations
     else if (allViolationsRemoved) {
-        confirmMessage = 'You have removed all violations, which will dismiss the entire citation. This will be sent for approval. Do you want to continue?';
+        confirmTitle = 'Confirm Dismissal';
+        confirmMessage = 'You have removed all violations, which will dismiss the entire citation. This will be sent for approval.';
     }
     
     // Specific confirmation for batch processing
-    const batchIdsValue = document.getElementById('batchViolationIds').value;
-    if (batchIdsValue && batchIdsValue !== '[]') {
-        const batchCount = JSON.parse(batchIdsValue).length;
-        confirmMessage = `You are about to apply the same decision to ${batchCount} additional violation(s). All decisions will be sent for approval. Do you want to continue?`;
+    let batchIdsValue = '[]';
+    if (batchViolationIdsEl && batchViolationIdsEl.value) {
+        batchIdsValue = batchViolationIdsEl.value;
     }
     
-    if (!confirm(confirmMessage)) {
-        e.preventDefault();
-        return;
+    if (batchIdsValue && batchIdsValue !== '[]') {
+        try {
+            const batchCount = JSON.parse(batchIdsValue).length;
+            confirmTitle = 'Confirm Batch Adjudication';
+            confirmMessage = `You are about to apply the same decision to ${batchCount} additional violation(s). All decisions will be sent for approval.`;
+        } catch (e) {
+            console.error('Error parsing batch IDs', e);
+        }
     }
+    
+    // Show SweetAlert confirmation dialog
+    Swal.fire({
+        title: confirmTitle,
+        text: confirmMessage,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#2563eb',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, Submit',
+        cancelButtonText: 'Cancel',
+        reverseButtons: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Show loading state
+            Swal.fire({
+                title: 'Processing...',
+                text: 'Submitting your adjudication decision',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                    // Submit the form
+                    this.submit();
+                }
+            });
+        }
+    });
 });
 
 // Batch Adjudication Handling
@@ -1513,5 +1616,41 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }, 800);
 });
+
+// Function to show violation details in a modal
+function showViolationDetail(violationId) {
+    // Prevent errors if Swal is not available yet
+    if (typeof Swal === 'undefined') {
+        console.error('SweetAlert is not available');
+        return;
+    }
+    
+    Swal.fire({
+        title: 'Violation Details',
+        html: `<div class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading violation #${violationId} details...</p>
+               </div>`,
+        showConfirmButton: false,
+        willOpen: () => {
+            // In a real implementation, you would fetch violation details from the server
+            // For now, we'll just show a simple alert with the ID
+            setTimeout(() => {
+                Swal.update({
+                    title: 'Violation #' + violationId,
+                    html: `<div class="text-start">
+                            <p>Details for this violation are not available in the preview.</p>
+                            <p>In the actual implementation, this would show complete violation details.</p>
+                           </div>`,
+                    showConfirmButton: true,
+                    confirmButtonText: 'Close',
+                    confirmButtonColor: '#2563eb'
+                });
+            }, 1000);
+        }
+    });
+}
 </script>
 {% endblock %} 

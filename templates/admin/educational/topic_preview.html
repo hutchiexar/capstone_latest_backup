@@ -1,0 +1,244 @@
+{% extends 'admin/base_admin.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .topic-content {
+        font-size: 1.1rem;
+        line-height: 1.6;
+    }
+    .topic-content img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+        margin: 1rem 0;
+    }
+    .topic-content h1, .topic-content h2, .topic-content h3 {
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    .topic-content p {
+        margin-bottom: 1rem;
+    }
+    .topic-content ul, .topic-content ol {
+        margin-bottom: 1rem;
+        padding-left: 2rem;
+    }
+    .topic-content blockquote {
+        border-left: 4px solid var(--primary-color);
+        padding-left: 1rem;
+        color: #6c757d;
+        font-style: italic;
+        margin: 1rem 0;
+    }
+    .preview-banner {
+        background-color: rgba(var(--primary-rgb), 0.1);
+        border-left: 4px solid var(--primary-color);
+    }
+    .attachment-card {
+        transition: all 0.3s ease;
+        border-left: 3px solid var(--primary-color);
+    }
+    .attachment-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .file-icon {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        color: #fff;
+        background-color: var(--primary-color);
+    }
+    .file-icon.pdf {
+        background-color: #dc3545;
+    }
+    .file-icon.image {
+        background-color: #198754;
+    }
+    .file-icon.video {
+        background-color: #0d6efd;
+    }
+    .file-icon.other {
+        background-color: #6c757d;
+    }
+</style>
+{{ block.super }}
+{% endblock %}
+
+{% block admin_content %}
+<div class="container py-4">
+    <!-- Preview Banner -->
+    {% if is_preview %}
+    <div class="alert preview-banner mb-4">
+        <div class="d-flex align-items-center">
+            <span class="material-icons me-3">visibility</span>
+            <div>
+                <h5 class="alert-heading mb-1">Preview Mode</h5>
+                <p class="mb-0">This is a preview of how the topic will appear to users. <a href="{% url 'educational:admin_topic_edit' topic_id=topic.id %}" class="alert-link">Edit this topic</a></p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="admin-section-title mb-0">Topic Preview</h2>
+            <p class="text-muted">Viewing how the topic will appear to users</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'educational:admin_topic_edit' topic_id=topic.id %}" class="btn btn-primary d-flex align-items-center">
+                <span class="material-icons me-2">edit</span> Edit Topic
+            </a>
+            <a href="{% url 'educational:admin_topic_list' %}" class="btn btn-outline-secondary d-flex align-items-center">
+                <span class="material-icons me-2">arrow_back</span> Back to Topics
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Topic Content Card -->
+            <div class="card mb-4">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between mb-4">
+                        <div>
+                            <span class="badge bg-primary mb-2">{{ topic.category.title }}</span>
+                            <h1 class="h2 mb-0">{{ topic.title }}</h1>
+                        </div>
+                        <span class="badge {% if topic.is_published %}bg-success{% else %}bg-danger{% endif %} align-self-start">
+                            {% if topic.is_published %}Published{% else %}Draft{% endif %}
+                        </span>
+                    </div>
+                    
+                    <div class="topic-content">
+                        {{ topic.content|safe }}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Attachments Card -->
+            {% if attachments %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Attachments</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row row-cols-1 row-cols-md-2 g-3">
+                        {% for attachment in attachments %}
+                        <div class="col">
+                            <div class="card attachment-card h-100">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="file-icon me-3 {% if attachment.file_type == 'PDF' %}pdf{% elif attachment.file_type == 'IMAGE' %}image{% elif attachment.file_type == 'VIDEO' %}video{% else %}other{% endif %}">
+                                            <span class="material-icons">
+                                                {% if attachment.file_type == 'PDF' %}picture_as_pdf
+                                                {% elif attachment.file_type == 'IMAGE' %}image
+                                                {% elif attachment.file_type == 'VIDEO' %}videocam
+                                                {% else %}insert_drive_file{% endif %}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-1">{{ attachment.title|default:"File Attachment" }}</h6>
+                                            <p class="mb-2 text-muted small">
+                                                {{ attachment.file_type }} • {{ attachment.file.size|filesizeformat }}
+                                            </p>
+                                            <a href="{{ attachment.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                <span class="material-icons me-1" style="font-size: 16px;">download</span>
+                                                Download
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Topic Info Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Topic Information</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item px-0">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-medium">Status:</span>
+                                <span class="badge {% if topic.is_published %}bg-success{% else %}bg-danger{% endif %}">
+                                    {% if topic.is_published %}Published{% else %}Draft{% endif %}
+                                </span>
+                            </div>
+                        </li>
+                        <li class="list-group-item px-0">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-medium">Category:</span>
+                                <span>{{ topic.category.title }}</span>
+                            </div>
+                        </li>
+                        <li class="list-group-item px-0">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-medium">Created By:</span>
+                                <span>{{ topic.created_by.get_full_name|default:topic.created_by.username }}</span>
+                            </div>
+                        </li>
+                        <li class="list-group-item px-0">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-medium">Created On:</span>
+                                <span>{{ topic.created_at|date:"M d, Y" }}</span>
+                            </div>
+                        </li>
+                        <li class="list-group-item px-0">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-medium">Last Updated:</span>
+                                <span>{{ topic.updated_at|date:"M d, Y" }}</span>
+                            </div>
+                        </li>
+                        <li class="list-group-item px-0">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-medium">Attachments:</span>
+                                <span>{{ attachments.count }} file(s)</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Action Buttons Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'educational:admin_topic_edit' topic_id=topic.id %}" class="btn btn-primary d-flex justify-content-center align-items-center gap-2">
+                            <span class="material-icons">edit</span>
+                            Edit Topic
+                        </a>
+                        <a href="{% url 'educational:admin_topic_publish' topic_id=topic.id %}" class="btn {% if topic.is_published %}btn-outline-warning{% else %}btn-outline-success{% endif %} d-flex justify-content-center align-items-center gap-2">
+                            <span class="material-icons">{% if topic.is_published %}unpublished{% else %}publish{% endif %}</span>
+                            {% if topic.is_published %}Unpublish{% else %}Publish{% endif %} Topic
+                        </a>
+                        <a href="{% url 'educational:admin_topic_delete' topic_id=topic.id %}" class="btn btn-outline-danger d-flex justify-content-center align-items-center gap-2">
+                            <span class="material-icons">delete</span>
+                            Delete Topic
+                        </a>
+                        <a href="{% url 'educational:admin_topic_list' %}" class="btn btn-outline-secondary d-flex justify-content-center align-items-center gap-2">
+                            <span class="material-icons">arrow_back</span>
+                            Back to Topics
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

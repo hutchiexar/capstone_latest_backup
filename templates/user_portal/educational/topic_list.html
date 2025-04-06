@@ -1,0 +1,774 @@
+{% extends 'user_portal/base_user.html' %}
+{% load static %}
+
+{% block title %}
+    {% if selected_category %}
+        {{ selected_category.title }} - Educational Topics
+    {% else %}
+        Educational Topics
+    {% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Logo styles */
+    .logos-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 10px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+    }
+    .logo-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    .logo-item img {
+        height: 60px;
+        width: auto;
+        margin-bottom: 5px;
+    }
+    .logo-name {
+        font-size: 12px;
+        font-weight: bold;
+        color: #333;
+    }
+    
+    .elearning-container {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        max-width: 1100px;
+        margin: 30px auto;
+        padding: 0;
+        display: flex;
+    }
+    
+    .elearning-sidebar {
+        width: 320px;
+        background-color: #0039cb;
+        border-radius: 8px 0 0 8px;
+        padding: 1.5rem 0;
+        color: white;
+        overflow-y: auto;
+        max-height: 700px;
+    }
+    
+    .elearning-content {
+        flex: 1;
+        padding: 2rem;
+    }
+    
+    .category-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .category-item {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .category-link {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        color: white;
+        padding: 1rem 1.5rem;
+        transition: all 0.2s ease;
+    }
+    
+    .category-link:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        text-decoration: none;
+    }
+    
+    .category-link.active {
+        background-color: rgba(255, 255, 255, 0.2);
+        border-left: 4px solid white;
+    }
+    
+    .category-number {
+        font-weight: 600;
+        color: white;
+        margin-right: 0.75rem;
+        min-width: 25px;
+    }
+    
+    .category-title {
+        font-weight: 500;
+        flex-grow: 1;
+        font-size: 1rem;
+    }
+    
+    .category-arrow {
+        color: white;
+        margin-left: 0.5rem;
+    }
+    
+    .back-link {
+        display: flex;
+        align-items: center;
+        color: #0d47a1;
+        text-decoration: none;
+        font-weight: 500;
+        margin-bottom: 1.5rem;
+    }
+    
+    .back-link:hover {
+        text-decoration: none;
+    }
+    
+    .content-header {
+        margin-bottom: 1.5rem;
+    }
+    
+    .category-title-header {
+        color: #0d47a1;
+        font-size: 1.6rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .topic-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    
+    .topic-card:hover {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .topic-header {
+        background-color: #f5f7fa;
+        padding: 1rem;
+        border-bottom: 1px solid #e0e0e0;
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .topic-number {
+        display: inline-block;
+        width: 26px;
+        height: 26px;
+        line-height: 26px;
+        text-align: center;
+        background-color: #0d47a1;
+        color: white;
+        border-radius: 50%;
+        margin-right: 0.5rem;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+    
+    .topic-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #0d47a1;
+    }
+    
+    .topic-content {
+        padding: 1rem;
+        color: #424242;
+    }
+    
+    .topic-content p {
+        margin-bottom: 0.5rem;
+    }
+    
+    .topic-footer {
+        padding: 1rem;
+        border-top: 1px solid #e0e0e0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .topic-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .bookmark-btn, .start-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        border-radius: 4px;
+        padding: 0.5rem 0.75rem;
+        font-weight: 500;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+    }
+    
+    .bookmark-btn {
+        color: #616161;
+        background-color: #f5f5f5;
+        border: 1px solid #e0e0e0;
+    }
+    
+    .bookmark-btn:hover {
+        background-color: #eeeeee;
+    }
+    
+    .bookmark-btn.active {
+        color: #ff6f00;
+        background-color: #fff8e1;
+    }
+    
+    .start-btn {
+        background-color: #0039cb;
+        color: white;
+    }
+    
+    .start-btn:hover {
+        background-color: #002984;
+        color: white;
+    }
+    
+    .status-badge {
+        font-size: 0.8rem;
+        font-weight: 500;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .status-badge.completed {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+    }
+    
+    .status-badge.in-progress {
+        background-color: #e3f2fd;
+        color: #1565c0;
+    }
+    
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+        .elearning-container {
+            flex-direction: column;
+        }
+        
+        .elearning-sidebar {
+            width: 100%;
+            border-radius: 8px 8px 0 0;
+        }
+    }
+    
+    /* Modal styles */
+    .modal-container {
+        max-width: 800px;
+    }
+    
+    .modal-header {
+        background-color: #0d47a1;
+        color: white;
+    }
+    
+    .modal-topic-title {
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: #0d47a1;
+    }
+    
+    /* Loading skeleton */
+    .skeleton {
+        background: #e0e0e0;
+        background: linear-gradient(110deg, #ececec 8%, #f5f5f5 18%, #ececec 33%);
+        background-size: 200% 100%;
+        animation: shine 1.5s infinite linear;
+        border-radius: 4px;
+    }
+    
+    .skeleton-card {
+        height: 200px;
+        margin-bottom: 1.5rem;
+        border-radius: 8px;
+    }
+    
+    .skeleton-header {
+        height: 50px;
+        margin-bottom: 1rem;
+    }
+    
+    .skeleton-body {
+        height: 80px;
+        margin-bottom: 1rem;
+    }
+    
+    .skeleton-footer {
+        height: 40px;
+    }
+    
+    @keyframes shine {
+        to {
+            background-position-x: -200%;
+        }
+    }
+    
+    .category-arrow.rotated {
+        transform: rotate(90deg);
+    }
+    
+    .subtopics-container {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+        background-color: rgba(0, 0, 0, 0.2);
+    }
+    
+    .subtopics-container.expanded {
+        max-height: 1000px;
+    }
+    
+    .subtopic-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .subtopic-item {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .subtopic-link {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        color: rgba(255, 255, 255, 0.9);
+        padding: 0.75rem 1rem 0.75rem 3.25rem;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+    }
+    
+    .subtopic-link:hover, .subtopic-link.active {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: white;
+        text-decoration: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="elearning-container">
+        <!-- Sidebar Navigation -->
+        <div class="elearning-sidebar">
+            <ul class="category-list">
+                {% for category in categories %}
+                <li class="category-item">
+                    <div class="category-link {% if selected_category and selected_category.id == category.id %}active{% endif %}" data-category-id="{{ category.id }}">
+                        <span class="category-number">{{ forloop.counter }}.</span>
+                        <span class="category-title">{{ category.title|upper }}</span>
+                        <span class="category-arrow {% if selected_category and selected_category.id == category.id %}rotated{% endif %}">
+                            <i class="material-icons">chevron_right</i>
+                        </span>
+                    </div>
+                    <div class="subtopics-container {% if selected_category and selected_category.id == category.id %}expanded{% endif %}" id="subtopics-{{ category.id }}">
+                        <ul class="subtopic-list">
+                            <li class="subtopic-item">
+                                <a href="{% url 'educational:topic_list' %}?category={{ category.id }}" class="subtopic-link {% if selected_category and selected_category.id == category.id %}active{% endif %}">
+                                    View All Topics
+                                </a>
+                            </li>
+                            <!-- Topics will be loaded dynamically via JS -->
+                        </ul>
+                    </div>
+                </li>
+                {% empty %}
+                <li class="category-item">
+                    <div class="category-link">
+                        <span class="category-title">No categories available</span>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="elearning-content">
+            <a href="{% url 'educational:landing_page' %}" class="back-link">
+                <i class="material-icons">arrow_back</i>
+                Back to Categories
+            </a>
+            
+            <div class="elearning-content-wrapper">
+                <!-- Main Content -->
+                <div class="elearning-main-content">
+                    <div class="content-header">
+                        {% if selected_category %}
+                            <h2 class="category-title-header">{{ selected_category.title|upper }}</h2>
+                            <p>{{ selected_category.description }}</p>
+                        {% else %}
+                            <h2 class="category-title-header">ALL EDUCATIONAL TOPICS</h2>
+                            <p>Browse through all available educational materials</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div id="topics-container">
+                        <!-- Skeleton loaders while content loads -->
+                        <div class="skeleton-loader">
+                            <div class="skeleton skeleton-card"></div>
+                            <div class="skeleton skeleton-card"></div>
+                        </div>
+                        
+                        <!-- Actual topic cards (hidden initially) -->
+                        <div class="topics-list" style="display: none;">
+                            {% for topic in topics %}
+                                <div class="topic-card" id="topic-{{ topic.id }}">
+                                    <div class="topic-header">
+                                        <span class="topic-number">{{ forloop.counter }}</span>
+                                        <span class="topic-title">{{ topic.title }}</span>
+                                    </div>
+                                    <div class="topic-content">
+                                        {{ topic.content|safe|truncatewords_html:30 }}
+                                    </div>
+                                    <div class="topic-footer">
+                                        <div class="topic-status">
+                                            {% if topic.id in completed_topics %}
+                                                <span class="status-badge completed">
+                                                    <i class="material-icons small">check_circle</i>
+                                                    <span>Completed</span>
+                                                </span>
+                                            {% elif topic.id in in_progress_topics %}
+                                                <span class="status-badge in-progress">
+                                                    <i class="material-icons small">play_circle_filled</i>
+                                                    <span>In Progress</span>
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="topic-actions">
+                                            <button class="bookmark-btn {% if topic.id in bookmarked_topics %}active{% endif %}" 
+                                                    onclick="toggleBookmark('{{ topic.id }}', this)">
+                                                <i class="material-icons small">
+                                                    {% if topic.id in bookmarked_topics %}bookmark{% else %}bookmark_border{% endif %}
+                                                </i>
+                                                <span>Bookmark</span>
+                                            </button>
+                                            <a href="{% url 'educational:topic_detail' topic_id=topic.id %}" class="start-btn">
+                                                <i class="material-icons small">play_arrow</i>
+                                                <span>Start</span>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <div class="alert alert-info">
+                                    No topics available for this category yet.
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Topic View Modal -->
+<div class="modal fade" id="topicViewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-container modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Educational Topic</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <h3 class="modal-topic-title" id="modalTopicTitle"></h3>
+                <div id="modalTopicContent"></div>
+                
+                <div id="topicAttachments" class="mt-4">
+                    <h5>Attachments</h5>
+                    <div id="attachmentsList" class="list-group">
+                        <!-- Attachments will be loaded here -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn start-btn" id="markCompletedBtn">
+                    <i class="material-icons small">check_circle</i>
+                    Mark as Completed
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    // Show skeleton loaders and load content
+    document.addEventListener('DOMContentLoaded', function() {
+        // Store URLs in variables for easier use in JavaScript
+        const topicListUrl = "{% url 'educational:topic_list' %}";
+        const topicDetailUrl = "{% url 'educational:topic_detail' 0 %}".replace('/0/', '/_id_/');
+        const getCategoryTopicsUrl = "{% url 'educational:get_category_topics' %}";
+        const toggleBookmarkUrl = "{% url 'educational:toggle_bookmark' 0 %}".replace('/0/', '/_id_/');
+        const trackProgressUrl = "{% url 'educational:track_progress' 0 %}".replace('/0/', '/_id_/');
+        const getTopicUrl = "{% url 'educational:get_topic' 0 %}".replace('/0/', '/_id_/');
+        const markCompletedUrl = "{% url 'educational:mark_as_completed' 0 %}".replace('/0/', '/_id_/');
+        
+        setTimeout(function() {
+            document.querySelector('.skeleton-loader').style.display = 'none';
+            document.querySelector('.topics-list').style.display = 'block';
+        }, 800);
+        
+        // Add click handlers for category items
+        const categoryLinks = document.querySelectorAll('.category-link');
+        
+        categoryLinks.forEach(function(link) {
+            link.addEventListener('click', function() {
+                const categoryId = this.dataset.categoryId;
+                const subtopicsContainer = document.getElementById(`subtopics-${categoryId}`);
+                const arrow = this.querySelector('.category-arrow');
+                
+                // Toggle the subtopics visibility
+                subtopicsContainer.classList.toggle('expanded');
+                arrow.classList.toggle('rotated');
+                
+                // Fetch topics for this category if not already loaded
+                if (!subtopicsContainer.dataset.loaded) {
+                    fetchTopicsForCategory(categoryId, subtopicsContainer);
+                }
+            });
+        });
+        
+        // Function to fetch topics for a category
+        function fetchTopicsForCategory(categoryId, container) {
+            // Show loading state
+            const subtopicList = container.querySelector('.subtopic-list');
+            const loadingIndicator = document.createElement('li');
+            loadingIndicator.className = 'subtopic-item';
+            loadingIndicator.innerHTML = '<div class="p-3 text-center"><div class="spinner-border spinner-border-sm text-light" role="status"></div></div>';
+            
+            // Add loading indicator after "View All" item
+            if (subtopicList.children.length > 1) {
+                // Remove all items except the first one
+                while (subtopicList.children.length > 1) {
+                    subtopicList.removeChild(subtopicList.lastChild);
+                }
+            }
+            subtopicList.appendChild(loadingIndicator);
+            
+            // Fetch topics for this category
+            fetch(`${getCategoryTopicsUrl}?category=${categoryId}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Remove loading indicator
+                    subtopicList.removeChild(loadingIndicator);
+                    
+                    // Add topic links
+                    if (data.topics && data.topics.length > 0) {
+                        data.topics.forEach(topic => {
+                            const topicItem = document.createElement('li');
+                            topicItem.className = 'subtopic-item';
+                            topicItem.innerHTML = `
+                                <a href="${topicDetailUrl.replace('_id_', topic.id)}" class="subtopic-link">
+                                    ${topic.title}
+                                </a>
+                            `;
+                            subtopicList.appendChild(topicItem);
+                        });
+                    } else {
+                        const noTopicsItem = document.createElement('li');
+                        noTopicsItem.className = 'subtopic-item';
+                        noTopicsItem.innerHTML = '<div class="subtopic-link">No topics available</div>';
+                        subtopicList.appendChild(noTopicsItem);
+                    }
+                    
+                    container.dataset.loaded = 'true';
+                })
+                .catch(error => {
+                    console.error('Error fetching topics:', error);
+                    subtopicList.removeChild(loadingIndicator);
+                    const errorItem = document.createElement('li');
+                    errorItem.className = 'subtopic-item';
+                    errorItem.innerHTML = '<div class="subtopic-link">Error loading topics</div>';
+                    subtopicList.appendChild(errorItem);
+                });
+        }
+        
+        // Preload topics for the active category
+        if (document.querySelector('.category-link.active')) {
+            const activeCategory = document.querySelector('.category-link.active');
+            if (activeCategory) {
+                const categoryId = activeCategory.dataset.categoryId;
+                const subtopicsContainer = document.getElementById(`subtopics-${categoryId}`);
+                if (!subtopicsContainer.dataset.loaded) {
+                    fetchTopicsForCategory(categoryId, subtopicsContainer);
+                }
+            }
+        }
+    });
+    
+    // Toggle bookmark
+    function toggleBookmark(topicId, button) {
+        const toggleBookmarkUrl = "{% url 'educational:toggle_bookmark' 0 %}".replace('/0/', '/_id_/');
+        
+        fetch(toggleBookmarkUrl.replace('_id_', topicId), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'added') {
+                button.classList.add('active');
+                button.querySelector('i').textContent = 'bookmark';
+                showToast('Topic bookmarked successfully!', 'success');
+            } else {
+                button.classList.remove('active');
+                button.querySelector('i').textContent = 'bookmark_border';
+                showToast('Bookmark removed', 'info');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('An error occurred', 'error');
+        });
+    }
+    
+    // Show topic modal
+    function showTopicModal(topicId) {
+        const trackProgressUrl = "{% url 'educational:track_progress' 0 %}".replace('/0/', '/_id_/');
+        const getTopicUrl = "{% url 'educational:get_topic' 0 %}".replace('/0/', '/_id_/');
+        
+        // Track progress
+        fetch(trackProgressUrl.replace('_id_', topicId), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        // Load topic content
+        fetch(getTopicUrl.replace('_id_', topicId))
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('modalTopicTitle').textContent = data.title;
+            document.getElementById('modalTopicContent').innerHTML = data.content;
+            
+            // Load attachments
+            const attachmentsList = document.getElementById('attachmentsList');
+            attachmentsList.innerHTML = '';
+            
+            if (data.attachments && data.attachments.length > 0) {
+                document.getElementById('topicAttachments').style.display = 'block';
+                data.attachments.forEach(attachment => {
+                    const item = document.createElement('a');
+                    item.href = attachment.file;
+                    item.className = 'list-group-item list-group-item-action';
+                    item.target = '_blank';
+                    item.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="material-icons small me-2">attachment</i>
+                                <span>${attachment.title}</span>
+                            </div>
+                            <span class="badge bg-primary">${attachment.file_type}</span>
+                        </div>
+                        <small class="text-muted">${attachment.description || ''}</small>
+                    `;
+                    attachmentsList.appendChild(item);
+                });
+            } else {
+                document.getElementById('topicAttachments').style.display = 'none';
+            }
+            
+            // Set up mark as completed button
+            const markCompletedBtn = document.getElementById('markCompletedBtn');
+            markCompletedBtn.onclick = function() {
+                markTopicCompleted(topicId);
+            };
+            
+            // Show the modal
+            const modal = new bootstrap.Modal(document.getElementById('topicViewModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Error loading topic content', 'error');
+        });
+    }
+    
+    // Mark topic as completed
+    function markTopicCompleted(topicId) {
+        const markCompletedUrl = "{% url 'educational:mark_as_completed' 0 %}".replace('/0/', '/_id_/');
+        
+        fetch(markCompletedUrl.replace('_id_', topicId), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Topic marked as completed!', 'success');
+                
+                // Update UI
+                const topicCard = document.getElementById(`topic-${topicId}`);
+                const statusDiv = topicCard.querySelector('.topic-status');
+                statusDiv.innerHTML = `
+                    <span class="status-badge completed">
+                        <i class="material-icons small">check_circle</i>
+                        <span>Completed</span>
+                    </span>
+                `;
+                
+                // Close modal
+                bootstrap.Modal.getInstance(document.getElementById('topicViewModal')).hide();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('An error occurred', 'error');
+        });
+    }
+    
+    // Show toast notification using SweetAlert
+    function showToast(message, icon) {
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: icon,
+            title: message,
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true
+        });
+    }
+    
+    // Get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+{% endblock %} 

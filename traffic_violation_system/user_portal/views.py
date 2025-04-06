@@ -4,12 +4,25 @@ from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Sum, Count, Q
 from .models import UserNotification, UserReport, VehicleRegistration, OperatorViolationLookup
-from traffic_violation_system.models import Violation, Violator, Operator
+from traffic_violation_system.models import Violation, Violator, Operator, OperatorApplication
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
-from django.http import HttpResponseNotAllowed, JsonResponse
+from django.http import HttpResponseNotAllowed, JsonResponse, HttpResponseRedirect, HttpResponse
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.contrib.auth.models import User
+from django.urls import reverse
+from django.db.utils import IntegrityError
+from datetime import datetime
+from django.utils.timesince import timesince
+from traffic_violation_system.educational.models import (
+    EducationalCategory, 
+    EducationalTopic, 
+    TopicAttachment, 
+    UserBookmark, 
+    UserProgress
+)
+from django.template.loader import render_to_string
+import json
 
 @login_required
 def user_dashboard(request):
@@ -63,6 +76,12 @@ def user_dashboard(request):
         user=request.user,
         is_read=False
     ).order_by('-created_at')[:5]
+    
+    # Check if user has pending operator applications
+    has_operator_application = OperatorApplication.objects.filter(
+        user=request.user,
+        status='PENDING'
+    ).exists()
 
     context = {
         'active_violations_count': active_violations,
@@ -70,6 +89,7 @@ def user_dashboard(request):
         'due_soon_count': due_soon,
         'recent_violations': recent_violations,
         'recent_notifications': recent_notifications,
+        'has_operator_application': has_operator_application,
     }
     
     return render(request, 'user_portal/dashboard.html', context)
@@ -228,8 +248,8 @@ def file_report(request):
             attachment=attachment
         )
         
-        messages.success(request, 'Your report has been submitted successfully.')
-        return redirect('user_dashboard')
+        # Don't use Django messages, instead add a URL parameter for SweetAlert
+        return redirect(f"{reverse('user_portal:user_dashboard')}?report=success")
     
     context = {
         'report_types': UserReport.REPORT_TYPES,
@@ -368,6 +388,39 @@ def vehicle_list(request):
 def register_vehicle(request):
     if request.method == 'POST':
         try:
+            # Validate required fields first 
+            required_fields = ['or_number', 'cr_number', 'plate_number', 'vehicle_type', 
+                              'make', 'model', 'year_model', 'color', 'classification',
+                              'registration_date', 'expiry_date']
+            
+            for field in required_fields:
+                if not request.POST.get(field):
+                    field_name = field.replace('_', ' ').title()
+                    raise KeyError(f"The {field_name} is required")
+            
+            # Validate date formats
+            try:
+                registration_date = datetime.strptime(request.POST['registration_date'], '%Y-%m-%d').date()
+                expiry_date = datetime.strptime(request.POST['expiry_date'], '%Y-%m-%d').date()
+                
+                # Validate expiry date is after registration date
+                if expiry_date <= registration_date:
+                    raise ValueError("The expiry date must be after the registration date")
+                
+                # Validate year model is a valid year
+                year_model = int(request.POST['year_model'])
+                current_year = datetime.now().year
+                if year_model < 1900 or year_model > current_year + 1:
+                    raise ValueError(f"The year model must be between 1900 and {current_year + 1}")
+                
+            except ValueError as e:
+                if "expiry date must be after" in str(e):
+                    raise ValueError(str(e))
+                elif "year model" in str(e):
+                    raise ValueError(str(e))
+                else:
+                    raise ValueError("Please check the date format. It should be YYYY-MM-DD.")
+            
             # Create new vehicle registration
             vehicle = VehicleRegistration(
                 user=request.user,
@@ -380,20 +433,87 @@ def register_vehicle(request):
                 year_model=request.POST['year_model'],
                 color=request.POST['color'],
                 classification=request.POST['classification'],
-                registration_date=request.POST['registration_date'],
-                expiry_date=request.POST['expiry_date']
+                registration_date=registration_date,
+                expiry_date=expiry_date
             )
             
             # Handle OR/CR image upload
             if request.FILES.get('or_cr_image'):
-                vehicle.or_cr_image = request.FILES['or_cr_image']
+                file = request.FILES['or_cr_image']
+                # Validate file size (5MB max)
+                if file.size > 5 * 1024 * 1024:
+                    raise ValueError("The image file is too large. Maximum size is 5MB.")
+                
+                # Validate file type
+                valid_types = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf']
+                if file.content_type not in valid_types:
+                    raise ValueError("Please upload a valid file type (JPG, PNG, or PDF).")
+                
+                vehicle.or_cr_image = file
+            else:
+                raise KeyError("OR/CR Image")
             
             vehicle.save()
-            messages.success(request, 'Vehicle registered successfully!')
-            return redirect('vehicle_list')
+            # Use URL parameter for success message instead of Django messages
+            return redirect(f"{reverse('user_portal:vehicle_list')}?register=success")
             
+        except KeyError as e:
+            # Missing required field
+            missing_field = str(e).strip("'")
+            if "The " in missing_field:
+                error_message = missing_field
+            else:
+                field_name = missing_field.replace('_', ' ').title()
+                error_message = f"Please provide the {field_name} field."
+            
+        except ValueError as e:
+            # Friendly messages for common value errors
+            error_message = str(e)
+            if "time data" in error_message or "format" in error_message:
+                error_message = "Please provide a valid date in the correct format (YYYY-MM-DD)."
+            elif "invalid literal for int()" in error_message:
+                error_message = "Please provide a valid number for the Year Model."
+            
+        except IntegrityError as e:
+            # More specific duplicate entry messages
+            error_str = str(e).lower()
+            if 'unique constraint' in error_str or 'duplicate key' in error_str:
+                if 'plate_number' in error_str:
+                    error_message = "This plate number is already registered in our system. If this is your vehicle, it may have been registered previously."
+                elif 'or_number' in error_str:
+                    error_message = "This OR number is already registered in our system. Please check if you entered the correct number from your OR/CR."
+                elif 'cr_number' in error_str:
+                    error_message = "This CR number is already registered in our system. Please check if you entered the correct number from your OR/CR."
+                else:
+                    error_message = "This vehicle information is already in our system. Please check your OR/CR details."
+            else:
+                error_message = "There was a problem with your vehicle information. Please double-check all fields."
+        
         except Exception as e:
-            messages.error(request, f'Error registering vehicle: {str(e)}')
+            # File upload errors and other issues
+            error_str = str(e).lower()
+            if "image" in error_str or "file" in error_str or hasattr(e, '__module__') and 'multipart' in e.__module__.lower():
+                error_message = "There was a problem with your OR/CR image. Please make sure it's a valid file (JPG, PNG, PDF) and not too large (max 5MB)."
+            elif "database" in error_str or hasattr(e, '__module__') and e.__module__ == 'django.db.utils':
+                error_message = "Our system is experiencing technical difficulties. Please try again in a few minutes."
+                # Log the database error for administrators
+                print(f"DATABASE ERROR during vehicle registration: {str(e)}")
+            else:
+                # Log the actual error for debugging but show a friendly message to the user
+                print(f"Vehicle registration error: {type(e).__name__}: {str(e)}")
+                error_message = "Something went wrong with your vehicle registration. Please check your information and try again."
+            
+        # Render the form again with the error message and previous data
+        return render(request, 'user_portal/register_vehicle.html', {
+            'vehicle_classifications': [
+                ('Private', 'Private'),
+                ('Public', 'Public'),
+                ('Government', 'Government'),
+                ('Commercial', 'Commercial')
+            ],
+            'error_message': error_message,
+            'form_data': request.POST  # Include the form data to repopulate fields
+        })
             
     return render(request, 'user_portal/register_vehicle.html', {
         'vehicle_classifications': [
@@ -425,13 +545,16 @@ def vehicle_detail(request, vehicle_id):
 
 @user_passes_test(lambda u: u.is_staff)
 def user_management(request):
-    """Custom user management view that shows users and their registered vehicles"""
+    """Custom user management view that shows regular users and their registered vehicles"""
     # Get query parameters
     search_query = request.GET.get('search', '')
-    filter_has_vehicles = request.GET.get('has_vehicles', '')
+    has_vehicles = request.GET.get('has_vehicles', '')
     
-    # Start with all non-superuser users
-    users = User.objects.filter(is_superuser=False).order_by('-date_joined')
+    # Start with regular users only (with role 'USER')
+    users = User.objects.filter(
+        userprofile__role='USER',
+        is_superuser=False
+    ).order_by('-date_joined')
     
     # Apply search if provided
     if search_query:
@@ -443,14 +566,14 @@ def user_management(request):
             first_name__icontains=search_query
         ) | users.filter(
             last_name__icontains=search_query
-        )
+        ).filter(userprofile__role='USER')  # Make sure search results are also regular users
     
     # Filter by vehicle ownership if requested
-    if filter_has_vehicles == 'yes':
+    if has_vehicles == 'yes':
         users = users.annotate(
             vehicle_count=Count('vehicleregistration')
         ).filter(vehicle_count__gt=0)
-    elif filter_has_vehicles == 'no':
+    elif has_vehicles == 'no':
         users = users.annotate(
             vehicle_count=Count('vehicleregistration')
         ).filter(vehicle_count=0)
@@ -493,7 +616,7 @@ def user_management(request):
     context = {
         'user_data': paginated_user_data,
         'search_query': search_query,
-        'filter_has_vehicles': filter_has_vehicles,
+        'has_vehicles': has_vehicles,
         'total_users': users.count(),
         'page_obj': paginated_user_data,
     }
@@ -545,203 +668,365 @@ def regular_users_list(request):
     return render(request, 'user_portal/admin/user_list.html', context)
 
 @login_required
-def operator_lookup(request):
-    """View for operator owners to lookup operators and check their violation history"""
-    # Check if the user is a vehicle owner
-    vehicles = VehicleRegistration.objects.filter(user=request.user)
+def notification_detail(request, notification_id):
+    """API endpoint to get notification details"""
+    if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
+        return redirect('user_portal:user_notifications')
     
-    if not vehicles.exists():
-        messages.warning(request, "You need to register a vehicle before you can lookup operators.")
-        return redirect('user_portal:vehicle_list')
-    
-    # For demonstration, get the 5 most recent lookups
-    recent_lookups = OperatorViolationLookup.objects.filter(
-        vehicle_owner=request.user
-    ).order_by('-lookup_date')[:5]
-    
-    # Check if a search query was passed (from lookup history)
-    search_query = request.GET.get('search', '')
-    
-    context = {
-        'recent_lookups': recent_lookups,
-        'search_query': search_query,
-    }
-    
-    return render(request, 'user_portal/operator_lookup.html', context)
+    try:
+        notification = get_object_or_404(
+            UserNotification,
+            id=notification_id,
+            user=request.user
+        )
+        
+        # Format the created_at date for display
+        created_at_formatted = notification.created_at.strftime('%b %d, %Y %I:%M %p')
+        
+        # Check if this notification is related to an announcement (has reference_id and type SYSTEM)
+        announcement_content = None
+        announcement_title = None
+        if notification.type == 'SYSTEM' and notification.reference_id:
+            try:
+                from traffic_violation_system.models import Announcement
+                announcement = Announcement.objects.filter(id=notification.reference_id).first()
+                if announcement:
+                    announcement_content = announcement.content
+                    announcement_title = announcement.title
+            except Exception as e:
+                print(f"Error fetching announcement: {str(e)}")
+        
+        # Return notification details as JSON
+        response_data = {
+            'id': notification.id,
+            'type': notification.type,
+            'message': notification.message,
+            'is_read': notification.is_read,
+            'created_at': notification.created_at.isoformat(),
+            'created_at_formatted': created_at_formatted,
+            'reference_id': notification.reference_id,
+            'type_display': notification.get_type_display(),
+            'icon': notification.get_icon(),
+        }
+        
+        # Add announcement content and title if available
+        if announcement_content:
+            response_data['announcement_content'] = announcement_content
+        if announcement_title:
+            response_data['announcement_title'] = announcement_title
+        
+        return JsonResponse(response_data)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': str(e)
+        }, status=500)
 
 @login_required
-def operator_lookup_search(request):
-    """API endpoint to search for operators and return their violation history"""
-    if request.method != 'GET':
-        return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
+def load_more_notifications(request):
+    """API endpoint to load more notifications"""
+    if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
+        return redirect('user_portal:user_notifications')
     
-    # Check if the user is a vehicle owner
-    vehicles = VehicleRegistration.objects.filter(user=request.user)
-    if not vehicles.exists():
-        return JsonResponse({'status': 'error', 'message': 'You must register a vehicle to use this feature'}, status=403)
-    
-    search_term = request.GET.get('q', '').strip()
-    if not search_term:
-        return JsonResponse({'status': 'error', 'message': 'Search term is required'}, status=400)
-    
-    # Search for operators by license number, name, or other identifiers
-    operators = []
-    
-    # If this is a license number search, check User objects with UserProfile
-    if len(search_term) > 3:  # Assuming license numbers are at least 4 characters
-        # Search for users with matching license numbers in their profiles
-        users_with_license = User.objects.filter(
-            userprofile__license_number__icontains=search_term
-        ).select_related('userprofile')
+    try:
+        offset = int(request.GET.get('offset', 0))
+        limit = int(request.GET.get('limit', 10))  # Increased default limit to 10
         
-        for user in users_with_license:
-            if hasattr(user, 'userprofile') and user.userprofile.license_number:
-                # Get violations for this license number
-                violations = Violation.objects.filter(
-                    violator__license_number=user.userprofile.license_number
-                )
-                
-                # For checking recent violations, convert to date for comparison
-                ninety_days_ago = (timezone.now() - timezone.timedelta(days=90)).date()
-                
-                operator_data = {
-                    'id': user.id,
-                    'name': user.get_full_name(),
-                    'license_number': user.userprofile.license_number,
-                    'violation_count': violations.count(),
-                    'has_recent_violations': violations.filter(
-                        violation_date__gte=ninety_days_ago
-                    ).exists(),
-                    'violation_types': list(violations.values_list('violation_type', flat=True).distinct()),
-                    'status': 'good' if not violations.exists() else 'warning' if violations.count() < 3 else 'danger'
-                }
-                operators.append(operator_data)
+        # Get notifications with pagination
+        notifications = UserNotification.objects.filter(
+            user=request.user
+        ).order_by('-created_at')[offset:offset+limit+1]  # Get one extra to check if there are more
+        
+        # Check if there are more notifications
+        has_more = len(notifications) > limit
+        if has_more:
+            notifications = notifications[:limit]  # Remove the extra item
+        
+        # Format notifications for the response
+        formatted_notifications = []
+        for notification in notifications:
+            # Calculate time ago (similar to Django's timesince template filter)
+            time_ago = timesince(notification.created_at)
+            
+            formatted_notifications.append({
+                'id': notification.id,
+                'type': notification.type,
+                'message': notification.message,
+                'is_read': notification.is_read,
+                'reference_id': notification.reference_id,
+                'icon': notification.get_icon(),
+                'time_ago': time_ago
+            })
+        
+        return JsonResponse({
+            'notifications': formatted_notifications,
+            'has_more': has_more,
+            'total_count': UserNotification.objects.filter(user=request.user).count(),
+            'offset': offset,
+            'next_offset': offset + limit if has_more else None
+        })
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Error in load_more_notifications: {error_details}")
+        return JsonResponse({
+            'success': False,
+            'message': str(e),
+            'error_details': str(error_details) if request.user.is_staff else None
+        }, status=500)
+
+@login_required
+def create_test_notification(request):
+    """Debug endpoint to create test notifications for the current user"""
+    if not request.user.is_authenticated:
+        return JsonResponse({'status': 'error', 'message': 'User not authenticated'}, status=401)
     
-    # Also search the Violator model for matching license numbers or names
-    violators = Violator.objects.filter(
-        Q(license_number__icontains=search_term) |
-        Q(first_name__icontains=search_term) |
-        Q(last_name__icontains=search_term)
+    try:
+        # Create a test notification
+        notification_types = ['SYSTEM', 'VIOLATION', 'PAYMENT', 'STATUS']
+        import random
+        notification_type = random.choice(notification_types)
+        
+        # Create messages based on notification type
+        messages = {
+            'SYSTEM': 'This is a test system notification. Your account settings have been updated.',
+            'VIOLATION': 'You have received a new traffic violation ticket. <b>Please check your violations page</b>.',
+            'PAYMENT': 'Your payment of ₱1,500.00 for Violation #12345 has been <b>successfully processed</b>.',
+            'STATUS': 'The status of your report #54321 has been updated to <span class="text-success">Resolved</span>.'
+        }
+        
+        # Create the notification
+        notification = UserNotification.objects.create(
+            user=request.user,
+            type=notification_type,
+            message=messages[notification_type],
+            is_read=False,
+            reference_id=random.randint(1000, 9999)
+        )
+        
+        print(f"Debug: Created test notification ID {notification.id} of type {notification_type} for user {request.user.username}")
+        
+        # Log the current notification count for this user
+        notification_count = UserNotification.objects.filter(
+            user=request.user
+        ).count()
+        
+        unread_count = UserNotification.objects.filter(
+            user=request.user,
+            is_read=False
+        ).count()
+        
+        print(f"Debug: User {request.user.username} now has {notification_count} notifications ({unread_count} unread)")
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': f'Test notification created ({notification_type})',
+            'notification_id': notification.id,
+            'total_count': notification_count,
+            'unread_count': unread_count
+        })
+        
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Error creating test notification: {error_details}")
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e),
+            'error_details': str(error_details)
+        }, status=500)
+
+# Fix the user_notifications context processor by checking if user is properly authenticated
+def debug_notifications(request):
+    """Debug view to check notification system status"""
+    if not request.user.is_authenticated:
+        return JsonResponse({'status': 'error', 'message': 'User not authenticated'}, status=401)
+    
+    try:
+        # Get the context data similar to the context processor
+        all_notifications = UserNotification.objects.filter(user=request.user).order_by('-created_at')
+        recent_notifications = all_notifications[:10]
+        
+        unread_count = UserNotification.objects.filter(
+            user=request.user,
+            is_read=False
+        ).count()
+        
+        # Format notifications for readability
+        formatted_notifications = []
+        for notif in recent_notifications:
+            formatted_notifications.append({
+                'id': notif.id,
+                'type': notif.type,
+                'message': notif.message,
+                'is_read': notif.is_read,
+                'created_at': notif.created_at.isoformat(),
+                'age': timesince(notif.created_at)
+            })
+        
+        return JsonResponse({
+            'status': 'success',
+            'user_authenticated': request.user.is_authenticated,
+            'username': request.user.username,
+            'total_notifications': all_notifications.count(),
+            'unread_notifications': unread_count,
+            'recent_notifications': formatted_notifications,
+            'showing_count': len(formatted_notifications)
+        })
+        
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Error in debug_notifications: {error_details}")
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e),
+            'error_details': str(error_details)
+        }, status=500)
+
+# Educational Materials Views
+@login_required
+def education_topics(request):
+    """Display a list of all educational topics available to the user."""
+    categories = EducationalCategory.objects.annotate(
+        topics_count=Count('topics', filter=Q(topics__is_published=True))
+    ).filter(topics_count__gt=0)
+    
+    search_query = request.GET.get('q', '')
+    category_filter = request.GET.get('category', '')
+    
+    topics = EducationalTopic.objects.filter(is_published=True)
+    
+    if search_query:
+        topics = topics.filter(
+            Q(title__icontains=search_query) | 
+            Q(content__icontains=search_query)
+        )
+    
+    if category_filter:
+        topics = topics.filter(category_id=category_filter)
+    
+    # Get user progress for the topics
+    user_progress = {}
+    progress_objects = UserProgress.objects.filter(
+        user=request.user,
+        topic__in=topics
+    )
+    user_progress = {p.topic_id: p.is_completed for p in progress_objects}
+    
+    # Get user bookmarks
+    user_bookmarks = {}
+    bookmark_objects = UserBookmark.objects.filter(
+        user=request.user,
+        topic__in=topics
+    )
+    user_bookmarks = {b.topic_id: True for b in bookmark_objects}
+    
+    # Add bookmark and progress info to topics
+    topics_with_meta = []
+    for topic in topics:
+        topic_dict = {
+            'topic': topic,
+            'is_bookmarked': user_bookmarks.get(topic.id, False),
+            'is_completed': user_progress.get(topic.id, False)
+        }
+        topics_with_meta.append(topic_dict)
+    
+    recently_added = EducationalTopic.objects.filter(is_published=True).order_by('-created_at')[:5]
+    
+    context = {
+        'categories': categories,
+        'topics': topics_with_meta,
+        'recently_added': recently_added,
+        'search_query': search_query,
+        'category_filter': category_filter,
+    }
+    return render(request, 'user_portal/educational/topic_list.html', context)
+
+
+@login_required
+def education_topic_detail(request, topic_id):
+    """Display a single educational topic in detail."""
+    topic = get_object_or_404(EducationalTopic, id=topic_id, is_published=True)
+    attachments = TopicAttachment.objects.filter(topic=topic)
+    
+    # Get or create user progress
+    progress, created = UserProgress.objects.get_or_create(
+        user=request.user,
+        topic=topic,
+        defaults={'last_accessed': timezone.now()}
     )
     
-    for violator in violators:
-        # Skip if this license number was already found in users
-        if any(op['license_number'] == violator.license_number for op in operators):
-            continue
-            
-        # Get violations for this violator
-        violations = Violation.objects.filter(violator=violator)
-        
-        operator_data = {
-            'id': f"v{violator.id}",  # Prefix with 'v' to distinguish from user IDs
-            'name': f"{violator.first_name} {violator.last_name}",
-            'license_number': violator.license_number,
-            'violation_count': violations.count(),
-            'has_recent_violations': violations.filter(
-                violation_date__gte=ninety_days_ago
-            ).exists(),
-            'violation_types': list(violations.values_list('violation_type', flat=True).distinct()),
-            'status': 'good' if not violations.exists() else 'warning' if violations.count() < 3 else 'danger'
-        }
-        operators.append(operator_data)
+    # Update last_accessed time if not created
+    if not created:
+        progress.last_accessed = timezone.now()
+        progress.save()
     
-    # Search the Operator model too if it's available
-    try:
-        traffic_operators = Operator.objects.filter(
-            Q(new_pd_number__icontains=search_term) |
-            Q(old_pd_number__icontains=search_term) |
-            Q(first_name__icontains=search_term) |
-            Q(last_name__icontains=search_term)
-        ).distinct()
-        
-        # Track operators we've already added to avoid duplicates
-        added_operators = set()
-        
-        for op in traffic_operators:
-            # Skip if we've already added this operator
-            operator_key = f"operator-{op.id}"
-            if operator_key in added_operators:
-                continue
-                
-            # Add to tracking set
-            added_operators.add(operator_key)
-            
-            # Try to find violations for this operator by matching name
-            violations = Violation.objects.filter(
-                Q(violator__first_name__iexact=op.first_name) & 
-                Q(violator__last_name__iexact=op.last_name)
-            )
-            
-            operator_data = {
-                'id': f"o{op.id}",  # Prefix with 'o' to distinguish from user and violator IDs
-                'name': op.full_name(),
-                'pd_number': op.new_pd_number,
-                'old_pd_number': op.old_pd_number,
-                'violation_count': violations.count(),
-                'has_recent_violations': violations.filter(
-                    violation_date__gte=ninety_days_ago
-                ).exists(),
-                'violation_types': list(violations.values_list('violation_type', flat=True).distinct()),
-                'status': 'good' if not violations.exists() else 'warning' if violations.count() < 3 else 'danger'
-            }
-            operators.append(operator_data)
-    except:
-        # If Operator model doesn't exist or if there's an error, just continue
-        pass
+    # Check if user has bookmarked this topic
+    is_bookmarked = UserBookmark.objects.filter(user=request.user, topic=topic).exists()
     
-    # Record this lookup for the first result if there are any
-    if operators and len(operators) > 0:
-        first_result = operators[0]
-        
-        # Check if we've recently looked up this same operator to avoid duplicates
-        recent_lookup_time = timezone.now() - timezone.timedelta(minutes=5)
-        recent_identical_lookup = OperatorViolationLookup.objects.filter(
-            vehicle_owner=request.user,
-            operator_name=first_result['name'],
-            lookup_date__gte=recent_lookup_time
-        ).exists()
-        
-        # Only create a new lookup record if we haven't recently looked up this operator
-        if not recent_identical_lookup:
-            OperatorViolationLookup.objects.create(
-                vehicle_owner=request.user,
-                operator_license=first_result.get('license_number', first_result.get('pd_number', 'Unknown')),
-                operator_name=first_result['name']
-            )
-    
-    return JsonResponse({
-        'status': 'success',
-        'operators': operators
-    })
-
-@login_required
-def operator_lookup_history(request):
-    """View for showing the history of operator lookups by this user"""
-    # Check if the user is a vehicle owner
-    vehicles = VehicleRegistration.objects.filter(user=request.user)
-    
-    if not vehicles.exists():
-        messages.warning(request, "You need to register a vehicle before you can lookup operators.")
-        return redirect('user_portal:vehicle_list')
-    
-    lookups = OperatorViolationLookup.objects.filter(
-        vehicle_owner=request.user
-    ).order_by('-lookup_date')
-    
-    # Pagination - 20 lookups per page
-    paginator = Paginator(lookups, 20)
-    page = request.GET.get('page', 1)
-    
-    try:
-        paginated_lookups = paginator.page(page)
-    except PageNotAnInteger:
-        paginated_lookups = paginator.page(1)
-    except EmptyPage:
-        paginated_lookups = paginator.page(paginator.num_pages)
+    # Get related topics from the same category
+    related_topics = EducationalTopic.objects.filter(
+        category=topic.category,
+        is_published=True
+    ).exclude(id=topic.id)[:5]
     
     context = {
-        'lookups': paginated_lookups,
-        'page_obj': paginated_lookups,
+        'topic': topic,
+        'attachments': attachments,
+        'is_completed': progress.is_completed,
+        'is_bookmarked': is_bookmarked,
+        'related_topics': related_topics
+    }
+    return render(request, 'user_portal/educational/topic_detail.html', context)
+
+
+@login_required
+def education_bookmarks(request):
+    """Display all bookmarked educational topics for the user."""
+    bookmarked_topics = UserBookmark.objects.filter(
+        user=request.user
+    ).select_related('topic', 'topic__category').order_by('-created_at')
+    
+    context = {
+        'bookmarked_topics': bookmarked_topics,
+    }
+    return render(request, 'user_portal/educational/bookmarks.html', context)
+
+
+@login_required
+def education_progress(request):
+    """Display the user's learning progress for educational topics."""
+    # Get all user progress records
+    completed_topics = UserProgress.objects.filter(
+        user=request.user,
+        is_completed=True
+    ).select_related('topic', 'topic__category').order_by('-completed_at')
+    
+    in_progress_topics = UserProgress.objects.filter(
+        user=request.user,
+        is_completed=False
+    ).select_related('topic', 'topic__category').order_by('-last_accessed')
+    
+    # Calculate statistics
+    total_count = EducationalTopic.objects.filter(is_published=True).count()
+    completed_count = completed_topics.count()
+    in_progress_count = in_progress_topics.count()
+    
+    completion_percentage = 0
+    if total_count > 0:
+        completion_percentage = int((completed_count / total_count) * 100)
+    
+    stats = {
+        'total_count': total_count,
+        'completed_count': completed_count,
+        'in_progress_count': in_progress_count,
+        'completion_percentage': completion_percentage
     }
     
-    return render(request, 'user_portal/operator_lookup_history.html', context) 
+    context = {
+        'completed_topics': completed_topics,
+        'in_progress_topics': in_progress_topics,
+        'stats': stats
+    }
+    return render(request, 'user_portal/educational/my_progress.html', context) 

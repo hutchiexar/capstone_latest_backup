@@ -82,6 +82,7 @@
                             <th class="border-top-0 px-4 py-3 fw-semibold">Last Name</th>
                             <th class="border-top-0 px-4 py-3 fw-semibold">First Name</th>
                             <th class="border-top-0 px-4 py-3 fw-semibold">M.I.</th>
+                            <th class="border-top-0 px-4 py-3 fw-semibold">PO Number</th>
                             <th class="border-top-0 px-4 py-3 fw-semibold">Address</th>
                             <th class="border-top-0 px-4 py-3 text-end fw-semibold" style="width: 120px;">Actions</th>
                         </tr>
@@ -92,6 +93,13 @@
                             <td class="fw-medium px-4 py-3">{{ operator.last_name }}</td>
                             <td class="px-4 py-3">{{ operator.first_name }}</td>
                             <td class="px-4 py-3">{% if operator.middle_initial and operator.middle_initial != 'nan' %}{{ operator.middle_initial }}{% else %}none{% endif %}</td>
+                            <td class="px-4 py-3">
+                                {% if operator.po_number %}
+                                <span class="badge bg-primary fw-medium px-3 py-2">{{ operator.po_number }}</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Not assigned</span>
+                                {% endif %}
+                            </td>
                             <td class="px-4 py-3">{{ operator.address }}</td>
                             <td class="px-4 py-3 text-end">
                                 <div class="d-flex justify-content-end">

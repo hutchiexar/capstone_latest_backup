@@ -1,0 +1,71 @@
+/**
+ * Lazy Loading CSS
+ * Styling for lazy loaded images and slow connection optimizations
+ */
+
+/* Lazy Load Placeholder Styles */
+.lazy-load {
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+
+.lazy-load.loaded {
+  opacity: 1;
+}
+
+/* Low Quality Image Placeholder */
+.lqip-placeholder {
+  position: relative;
+  overflow: hidden;
+  background-color: #f0f0f0;
+}
+
+.lqip-blur {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  filter: blur(10px);
+  transform: scale(1.1);
+  transition: opacity 0.3s ease;
+}
+
+img.lazy-load + .lqip-blur {
+  opacity: 1;
+}
+
+img.lazy-load.loaded + .lqip-blur {
+  opacity: 0;
+}
+
+/* Styles for slow connections */
+.slow-connection .modal-backdrop {
+  backdrop-filter: none !important;
+}
+
+.slow-connection .animate-pulse,
+.slow-connection .animate-bounce,
+.slow-connection .animate-spin {
+  animation: none !important;
+}
+
+/* Reduce motion for slow connections */
+.reduce-motion * {
+  transition-duration: 0.001ms !important;
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+}
+
+/* Hide non-essential background images on slow connections */
+.slow-connection .bg-decorative {
+  background-image: none !important;
+}
+
+/* Use simplified box shadows for slow connections */
+.slow-connection .card,
+.slow-connection .modal-content {
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1) !important;
+} 

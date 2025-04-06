@@ -605,6 +605,27 @@
     }
 </style>
 
+<!-- Login success message script -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check for login success parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('login') === 'success') {
+            // Show success message using SweetAlert
+            Swal.fire({
+                icon: 'success',
+                title: 'Welcome!',
+                text: 'You have successfully logged in.',
+                confirmButtonText: 'OK'
+            });
+            
+            // Clean up URL after showing message
+            const url = new URL(window.location.href);
+            url.searchParams.delete('login');
+            window.history.replaceState({}, document.title, url);
+        }
+    });
+</script>
 {% endblock %}
 
 {% block extra_js %}

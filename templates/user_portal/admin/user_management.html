@@ -1,6 +1,103 @@
 {% extends 'base.html' %}
 
+<!-- SweetAlert2 Library (if not already included in base.html) -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
+<!-- Add MicroModal.js with defer to ensure it loads completely -->
+<script src="https://unpkg.com/micromodal/dist/micromodal.min.js" defer></script>
+
+<script>
+// Check for success parameter in URL
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const success = urlParams.get('success');
+    
+    if (success === 'created') {
+        Swal.fire({
+            icon: 'success',
+            title: 'Success!',
+            text: 'User has been created successfully',
+            confirmButtonText: 'OK'
+        });
+        
+        // Clean up the URL to remove the success parameter
+        const url = new URL(window.location.href);
+        url.searchParams.delete('success');
+        window.history.replaceState({}, document.title, url);
+    }
+    
+    // Initialize MicroModal with specific options for closing
+    if (typeof MicroModal !== 'undefined') {
+        console.log('Initializing MicroModal...');
+        MicroModal.init({
+            openTrigger: 'data-micromodal-trigger',
+            closeTrigger: 'data-micromodal-close',
+            disableScroll: true,
+            disableFocus: false,
+            awaitOpenAnimation: true,
+            awaitCloseAnimation: true,
+            debugMode: true,
+            onShow: modal => console.log(`${modal.id} is shown`),
+            onClose: modal => console.log(`${modal.id} is hidden`)
+        });
+        
+        // Add keyboard event listener for ESC key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const openModals = document.querySelectorAll('.modal.is-open');
+                openModals.forEach(modal => {
+                    MicroModal.close(modal.id);
+                });
+            }
+        });
+        
+        // Add manual close handlers to all close buttons and overlays
+        document.querySelectorAll('[data-micromodal-close]').forEach(element => {
+            element.addEventListener('click', function() {
+                const modalId = this.closest('.modal').id;
+                console.log(`Manual close requested for ${modalId}`);
+                MicroModal.close(modalId);
+            });
+        });
+    } else {
+        console.error('MicroModal is not loaded! Falling back to standard functionality.');
+    }
+});
+</script>
+
 {% block content %}
+<!-- Check for Django messages and display them as SweetAlert -->
+{% if messages %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        {% for message in messages %}
+            {% if message.tags == 'success' %}
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: "{{ message|escapejs }}",
+                    confirmButtonText: 'OK'
+                });
+            {% elif message.tags == 'error' %}
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: "{{ message|escapejs }}",
+                    confirmButtonText: 'OK'
+                });
+            {% else %}
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Information',
+                    text: "{{ message|escapejs }}",
+                    confirmButtonText: 'OK'
+                });
+            {% endif %}
+        {% endfor %}
+    });
+</script>
+{% endif %}
+
 <div class="container-fluid">
     <!-- Header Section -->
     <div class="card shadow-sm border-0 rounded-3">
@@ -12,7 +109,7 @@
                     </div>
                     <div>
                         <h4 class="mb-0">Regular User Management</h4>
-                        <p class="text-muted mb-0 small">Total Regular Users: {{ user_profiles.count }}</p>
+                        <p class="text-muted mb-0 small">Total Regular Users: {{ total_users }}</p>
                     </div>
                 </div>
             </div>
@@ -33,10 +130,10 @@
                 <div class="col-md-3">
                     <div class="search-input">
                         <span class="material-icons">directions_car</span>
-                        <select name="has_vehicle" class="form-select">
+                        <select name="has_vehicles" class="form-select">
                             <option value="">All Users</option>
-                            <option value="yes" {% if request.GET.has_vehicle == 'yes' %}selected{% endif %}>With Vehicles</option>
-                            <option value="no" {% if request.GET.has_vehicle == 'no' %}selected{% endif %}>Without Vehicles</option>
+                            <option value="yes" {% if request.GET.has_vehicles == 'yes' %}selected{% endif %}>With Vehicles</option>
+                            <option value="no" {% if request.GET.has_vehicles == 'no' %}selected{% endif %}>Without Vehicles</option>
                         </select>
                     </div>
                 </div>
@@ -67,7 +164,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <h6 class="text-muted mb-1">Total Users</h6>
+                            <h6 class="text-muted mb-1">Total Regular Users</h6>
                             <h4 class="mb-0">{{ total_users }}</h4>
                         </div>
                         <div class="stat-icon text-primary">
@@ -174,11 +271,14 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <span class="badge bg-info">{{ user_data.vehicle_count }} vehicles</span>
                                 {% if user_data.vehicle_count > 0 %}
-                                <button class="btn btn-sm btn-link toggle-vehicles" data-user-id="{{ user_data.user.id }}">
-                                    <span class="material-icons">expand_more</span>
+                                <button class="btn-vehicle-toggle" data-user-id="{{ user_data.user.id }}">
+                                    <span class="badge bg-info vehicle-count">{{ user_data.vehicle_count }}</span>
+                                    <span class="vehicle-text">vehicle{{ user_data.vehicle_count|pluralize }}</span>
+                                    <span class="toggle-icon material-icons">expand_more</span>
                                 </button>
+                                {% else %}
+                                <span class="badge bg-secondary">No Vehicles</span>
                                 {% endif %}
                             </td>
                             <td>
@@ -189,8 +289,7 @@
                                 <div class="action-buttons">
                                     <button type="button" 
                                             class="btn btn-action btn-view"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#userDetailModal"
+                                            data-micromodal-trigger="modal-user-detail"
                                             data-user-id="{{ user_data.user.id }}"
                                             title="View Details">
                                         <span class="material-icons">visibility</span>
@@ -212,34 +311,47 @@
                             <td colspan="5" class="p-0">
                                 <div class="vehicles-section">
                                     <div class="vehicle-list p-3">
-                                        <h6 class="mb-3 border-bottom pb-2">Registered Vehicles</h6>
-                                        {% for vehicle in user_data.vehicles %}
-                                        <div class="vehicle-item mb-3 p-3 bg-white rounded shadow-sm">
-                                            <div class="row">
-                                                <div class="col-md-4">
-                                                    <h6 class="mb-1">
-                                                        <span class="material-icons align-middle me-1">{{ vehicle.vehicle_type|lower|slice:":3" }}directions_car</span>
-                                                        {{ vehicle.vehicle_type }} {{ vehicle.model }}
-                                                    </h6>
-                                                    <div class="text-muted small">Plate #: {{ vehicle.plate_number }}</div>
-                                                    <div class="mt-2">
-                                                        <span class="badge {{ vehicle.is_active|yesno:'bg-success,bg-danger' }}">
-                                                            {{ vehicle.is_active|yesno:'Active,Inactive' }}
-                                                        </span>
+                                        <div class="d-flex justify-content-between align-items-center mb-3 px-2">
+                                            <h6 class="mb-0 d-flex align-items-center">
+                                                <span class="material-icons me-2 text-primary">directions_car</span>
+                                                Registered Vehicles
+                                            </h6>
+                                            <span class="vehicle-count-badge">{{ user_data.vehicle_count }} vehicle{{ user_data.vehicle_count|pluralize }}</span>
+                                        </div>
+                                        <div class="vehicle-grid">
+                                            {% for vehicle in user_data.vehicles %}
+                                            <div class="vehicle-card">
+                                                <div class="vehicle-card-header">
+                                                    <div class="vehicle-icon-container">
+                                                        <span class="material-icons vehicle-icon">{{ vehicle.vehicle_type|lower|slice:":3" }}directions_car</span>
+                                                    </div>
+                                                    <div class="vehicle-title">
+                                                        <h6 class="mb-0">{{ vehicle.vehicle_type }} {{ vehicle.model }}</h6>
+                                                        <div class="plate-number">{{ vehicle.plate_number }}</div>
+                                                    </div>
+                                                    <span class="badge {{ vehicle.is_active|yesno:'bg-success,bg-danger' }} status-badge">
+                                                        {{ vehicle.is_active|yesno:'Active,Inactive' }}
+                                                    </span>
+                                                </div>
+                                                <div class="vehicle-card-content">
+                                                    <div class="vehicle-detail">
+                                                        <span class="detail-label">OR Number</span>
+                                                        <span class="detail-value">{{ vehicle.or_number }}</span>
+                                                    </div>
+                                                    <div class="vehicle-detail">
+                                                        <span class="detail-label">CR Number</span>
+                                                        <span class="detail-value">{{ vehicle.cr_number }}</span>
+                                                    </div>
+                                                    <div class="vehicle-detail">
+                                                        <span class="detail-label">Expires</span>
+                                                        <span class="detail-value">{{ vehicle.registration_expiry|date:"M d, Y" }}</span>
                                                     </div>
                                                 </div>
-                                                <div class="col-md-4">
-                                                    <h6 class="mb-1">Registration Details</h6>
-                                                    <div class="text-muted small">OR Number: {{ vehicle.or_number }}</div>
-                                                    <div class="text-muted small">CR Number: {{ vehicle.cr_number }}</div>
-                                                    <div class="text-muted small">Expires: {{ vehicle.registration_expiry|date:"M d, Y" }}</div>
-                                                </div>
-                                                <div class="col-md-4 text-end">
+                                                <div class="vehicle-card-footer">
                                                     {% if vehicle.or_cr_image %}
                                                     <a href="#" 
-                                                       class="btn btn-sm btn-outline-primary view-registration"
-                                                       data-bs-toggle="modal"
-                                                       data-bs-target="#registrationModal"
+                                                       class="btn-view-registration"
+                                                       data-micromodal-trigger="modal-registration"
                                                        data-vehicle-id="{{ vehicle.id }}"
                                                        data-plate="{{ vehicle.plate_number }}"
                                                        data-or="{{ vehicle.or_number }}"
@@ -253,13 +365,13 @@
                                                        data-registration="{{ vehicle.registration_date|date:'M d, Y' }}"
                                                        data-expiry="{{ vehicle.registration_expiry|date:'M d, Y' }}"
                                                        data-image="{{ vehicle.or_cr_image.url }}">
-                                                        <span class="material-icons">description</span> View Registration
+                                                        <span class="material-icons me-1">description</span> View Registration
                                                     </a>
                                                     {% endif %}
                                                 </div>
                                             </div>
+                                            {% endfor %}
                                         </div>
-                                        {% endfor %}
                                     </div>
                                 </div>
                             </td>
@@ -288,102 +400,142 @@
     </div>
 </div>
 
-<!-- User Detail Modal -->
-<div class="modal fade" id="userDetailModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header border-0 bg-light">
-                <h5 class="modal-title">User Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<!-- User Detail Modal (MicroModal) -->
+<div class="modal micromodal-slide" id="modal-user-detail" aria-hidden="true">
+    <div class="modal__overlay" tabindex="-1" data-micromodal-close>
+        <div class="modal__container modal-lg" role="dialog" aria-modal="true" aria-labelledby="modal-user-detail-title">
+            <header class="modal__header">
+                <h5 class="modal__title" id="modal-user-detail-title">
+                    <span class="material-icons me-2 align-middle">person</span>
+                    User Details
+                </h5>
+                <button class="modal__close" aria-label="Close modal" data-micromodal-close></button>
+            </header>
+            <div class="modal__content" id="modal-user-detail-content">
+                <!-- Content will be loaded via AJAX -->
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="mt-3">Loading user details...</div>
+                </div>
             </div>
-            <div class="modal-body p-0"></div>
+            <footer class="modal__footer">
+                <button class="btn btn-primary" data-micromodal-close>
+                    <span class="material-icons me-1 align-middle" style="font-size: 18px;">close</span>
+                    Close
+                </button>
+            </footer>
         </div>
     </div>
 </div>
 
-<!-- Registration Details Modal -->
-<div class="modal fade" id="registrationModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header border-0 bg-light">
-                <h5 class="modal-title">Vehicle Registration Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="registration-details">
-                    <div class="row">
+<!-- Registration Details Modal (MicroModal) -->
+<div class="modal micromodal-slide" id="modal-registration" aria-hidden="true">
+    <div class="modal__overlay" tabindex="-1" data-micromodal-close>
+        <div class="modal__container modal-lg" role="dialog" aria-modal="true" aria-labelledby="modal-registration-title">
+            <header class="modal__header">
+                <h5 class="modal__title" id="modal-registration-title">
+                    <span class="material-icons me-2 align-middle">description</span>
+                    Vehicle Registration Details
+                </h5>
+                <button class="modal__close" aria-label="Close modal" data-micromodal-close></button>
+            </header>
+            <div class="modal__content" id="modal-registration-content">
+                <div class="registration-details p-3">
+                    <div class="row g-4">
                         <div class="col-md-5">
-                            <div class="text-center mb-3">
-                                <div id="registration-plate" class="fs-5 fw-bold mb-2"></div>
-                                <img id="registration-image" src="" class="img-fluid rounded border" style="max-height: 350px; width: 100%; object-fit: contain;">
-                                <div class="text-muted small mt-2">OR/CR Document</div>
+                            <div class="text-center mb-3 card shadow-sm p-3 bg-light">
+                                <div id="registration-plate" class="fs-5 fw-bold mb-3 badge bg-primary p-2 d-inline-block mx-auto"></div>
+                                <div class="image-container bg-white p-2 border rounded">
+                                    <img id="registration-image" src="" class="img-fluid rounded" style="max-height: 350px; width: 100%; object-fit: contain;">
+                                </div>
+                                <div class="text-muted small mt-3 fst-italic">Official Registration Document</div>
                             </div>
                         </div>
                         <div class="col-md-7">
-                            <h6 class="border-bottom pb-2 mb-3">Registration Information</h6>
-                            <div class="row g-3 mb-4">
-                                <div class="col-md-6">
-                                    <div class="registration-item">
-                                        <div class="text-muted small">OR Number</div>
-                                        <div id="registration-or" class="fw-medium"></div>
-                                    </div>
+                            <div class="card shadow-sm mb-4">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0">
+                                        <span class="material-icons me-1 align-middle text-primary" style="font-size: 18px;">info</span>
+                                        Registration Information
+                                    </h6>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="registration-item">
-                                        <div class="text-muted small">CR Number</div>
-                                        <div id="registration-cr" class="fw-medium"></div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="registration-item">
-                                        <div class="text-muted small">Registration Date</div>
-                                        <div id="registration-date" class="fw-medium"></div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="registration-item">
-                                        <div class="text-muted small">Registration Expiry</div>
-                                        <div id="registration-expiry" class="fw-medium"></div>
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <div class="registration-item">
+                                                <label class="text-muted small d-block">OR Number</label>
+                                                <div id="registration-or" class="fw-medium fs-6 border-bottom pb-1"></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="registration-item">
+                                                <label class="text-muted small d-block">CR Number</label>
+                                                <div id="registration-cr" class="fw-medium fs-6 border-bottom pb-1"></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="registration-item">
+                                                <label class="text-muted small d-block">Registration Date</label>
+                                                <div id="registration-date" class="fw-medium fs-6 border-bottom pb-1"></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="registration-item">
+                                                <label class="text-muted small d-block">Registration Expiry</label>
+                                                <div id="registration-expiry" class="fw-medium fs-6 border-bottom pb-1 text-danger"></div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                             
-                            <h6 class="border-bottom pb-2 mb-3">Vehicle Information</h6>
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <div class="registration-item">
-                                        <div class="text-muted small">Classification</div>
-                                        <div id="vehicle-classification" class="fw-medium"></div>
-                                    </div>
+                            <div class="card shadow-sm">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0">
+                                        <span class="material-icons me-1 align-middle text-primary" style="font-size: 18px;">directions_car</span>
+                                        Vehicle Information
+                                    </h6>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="registration-item">
-                                        <div class="text-muted small">Vehicle Type</div>
-                                        <div id="vehicle-type" class="fw-medium"></div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="registration-item">
-                                        <div class="text-muted small">Make</div>
-                                        <div id="vehicle-make" class="fw-medium"></div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="registration-item">
-                                        <div class="text-muted small">Model</div>
-                                        <div id="vehicle-model" class="fw-medium"></div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="registration-item">
-                                        <div class="text-muted small">Year Model</div>
-                                        <div id="vehicle-year" class="fw-medium"></div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="registration-item">
-                                        <div class="text-muted small">Color</div>
-                                        <div id="vehicle-color" class="fw-medium"></div>
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <div class="registration-item">
+                                                <label class="text-muted small d-block">Classification</label>
+                                                <div id="vehicle-classification" class="fw-medium fs-6 border-bottom pb-1"></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="registration-item">
+                                                <label class="text-muted small d-block">Vehicle Type</label>
+                                                <div id="vehicle-type" class="fw-medium fs-6 border-bottom pb-1"></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="registration-item">
+                                                <label class="text-muted small d-block">Make</label>
+                                                <div id="vehicle-make" class="fw-medium fs-6 border-bottom pb-1"></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="registration-item">
+                                                <label class="text-muted small d-block">Model</label>
+                                                <div id="vehicle-model" class="fw-medium fs-6 border-bottom pb-1"></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="registration-item">
+                                                <label class="text-muted small d-block">Year Model</label>
+                                                <div id="vehicle-year" class="fw-medium fs-6 border-bottom pb-1"></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="registration-item">
+                                                <label class="text-muted small d-block">Color</label>
+                                                <div id="vehicle-color" class="fw-medium fs-6 border-bottom pb-1"></div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -391,517 +543,570 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
+            <footer class="modal__footer">
+                <button class="btn btn-primary" data-micromodal-close>
+                    <span class="material-icons me-1 align-middle" style="font-size: 18px;">close</span>
+                    Close
+                </button>
+            </footer>
         </div>
     </div>
 </div>
 
 <style>
-/* Add these new styles at the beginning of your style section */
-.icon-circle {
-        width: 48px;
-        height: 48px;
-    border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    
-.icon-circle .material-icons {
-        font-size: 24px;
+/* Enhanced Modal styles */
+.modal__overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
 }
 
-/* Stats Cards */
-    .stat-icon {
-    background: rgba(37, 99, 235, 0.1);
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+.modal__container {
+  background-color: #fff;
+  padding: 0;
+  max-width: 90%;
+  width: 900px;
+  max-height: 90vh;
+  border-radius: 12px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2),
+    0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
-.stat-icon .material-icons {
-    font-size: 24px;
+.modal-lg {
+  max-width: 90%;
+  width: 900px;
 }
 
-.search-input {
-    position: relative;
-    width: 100%;
+.modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #eaeaea;
+  background-color: #f8f9fa;
 }
 
-.search-input .material-icons {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #6b7280;
-    font-size: 20px;
-    z-index: 1;
+.modal__title {
+  margin-top: 0;
+  margin-bottom: 0;
+  font-weight: 600;
+  font-size: 1.25rem;
+  line-height: 1.25;
+  color: #333;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
 }
 
-.search-input .form-control,
-.search-input .form-select {
-    padding-left: 40px;
-    height: 42px;
-    border-color: #e5e7eb;
-    border-radius: 6px;
+.modal__close {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  position: relative;
+  width: 32px;
+  height: 32px;
+  transition: all 0.2s ease;
+  border-radius: 50%;
 }
 
-.search-input .form-control:focus,
-.search-input .form-select:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.1);
+.modal__close:hover {
+  background-color: rgba(0,0,0,0.05);
 }
 
-.btn-primary {
-    height: 42px;
-    padding: 0.5rem 1.5rem;
-    font-size: 0.95rem;
-        font-weight: 500;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    border-radius: 6px;
-    white-space: nowrap;
-    transition: all 0.2s ease;
+.modal__close:before,
+.modal__close:after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 18px;
+  background-color: #555;
+  top: 7px;
+  left: 15px;
 }
 
-.btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+.modal__close:before {
+  transform: rotate(45deg);
 }
 
-.btn-primary .material-icons {
-    font-size: 20px;
+.modal__close:after {
+  transform: rotate(-45deg);
 }
 
-/* Table Styles */
-.table {
-    font-size: 0.95rem;
-    margin-bottom: 0;
+.modal__content {
+  padding: 0;
+  line-height: 1.5;
+  color: rgba(0, 0, 0, 0.8);
+  max-height: 70vh;
+  overflow-y: auto;
 }
 
-.table th {
-    font-weight: 600;
-    color: #6b7280;
-    font-size: 0.875rem;
-    text-transform: uppercase;
-    letter-spacing: 0.025em;
+.modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid #eaeaea;
+  background-color: #f8f9fa;
 }
 
-.table td {
-    padding: 1rem 0.75rem;
-    vertical-align: middle;
-    border-bottom: 1px solid #f3f4f6;
+.micromodal-slide {
+  display: none;
 }
 
-/* Button and Badge Styles */
-.btn-link {
-    padding: 0;
-    color: var(--primary-color);
-    text-decoration: none;
+.micromodal-slide.is-open {
+  display: block;
 }
 
-.badge {
-    font-weight: 500;
-    padding: 0.4em 0.7em;
+.micromodal-slide[aria-hidden="false"] .modal__overlay {
+  animation: mmfadeIn .35s cubic-bezier(0, 0, .2, 1);
 }
 
-/* Action Buttons */
-.btn-action {
-    width: 32px;
-    height: 32px;
-    padding: 0;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    border-radius: 6px;
-    border: 1px solid #e5e7eb;
-    background-color: white;
-    color: #6b7280;
-    transition: all 0.2s ease;
-    margin-left: 0.5rem;
+.micromodal-slide[aria-hidden="false"] .modal__container {
+  animation: mmslideIn .35s cubic-bezier(0, 0, .2, 1);
 }
 
-.btn-action:hover {
-    background-color: #f3f4f6;
-    border-color: #d1d5db;
-    color: #374151;
+.micromodal-slide[aria-hidden="true"] .modal__overlay {
+  animation: mmfadeOut .35s cubic-bezier(0, 0, .2, 1);
 }
 
-.btn-action .material-icons {
-    font-size: 1.25rem;
+.micromodal-slide[aria-hidden="true"] .modal__container {
+  animation: mmslideOut .35s cubic-bezier(0, 0, .2, 1);
 }
 
-/* Search Input Styles */
-.input-group-text {
-    color: #6b7280;
+.micromodal-slide .modal__container,
+.micromodal-slide .modal__overlay {
+  will-change: transform;
 }
 
-.form-control-lg {
-    height: 3rem;
-}
-
-.form-control:focus {
-    box-shadow: none;
-    border-color: var(--primary-color);
-}
-
-/* Avatar Styles */
-.avatar-container {
-    position: relative;
-}
-
-.avatar-container img,
-.avatar-placeholder {
-    width: 40px;
-    height: 40px;
-    object-fit: cover;
-}
-
-/* Vehicles Section */
-.vehicles-section {
-    background-color: #f9fafb;
-    border-top: 1px solid #f3f4f6;
-    border-bottom: 1px solid #f3f4f6;
-}
-
-.toggle-vehicles {
-    padding: 0;
-    margin-left: 0.25rem;
-}
-
-.toggle-vehicles .material-icons {
-    font-size: 1.1rem;
-    transition: transform 0.2s ease;
-}
-
-.toggle-vehicles.active .material-icons {
-    transform: rotate(180deg);
-}
-
-.vehicle-item {
-    transition: transform 0.2s ease;
-}
-
-.vehicle-item:hover {
-    transform: translateY(-2px);
-}
-
-/* Responsive Styles */
-@media (max-width: 768px) {
-    .card-body {
-        padding: 1rem;
-    }
-    
-    .table td {
-        padding: 0.75rem;
-    }
-    
-    .btn-action {
-        width: 28px;
-        height: 28px;
-    }
-    
-    .btn-action .material-icons {
-        font-size: 1rem;
-    }
-}
-
-/* Add these new styles */
-.btn-toggle-status {
-    transition: all 0.2s ease;
-}
-
-.btn-toggle-status:hover {
-    transform: scale(1.1);
-}
-
-.btn-toggle-status .material-icons {
-    font-size: 1.25rem;
-}
-
-/* Status colors */
-.btn-toggle-status[title*="Activate"] {
-        color: var(--success);
-    }
-    
-.btn-toggle-status[title*="Deactivate"] {
-        color: var(--danger);
-    }
-    
-/* Toast notification styles */
-.alert {
-    z-index: 1060;
-}
-
-.alert-success {
-    background-color: var(--success);
-    color: white;
-    box-shadow: 0 2px 15px rgba(0,0,0,0.1);
-}
-
-.alert .material-icons {
-    vertical-align: middle;
-    font-size: 1.1rem;
-}
-
-.modal {
-    padding: 0 !important;
-}
-
-.modal-open {
-    overflow-y: auto !important;
-    padding-right: 0 !important;
-}
-
-.modal-open .modal {
-    overflow-x: hidden;
-    overflow-y: auto;
-    padding-right: 0 !important;
-}
-
-.modal-dialog {
-    margin: 1.75rem auto;
-    max-width: 800px;
-}
-
-.modal-content {
-    border: none;
-    border-radius: 12px;
-    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.15);
-}
-
-/* Prevent table row spacing changes */
-.table {
-    width: 100% !important;
-    margin-bottom: 0 !important;
-    table-layout: fixed !important;
-}
-
-.table td {
-    padding: 1rem 0.75rem !important;
-    vertical-align: middle !important;
-}
-
-/* Ensure consistent widths */
-.table-responsive {
-    width: 100% !important;
-    margin: 0 !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    position: relative !important;
-    padding-right: 0 !important;
-}
-
-/* Fixed Table Layout */
-.table {
-    width: 100% !important;
-    margin: 0 !important;
-    table-layout: fixed !important;
-    border-collapse: separate !important;
-    border-spacing: 0 !important;
-}
-
-/* Fixed Cell Content */
-.table th,
-.table td {
-    padding: 1rem 0.75rem !important;
-    vertical-align: middle !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    position: relative !important;
-    box-sizing: border-box !important;
-}
-
-/* Profile Layout Fixes */
-.d-flex {
-    display: flex !important;
-    align-items: center !important;
-    gap: 1rem !important;
-    width: 100% !important;
-    position: relative !important;
-}
-
-.avatar-container {
-    flex-shrink: 0 !important;
-    width: 40px !important;
-    height: 40px !important;
-    position: relative !important;
-}
-
-/* Avatar Container */
-.avatar-container {
-    flex: 0 0 40px !important;
-    width: 40px !important;
-    height: 40px !important;
-    position: relative !important;
-    margin-right: 1rem !important;
-}
-
-.avatar-container img,
-.avatar-placeholder {
-    width: 40px !important;
-    height: 40px !important;
-    object-fit: cover !important;
-    flex-shrink: 0 !important;
-}
-
-/* User Info Container */
-.user-info-container {
-    flex: 1 1 auto !important;
-    min-width: 0 !important;
-    overflow: hidden !important;
-}
-
-.user-info-container h6 {
-    margin: 0 !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-}
-
-.user-info-container .small {
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-}
-
-/* Ensure consistent spacing */
-.table td:first-child {
-    padding-left: 1.5rem !important;
-}
-
-/* Prevent text wrapping in cells */
-.table td > * {
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-}
-
-/* Fix avatar placeholder */
-.avatar-placeholder {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    background-color: var(--primary-color) !important;
-    color: white !important;
-    font-weight: 500 !important;
-    border-radius: 50% !important;
-}
-
-/* Mobile Responsiveness */
-@media (max-width: 576px) {
-    .btn-primary {
-        height: 38px;
-        padding: 0.5rem 1rem;
-        font-size: 0.875rem;
-    }
-    
-    .btn-primary .material-icons {
-        font-size: 18px;
-    }
-}
-
-/* Registration item styling */
+/* Enhanced registration items */
 .registration-item {
-    margin-bottom: 1rem;
+  margin-bottom: 1rem;
 }
 
-.registration-item .text-muted {
-    font-size: 0.8rem;
-    margin-bottom: 0.25rem;
+.registration-item label {
+  font-size: 0.8rem;
+  margin-bottom: 0.25rem;
+  color: #6c757d;
+  font-weight: 500;
 }
 
 .registration-item .fw-medium {
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.registration-item:hover .fw-medium {
+  color: var(--primary-color);
+}
+
+/* Card styling */
+.card {
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.1) !important;
+}
+
+.card-header {
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid rgba(0,0,0,0.075);
+}
+
+/* Image container styling */
+.image-container {
+  transition: all 0.3s ease;
+}
+
+.image-container:hover {
+  transform: scale(1.02);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* Button styling */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+@keyframes mmfadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes mmfadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes mmslideIn {
+  from { transform: translateY(15%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes mmslideOut {
+  from { transform: translateY(0); }
+  to { transform: translateY(-10%); }
+}
+
+/* Vehicle Section Styles */
+.vehicles-section {
+    background-color: #f8f9fa;
+    border-top: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+    transition: all 0.3s ease;
+    box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.05);
+}
+
+.vehicle-list {
+    padding: 1.25rem !important;
+}
+
+.vehicle-count-badge {
+    background-color: rgba(13, 110, 253, 0.1);
+    color: var(--primary-color);
+    font-size: 0.85rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 50rem;
     font-weight: 500;
+}
+
+/* Vehicle Grid Layout */
+.vehicle-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+    margin-top: 0.75rem;
+}
+
+/* Vehicle Card Styling */
+.vehicle-card {
+    background-color: white;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.vehicle-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.vehicle-card-header {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    background-color: rgba(13, 110, 253, 0.03);
+}
+
+.vehicle-icon-container {
+    background-color: var(--primary-color);
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+}
+
+.vehicle-icon {
+    font-size: 1.25rem;
+}
+
+.vehicle-title {
+    flex: 1;
+    min-width: 0;
+}
+
+.vehicle-title h6 {
+    font-weight: 600;
+    margin-bottom: 0.125rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.plate-number {
+    font-size: 0.85rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.status-badge {
+    margin-left: 0.75rem;
+    padding: 0.35em 0.65em;
+    font-size: 0.75em;
+}
+
+.vehicle-card-content {
+    padding: 1rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 0.75rem;
+}
+
+.vehicle-detail {
+    display: flex;
+    flex-direction: column;
+}
+
+.detail-label {
+    font-size: 0.7rem;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.detail-value {
+    font-weight: 500;
+    font-size: 0.875rem;
+}
+
+.vehicle-card-footer {
+    padding: 0.75rem 1rem;
+    background-color: #f8f9fa;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    text-align: right;
+}
+
+.btn-view-registration {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.875rem;
+    color: var(--primary-color);
+    text-decoration: none;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.375rem;
+    transition: background-color 0.2s ease;
+    background-color: rgba(13, 110, 253, 0.1);
+}
+
+.btn-view-registration:hover {
+    background-color: rgba(13, 110, 253, 0.15);
+    color: var(--primary-color);
+}
+
+/* Vehicle Toggle Button */
+.btn-vehicle-toggle {
+    display: inline-flex;
+    align-items: center;
+    background: none;
+    border: none;
+    padding: 0.375rem 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 0.375rem;
+}
+
+.btn-vehicle-toggle:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+.vehicle-count {
+    margin-right: 0.5rem;
+}
+
+.vehicle-text {
+    margin-right: 0.5rem;
+    color: #6c757d;
+}
+
+.toggle-icon {
+    font-size: 1.1rem;
+    transition: transform 0.2s ease;
+    color: #6c757d;
+}
+
+.btn-vehicle-toggle.active .toggle-icon {
+    transform: rotate(180deg);
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+    .vehicle-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     }
+}
+
+@media (max-width: 768px) {
+    .vehicle-grid {
+        grid-template-columns: 1fr;
+    }
+}
 </style>
 
 <script>
 // Function to show user details in modal
 function showUserDetail(userId) {
-    const modalBody = document.querySelector('#userDetailModal .modal-body');
-    modalBody.innerHTML = `
+    console.log('Loading user details for ID:', userId);
+    
+    const modalContent = document.getElementById('modal-user-detail-content');
+    modalContent.innerHTML = `
         <div class="text-center py-5">
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Loading...</span>
-        </div>
+            </div>
+            <div class="mt-3">Loading details for User ID: ${userId}</div>
         </div>
     `;
     
-    fetch(`/users/${userId}/modal/`)
-        .then(response => response.text())
-        .then(html => {
-            modalBody.innerHTML = html;
-        })
-        .catch(error => {
-            modalBody.innerHTML = `
-                <div class="alert alert-danger m-3">
-                    <span class="material-icons me-2">error_outline</span>
-                    Error loading user details: ${error.message}
-            </div>
-            `;
+    // Open the modal safely with MicroModal
+    if (typeof MicroModal !== 'undefined') {
+        console.log('Opening modal with MicroModal');
+        MicroModal.show('modal-user-detail', {
+            onShow: modal => console.log(`${modal.id} is shown`),
+            onClose: modal => console.log(`${modal.id} is hidden`),
+            disableScroll: true
         });
+    } else {
+        // Fallback if MicroModal isn't available
+        console.warn('MicroModal not available, using fallback');
+        const modal = document.getElementById('modal-user-detail');
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+    }
+    
+    // Add a timestamp to prevent caching
+    const timestamp = new Date().getTime();
+    const url = `/users/${userId}/modal/?t=${timestamp}`;
+    
+    console.log('Fetching URL:', url);
+    
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'Cache-Control': 'no-cache',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        }
+        return response.text();
+    })
+    .then(html => {
+        console.log('Response received, length:', html.length);
+        // Log a small snippet of the response for debugging
+        console.log('Response preview:', html.substring(0, 200));
+        
+        // Check if the response contains the expected user ID
+        if (html.includes(`User ID: ${userId}`)) {
+            console.log('Response contains correct user ID');
+        } else {
+            console.warn('Response may contain incorrect user ID!');
+        }
+        
+        modalContent.innerHTML = html;
+    })
+    .catch(error => {
+        console.error('Error fetching user details:', error);
+        modalContent.innerHTML = `
+            <div class="alert alert-danger m-3">
+                <span class="material-icons me-2">error_outline</span>
+                <div>Error loading user details: ${error.message}</div>
+                <div class="mt-2">Requested User ID: ${userId}</div>
+            </div>
+        `;
+    });
 }
 
 // Function to toggle user status
 function toggleUserStatus(userId, action) {
-    if (!confirm(`Are you sure you want to ${action} this user?`)) {
-        return;
-    }
+    // Use SweetAlert for confirmation instead of native confirm
+    Swal.fire({
+        title: 'Are you sure?',
+        text: `Do you want to ${action} this user?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, proceed'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const button = event.target.closest('button');
+            const originalHtml = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
 
-    const button = event.target.closest('button');
-    const originalHtml = button.innerHTML;
-    button.disabled = true;
-    button.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-
-    fetch(`/users/${userId}/toggle-status/`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-CSRFToken': '{{ csrf_token }}'
+            fetch(`/users/${userId}/toggle-status/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Use SweetAlert instead of showToast
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success',
+                        text: data.message,
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    // Use SweetAlert for errors
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.error || 'Error updating user status'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Use SweetAlert for errors
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to update user status. Please try again.'
+                });
+            })
+            .finally(() => {
+                button.disabled = false;
+                button.innerHTML = originalHtml;
+            });
         }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Use the global showToast function from base template
-            if (typeof showToast === 'function') {
-                showToast('success', data.message);
-            }
-            setTimeout(() => window.location.reload(), 1500);
-        } else {
-            if (typeof showToast === 'function') {
-                showToast('error', data.error || 'Error updating user status');
-            } else {
-                alert(data.error || 'Error updating user status');
-            }
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        if (typeof showToast === 'function') {
-            showToast('error', 'Failed to update user status. Please try again.');
-        } else {
-            alert('Failed to update user status. Please try again.');
-        }
-    })
-    .finally(() => {
-        button.disabled = false;
-        button.innerHTML = originalHtml;
     });
 }
 
 // Initialize modal functionality when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    // MicroModal is now initialized at the top of the file
+
     // Toggle vehicle details
-    const toggleButtons = document.querySelectorAll('.toggle-vehicles');
+    const toggleButtons = document.querySelectorAll('.btn-vehicle-toggle');
     toggleButtons.forEach(button => {
         button.addEventListener('click', function() {
             const userId = this.getAttribute('data-user-id');
@@ -927,8 +1132,27 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // Setup view buttons
+    const viewButtons = document.querySelectorAll('.btn-view');
+    viewButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Get userId from the button's data attribute
+            const userId = this.getAttribute('data-user-id');
+            console.log('View button clicked for user ID:', userId);
+            
+            // Pre-load user details right away
+            showUserDetail(userId);
+        });
+    });
+
+    // Remove the data-bs-toggle and data-bs-target attributes to prevent automatic modal triggering
+    viewButtons.forEach(button => {
+        button.removeAttribute('data-micromodal-trigger');
+    });
+
     // Setup registration view buttons
-    const registrationButtons = document.querySelectorAll('.view-registration');
+    const registrationButtons = document.querySelectorAll('.btn-view-registration');
     registrationButtons.forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
@@ -960,33 +1184,43 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('vehicle-year').textContent = year;
             document.getElementById('vehicle-color').textContent = color;
             document.getElementById('registration-image').src = imageUrl;
+            
+            // Open the modal safely with MicroModal
+            if (typeof MicroModal !== 'undefined') {
+                console.log('Opening registration modal with MicroModal');
+                MicroModal.show('modal-registration', {
+                    onShow: modal => console.log(`${modal.id} is shown`),
+                    onClose: modal => console.log(`${modal.id} is hidden`),
+                    disableScroll: true
+                });
+            } else {
+                // Fallback if MicroModal isn't available
+                console.warn('MicroModal not available, using fallback for registration modal');
+                const modal = document.getElementById('modal-registration');
+                modal.classList.add('is-open');
+                modal.setAttribute('aria-hidden', 'false');
+            }
+        });
+    });
+    
+    // Add manual close functionality for all modals
+    const closeModalButtons = document.querySelectorAll('[data-micromodal-close]');
+    closeModalButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const modalId = this.closest('.modal').id;
+            console.log(`Closing modal with ID: ${modalId}`);
+            
+            if (typeof MicroModal !== 'undefined') {
+                MicroModal.close(modalId);
+            } else {
+                const modal = document.getElementById(modalId);
+                modal.classList.remove('is-open');
+                modal.setAttribute('aria-hidden', 'true');
+            }
         });
     });
 
-    const userDetailModal = document.getElementById('userDetailModal');
-    if (userDetailModal) {
-        // Load user details when modal is shown
-        userDetailModal.addEventListener('show.bs.modal', function(event) {
-            const button = event.relatedTarget;
-            const userId = button.getAttribute('data-user-id');
-            showUserDetail(userId);
-            
-            // Prevent layout shifts
-            const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-            document.documentElement.style.setProperty('--scrollbar-width', `${scrollbarWidth}px`);
-            document.body.style.paddingRight = '0';
-            document.body.style.overflow = 'hidden';
-        });
-
-        // After modal is hidden
-        userDetailModal.addEventListener('hidden.bs.modal', function() {
-            document.body.style.paddingRight = '0';
-            document.body.style.overflow = '';
-            document.body.classList.remove('modal-open');
-            document.documentElement.style.removeProperty('--scrollbar-width');
-        });
-    }
-    
     // Ensure table layout remains consistent
     const tableContainer = document.querySelector('.table-responsive');
     if (tableContainer) {

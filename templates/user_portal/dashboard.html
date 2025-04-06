@@ -386,6 +386,18 @@
             height: 32px;
         }
     }
+
+    /* Application Status Card */
+    .application-status-card {
+        border-left: 4px solid var(--warning-color);
+        background-color: #FFF9E6;
+        transition: all 0.3s ease;
+    }
+    
+    .application-status-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(255, 184, 0, 0.15);
+    }
 </style>
 {% endblock %}
 
@@ -519,6 +531,31 @@
                 </div>
             </div>
         </div>
+
+        <!-- Operator Application Status Card - Only shown if user has pending applications but is not operator -->
+        {% if has_operator_application and not user.userprofile.is_operator %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card application-status-card dashboard-card shadow-sm rounded-xl">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-card-icon me-3" style="background-color: rgba(255, 184, 0, 0.15);">
+                                <span class="material-icons" style="color: var(--warning-color);">pending_actions</span>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h5 class="fw-bold mb-1">Operator Application Pending</h5>
+                                <p class="mb-3">You have submitted an application to become an operator. Check the status of your application.</p>
+                                <a href="{% url 'operator_application_status' %}" class="btn btn-warning btn-sm px-3 py-2">
+                                    <span class="material-icons me-2 fs-6">fact_check</span>
+                                    Check Application Status
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
         <!-- Statistics Cards -->
         <div class="row g-4 mb-4">
@@ -728,5 +765,46 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+</script>
+
+<!-- Login success message script -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check for URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Handle login success
+        if (urlParams.get('login') === 'success') {
+            // Show success message using SweetAlert
+            Swal.fire({
+                icon: 'success',
+                title: 'Welcome!',
+                text: 'You have successfully logged in.',
+                confirmButtonText: 'OK'
+            });
+            
+            // Clean up URL after showing message
+            const url = new URL(window.location.href);
+            url.searchParams.delete('login');
+            window.history.replaceState({}, document.title, url);
+        }
+        
+        // Handle report submission success
+        if (urlParams.get('report') === 'success') {
+            // Show success message using SweetAlert
+            Swal.fire({
+                icon: 'success',
+                title: 'Report Submitted!',
+                text: 'Your report has been submitted successfully. We will review it shortly.',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#3563E9'
+            });
+            
+            // Clean up URL after showing message
+            const url = new URL(window.location.href);
+            url.searchParams.delete('report');
+            window.history.replaceState({}, document.title, url);
+        }
+    });
 </script>
 {% endblock %} 

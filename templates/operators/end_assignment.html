@@ -1,0 +1,59 @@
+{% extends 'user_portal/base_user.html' %}
+{% load static %}
+
+{% block title %}End Assignment{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-header bg-transparent d-flex align-items-center px-4 py-3 border-bottom">
+            <span class="material-icons me-2" style="color: #dc3545; font-size: 24px;">link_off</span>
+            <h4 class="mb-0 fw-bold">End Driver-Vehicle Assignment</h4>
+        </div>
+        <div class="card-body p-4">
+            <div class="alert alert-warning">
+                <div class="d-flex">
+                    <span class="material-icons me-2">warning</span>
+                    <div>
+                        <p class="mb-0">You are about to end this driver-vehicle assignment. This will unassign the driver from the vehicle.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card border mb-4">
+                <div class="card-body">
+                    <h5 class="card-title fw-bold">Assignment Information</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="fw-bold">Driver</h6>
+                            <p class="mb-1"><strong>Name:</strong> {{ assignment.driver.last_name }}, {{ assignment.driver.first_name }}</p>
+                            <p class="mb-1"><strong>PD Number:</strong> {{ assignment.driver.new_pd_number }}</p>
+                            <p class="mb-0"><strong>License:</strong> {{ assignment.driver.license_number|default:"Not provided" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="fw-bold">Vehicle</h6>
+                            <p class="mb-1"><strong>PD Number:</strong> {{ assignment.vehicle.new_pd_number }}</p>
+                            <p class="mb-1"><strong>Type:</strong> {{ assignment.vehicle.get_vehicle_type_display }}</p>
+                            <p class="mb-0"><strong>Plate:</strong> {{ assignment.vehicle.plate_number|default:"Not provided" }}</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <p class="mb-0"><strong>Assignment Date:</strong> {{ assignment.start_date|date:"F j, Y" }}</p>
+                </div>
+            </div>
+            
+            <form method="POST">
+                {% csrf_token %}
+                <div class="d-flex justify-content-end">
+                    <a href="{% url 'assignment_list' %}" class="btn btn-outline-secondary d-flex align-items-center px-4 py-2 me-2">
+                        <span class="material-icons fs-5 me-2">close</span> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-danger d-flex align-items-center px-4 py-2">
+                        <span class="material-icons fs-5 me-2">link_off</span> End Assignment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

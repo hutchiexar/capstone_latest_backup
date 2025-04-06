@@ -9,16 +9,41 @@
     <meta http-equiv="Expires" content="0">
     <title>Traffic Violation System</title>
     
-    <!-- Updated Google Fonts -->
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     
     <!-- CSS Dependencies -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
+    
+    <!-- SweetAlert2 JS (with default configuration) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+    <script>
+        // Configure default SweetAlert2 settings
+        if (typeof Swal !== 'undefined') {
+            const SwalDefaults = Swal.mixin({
+                confirmButtonColor: '#2563eb',
+                cancelButtonColor: '#ef4444',
+                reverseButtons: true,
+                buttonsStyling: true,
+                showClass: {
+                    popup: 'animate__animated animate__fadeIn faster'
+                },
+                hideClass: {
+                    popup: 'animate__animated animate__fadeOut faster'
+                }
+            });
+            
+            // Make available globally
+            window.SwalAlert = SwalDefaults;
+        }
+    </script>
     
     <style>
         :root {
@@ -39,13 +64,12 @@
             --sidebar-width: 260px;
 
             /* Updated font variables */
-            --font-primary: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-            --font-secondary: 'Inter', sans-serif;
+            --font-base: "Poppins", sans-serif;
         }
 
         /* Base Typography */
         body {
-            font-family: var(--font-secondary);
+            font-family: var(--font-base);
             font-size: 0.95rem;
             line-height: 1.5;
         }
@@ -53,7 +77,7 @@
         /* Headings */
         h1, h2, h3, h4, h5, h6,
         .h1, .h2, .h3, .h4, .h5, .h6 {
-            font-family: var(--font-primary);
+            font-family: var(--font-base);
             font-weight: 600;
             letter-spacing: -0.02em;
         }
@@ -62,7 +86,7 @@
         .btn, 
         .nav-link,
         .sidebar-link {
-            font-family: var(--font-primary);
+            font-family: var(--font-base);
             font-weight: 500;
             letter-spacing: 0.01em;
         }
@@ -71,23 +95,23 @@
         .form-control,
         .form-select,
         .form-label {
-            font-family: var(--font-secondary);
+            font-family: var(--font-base);
         }
 
         /* Cards and Alerts */
         .card-title {
-            font-family: var(--font-primary);
+            font-family: var(--font-base);
             font-weight: 600;
             letter-spacing: -0.01em;
         }
 
         .alert {
-            font-family: var(--font-secondary);
+            font-family: var(--font-base);
         }
 
         /* Tables */
         .table th {
-            font-family: var(--font-primary);
+            font-family: var(--font-base);
             font-weight: 600;
             font-size: 0.85rem;
             letter-spacing: 0.02em;
@@ -95,20 +119,26 @@
         }
 
         .table td {
-            font-family: var(--font-secondary);
+            font-family: var(--font-base);
+        }
+
+        /* Ensure Material Icons keep their font */
+        .material-icons {
+            font-family: 'Material Icons' !important;
         }
 
         /* Font Weights */
-        .font-light { font-weight: 400; }
-        .font-regular { font-weight: 500; }
-        .font-medium { font-weight: 600; }
-        .font-semibold { font-weight: 700; }
+        .font-light { font-weight: 300; }
+        .font-regular { font-weight: 400; }
+        .font-medium { font-weight: 500; }
+        .font-semibold { font-weight: 600; }
+        .font-bold { font-weight: 700; }
 
         /* Update specific elements */
         body {
             background-color: var(--accent-color);
             color: var(--text-dark);
-            font-family: var(--font-primary);
+            font-family: var(--font-base);
         }
 
         .card {
@@ -249,7 +279,7 @@
         }
 
         .sidebar-brand span {
-            font-family: var(--font-secondary);
+            font-family: var(--font-base);
             font-weight: 700;
             font-size: 1.25rem;
             color: var(--text-light);
@@ -906,7 +936,7 @@
         /* Update specific elements */
         h1, h2, h3, h4, h5, h6,
         .h1, .h2, .h3, .h4, .h5, .h6 {
-            font-family: var(--font-primary);
+            font-family: var(--font-base);
             font-weight: 600;
         }
 
@@ -2712,6 +2742,255 @@
                 opacity: 0;
             }
         }
+
+        /* Custom styling for SweetAlert popups */
+        .swal-wide {
+            width: 600px !important;
+            max-width: 90% !important;
+        }
+        .swal2-html-container {
+            text-align: left !important;
+            overflow-wrap: break-word;
+        }
+        .swal2-title {
+            padding: 1rem 1.5rem !important;
+            margin-bottom: 0 !important;
+        }
+        .swal2-popup {
+            padding-bottom: 1.5rem;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.75rem;
+            padding: 0.35em 0.65em;
+            font-weight: 500;
+        }
+
+        /* Material icons font fix */
+        .material-icons {
+            font-family: 'Material Icons' !important;
+        }
+        
+        /* SweetAlert2 custom styling */
+        .swal2-title, 
+        .swal2-content, 
+        .swal2-html-container {
+            text-align: center !important;
+        }
+        
+        .swal2-popup {
+            padding: 1.5rem;
+        }
+        
+        .swal2-confirm, .swal2-cancel {
+            font-family: var(--font-primary);
+            font-weight: 500;
+        }
+
+        /* MicroModal base styles for popup announcements */
+        #modal-announcement-popup .modal__overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.65);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1050;
+        }
+        
+        #modal-announcement-popup .modal__container {
+            background-color: #ffffff;
+            padding: 1.75rem;
+            width: 90%;
+            max-width: 550px;
+            max-height: 90vh;
+            border-radius: 1rem;
+            overflow-y: auto;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 
+                        0 8px 10px -6px rgba(0, 0, 0, 0.05);
+        }
+        
+        #modal-announcement-popup .modal__header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+            padding-bottom: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        #modal-announcement-popup .modal__title {
+            margin: 0;
+            font-weight: 600;
+            font-size: 1.25rem;
+            line-height: 1.25;
+            color: #1e293b;
+        }
+        
+        #modal-announcement-popup .modal__close {
+            background: transparent;
+            border: 0;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        #modal-announcement-popup .modal__close:before {
+            content: '✕';
+            font-size: 1rem;
+            color: #64748b;
+        }
+        
+        #modal-announcement-popup .modal__close:hover {
+            background-color: rgba(241, 245, 249, 0.9);
+        }
+        
+        #modal-announcement-popup .modal__content {
+            margin-bottom: 1.5rem;
+            color: #334155;
+            line-height: 1.6;
+            font-size: 0.95rem;
+            background-color: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        
+        #modal-announcement-popup .modal__footer {
+            display: flex;
+            flex-direction: column;
+            border-top: 1px solid rgba(226, 232, 240, 0.8);
+            padding-top: 1.5rem;
+        }
+        
+        #modal-announcement-popup .announcement-meta {
+            font-size: 0.85rem;
+            color: #64748b;
+            padding-bottom: 1rem;
+        }
+        
+        #modal-announcement-popup .announcement-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+        
+        /* Animation for the modal */
+        .micromodal-slide {
+            display: none;
+        }
+        
+        .micromodal-slide.is-open {
+            display: block;
+        }
+        
+        .micromodal-slide[aria-hidden="false"] .modal__overlay {
+            animation: mmfadeIn 0.3s cubic-bezier(0.0, 0.0, 0.2, 1);
+        }
+        
+        .micromodal-slide[aria-hidden="false"] .modal__container {
+            animation: mmslideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .micromodal-slide[aria-hidden="true"] .modal__overlay {
+            animation: mmfadeOut 0.2s cubic-bezier(0.0, 0.0, 0.2, 1);
+        }
+        
+        .micromodal-slide[aria-hidden="true"] .modal__container {
+            animation: mmslideOut 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .micromodal-slide .modal__container,
+        .micromodal-slide .modal__overlay {
+            will-change: transform;
+        }
+        
+        @keyframes mmfadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes mmfadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        
+        @keyframes mmslideIn {
+            from { transform: translateY(20%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes mmslideOut {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(20%); opacity: 0; }
+        }
+        
+        /* Button styles */
+        #modal-announcement-popup .btn {
+            border-radius: 0.5rem;
+            padding: 0.6rem 1.25rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        #modal-announcement-popup .btn-light-subtle {
+            background-color: #f1f5f9;
+            border-color: #e2e8f0;
+            color: #64748b;
+        }
+        
+        #modal-announcement-popup .btn-light-subtle:hover {
+            background-color: #e2e8f0;
+            color: #334155;
+        }
+        
+        /* Spinner styles */
+        #modal-announcement-popup .spinner-border {
+            width: 1em;
+            height: 1em;
+            border-width: 0.15em;
+        }
+
+        /* Badge styling */
+        #modal-announcement-popup .badge {
+            font-size: 0.8rem;
+            font-weight: 500;
+            padding: 0.4em 0.8em;
+            border-radius: 6px;
+        }
+        
+        #modal-announcement-popup .bg-danger {
+            background-color: #ef4444 !important;
+            color: white;
+        }
+        
+        #modal-announcement-popup .bg-warning {
+            background-color: #f59e0b !important;
+            color: #1e293b !important;
+        }
+        
+        #modal-announcement-popup .bg-success {
+            background-color: #10b981 !important;
+            color: white;
+        }
+        
+        #modal-announcement-popup .bg-secondary {
+            background-color: #64748b !important;
+            color: white;
+        }
     </style>
 </head>
 <body {% if user.is_authenticated and user.userprofile.role == 'ENFORCER' %}data-role="ENFORCER"{% endif %} data-update-location-url="{% url 'update_location' %}">
@@ -2828,9 +3107,6 @@
                             </div>
 
                             {% if user.userprofile.role == 'ADMIN' %}
-                            <a href="{% url 'admin_reports_dashboard' %}" class="list-group-item {% if 'reports/dashboard' in request.path %}active{% endif %}">
-                                <span class="material-icons">report</span>Submitted Reports
-                            </a>
                             {% endif %}
 
                             {% if user.userprofile.role in 'ADMIN,SUPERVISOR,TREASURER' %}
@@ -2869,11 +3145,25 @@
                                     <a href="{% url 'operator_applications_manage' %}" class="list-group-item submenu-item {% if 'operator/applications/manage' in request.path %}active{% endif %}">
                                         <span class="material-icons">approval</span>Applications
                                     </a>
-                                    <a href="{% url 'driver_list' %}" class="list-group-item submenu-item {% if 'driver' in request.path %}active{% endif %}">
+                                    <a href="{% url 'admin_driver_list' %}" class="list-group-item submenu-item {% if 'driver' in request.path %}active{% endif %}">
                                         <span class="material-icons">person</span>Drivers
                                     </a>
                                 </div>
                             </div>
+                            <a href="{% url 'admin_report_list' %}" class="list-group-item {% if 'management/reports' in request.path %}active{% endif %}">
+                                <span class="material-icons">report_problem</span>User Reports
+                            </a>
+                            <!-- Educational Materials submenu - REPLACED -->
+                        </div>
+                    </div>
+                    
+                    <!-- Education Section - NEW -->
+                    <div class="sidebar-section">
+                        <div class="sidebar-section-title">Education</div>
+                        <div class="list-group list-group-flush">
+                            <a href="{% url 'educational:admin_dashboard' %}" class="list-group-item {% if request.path == '/educational/admin/dashboard/' or request.path == '/educational/admin/' %}active{% endif %}">
+                                <span class="material-icons">dashboard</span>Dashboard
+                            </a>
                         </div>
                     </div>
                     {% endif %}
@@ -2902,14 +3192,19 @@
                             <a href="{% url 'user_portal:file_report' %}" class="list-group-item {% if 'reports' in request.path %}active{% endif %}">
                                 <span class="material-icons">description</span>Report Filing
                             </a>
+                            <a href="{% url 'educational:topic_list' %}" class="list-group-item {% if 'educational' in request.path %}active{% endif %}">
+                                <span class="material-icons">school</span>Educational Materials
+                            </a>
                             {% if not user.userprofile.is_operator %}
                             <a href="{% url 'operator_apply' %}" class="list-group-item {% if 'operator/apply' in request.path %}active{% endif %}">
                                 <span class="material-icons">commute</span>Apply as Operator
                             </a>
                             {% else %}
-                            <a href="{% url 'operator_dashboard' %}" class="list-group-item {% if 'operator/dashboard' in request.path %}active{% endif %}">
-                                <span class="material-icons">dashboard</span>Operator Dashboard
-                            </a>
+                                {% if user.operator_profile %}
+                                <a href="{% url 'operator_dashboard' %}" class="list-group-item {% if 'operator/dashboard' in request.path %}active{% endif %}">
+                                    <span class="material-icons">dashboard</span>Operator Dashboard
+                                </a>
+                                {% endif %}
                             {% endif %}
                         </div>
                     </div>
@@ -2941,13 +3236,39 @@
                             <span class="material-icons">history</span>
                             <span>Activity</span>
                         </a>
-                        <form method="post" action="{% url 'logout' %}" class="sidebar-logout-form">
+                        <form method="post" action="{% url 'logout' %}" class="sidebar-logout-form" id="logout-form">
                             {% csrf_token %}
-                            <button type="submit" class="sidebar-user-action-btn logout-btn">
+                            <button type="button" class="sidebar-user-action-btn logout-btn" id="logout-btn">
                                 <span class="material-icons">logout</span>
                                 <span>Logout</span>
                             </button>
                         </form>
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const logoutBtn = document.getElementById('logout-btn');
+                                const logoutForm = document.getElementById('logout-form');
+                                
+                                if (logoutBtn && logoutForm) {
+                                    logoutBtn.addEventListener('click', function(e) {
+                                        e.preventDefault();
+                                        Swal.fire({
+                                            title: 'Logout Confirmation',
+                                            text: 'Are you sure you want to logout?',
+                                            icon: 'question',
+                                            showCancelButton: true,
+                                            confirmButtonColor: '#3085d6',
+                                            cancelButtonColor: '#d33',
+                                            confirmButtonText: 'Yes, logout',
+                                            cancelButtonText: 'Cancel'
+                                        }).then((result) => {
+                                            if (result.isConfirmed) {
+                                                logoutForm.submit();
+                                            }
+                                        });
+                                    });
+                                }
+                            });
+                        </script>
                     </div>
                 </div>
             </div>
@@ -2980,14 +3301,57 @@
 
             <!-- Messages Section -->
             {% if messages %}
-            <div class="messages">
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
                 {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
+                        {% if message.tags == 'success' %}
+                            if (typeof showToast === 'function') {
+                                showToast('success', "{{ message|escapejs }}");
+                            } else {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Success',
+                                    text: "{{ message|escapejs }}",
+                                    confirmButtonText: 'OK'
+                                });
+                            }
+                        {% elif message.tags == 'error' %}
+                            if (typeof showToast === 'function') {
+                                showToast('error', "{{ message|escapejs }}");
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: "{{ message|escapejs }}",
+                                    confirmButtonText: 'OK'
+                                });
+                            }
+                        {% elif message.tags == 'warning' %}
+                            if (typeof showToast === 'function') {
+                                showToast('warning', "{{ message|escapejs }}");
+                            } else {
+                                Swal.fire({
+                                    icon: 'warning',
+                                    title: 'Warning',
+                                    text: "{{ message|escapejs }}",
+                                    confirmButtonText: 'OK'
+                                });
+                            }
+                        {% else %}
+                            if (typeof showToast === 'function') {
+                                showToast('info', "{{ message|escapejs }}");
+                            } else {
+                                Swal.fire({
+                                    icon: 'info',
+                                    title: 'Information',
+                                    text: "{{ message|escapejs }}",
+                                    confirmButtonText: 'OK'
+                                });
+                            }
+                        {% endif %}
                 {% endfor %}
-            </div>
+                });
+            </script>
             {% endif %}
 
             <!-- Content Area -->
@@ -3342,12 +3706,33 @@
             if ("geolocation" in navigator) {
                 navigator.geolocation.getCurrentPosition(updateLocation, handleLocationError, {
                     enableHighAccuracy: true,
-                    timeout: 5000,
+                    timeout: 10000,
                     maximumAge: 0
                 });
             } else {
                 console.error('Geolocation is not supported by this browser');
             }
+        }
+
+        // Global function to show toast messages using SweetAlert
+        function showToast(type, message, duration = 3000) {
+            // Map type to SweetAlert icon
+            let icon = 'info';
+            if (type === 'success') icon = 'success';
+            if (type === 'error') icon = 'error';
+            if (type === 'warning') icon = 'warning';
+            
+            // Show SweetAlert toast
+            Swal.fire({
+                toast: false, // Use modal instead of toast for better visibility
+                icon: icon,
+                title: type.charAt(0).toUpperCase() + type.slice(1),
+                text: message,
+                showConfirmButton: true,
+                timer: null, // Don't auto-close
+                position: 'center',
+                timerProgressBar: false
+            });
         }
 
         // Update location more frequently (every 30 seconds)
@@ -3418,22 +3803,16 @@
             
             document.title = title + ' | TVMS';
         }
-    </script>
 
-    {% block extra_js %}
-    {% endblock %}
-
-    {% if user.is_authenticated and user.userprofile.role == 'ENFORCER' %}
-    <script>
-        // Location tracking for enforcers
-        function getCookie(name) {
+        // Function to get CSRF token for AJAX requests
+        function getCsrfToken() {
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {
                 const cookies = document.cookie.split(';');
                 for (let i = 0; i < cookies.length; i++) {
                     const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    if (cookie.substring(0, 'csrftoken='.length) === 'csrftoken=') {
+                        cookieValue = decodeURIComponent(cookie.substring('csrftoken='.length));
                         break;
                     }
                 }
@@ -3441,115 +3820,28 @@
             return cookieValue;
         }
 
-        function updateLocation(position) {
-            const data = {
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude,
-                accuracy: position.coords.accuracy,
-                speed: position.coords.speed || null,
-                heading: position.coords.heading || null,
-                is_active: true
-            };
-
-            fetch('{% url "update_location" %}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    console.log('Location updated:', data);
-                } else {
-                    console.error('Error updating location:', data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error updating location:', error);
-                // Retry after 5 seconds on failure
-                setTimeout(trackLocation, 5000);
-            });
-        }
-
-        function handleLocationError(error) {
-            console.error('Error getting location:', error);
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    console.error("Location permission denied");
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    console.error("Location information unavailable");
-                    break;
-                case error.TIMEOUT:
-                    console.error("Location request timed out");
-                    // Retry with different options
-                    navigator.geolocation.getCurrentPosition(updateLocation, handleLocationError, {
-                        enableHighAccuracy: false,
-                        timeout: 10000,
-                        maximumAge: 30000
-                    });
-                    break;
-            }
-        }
-
-        function trackLocation() {
-            if ("geolocation" in navigator) {
-                navigator.geolocation.getCurrentPosition(updateLocation, handleLocationError, {
-                    enableHighAccuracy: true,
-                    timeout: 5000,
-                    maximumAge: 0
-                });
-            } else {
-                console.error('Geolocation is not supported by this browser');
-            }
-        }
-
-        // Update location more frequently (every 30 seconds)
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initial location update
-            trackLocation();
+        // Global function to show toast messages using SweetAlert
+        function showToast(type, message, duration = 3000) {
+            // Map type to SweetAlert icon
+            let icon = 'info';
+            if (type === 'success') icon = 'success';
+            if (type === 'error') icon = 'error';
+            if (type === 'warning') icon = 'warning';
             
-            // Set up periodic updates
-            setInterval(trackLocation, 30000);
-
-            // Update location when tab becomes visible
-            document.addEventListener('visibilitychange', function() {
-                if (!document.hidden) {
-                    trackLocation();
-                }
+            // Show SweetAlert toast
+            Swal.fire({
+                toast: false, // Use modal instead of toast for better visibility
+                icon: icon,
+                title: type.charAt(0).toUpperCase() + type.slice(1),
+                text: message,
+                showConfirmButton: true,
+                timer: null, // Don't auto-close
+                position: 'center',
+                timerProgressBar: false
             });
-        });
-    </script>
-    {% endif %}
+        }
 
-    <!-- Popup Announcement Modal -->
-    <div class="modal fade" id="popupAnnouncementModal" tabindex="-1" aria-labelledby="popupAnnouncementModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content border-0">
-                <div class="modal-header border-0">
-                    <div>
-                        <h5 class="modal-title" id="popupAnnouncementTitle"></h5>
-                        <span class="badge" id="popupAnnouncementCategory"></span>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body" id="popupAnnouncementContent">
-                </div>
-                <div class="modal-footer border-0">
-                    <div class="small text-muted me-auto" id="popupAnnouncementMeta"></div>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="closeAnnouncement">Close</button>
-                    <button type="button" class="btn btn-primary" id="acknowledgeAnnouncement">Acknowledge</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Popup Announcement Script -->
-    <script>
-        // Function to check for popup announcements
+        // Check for popup announcements when page loads
         function checkForPopupAnnouncements() {
             console.log("Checking for popup announcements..."); // Debug logging
             
@@ -3567,77 +3859,111 @@
                     if (data.status !== 'no_announcements') {
                         console.log("Showing announcement:", data.title);
                         
-                        // Set announcement content
-                        document.getElementById('popupAnnouncementTitle').innerText = data.title || 'Announcement';
+                        // Set category text
+                        let categoryText = data.category ? data.category : '';
                         
-                        // Use rich content if available
-                        const contentEl = document.getElementById('popupAnnouncementContent');
-                        if (data.content && data.content.includes('<')) {
-                            contentEl.innerHTML = data.content; // Use HTML content
-                        } else {
-                            contentEl.innerText = data.content || ''; // Use plain text
-                        }
+                        // Set meta info
+                        let metaText = `Posted by ${data.created_by || 'Administrator'} on ${new Date(data.created_at || new Date()).toLocaleString()}`;
                         
-                        // Set category badge
-                        const categoryEl = document.getElementById('popupAnnouncementCategory');
-                        if (data.category) {
-                            categoryEl.innerText = data.category;
-                            categoryEl.classList.add('bg-secondary');
-                            categoryEl.style.display = 'inline-flex';
-                        } else {
-                            categoryEl.style.display = 'none';
-                        }
-                        
-                        document.getElementById('popupAnnouncementMeta').innerText = 
-                            `Posted by ${data.created_by || 'Administrator'} on ${new Date(data.created_at || new Date()).toLocaleString()}`;
-                        
-                        // Add priority-based styling
-                        const modal = document.querySelector('#popupAnnouncementModal .modal-content');
-                        modal.classList.remove('border-warning', 'border-danger');
+                        // Set priority styling
+                        let iconColor = 'var(--bs-primary, blue)';
+                        let iconClass = 'text-primary';
+                        let buttonClass = 'btn-primary';
                         
                         if (data.priority === 'HIGH') {
-                            modal.classList.add('border-danger');
-                            modal.style.borderLeft = '5px solid var(--bs-danger, red)';
+                            iconColor = 'var(--bs-danger, red)';
+                            iconClass = 'text-danger';
+                            buttonClass = 'btn-danger';
                         } else if (data.priority === 'MEDIUM') {
-                            modal.classList.add('border-warning');
-                            modal.style.borderLeft = '5px solid var(--bs-warning, orange)';
-                        } else {
-                            modal.style.borderLeft = '5px solid var(--bs-primary, blue)';
+                            iconColor = 'var(--bs-warning, orange)';
+                            iconClass = 'text-warning';
+                            buttonClass = 'btn-warning';
                         }
                         
-                        // Set up acknowledgment button
-                        const acknowledgeBtn = document.getElementById('acknowledgeAnnouncement');
-                        const closeBtn = document.getElementById('closeAnnouncement');
+                        // Create header with title and category badge
+                        let headerHtml = `
+                            <div class="d-flex align-items-center">
+                                <div class="w-100">
+                                    <h3 class="modal__title mb-2" id="modal-announcement-popup-title">${data.title || 'Announcement'}</h3>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        ${categoryText ? `<span class="badge bg-secondary">${categoryText}</span>` : ''}
+                                        <span class="badge ${data.priority === 'HIGH' ? 'bg-danger' : data.priority === 'MEDIUM' ? 'bg-warning text-dark' : 'bg-success'}">${data.priority || 'LOW'} Priority</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
                         
+                        // Set the content
+                        let contentHtml = data.content || '';
+                        
+                        // Create footer with meta information
+                        let footerHtml = `
+                            <div class="small text-muted">${metaText}</div>
+                        `;
+                        
+                        // Create action buttons
+                        let actionsHtml = '';
                         if (data.requires_acknowledgment) {
-                            // Show acknowledgment button for required acknowledgments
-                            acknowledgeBtn.style.display = 'block';
-                            closeBtn.style.display = 'none';
-                            
-                            // Set up acknowledgment function
-                            acknowledgeBtn.onclick = function() {
-                                acknowledgeAnnouncement(data.id);
-                            };
+                            actionsHtml = `
+                                <button class="btn ${buttonClass}" id="ack-announcement-btn" data-announcement-id="${data.id}">Acknowledge</button>
+                            `;
                         } else {
-                            // Show close button for normal announcements
-                            acknowledgeBtn.style.display = 'none';
-                            closeBtn.style.display = 'block';
+                            actionsHtml = `
+                                <button class="btn btn-light-subtle" data-micromodal-close>Close</button>
+                            `;
                         }
                         
-                        try {
-                            // Show the modal
-                            console.log("Showing modal...");
-                            const modalElement = document.getElementById('popupAnnouncementModal');
-                            if (!modalElement) {
-                                console.error("Modal element not found!");
-                                return;
+                        // Update the modal content
+                        document.querySelector('#modal-announcement-popup .announcement-header-content').innerHTML = headerHtml;
+                        document.querySelector('#modal-announcement-popup .announcement-content').innerHTML = contentHtml;
+                        document.querySelector('#modal-announcement-popup .announcement-meta').innerHTML = footerHtml;
+                        document.querySelector('#modal-announcement-popup .announcement-actions').innerHTML = actionsHtml;
+                        
+                        // Add event listener for acknowledge button
+                        if (data.requires_acknowledgment) {
+                            const ackBtn = document.getElementById('ack-announcement-btn');
+                            if (ackBtn) {
+                                ackBtn.addEventListener('click', function() {
+                                    acknowledgeAnnouncement(data.id);
+                                });
                             }
-                            
-                            const announcementModal = new bootstrap.Modal(modalElement);
-                            announcementModal.show();
-                            console.log("Modal shown!");
-                        } catch (err) {
-                            console.error("Error showing modal:", err);
+                        } else {
+                            // Non-acknowledgment announcements should mark as seen when closed
+                            const closeBtn = document.getElementById('announcement-close-btn');
+                            if (closeBtn) {
+                                closeBtn.addEventListener('click', function() {
+                                    markAnnouncementSeen(data.id);
+                                });
+                            }
+                        }
+                        
+                        // Make sure MicroModal is available
+                        if (typeof MicroModal === 'undefined') {
+                            // Load MicroModal if not already loaded
+                            const script = document.createElement('script');
+                            script.src = 'https://unpkg.com/micromodal/dist/micromodal.min.js';
+                            script.onload = function() {
+                                // Initialize and show modal once loaded
+                                MicroModal.init({
+                                    onClose: function(modal) {
+                                        if (!data.requires_acknowledgment) {
+                                            markAnnouncementSeen(data.id);
+                                        }
+                                    }
+                                });
+                                MicroModal.show('modal-announcement-popup');
+                            };
+                            document.head.appendChild(script);
+                        } else {
+                            // Show the modal with MicroModal
+                            MicroModal.init({
+                                onClose: function(modal) {
+                                    if (!data.requires_acknowledgment) {
+                                        markAnnouncementSeen(data.id);
+                                    }
+                                }
+                            });
+                            MicroModal.show('modal-announcement-popup');
                         }
                     } else {
                         console.log("No announcements to show");
@@ -3646,6 +3972,31 @@
                 .catch(error => {
                     console.error('Error fetching popup announcements:', error);
                 });
+        }
+
+        // Function to mark an announcement as seen (for non-acknowledgment popups)
+        function markAnnouncementSeen(announcementId) {
+            console.log("Marking announcement as seen:", announcementId);
+            
+            fetch(`/api/announcements/${announcementId}/seen/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok: ' + response.statusText);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("Announcement marked as seen:", data);
+            })
+            .catch(error => {
+                console.error('Error marking announcement as seen:', error);
+            });
         }
 
         // Function to acknowledge an announcement
@@ -3659,6 +4010,13 @@
             }
             
             console.log("Acknowledging announcement:", announcementId);
+            
+            // Show loading state
+            const ackBtn = document.getElementById('ack-announcement-btn');
+            if (ackBtn) {
+                ackBtn.disabled = true;
+                ackBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Processing...';
+            }
                               
             fetch(`/api/announcements/${announcementId}/acknowledge/`, {
                 method: 'POST',
@@ -3675,15 +4033,24 @@
             })
             .then(data => {
                 console.log("Acknowledgment successful:", data);
-                // Close the modal after acknowledgment
-                const modal = bootstrap.Modal.getInstance(document.getElementById('popupAnnouncementModal'));
-                if (modal) {
-                    modal.hide();
-                    console.log("Modal closed");
-                }
+                
+                // Close the modal immediately without showing success state
+                MicroModal.close('modal-announcement-popup');
             })
             .catch(error => {
                 console.error('Error acknowledging announcement:', error);
+                
+                // Update button to show error
+                if (ackBtn) {
+                    ackBtn.disabled = false;
+                    ackBtn.innerHTML = 'Try Again';
+                }
+                
+                // Show error toast or message
+                const errorMsg = document.createElement('div');
+                errorMsg.className = 'alert alert-danger mt-3';
+                errorMsg.innerHTML = '<span class="material-symbols-rounded me-1">error</span> Error acknowledging announcement. Please try again.';
+                document.querySelector('#modal-announcement-popup .announcement-actions').appendChild(errorMsg);
             });
         }
 
@@ -3709,15 +4076,160 @@
         });
     </script>
 
+    {% block extra_js %}
+    {% endblock %}
+
+    {% if user.is_authenticated and user.userprofile.role == 'ENFORCER' %}
+    <script>
+        // Location tracking for enforcers
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+
+            function updateLocation(position) {
+                const data = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    accuracy: position.coords.accuracy,
+                    speed: position.coords.speed || null,
+                    heading: position.coords.heading || null,
+                    is_active: true
+                };
+
+                fetch('{% url "update_location" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        console.log('Location updated:', data);
+                    } else {
+                        console.error('Error updating location:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating location:', error);
+                    // Retry after 5 seconds on failure
+                    setTimeout(trackLocation, 5000);
+                });
+            }
+
+            function handleLocationError(error) {
+                console.error('Error getting location:', error);
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        console.error("Location permission denied");
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        console.error("Location information unavailable");
+                        break;
+                    case error.TIMEOUT:
+                        console.error("Location request timed out");
+                        // Retry with different options
+                        navigator.geolocation.getCurrentPosition(updateLocation, handleLocationError, {
+                            enableHighAccuracy: false,
+                            timeout: 10000,
+                            maximumAge: 30000
+                        });
+                        break;
+                }
+            }
+
+            function trackLocation() {
+                if ("geolocation" in navigator) {
+                    navigator.geolocation.getCurrentPosition(updateLocation, handleLocationError, {
+                        enableHighAccuracy: true,
+                    timeout: 10000,
+                        maximumAge: 0
+                    });
+                } else {
+                    console.error('Geolocation is not supported by this browser');
+                }
+            }
+
+            // Update location more frequently (every 30 seconds)
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initial location update
+            trackLocation();
+            
+            // Set up periodic updates
+            setInterval(trackLocation, 30000);
+
+            // Update location when tab becomes visible
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden) {
+                    trackLocation();
+                }
+            });
+        });
+    </script>
+    {% endif %}
+
+    <!-- SweetAlert2 Library for Announcements -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
+
+    <!-- Popup Announcement Modal HTML Structure -->
+    <div class="modal micromodal-slide" id="modal-announcement-popup" aria-hidden="true">
+        <div class="modal__overlay" tabindex="-1" data-micromodal-close>
+            <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="modal-announcement-popup-title">
+                <header class="modal__header">
+                    <div class="announcement-header-content w-100">
+                        <!-- Will be populated dynamically -->
+                    </div>
+                    <button class="modal__close" aria-label="Close modal" data-micromodal-close id="announcement-close-btn"></button>
+                </header>
+                <main class="modal__content" id="modal-announcement-popup-content">
+                    <div class="announcement-content">
+                        <!-- Will be populated dynamically -->
+                    </div>
+                </main>
+                <footer class="modal__footer">
+                    <div class="announcement-meta small text-muted w-100">
+                        <!-- Will be populated dynamically -->
+                    </div>
+                    <div class="announcement-actions mt-3">
+                        <!-- Will be populated dynamically -->
+                    </div>
+                </footer>
+            </div>
+        </div>
+    </div>
+
     <!-- Location Tracking Script -->
+    <script id="location-tracking-config" type="text/template">
+        {% if user.is_authenticated and user.userprofile.role == 'ENFORCER' %}
+            var shouldEnableTracking = true;
+        {% else %}
+            var shouldEnableTracking = false;
+        {% endif %}
+    </script>
+
     <script>
         // Function to check if user is an enforcer and only enable location tracking if so
         document.addEventListener('DOMContentLoaded', function() {
-            /* Django template tags are handled server-side */
-            {% if user.is_authenticated and user.userprofile.role == 'ENFORCER' %}
+            // Get the tracking configuration from the template script
+            const trackingScript = document.getElementById('location-tracking-config');
+            if (trackingScript && trackingScript.innerHTML.includes('shouldEnableTracking = true')) {
                 // Only enable tracking for enforcers
                 initLocationTracking();
-            {% endif %}
+            }
         });
 
         function initLocationTracking() {
@@ -3795,167 +4307,7 @@
                 if ("geolocation" in navigator) {
                     navigator.geolocation.getCurrentPosition(updateLocation, handleLocationError, {
                         enableHighAccuracy: true,
-                        timeout: 5000,
-                        maximumAge: 0
-                    });
-                } else {
-                    console.error('Geolocation is not supported by this browser');
-                }
-            }
-
-            // Update location more frequently (every 30 seconds)
-            // Initial location update
-            trackLocation();
-            
-            // Set up periodic updates
-            setInterval(trackLocation, 30000);
-
-            // Update location when tab becomes visible
-            document.addEventListener('visibilitychange', function() {
-                if (!document.hidden) {
-                    trackLocation();
-                }
-            });
-        }
-    </script>
-
-    <!-- Initialize all tooltips -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize Bootstrap tooltips
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            tooltipTriggerList.forEach(function(tooltipTriggerEl) {
-                new bootstrap.Tooltip(tooltipTriggerEl);
-            });
-
-            // Add active class to parent submenu when child is active
-            const activeSubmenuItem = document.querySelector('.submenu-item.active');
-            if (activeSubmenuItem) {
-                const parentSubmenu = activeSubmenuItem.closest('.submenu');
-                if (parentSubmenu) {
-                    const parentToggle = parentSubmenu.querySelector('.submenu-toggle');
-                    parentToggle.classList.add('active');
-                }
-            }
-        });
-    </script>
-
-    <!-- Sidebar Link Handling for Regular Users -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Apply to all users to ensure consistent navigation
-            // Get all sidebar menu links that aren't submenu toggles
-            const sidebarLinks = document.querySelectorAll('#sidebar-wrapper .list-group-item:not(.submenu-toggle)');
-            
-            // Mark active link based on current path
-            sidebarLinks.forEach(link => {
-                if (link.getAttribute('href') && window.location.pathname.includes(link.getAttribute('href').split('?')[0])) {
-                    link.classList.add('active');
-                    
-                    // If this link is in a submenu, expand the submenu
-                    const parentSubmenu = link.closest('.submenu');
-                    if (parentSubmenu) {
-                        const submenuToggle = parentSubmenu.querySelector('.submenu-toggle');
-                        const submenuContent = parentSubmenu.querySelector('.collapse');
-                        if (submenuToggle && submenuContent) {
-                            submenuToggle.classList.add('active');
-                            submenuContent.classList.add('show');
-                        }
-                    }
-                }
-            });
-        });
-    </script>
-
-    <script>
-        // Set page title based on current page/section - removed since the title element was removed
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check if user is an enforcer by reading the data attribute
-            const userRole = document.body.getAttribute('data-role');
-            if (userRole === 'ENFORCER') {
-                initLocationTracking();
-            }
-        });
-
-        function initLocationTracking() {
-            // Get the update location URL from data attribute
-            const locationUpdateUrl = document.body.getAttribute('data-update-location-url');
-            
-            // Function to get CSRF token
-            function getCookie(name) {
-                let cookieValue = null;
-                if (document.cookie && document.cookie !== '') {
-                    const cookies = document.cookie.split(';');
-                    for (let i = 0; i < cookies.length; i++) {
-                        const cookie = cookies[i].trim();
-                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                            break;
-                        }
-                    }
-                }
-                return cookieValue;
-            }
-
-            function updateLocation(position) {
-                const data = {
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude,
-                    accuracy: position.coords.accuracy,
-                    speed: position.coords.speed || null,
-                    heading: position.coords.heading || null,
-                    is_active: true
-                };
-
-                fetch(locationUpdateUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': getCookie('csrftoken')
-                    },
-                    body: JSON.stringify(data)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        console.log('Location updated:', data);
-                    } else {
-                        console.error('Error updating location:', data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error updating location:', error);
-                    // Retry after 5 seconds on failure
-                    setTimeout(trackLocation, 5000);
-                });
-            }
-
-            function handleLocationError(error) {
-                console.error('Error getting location:', error);
-                switch(error.code) {
-                    case error.PERMISSION_DENIED:
-                        console.error("Location permission denied");
-                        break;
-                    case error.POSITION_UNAVAILABLE:
-                        console.error("Location information unavailable");
-                        break;
-                    case error.TIMEOUT:
-                        console.error("Location request timed out");
-                        // Retry with different options
-                        navigator.geolocation.getCurrentPosition(updateLocation, handleLocationError, {
-                            enableHighAccuracy: false,
-                            timeout: 10000,
-                            maximumAge: 30000
-                        });
-                        break;
-                }
-            }
-
-            function trackLocation() {
-                if ("geolocation" in navigator) {
-                    navigator.geolocation.getCurrentPosition(updateLocation, handleLocationError, {
-                        enableHighAccuracy: true,
-                        timeout: 5000,
+                        timeout: 10000,
                         maximumAge: 0
                     });
                 } else {

@@ -1,0 +1,339 @@
+{% extends 'admin/base_admin.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    /* Stats Card Styling */
+    .stat-card {
+        border-radius: 8px;
+        background-color: #fff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        height: 100%;
+        border: none;
+        transition: box-shadow 0.2s ease;
+    }
+    .stat-card:hover {
+        box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    }
+    .stat-label {
+        font-size: 1rem;
+        color: #6c757d;
+        font-weight: 500;
+        margin-bottom: 12px;
+    }
+    .stat-value {
+        font-size: 2.25rem;
+        font-weight: 700;
+        color: #212529;
+        line-height: 1;
+        margin-bottom: 0;
+    }
+    .stat-icon {
+        font-size: 24px;
+        position: absolute;
+        top: 16px;
+        right: 16px;
+    }
+    .stats-row {
+        margin-bottom: 2rem;
+    }
+    
+    /* Header styling */
+    .header-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .header-title {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    .icon-circle {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .header-actions {
+        display: flex;
+        gap: 10px;
+    }
+    
+    /* Table styling */
+    .table-container {
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .table thead th {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #e9ecef;
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #495057;
+    }
+    .table tbody tr {
+        transition: background-color 0.15s ease;
+    }
+    .table tbody tr:hover {
+        background-color: rgba(0,0,0,0.02);
+    }
+    .topic-title {
+        font-weight: 600;
+        color: #212529;
+    }
+    .topic-description {
+        color: #6c757d;
+        font-size: 0.85rem;
+    }
+    .btn-icon {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+    .btn-icon:hover {
+        transform: translateY(-2px);
+    }
+    .btn-icon .material-icons {
+        font-size: 1rem;
+    }
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #e9ecef;
+    }
+    .category-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        background-color: rgba(var(--primary-rgb), 0.1);
+        color: var(--primary-color);
+    }
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    .status-badge.published {
+        background-color: rgba(25, 135, 84, 0.1);
+        color: #198754;
+    }
+    .status-badge.draft {
+        background-color: rgba(108, 117, 125, 0.1);
+        color: #6c757d;
+    }
+    .empty-state {
+        padding: 3rem;
+        text-align: center;
+    }
+    .empty-state .material-icons {
+        font-size: 3rem;
+        color: #dee2e6;
+        margin-bottom: 1rem;
+    }
+    
+    /* Colors for stat icons */
+    .text-primary-icon {
+        color: #0d6efd;
+    }
+    .text-success-icon {
+        color: #198754;
+    }
+    .text-info-icon {
+        color: #0dcaf0;
+    }
+    .text-warning-icon {
+        color: #ffc107;
+    }
+    .text-danger-icon {
+        color: #dc3545;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .stat-value {
+            font-size: 1.75rem;
+        }
+        .stat-icon {
+            font-size: 20px;
+        }
+    }
+</style>
+{{ block.super }}
+{% endblock %}
+
+{% block admin_content %}
+<div class="container py-4">
+    <!-- Header Section -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-body">
+            <div class="header-section">
+                <div class="header-title">
+                    <div class="icon-circle bg-primary text-white">
+                        <span class="material-icons">school</span>
+                    </div>
+                    <div>
+                        <h4 class="mb-0">Educational Dashboard</h4>
+                        <p class="text-muted mb-0">Manage educational content and monitor statistics</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <a href="{% url 'educational:admin_topic_create' %}" class="btn btn-primary d-flex align-items-center">
+                        <span class="material-icons me-2">add_circle</span>
+                        <span class="d-none d-sm-inline">New Topic</span>
+                        <span class="d-inline d-sm-none">Add</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="row stats-row">
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card stat-card">
+                <div class="card-body p-4 position-relative">
+                    <span class="material-icons stat-icon text-primary-icon">group</span>
+                    <div class="stat-label">Categories</div>
+                    <h2 class="stat-value">{{ categories_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card stat-card">
+                <div class="card-body p-4 position-relative">
+                    <span class="material-icons stat-icon text-success-icon">menu_book</span>
+                    <div class="stat-label">Topics</div>
+                    <h2 class="stat-value">{{ topics_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card stat-card">
+                <div class="card-body p-4 position-relative">
+                    <span class="material-icons stat-icon text-info-icon">check_circle</span>
+                    <div class="stat-label">Published</div>
+                    <h2 class="stat-value">{{ published_topics }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card stat-card">
+                <div class="card-body p-4 position-relative">
+                    <span class="material-icons stat-icon text-warning-icon">edit</span>
+                    <div class="stat-label">Drafts</div>
+                    <h2 class="stat-value">{{ draft_topics }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Topics -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center py-3">
+                    <h5 class="mb-0 fw-bold">Recent Topics</h5>
+                    <a href="{% url 'educational:admin_topic_list' %}" class="btn btn-sm btn-outline-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-container">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="px-4 py-3">Title</th>
+                                    <th class="py-3">Category</th>
+                                    <th class="py-3">Status</th>
+                                    <th class="py-3">Created</th>
+                                    <th width="120" class="text-end pe-4 py-3">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for topic in recent_topics %}
+                                <tr>
+                                    <td class="px-4 py-3">
+                                        <div class="d-flex align-items-center">
+                                            <span class="material-icons me-3 text-primary">menu_book</span>
+                                            <div>
+                                                <div class="topic-title">{{ topic.title }}</div>
+                                                <div class="topic-description">{{ topic.content|striptags|truncatechars:50 }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-3">
+                                        <span class="category-badge">{{ topic.category.title }}</span>
+                                    </td>
+                                    <td class="py-3">
+                                        <span class="status-badge {% if topic.is_published %}published{% else %}draft{% endif %}">
+                                            <span class="material-icons" style="font-size: 0.8rem;">{% if topic.is_published %}check_circle{% else %}edit{% endif %}</span>
+                                            {% if topic.is_published %}Published{% else %}Draft{% endif %}
+                                        </span>
+                                    </td>
+                                    <td class="py-3">{{ topic.created_at|date:"M d, Y" }}</td>
+                                    <td class="text-end pe-4 py-3">
+                                        <div class="d-flex gap-2 justify-content-end">
+                                            <a href="{% url 'educational:admin_topic_preview' topic_id=topic.id %}" 
+                                               class="btn btn-icon btn-outline-secondary" 
+                                               data-bs-toggle="tooltip" 
+                                               title="Preview Topic">
+                                                <span class="material-icons">visibility</span>
+                                            </a>
+                                            <a href="{% url 'educational:admin_topic_edit' topic_id=topic.id %}" 
+                                               class="btn btn-icon btn-outline-primary" 
+                                               data-bs-toggle="tooltip" 
+                                               title="Edit Topic">
+                                                <span class="material-icons">edit</span>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5">
+                                        <div class="empty-state">
+                                            <span class="material-icons">menu_book</span>
+                                            <h6>No topics created yet</h6>
+                                            <p class="text-muted mb-3">Create your first educational topic to get started</p>
+                                            <a href="{% url 'educational:admin_topic_create' %}" class="btn btn-primary">
+                                                <span class="material-icons me-2">add</span> Create First Topic
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tooltip Initialization -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
+{% endblock %} 

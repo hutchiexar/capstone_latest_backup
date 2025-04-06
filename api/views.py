@@ -259,4 +259,40 @@ def check_repeat_violator(request):
             'is_repeat_violator': False,
             'unsettled_count': 0,
             'error': str(e)
-        }) 
+        })
+
+@require_GET
+@login_required
+def get_violation_images(request, violation_id):
+    """
+    API endpoint to retrieve violation images for a specific violation
+    
+    Returns JSON with image URLs for:
+    - Main image
+    - Driver photo
+    - Vehicle photo
+    - Secondary photo (ID)
+    """
+    try:
+        violation = Violation.objects.get(id=violation_id)
+        
+        # Check if user has permission to view this violation
+        if not (request.user.is_staff or request.user.is_superuser or 
+                violation.user_account == request.user or 
+                (hasattr(request.user, 'userprofile') and 
+                 request.user.userprofile.is_enforcer)):
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+        
+        images = {
+            'image': violation.image.url if violation.image else None,
+            'driver_photo': violation.driver_photo.url if violation.driver_photo else None,
+            'vehicle_photo': violation.vehicle_photo.url if violation.vehicle_photo else None,
+            'secondary_photo': violation.secondary_photo.url if violation.secondary_photo else None,
+        }
+        
+        return JsonResponse(images)
+    except Violation.DoesNotExist:
+        return JsonResponse({'error': 'Violation not found'}, status=404)
+    except Exception as e:
+        logger.error(f"Error retrieving violation images: {str(e)}")
+        return JsonResponse({'error': 'An error occurred while retrieving images'}, status=500) 

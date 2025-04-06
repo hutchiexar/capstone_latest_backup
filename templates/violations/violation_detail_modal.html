@@ -1,3 +1,18 @@
+<!-- Add SweetAlert2 for notifications if not already included in parent template -->
+<script>
+    if (typeof Swal === 'undefined') {
+        // Create a script element and append it to the document
+        const script = document.createElement('script');
+        script.src = "https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js";
+        document.head.appendChild(script);
+        
+        const link = document.createElement('link');
+        link.rel = "stylesheet";
+        link.href = "https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css";
+        document.head.appendChild(link);
+    }
+</script>
+
 <!-- Success Toast -->
 <div class="toast-container position-fixed bottom-0 end-0 p-3">
     <div id="successToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
@@ -454,10 +469,6 @@
             Pay Now
         </button>
         {% endif %}
-        <button class="btn btn-outline-secondary" id="exportPdfBtn">
-            <span class="material-icons me-1">download</span>
-            Export PDF
-        </button>
     </div>
 </div>
 
@@ -852,17 +863,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // In a real implementation, this would open a print dialog or download a receipt
             const toast = new bootstrap.Toast(document.getElementById('successToast'));
             document.getElementById('toastMessage').innerText = 'Receipt printing functionality will be implemented soon';
-            toast.show();
-        });
-    }
-    
-    // Export PDF button click handler
-    const exportBtn = document.getElementById('exportPdfBtn');
-    if (exportBtn) {
-        exportBtn.addEventListener('click', function() {
-            // In a real implementation, this would generate and download a PDF
-            const toast = new bootstrap.Toast(document.getElementById('successToast'));
-            document.getElementById('toastMessage').innerText = 'PDF export functionality will be implemented soon';
             toast.show();
         });
     }

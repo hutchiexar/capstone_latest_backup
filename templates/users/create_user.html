@@ -1,7 +1,43 @@
 {% extends 'base.html' %}
 {% load static %}
 
+<!-- SweetAlert2 Library (if not already included in base.html) -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
+
 {% block content %}
+<!-- Check for Django messages and display them as SweetAlert -->
+{% if messages %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        {% for message in messages %}
+            {% if message.tags == 'success' %}
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: "{{ message|escapejs }}",
+                    confirmButtonText: 'OK'
+                });
+            {% elif message.tags == 'error' %}
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: "{{ message|escapejs }}",
+                    confirmButtonText: 'OK'
+                });
+            {% else %}
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Information',
+                    text: "{{ message|escapejs }}",
+                    confirmButtonText: 'OK'
+                });
+            {% endif %}
+        {% endfor %}
+    });
+</script>
+{% endif %}
+
 <div class="container-fluid py-4">
     <div class="card shadow-sm border-0 rounded-3">
         <div class="card-header bg-white py-3">
@@ -254,7 +290,7 @@ document.getElementById('avatar').addEventListener('change', function(e) {
     }
 });
 
-// Form validation
+// Form validation with SweetAlert
 (function () {
     'use strict'
     const forms = document.querySelectorAll('.needs-validation')
@@ -263,10 +299,71 @@ document.getElementById('avatar').addEventListener('change', function(e) {
             if (!form.checkValidity()) {
                 event.preventDefault()
                 event.stopPropagation()
+                
+                // Find all invalid fields
+                const invalidFields = form.querySelectorAll(':invalid');
+                let errorMessages = [];
+                
+                // Collect error messages
+                invalidFields.forEach(field => {
+                    if (field.id) {
+                        const label = form.querySelector(`label[for="${field.id}"]`);
+                        const fieldName = label ? label.textContent : field.name;
+                        errorMessages.push(`${fieldName} is required`);
+                    }
+                });
+                
+                // Show validation errors with SweetAlert
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Form Validation Error',
+                    html: `
+                        <div class="text-start">
+                            <p>Please correct the following errors:</p>
+                            <ul>
+                                ${errorMessages.map(msg => `<li>${msg}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `
+                });
+            } else {
+                // If form is valid, prevent default submission and submit with traditional form post
+                // Don't prevent default submission - let the form submit naturally
+                
+                // Show "Creating user" popup
+                Swal.fire({
+                    title: 'Creating user...',
+                    text: 'Please wait while we process your request',
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                
+                // Don't return false - let the form submit naturally
+                // This will allow the server to process the form and show success message after redirect
             }
+            
             form.classList.add('was-validated')
         }, false)
     })
 })()
+
+// Check URL parameters for success message
+document.addEventListener('DOMContentLoaded', function() {
+    // Create a direct success notification
+    const urlParams = new URLSearchParams(window.location.search);
+    const success = urlParams.get('success');
+    
+    if (success === 'created') {
+        Swal.fire({
+            icon: 'success',
+            title: 'Success!',
+            text: 'User has been created successfully',
+            confirmButtonText: 'OK'
+        });
+    }
+});
 </script>
 {% endblock %} 

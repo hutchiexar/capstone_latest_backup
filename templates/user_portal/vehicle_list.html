@@ -1,0 +1,170 @@
+{% extends 'user_portal/base_user.html' %}
+{% load static %}
+
+{% block title %}My Vehicles{% endblock %}
+
+{% block extra_css %}
+<style>
+    .vehicle-card {
+        border: none;
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 25px rgba(0, 0, 0, 0.05);
+    }
+
+    .page-header {
+        margin-bottom: 2rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: #f8f9fa;
+        border-radius: 16px;
+    }
+
+    .empty-state-icon {
+        font-size: 64px;
+        color: #adb5bd;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state-text {
+        color: #6c757d;
+        margin-bottom: 1.5rem;
+    }
+
+    .register-btn {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .register-btn .material-icons {
+        font-size: 20px;
+    }
+
+    .vehicle-info {
+        padding: 1.5rem;
+    }
+
+    .vehicle-type-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        background: rgba(var(--primary-rgb), 0.1);
+        color: var(--primary-color);
+        font-weight: 500;
+        margin-bottom: 1rem;
+    }
+
+    .vehicle-details {
+        margin-top: 1rem;
+    }
+
+    .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .detail-item .material-icons {
+        color: #6c757d;
+        font-size: 20px;
+    }
+
+    .detail-label {
+        color: #6c757d;
+        font-size: 0.875rem;
+        min-width: 120px;
+    }
+
+    .detail-value {
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Page Header -->
+    <div class="page-header d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h3 mb-0">My Vehicles</h1>
+            <p class="text-muted mb-0">Manage your registered vehicles</p>
+        </div>
+        <a href="{% url 'register_vehicle' %}" class="btn btn-primary register-btn">
+            <span class="material-icons">add</span>
+            Register New Vehicle
+        </a>
+    </div>
+
+    {% if vehicles %}
+    <div class="row g-4">
+        {% for vehicle in vehicles %}
+        <div class="col-md-6">
+            <div class="card vehicle-card">
+                <div class="vehicle-info">
+                    <div class="vehicle-type-badge">
+                        <span class="material-icons">directions_car</span>
+                        {{ vehicle.vehicle_type }}
+                    </div>
+                    
+                    <h5 class="card-title mb-3">{{ vehicle.plate_number }}</h5>
+                    
+                    <div class="vehicle-details">
+                        <div class="detail-item">
+                            <span class="material-icons">badge</span>
+                            <span class="detail-label">Registration No:</span>
+                            <span class="detail-value">{{ vehicle.registration_number }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="material-icons">palette</span>
+                            <span class="detail-label">Color:</span>
+                            <span class="detail-value">{{ vehicle.color }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="material-icons">category</span>
+                            <span class="detail-label">Classification:</span>
+                            <span class="detail-value">{{ vehicle.classification }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="material-icons">event</span>
+                            <span class="detail-label">Registered On:</span>
+                            <span class="detail-value">{{ vehicle.created_at|date:"M d, Y" }}</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <a href="{% url 'edit_vehicle' vehicle.id %}" class="btn btn-outline-primary me-2">
+                            <span class="material-icons">edit</span>
+                            Edit Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">
+            <span class="material-icons">directions_car</span>
+        </div>
+        <div class="empty-state-text">
+            <h4>No Vehicles Registered</h4>
+            <p>You haven't registered any vehicles yet. Register your vehicle to manage it and receive traffic-related information.</p>
+        </div>
+        <a href="{% url 'register_vehicle' %}" class="btn btn-primary register-btn">
+            <span class="material-icons">add</span>
+            Register New Vehicle
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

@@ -3,6 +3,35 @@
 
 {% block title %}{{ title }}{% endblock %}
 
+{% block extra_css %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --font-base: "Poppins", sans-serif;
+    }
+    
+    body, 
+    button, 
+    input, 
+    select, 
+    textarea,
+    .btn,
+    .form-control,
+    .modal-title,
+    table,
+    h1, h2, h3, h4, h5, h6,
+    p, span, div {
+        font-family: var(--font-base) !important;
+    }
+    
+    .material-icons {
+        font-family: 'Material Icons' !important;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <!-- Header Section -->
@@ -73,6 +102,11 @@
                                 <a href="{{ application.business_permit.url }}" target="_blank" class="btn btn-sm btn-outline-secondary me-1">
                                     <span class="material-icons fs-6">description</span> Business Permit
                                 </a>
+                                {% if application.mayors_permit and application.mayors_permit.name %}
+                                <a href="{{ application.mayors_permit.url }}" target="_blank" class="btn btn-sm btn-outline-secondary me-1">
+                                    <span class="material-icons fs-6">description</span> Mayor's Permit
+                                </a>
+                                {% endif %}
                                 {% if application.other_documents %}
                                 <a href="{{ application.other_documents.url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
                                     <span class="material-icons fs-6">description</span> Other Docs
@@ -80,9 +114,11 @@
                                 {% endif %}
                             </td>
                             <td class="px-4 py-3 text-end">
-                                <a href="{% url 'operator_application_review' application.id %}" class="btn btn-primary d-flex align-items-center px-3 py-2 ms-auto">
+                                <button type="button" 
+                                       data-application-id="{{ application.id }}" 
+                                       class="btn btn-primary d-flex align-items-center px-3 py-2 ms-auto review-application-btn">
                                     <span class="material-icons fs-5 me-2">rate_review</span> Review
-                                </a>
+                                </button>
                             </td>
                         </tr>
                         {% empty %}
@@ -166,4 +202,781 @@
         </div>
     </div>
 </div>
+
+<!-- Application Review Modal -->
+<div class="modal micromodal-slide" id="application-review-modal" aria-hidden="true">
+    <div class="modal__overlay" tabindex="-1" data-micromodal-close>
+        <div class="modal__container modal-lg" role="dialog" aria-modal="true" aria-labelledby="application-review-modal-title">
+            <header class="modal__header bg-primary text-white py-3">
+                <h2 class="modal__title d-flex align-items-center fw-bold" id="application-review-modal-title">
+                    <span class="material-icons me-2">rate_review</span>
+                    Review Application
+                </h2>
+                <button class="modal__close text-white" aria-label="Close modal" data-micromodal-close></button>
+            </header>
+            <main class="modal__content p-0">
+                <!-- Skeleton loader -->
+                <div id="applicationModalSkeleton" class="p-4">
+                    <div class="placeholder-glow mb-4">
+                        <div class="placeholder col-5 bg-light rounded mb-2" style="height: 28px;"></div>
+                        <div class="placeholder col-8 bg-light rounded" style="height: 18px;"></div>
+                    </div>
+                    <div class="placeholder-glow mb-4">
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <div class="placeholder col-4 bg-light rounded mb-2" style="height: 12px;"></div>
+                                <div class="placeholder col-8 bg-light rounded" style="height: 20px;"></div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="placeholder col-4 bg-light rounded mb-2" style="height: 12px;"></div>
+                                <div class="placeholder col-8 bg-light rounded" style="height: 20px;"></div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="placeholder col-4 bg-light rounded mb-2" style="height: 12px;"></div>
+                                <div class="placeholder col-8 bg-light rounded" style="height: 20px;"></div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="placeholder col-4 bg-light rounded mb-2" style="height: 12px;"></div>
+                                <div class="placeholder col-8 bg-light rounded" style="height: 20px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="placeholder-glow mb-4">
+                        <div class="placeholder col-5 bg-light rounded mb-2" style="height: 28px;"></div>
+                        <div class="row g-2 mt-3">
+                            <div class="col-4">
+                                <div class="placeholder rounded-circle mx-auto" style="height: 50px; width: 50px;"></div>
+                                <div class="placeholder col-8 mx-auto mt-2" style="height: 16px;"></div>
+                            </div>
+                            <div class="col-4">
+                                <div class="placeholder rounded-circle mx-auto" style="height: 50px; width: 50px;"></div>
+                                <div class="placeholder col-8 mx-auto mt-2" style="height: 16px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Application details -->
+                <div id="applicationModalContent" style="display: none;">
+                    <!-- Applicant Information -->
+                    <div class="p-4 border-bottom">
+                        <div class="d-flex align-items-center mb-4">
+                            <span class="material-icons text-primary me-2 fs-4">person</span>
+                            <h5 class="fw-bold m-0">Applicant Information</h5>
+                        </div>
+                        
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small mb-1">Full Name</label>
+                                    <p class="mb-0 fw-medium" id="applicantName">--</p>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small mb-1">Email</label>
+                                    <p class="mb-0" id="applicantEmail">--</p>
+                                </div>
+                                <div class="mb-0">
+                                    <label class="form-label text-muted small mb-1">Company</label>
+                                    <p class="mb-0" id="companyName">--</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small mb-1">Username</label>
+                                    <p class="mb-0" id="applicantUsername">--</p>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small mb-1">Phone Number</label>
+                                    <p class="mb-0" id="applicantPhone">--</p>
+                                </div>
+                                <div class="mb-0">
+                                    <label class="form-label text-muted small mb-1 d-flex align-items-center">
+                                        <span class="material-icons me-1" style="font-size: 16px;">home</span>
+                                        Address
+                                    </label>
+                                    <p class="mb-0" id="applicantAddress">--</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Documents Section -->
+                    <div class="p-4 border-bottom">
+                        <div class="d-flex align-items-center mb-4">
+                            <span class="material-icons text-primary me-2 fs-4">description</span>
+                            <h5 class="fw-bold m-0">Application Documents</h5>
+                        </div>
+                        <div id="documentsSection" class="row g-4 justify-content-start">
+                            <!-- Documents will be inserted here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Application Review Section -->
+                    <div class="p-4">
+                        <div class="d-flex align-items-center mb-4">
+                            <span class="material-icons text-primary me-2 fs-4">fact_check</span>
+                            <h5 class="fw-bold m-0">Application Review</h5>
+                        </div>
+                        <form id="applicationReviewForm">
+                            <input type="hidden" id="applicationId" name="application_id">
+                            
+                            <div class="mb-4">
+                                <label class="form-label fw-medium mb-3">Review Decision</label>
+                                <div class="row g-3">
+                                    <div class="col-6">
+                                        <div class="form-check w-100 mb-0 p-0">
+                                            <input class="form-check-input visually-hidden" type="radio" name="status" id="approveRadio" value="APPROVED" required>
+                                            <label class="approve-btn w-100 py-3 text-center rounded-3 d-flex align-items-center justify-content-center" for="approveRadio">
+                                                <span class="material-icons me-2">check_circle</span>
+                                                Approve Application
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="form-check w-100 mb-0 p-0">
+                                            <input class="form-check-input visually-hidden" type="radio" name="status" id="rejectRadio" value="REJECTED" required>
+                                            <label class="reject-btn w-100 py-3 text-center rounded-3 d-flex align-items-center justify-content-center" for="rejectRadio">
+                                                <span class="material-icons me-2">cancel</span>
+                                                Reject Application
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-medium">Review Notes</label>
+                                <textarea class="form-control" id="notesTextarea" name="notes" rows="4" 
+                                    placeholder="Provide any additional notes, feedback, or reasons for your decision..."></textarea>
+                                <div class="form-text text-muted mt-2 d-flex align-items-center">
+                                    <span class="material-icons me-1" style="font-size: 16px;">info</span>
+                                    These notes will be visible to the applicant
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-end gap-3 mt-4">
+                                <button type="button" class="btn btn-outline-secondary px-4" data-micromodal-close>
+                                    Cancel
+                                </button>
+                                <button type="submit" class="btn btn-primary px-4 d-flex align-items-center">
+                                    <span class="material-icons me-2">save</span> Submit Review
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/micromodal/dist/micromodal.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Micromodal
+        MicroModal.init({
+            openTrigger: 'data-micromodal-open',
+            closeTrigger: 'data-micromodal-close',
+            disableFocus: false,
+            disableScroll: true,
+            awaitOpenAnimation: true,
+            awaitCloseAnimation: true
+        });
+        
+        const reviewButtons = document.querySelectorAll('.review-application-btn');
+        const applicationForm = document.getElementById('applicationReviewForm');
+        
+        // Format date function
+        function formatDate(dateString) {
+            if (!dateString) return '--';
+            const date = new Date(dateString);
+            return date.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                hour12: true
+            });
+        }
+        
+        // Show application details in modal
+        reviewButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const applicationId = this.getAttribute('data-application-id');
+                document.getElementById('applicationId').value = applicationId;
+                
+                // Show skeleton and hide content
+                document.getElementById('applicationModalSkeleton').style.display = 'block';
+                document.getElementById('applicationModalContent').style.display = 'none';
+                
+                // Show modal with fade-in animation
+                MicroModal.show('application-review-modal');
+                
+                // Fetch application details
+                fetch(`/operator/application/${applicationId}/review/`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => {
+                    // Always read the response, regardless of status
+                    return response.text().then(text => {
+                        // Check if response is JSON
+                        try {
+                            const data = JSON.parse(text);
+                            if (!response.ok) {
+                                throw new Error(data.error || `HTTP error! Status: ${response.status}`);
+                            }
+                            return data;
+                        } catch (e) {
+                            // If it's not JSON or there's a parse error
+                            console.error('Response parsing error:', e);
+                            if (!response.ok) {
+                                throw new Error(`Server error: ${response.status}. Response was not valid JSON.`);
+                            } else {
+                                throw new Error('Server returned non-JSON response');
+                            }
+                        }
+                    });
+                })
+                .then(data => {
+                    // Hide skeleton and show content with smooth transition
+                    document.getElementById('applicationModalSkeleton').style.display = 'none';
+                    const contentEl = document.getElementById('applicationModalContent');
+                    contentEl.style.display = 'block';
+                    contentEl.style.opacity = '0';
+                    setTimeout(() => {
+                        contentEl.style.transition = 'opacity 0.3s ease';
+                        contentEl.style.opacity = '1';
+                    }, 50);
+                    
+                    // Fill the form with data
+                    document.getElementById('applicantName').textContent = data.user.full_name || '--';
+                    document.getElementById('applicantUsername').textContent = data.user.username || '--';
+                    document.getElementById('applicantEmail').textContent = data.user.email || '--';
+                    document.getElementById('applicantPhone').textContent = data.user.phone_number || '--';
+                    document.getElementById('applicantAddress').textContent = data.user.address || '--';
+                    document.getElementById('companyName').textContent = data.application.company_name || '--';
+                    
+                    // Add documents
+                    const documentsSection = document.getElementById('documentsSection');
+                    documentsSection.innerHTML = '';
+                    
+                    if (data.documents.business_permit) {
+                        documentsSection.innerHTML += `
+                            <div class="col-auto text-center">
+                                <a href="${data.documents.business_permit}" target="_blank" class="text-decoration-none">
+                                    <div class="doc-circle bg-primary mx-auto d-flex justify-content-center align-items-center mb-2">
+                                        <span class="material-icons text-white">description</span>
+                                    </div>
+                                    <p class="mb-0">Business Permit</p>
+                                </a>
+                            </div>
+                        `;
+                    }
+                    
+                    if (data.documents.police_clearance) {
+                        documentsSection.innerHTML += `
+                            <div class="col-auto text-center">
+                                <a href="${data.documents.police_clearance}" target="_blank" class="text-decoration-none">
+                                    <div class="doc-circle bg-primary mx-auto d-flex justify-content-center align-items-center mb-2">
+                                        <span class="material-icons text-white">security</span>
+                                    </div>
+                                    <p class="mb-0">Police Clearance</p>
+                                </a>
+                            </div>
+                        `;
+                    }
+                    
+                    if (data.documents.barangay_certificate) {
+                        documentsSection.innerHTML += `
+                            <div class="col-auto text-center">
+                                <a href="${data.documents.barangay_certificate}" target="_blank" class="text-decoration-none">
+                                    <div class="doc-circle bg-primary mx-auto d-flex justify-content-center align-items-center mb-2">
+                                        <span class="material-icons text-white">location_city</span>
+                                    </div>
+                                    <p class="mb-0">Barangay Certificate</p>
+                                </a>
+                            </div>
+                        `;
+                    }
+                    
+                    if (data.documents.cedula) {
+                        documentsSection.innerHTML += `
+                            <div class="col-auto text-center">
+                                <a href="${data.documents.cedula}" target="_blank" class="text-decoration-none">
+                                    <div class="doc-circle bg-primary mx-auto d-flex justify-content-center align-items-center mb-2">
+                                        <span class="material-icons text-white">receipt</span>
+                                    </div>
+                                    <p class="mb-0">Cedula</p>
+                                </a>
+                            </div>
+                        `;
+                    }
+                    
+                    if (data.documents.cenro_tickets) {
+                        documentsSection.innerHTML += `
+                            <div class="col-auto text-center">
+                                <a href="${data.documents.cenro_tickets}" target="_blank" class="text-decoration-none">
+                                    <div class="doc-circle bg-primary mx-auto d-flex justify-content-center align-items-center mb-2">
+                                        <span class="material-icons text-white">eco</span>
+                                    </div>
+                                    <p class="mb-0">CENRO Tickets</p>
+                                </a>
+                            </div>
+                        `;
+                    }
+                    
+                    if (data.documents.mayors_permit) {
+                        documentsSection.innerHTML += `
+                            <div class="col-auto text-center">
+                                <a href="${data.documents.mayors_permit}" target="_blank" class="text-decoration-none">
+                                    <div class="doc-circle bg-primary mx-auto d-flex justify-content-center align-items-center mb-2">
+                                        <span class="material-icons text-white">description</span>
+                                    </div>
+                                    <p class="mb-0">Mayor's Permit</p>
+                                </a>
+                            </div>
+                        `;
+                    }
+                    
+                    if (data.documents.other_documents) {
+                        documentsSection.innerHTML += `
+                            <div class="col-auto text-center">
+                                <a href="${data.documents.other_documents}" target="_blank" class="text-decoration-none">
+                                    <div class="doc-circle bg-primary mx-auto d-flex justify-content-center align-items-center mb-2">
+                                        <span class="material-icons text-white">description</span>
+                                    </div>
+                                    <p class="mb-0">Other Documents</p>
+                                </a>
+                            </div>
+                        `;
+                    }
+                    
+                    if (documentsSection.innerHTML === '') {
+                        documentsSection.innerHTML = `
+                            <div class="col-12">
+                                <div class="alert alert-light d-flex align-items-center mb-0">
+                                    <span class="material-icons text-muted me-2">info</span>
+                                    <span class="text-muted">No documents available</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching application details:', error);
+                    document.getElementById('applicationModalSkeleton').style.display = 'none';
+                    document.getElementById('applicationModalContent').style.display = 'block';
+                    
+                    // Show error with SweetAlert
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Loading Failed',
+                        text: 'Failed to load application details. Please try again.',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#3563E9'
+                    });
+                });
+            });
+        });
+        
+        // Handle form submission
+        applicationForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const applicationId = document.getElementById('applicationId').value;
+            const formData = new FormData(applicationForm);
+            
+            // Validate form
+            if (!formData.get('status')) {
+                return;
+            }
+            
+            // Disable submit button and show loading state
+            const submitBtn = applicationForm.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Processing...';
+            
+            fetch(`/operator/application/${applicationId}/review/`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error('Server returned non-JSON response');
+                }
+                
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Hide modal
+                    MicroModal.close('application-review-modal');
+                    
+                    // Show success message with SweetAlert instead of toast
+                    const status = formData.get('status').toLowerCase();
+                    const actionText = status === 'approved' ? 'approved' : 'rejected';
+                    const icon = status === 'approved' ? 'success' : 'warning';
+                    
+                    Swal.fire({
+                        icon: icon,
+                        title: `Application ${actionText}!`,
+                        text: `The operator application has been successfully ${actionText}.`,
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#3563E9'
+                    }).then(() => {
+                        // Reload page after confirmation
+                        window.location.reload();
+                    });
+                } else {
+                    // Show error with SweetAlert
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.message || 'An error occurred while processing your request.',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#3563E9'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error submitting form:', error);
+                // Show error with SweetAlert
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Submission Failed',
+                    text: 'An error occurred while submitting the form. Please try again.',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#3563E9'
+                });
+            })
+            .finally(() => {
+                // Restore button state
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            });
+        });
+        
+        // Function to get CSRF token from cookies
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        // Function to show toast notification
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toast-container');
+            if (!toastContainer) {
+                // Create toast container if it doesn't exist
+                const container = document.createElement('div');
+                container.id = 'toast-container';
+                container.className = 'position-fixed bottom-0 end-0 p-3';
+                container.style.zIndex = '5';
+                document.body.appendChild(container);
+            }
+            
+            const toastId = 'toast-' + Date.now();
+            const toastHtml = `
+                <div id="${toastId}" class="toast align-items-center text-white bg-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'primary'} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body d-flex align-items-center">
+                            <span class="material-icons me-2">${type === 'success' ? 'check_circle' : type === 'error' ? 'error' : 'info'}</span>
+                            ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('toast-container').insertAdjacentHTML('beforeend', toastHtml);
+            const toastElement = document.getElementById(toastId);
+            const toast = new bootstrap.Toast(toastElement, { autohide: true, delay: 3000 });
+            toast.show();
+            
+            // Remove toast after it's hidden
+            toastElement.addEventListener('hidden.bs.toast', function() {
+                toastElement.remove();
+            });
+        }
+    });
+</script>
+
+<style>
+    /* Micromodal styles */
+    .modal__overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1050;
+    }
+
+    .modal__container {
+        background-color: #fff;
+        width: 95%;
+        max-width: 800px;
+        max-height: 90vh;
+        border-radius: 0.5rem;
+        overflow-y: auto;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal__header {
+        position: relative;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+    }
+
+    .modal__title {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: white;
+    }
+
+    .modal__close {
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+        font-size: 1.5rem;
+    }
+
+    .modal__close:before {
+        content: '\2715';
+    }
+
+    .modal__content {
+        padding: 0;
+    }
+
+    /* Additional spacing improvements */
+    .modal__content > div {
+        padding: 1.5rem;
+    }
+    
+    .modal__content .p-4 {
+        padding: 1.75rem !important;
+    }
+    
+    .modal__content h5 {
+        margin-bottom: 1.25rem;
+    }
+    
+    .modal__content label.form-label {
+        margin-bottom: 0.5rem;
+    }
+    
+    .modal__content .mb-4 {
+        margin-bottom: 1.75rem !important;
+    }
+    
+    .modal__content .mb-3 {
+        margin-bottom: 1.25rem !important;
+    }
+    
+    .modal__content .row.g-4 {
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Improve document section spacing */
+    #documentsSection {
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Add more space between sections */
+    .p-4.border-bottom {
+        border-bottom: 1px solid #eee !important;
+        padding-bottom: 2rem !important;
+    }
+    
+    /* Improve form elements spacing */
+    #applicationReviewForm textarea {
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    /* Better spacing for approval/rejection buttons */
+    .approve-btn, .reject-btn {
+        padding: 0.75rem 1rem !important;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* More spacing in applicant information section */
+    .form-label.text-muted.small.mb-1 {
+        margin-bottom: 0.25rem !important;
+        margin-top: 0.5rem;
+    }
+    
+    /* Space for paragraphs with applicant data */
+    .modal__content p.mb-0 {
+        margin-bottom: 0.5rem !important;
+        padding-bottom: 0.25rem;
+    }
+    
+    .doc-circle {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        transition: transform 0.2s ease;
+    }
+    
+    a:hover .doc-circle {
+        transform: translateY(-5px);
+    }
+    
+    #applicationModalContent {
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .placeholder {
+        animation: placeholderShimmer 1.5s infinite linear;
+        background: linear-gradient(90deg, #f5f5f5 25%, #eee 37%, #f5f5f5 63%);
+        background-size: 1000px 100%;
+    }
+    
+    @keyframes placeholderShimmer {
+        0% {
+            background-position: -500px 0;
+        }
+        100% {
+            background-position: 500px 0;
+        }
+    }
+    
+    .form-check-input:checked {
+        border-color: var(--primary-color);
+        background-color: var(--primary-color);
+    }
+    
+    /* New styles for approval/rejection buttons */
+    .approve-btn, .reject-btn {
+        cursor: pointer;
+        font-weight: 500;
+        border: 2px solid transparent;
+        transition: all 0.2s ease;
+    }
+    
+    .approve-btn {
+        background-color: rgba(25, 135, 84, 0.1);
+        color: #198754;
+    }
+    
+    .reject-btn {
+        background-color: rgba(220, 53, 69, 0.1);
+        color: #dc3545;
+    }
+    
+    .approve-btn:hover {
+        background-color: rgba(25, 135, 84, 0.2);
+    }
+    
+    .reject-btn:hover {
+        background-color: rgba(220, 53, 69, 0.2);
+    }
+    
+    input[type="radio"]:checked + .approve-btn {
+        background-color: #198754;
+        color: white;
+    }
+    
+    input[type="radio"]:checked + .reject-btn {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .modal-body p {
+        font-size: 1rem;
+        line-height: 1.4;
+        margin-bottom: 0;
+    }
+    
+    label.form-label {
+        opacity: 0.8;
+    }
+
+    /* Micromodal animations */
+    .micromodal-slide {
+        display: none;
+    }
+    
+    .micromodal-slide.is-open {
+        display: block;
+    }
+    
+    .micromodal-slide[aria-hidden="false"] .modal__overlay {
+        animation: mmfadeIn .3s cubic-bezier(0.0, 0.0, 0.2, 1);
+    }
+    
+    .micromodal-slide[aria-hidden="false"] .modal__container {
+        animation: mmslideIn .3s cubic-bezier(0, 0, .2, 1);
+    }
+    
+    .micromodal-slide[aria-hidden="true"] .modal__overlay {
+        animation: mmfadeOut .3s cubic-bezier(0.0, 0.0, 0.2, 1);
+    }
+    
+    .micromodal-slide[aria-hidden="true"] .modal__container {
+        animation: mmslideOut .3s cubic-bezier(0, 0, .2, 1);
+    }
+    
+    .micromodal-slide .modal__container,
+    .micromodal-slide .modal__overlay {
+        will-change: transform;
+    }
+    
+    @keyframes mmfadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    @keyframes mmfadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+    }
+    
+    @keyframes mmslideIn {
+        from { transform: translateY(15%); }
+        to { transform: translateY(0); }
+    }
+    
+    @keyframes mmslideOut {
+        from { transform: translateY(0); }
+        to { transform: translateY(-10%); }
+    }
+</style>
 {% endblock %} 

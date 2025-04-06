@@ -1,0 +1,285 @@
+{% extends 'user_portal/base_user.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .topic-card {
+        transition: all 0.3s ease;
+        border-left: 3px solid transparent;
+        height: 100%;
+    }
+    .topic-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        border-left-color: var(--primary-color);
+    }
+    .topic-card .card-footer {
+        background-color: rgba(var(--primary-rgb), 0.05);
+    }
+    .completed-badge {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        background-color: #198754;
+        color: white;
+        border-radius: 50%;
+        width: 38px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        z-index: 1;
+    }
+    .category-badge {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        background-color: rgba(var(--primary-rgb), 0.1);
+        color: var(--primary-color);
+    }
+    .progress-container {
+        margin-bottom: 2rem;
+    }
+    .progress {
+        height: 1.5rem;
+        background-color: rgba(var(--primary-rgb), 0.1);
+    }
+    .action-btn {
+        transition: all 0.3s ease;
+    }
+    .action-btn:hover {
+        transform: translateY(-2px);
+    }
+    .nav-pills .nav-link.active {
+        background-color: var(--primary-color);
+    }
+    .nav-pills .nav-link {
+        color: var(--dark-color);
+        transition: all 0.3s ease;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+    .empty-state-icon {
+        font-size: 4rem;
+        color: var(--primary-color);
+        opacity: 0.2;
+        margin-bottom: 1rem;
+    }
+    .stat-card {
+        transition: all 0.3s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+    }
+    .stat-label {
+        font-size: 1rem;
+        color: #6c757d;
+    }
+    .stat-icon {
+        font-size: 2rem;
+        color: rgba(var(--primary-rgb), 0.2);
+    }
+</style>
+{{ block.super }}
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">
+            <span class="material-icons me-2">trending_up</span>
+            My Learning Progress
+        </h1>
+        <a href="{% url 'educational:topic_list' %}" class="btn btn-outline-primary">
+            <span class="material-icons me-1">arrow_back</span>
+            Back to All Topics
+        </a>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row row-cols-1 row-cols-md-3 g-4 mb-4">
+        <div class="col">
+            <div class="card h-100 stat-card">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="stat-value">{{ stats.completed_count }}</div>
+                            <div class="stat-label">Topics Completed</div>
+                        </div>
+                        <div class="stat-icon">
+                            <span class="material-icons">check_circle</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card h-100 stat-card">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="stat-value">{{ stats.in_progress_count }}</div>
+                            <div class="stat-label">In Progress</div>
+                        </div>
+                        <div class="stat-icon">
+                            <span class="material-icons">pending</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card h-100 stat-card">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="stat-value">{{ stats.completion_percentage }}%</div>
+                            <div class="stat-label">Completion Rate</div>
+                        </div>
+                        <div class="stat-icon">
+                            <span class="material-icons">pie_chart</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overall Progress Bar -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title mb-3">Overall Progress</h5>
+            <div class="progress-container">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Progress: {{ stats.completed_count }} of {{ stats.total_count }} topics</span>
+                    <span>{{ stats.completion_percentage }}%</span>
+                </div>
+                <div class="progress">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ stats.completion_percentage }}%" 
+                        aria-valuenow="{{ stats.completion_percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <ul class="nav nav-pills mb-4" id="myTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed" type="button" role="tab" aria-controls="completed" aria-selected="true">
+                <span class="material-icons me-1">check_circle</span>
+                Completed Topics
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="in-progress-tab" data-bs-toggle="tab" data-bs-target="#in-progress" type="button" role="tab" aria-controls="in-progress" aria-selected="false">
+                <span class="material-icons me-1">pending</span>
+                In Progress Topics
+            </button>
+        </li>
+    </ul>
+    
+    <!-- Tab Content -->
+    <div class="tab-content" id="myTabContent">
+        <!-- Completed Topics Tab -->
+        <div class="tab-pane fade show active" id="completed" role="tabpanel" aria-labelledby="completed-tab">
+            {% if completed_topics %}
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                    {% for progress in completed_topics %}
+                        <div class="col">
+                            <div class="card topic-card h-100 position-relative">
+                                <div class="completed-badge">
+                                    <span class="material-icons">check</span>
+                                </div>
+                                <div class="card-body">
+                                    <span class="category-badge mb-2 d-inline-block">{{ progress.topic.category.title }}</span>
+                                    <h5 class="card-title mb-2">{{ progress.topic.title }}</h5>
+                                    <p class="card-text text-muted mb-3">
+                                        {{ progress.topic.content|striptags|truncatechars:100 }}
+                                    </p>
+                                    <div class="d-grid">
+                                        <a href="{% url 'educational:topic_detail' topic_id=progress.topic.id %}" class="btn btn-outline-primary action-btn">
+                                            <span class="material-icons me-1">visibility</span>
+                                            View Topic
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="card-footer d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">Completed on {{ progress.completed_at|date:"M d, Y" }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="card">
+                    <div class="card-body empty-state">
+                        <div class="empty-state-icon">
+                            <span class="material-icons">check_circle_outline</span>
+                        </div>
+                        <h3 class="mb-3">No Completed Topics Yet</h3>
+                        <p class="text-muted mb-4">You haven't completed any educational topics yet. Mark topics as completed as you learn.</p>
+                        <a href="{% url 'educational:topic_list' %}" class="btn btn-primary btn-lg">
+                            <span class="material-icons me-1">menu_book</span>
+                            Browse Topics
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- In Progress Topics Tab -->
+        <div class="tab-pane fade" id="in-progress" role="tabpanel" aria-labelledby="in-progress-tab">
+            {% if in_progress_topics %}
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                    {% for progress in in_progress_topics %}
+                        <div class="col">
+                            <div class="card topic-card h-100">
+                                <div class="card-body">
+                                    <span class="category-badge mb-2 d-inline-block">{{ progress.topic.category.title }}</span>
+                                    <h5 class="card-title mb-2">{{ progress.topic.title }}</h5>
+                                    <p class="card-text text-muted mb-3">
+                                        {{ progress.topic.content|striptags|truncatechars:100 }}
+                                    </p>
+                                    <div class="d-grid">
+                                        <a href="{% url 'educational:topic_detail' topic_id=progress.topic.id %}" class="btn btn-outline-primary action-btn">
+                                            <span class="material-icons me-1">visibility</span>
+                                            Continue Reading
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="card-footer d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">Started on {{ progress.created_at|date:"M d, Y" }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="card">
+                    <div class="card-body empty-state">
+                        <div class="empty-state-icon">
+                            <span class="material-icons">pending_actions</span>
+                        </div>
+                        <h3 class="mb-3">No Topics In Progress</h3>
+                        <p class="text-muted mb-4">You don't have any topics in progress. Start exploring our educational materials!</p>
+                        <a href="{% url 'educational:topic_list' %}" class="btn btn-primary btn-lg">
+                            <span class="material-icons me-1">menu_book</span>
+                            Browse Topics
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

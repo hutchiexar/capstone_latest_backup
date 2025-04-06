@@ -20,9 +20,9 @@
                     <a href="{% url 'driver_export_excel' %}" class="btn btn-outline-primary d-flex align-items-center px-4 py-2 me-2">
                         <span class="material-icons fs-5 me-2">download</span> Export
                     </a>
-                    <a href="{% url 'driver_import' %}" class="btn btn-outline-primary d-flex align-items-center px-4 py-2 me-2">
+                    <button type="button" class="btn btn-outline-primary d-flex align-items-center px-4 py-2 me-2" data-bs-toggle="modal" data-bs-target="#importModal">
                         <span class="material-icons fs-5 me-2">upload_file</span> Import
-                    </a>
+                    </button>
                     <a href="{% url 'driver_create' %}" class="btn btn-primary d-flex align-items-center px-4 py-2">
                         <span class="material-icons fs-5 me-2">add</span> Add Driver
                     </a>
@@ -34,7 +34,7 @@
     <!-- Search and Filter Section -->
     <div class="card shadow-sm border-0 rounded-3 mb-4">
         <div class="card-body p-4">
-            <form method="get" action="{% url 'driver_list' %}" class="row g-3 align-items-end">
+            <form method="get" action="{% url 'admin_driver_list' %}" class="row g-3 align-items-end">
                 <div class="col-md-6">
                     <label for="searchQuery" class="form-label d-flex align-items-center">
                         <span class="material-icons me-2">search</span>Search Drivers
@@ -47,7 +47,7 @@
                     </button>
                 </div>
                 <div class="col-md-2">
-                    <a href="{% url 'driver_list' %}" class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center">
+                    <a href="{% url 'admin_driver_list' %}" class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center">
                         <span class="material-icons me-2">clear</span> Clear
                     </a>
                 </div>
@@ -65,7 +65,7 @@
         </div>
         
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0" id="driversTable">
                 <thead class="table-light">
                     <tr>
                         <th scope="col">#</th>
@@ -77,7 +77,7 @@
                         <th scope="col">Actions</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="driversTableBody">
                     {% for driver in drivers %}
                     <tr>
                         <td>{{ forloop.counter }}</td>
@@ -107,6 +107,23 @@
                     {% endfor %}
                 </tbody>
             </table>
+            
+            <!-- Skeleton Loader for Table -->
+            <div id="tableSkeletonLoader" class="d-none">
+                <div class="skeleton-loader">
+                    {% for i in '12345678910' %}
+                    <div class="skeleton-row">
+                        <div class="skeleton-cell" style="width: 5%;"></div>
+                        <div class="skeleton-cell" style="width: 20%;"></div>
+                        <div class="skeleton-cell" style="width: 25%;"></div>
+                        <div class="skeleton-cell" style="width: 10%;"></div>
+                        <div class="skeleton-cell" style="width: 10%;"></div>
+                        <div class="skeleton-cell" style="width: 15%;"></div>
+                        <div class="skeleton-cell" style="width: 15%;"></div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
         </div>
         
         <!-- Pagination -->
@@ -175,4 +192,691 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Import Modal -->
+<div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true" data-animation="slide">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="importModalLabel">
+                    <span class="material-icons me-2" style="color: var(--primary-color)">upload_file</span>
+                    Import Drivers
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Step 1: File Upload -->
+                <div id="uploadStep" class="import-step active">
+                    <div class="alert alert-info d-flex mb-4">
+                        <span class="material-icons me-2 mt-1">info</span>
+                        <div>
+                            <strong>Note:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Your Excel file should have a worksheet for <strong>Drivers</strong></li>
+                                <li><strong>Drivers Worksheet:</strong> Columns must include Last Name, First Name, M.I., Address, Old PD No., New PD No.</li>
+                                <li>PD Numbers are plain numbers without any letters or prefixes</li>
+                                <li>Drivers can be operators (matched by name and address) or can lease from operators</li>
+                                <li>You will be able to preview and confirm the data before importing</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <form id="importForm" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label for="importFile" class="form-label d-flex align-items-center">
+                                <span class="material-icons me-2">file_upload</span> Select File to Import
+                            </label>
+                            <div class="input-group">
+                                <input type="file" class="form-control" id="importFile" name="file" accept=".xlsx,.xls,.csv" required>
+                            </div>
+                            <div class="form-text">Upload Excel (.xlsx, .xls) or CSV files only</div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="skipHeader" name="skip_header" checked>
+                                <label class="form-check-label" for="skipHeader">
+                                    Skip the first row (header row)
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Sample File Download -->
+                        <div class="mb-4">
+                            <div class="form-text d-flex align-items-center">
+                                <span class="material-icons me-2">download</span>
+                                <a href="{% url 'driver_export_excel' %}" target="_blank">Download sample template</a> to see the expected format.
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <!-- Upload Progress -->
+                    <div id="uploadProgress" class="d-none">
+                        <div class="progress mb-3">
+                            <div id="uploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <p id="uploadStatusText" class="text-center">Uploading file...</p>
+                    </div>
+                </div>
+                
+                <!-- Step 2: Preview Data -->
+                <div id="previewStep" class="import-step d-none">
+                    <div class="alert alert-info d-flex mb-4">
+                        <span class="material-icons me-2 mt-1">info</span>
+                        <div>
+                            <strong>Please review the data before importing:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Records with errors will be skipped</li>
+                                <li>Existing drivers (with matching PD numbers) will be updated</li>
+                                <li>New drivers will be created in the system</li>
+                                <li>Drivers with matching name and address to operators will be automatically linked</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Preview Skeleton Loader -->
+                    <div id="previewSkeletonLoader" class="mb-4">
+                        <div class="skeleton-loader">
+                            {% for i in '12345' %}
+                            <div class="skeleton-row">
+                                <div class="skeleton-cell" style="width: 15%;"></div>
+                                <div class="skeleton-cell" style="width: 15%;"></div>
+                                <div class="skeleton-cell" style="width: 5%;"></div>
+                                <div class="skeleton-cell" style="width: 25%;"></div>
+                                <div class="skeleton-cell" style="width: 10%;"></div>
+                                <div class="skeleton-cell" style="width: 10%;"></div>
+                                <div class="skeleton-cell" style="width: 10%;"></div>
+                                <div class="skeleton-cell" style="width: 10%;"></div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div id="previewData" class="d-none">
+                        <div class="table-responsive mb-4">
+                            <table class="table table-bordered table-striped table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Last Name</th>
+                                        <th>First Name</th>
+                                        <th>M.I.</th>
+                                        <th>Address</th>
+                                        <th>Old PD No.</th>
+                                        <th>New PD No.</th>
+                                        <th>Status</th>
+                                        <th>Note</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="previewTableBody">
+                                    <!-- Preview data will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Summary Info -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <div class="card card-body border-primary">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="text-primary">New Drivers</h6>
+                                        <h3 id="newCount" class="mb-0">0</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card card-body border-info">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="text-info">Updates</h6>
+                                        <h3 id="updateCount" class="mb-0">0</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card card-body border-danger">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="text-danger">Errors</h6>
+                                        <h3 id="errorCount" class="mb-0">0</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Step 3: Import Success -->
+                <div id="successStep" class="import-step d-none text-center">
+                    <div class="my-4">
+                        <span class="material-icons text-success" style="font-size: 5rem;">check_circle</span>
+                        <h4 class="mt-3">Import Completed Successfully!</h4>
+                        <p class="text-muted">Your drivers data has been imported into the system.</p>
+                        
+                        <div id="importSummary" class="mt-4 text-start">
+                            <div class="card card-body border-light mb-3">
+                                <div class="row">
+                                    <div class="col">
+                                        <p class="mb-1"><strong>Total records processed:</strong> <span id="totalRecords">0</span></p>
+                                        <p class="mb-1"><strong>New drivers added:</strong> <span id="newDrivers">0</span></p>
+                                        <p class="mb-1"><strong>Drivers updated:</strong> <span id="updatedDrivers">0</span></p>
+                                        <p class="mb-0"><strong>Records with errors:</strong> <span id="errorRecords">0</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <!-- Upload Step Buttons -->
+                <div id="uploadStepButtons">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="uploadBtn" class="btn btn-primary">
+                        <span class="material-icons me-2">cloud_upload</span> Upload and Preview
+                    </button>
+                </div>
+                
+                <!-- Preview Step Buttons -->
+                <div id="previewStepButtons" class="d-none">
+                    <button type="button" id="backToUploadBtn" class="btn btn-outline-secondary">
+                        <span class="material-icons me-2">arrow_back</span> Back
+                    </button>
+                    <button type="button" id="confirmImportBtn" class="btn btn-primary">
+                        <span class="material-icons me-2">check_circle</span> Confirm Import
+                    </button>
+                </div>
+                
+                <!-- Success Step Buttons -->
+                <div id="successStepButtons" class="d-none">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="doneBtn">
+                        <span class="material-icons me-2">done</span> Done
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="position-fixed top-0 start-0 w-100 h-100 d-none" style="background-color: rgba(0,0,0,0.5); z-index: 9999;">
+    <div class="position-absolute top-50 start-50 translate-middle text-center">
+        <div class="spinner-border text-light" role="status" style="width: 3rem; height: 3rem;"></div>
+        <h5 class="mt-3 text-light" id="loadingMessage">Processing import...</h5>
+    </div>
+</div>
+
+<!-- Notification Toast -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+    <div id="notificationToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <span id="toastIcon" class="material-icons me-2">info</span>
+            <strong class="me-auto" id="toastTitle">Notification</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="toastMessage">
+            This is a notification message.
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Skeleton Loader Styles */
+    .skeleton-loader {
+        width: 100%;
+        overflow: hidden;
+    }
+    .skeleton-row {
+        display: flex;
+        margin-bottom: 8px;
+        height: 48px;
+        align-items: center;
+    }
+    .skeleton-cell {
+        height: 24px;
+        margin-right: 8px;
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 4px;
+    }
+    @keyframes shimmer {
+        0% {
+            background-position: -200% 0;
+        }
+        100% {
+            background-position: 200% 0;
+        }
+    }
+    
+    /* Import Steps Styles */
+    .import-step {
+        transition: all 0.3s ease;
+    }
+    .import-step.active {
+        display: block;
+    }
+</style>
+
+<script>
+    // Add SweetAlert2 Library
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof Swal === 'undefined') {
+            // If SweetAlert is not defined, load it dynamically
+            const sweetAlertScript = document.createElement('script');
+            sweetAlertScript.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js';
+            document.head.appendChild(sweetAlertScript);
+            
+            // Add CSS
+            const sweetAlertCSS = document.createElement('link');
+            sweetAlertCSS.rel = 'stylesheet';
+            sweetAlertCSS.href = 'https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css';
+            document.head.appendChild(sweetAlertCSS);
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Toast instance
+        const toastEl = document.getElementById('notificationToast');
+        const toast = new bootstrap.Toast(toastEl);
+        
+        // Function to show notification
+        function showNotification(title, message, type = 'info') {
+            const toastTitle = document.getElementById('toastTitle');
+            const toastMessage = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+            
+            toastTitle.textContent = title;
+            toastMessage.textContent = message;
+            
+            // Set icon and color based on type
+            switch(type) {
+                case 'success':
+                    toastIcon.textContent = 'check_circle';
+                    toastIcon.style.color = 'var(--success-color, #28a745)';
+                    break;
+                case 'error':
+                    toastIcon.textContent = 'error';
+                    toastIcon.style.color = 'var(--danger-color, #dc3545)';
+                    break;
+                case 'warning':
+                    toastIcon.textContent = 'warning';
+                    toastIcon.style.color = 'var(--warning-color, #ffc107)';
+                    break;
+                default:
+                    toastIcon.textContent = 'info';
+                    toastIcon.style.color = 'var(--info-color, #17a2b8)';
+            }
+            
+            toast.show();
+        }
+        
+        // Loading overlay functions
+        function showLoading(message = 'Loading...') {
+            document.getElementById('loadingMessage').textContent = message;
+            document.getElementById('loadingOverlay').classList.remove('d-none');
+        }
+        
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.add('d-none');
+        }
+        
+        // Step navigation functions
+        function showStep(stepId) {
+            // Hide all steps
+            document.querySelectorAll('.import-step').forEach(step => {
+                step.classList.add('d-none');
+                step.classList.remove('active');
+            });
+            
+            // Show the requested step
+            const step = document.getElementById(stepId);
+            step.classList.remove('d-none');
+            step.classList.add('active');
+            
+            // Show/hide appropriate buttons
+            document.querySelectorAll('[id$="StepButtons"]').forEach(btnGroup => {
+                btnGroup.classList.add('d-none');
+            });
+            
+            document.getElementById(stepId + 'Buttons').classList.remove('d-none');
+        }
+        
+        // File upload handling
+        document.getElementById('uploadBtn').addEventListener('click', function() {
+            const fileInput = document.getElementById('importFile');
+            const importForm = document.getElementById('importForm');
+            
+            if (!fileInput || !fileInput.files.length) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'No File Selected',
+                        text: 'Please select a file to upload',
+                        confirmButtonText: 'OK'
+                    });
+                } else {
+                    showNotification('Error', 'Please select a file to upload', 'error');
+                }
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const allowedTypes = [
+                'application/vnd.ms-excel',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'text/csv'
+            ];
+            
+            if (!allowedTypes.includes(file.type) && 
+                !file.name.endsWith('.xlsx') && 
+                !file.name.endsWith('.xls') && 
+                !file.name.endsWith('.csv')) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Invalid File Type',
+                        text: 'Please upload an Excel or CSV file',
+                        confirmButtonText: 'OK'
+                    });
+                } else {
+                    showNotification('Error', 'Please upload an Excel or CSV file', 'error');
+                }
+                return;
+            }
+            
+            // Show upload progress
+            if (importForm) importForm.classList.add('d-none');
+            document.getElementById('uploadProgress').classList.remove('d-none');
+            document.getElementById('uploadBtn').disabled = true;
+            
+            // Simulate upload progress (in a real app, you would use XHR or fetch with progress events)
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 5;
+                document.getElementById('uploadProgressBar').style.width = `${progress}%`;
+                document.getElementById('uploadProgressBar').setAttribute('aria-valuenow', progress);
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                }
+            }, 100);
+            
+            // Upload file with FormData
+            const formData = new FormData(importForm);
+            
+            fetch('{% url "driver_import" %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                // First check if the response is OK
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        try {
+                            // Try to parse as JSON first
+                            const errorData = JSON.parse(text);
+                            throw new Error(errorData.error || 'Server error occurred');
+                        } catch (e) {
+                            // If not JSON, it's probably HTML error
+                            throw new Error('Server error: ' + response.status);
+                        }
+                    });
+                }
+                
+                // Try to get content type
+                const contentType = response.headers.get('content-type');
+                
+                // Check response format - if it's JSON, parse as JSON
+                if (contentType && contentType.includes('application/json')) {
+                    return response.json();
+                } else {
+                    // If not JSON, throw an error
+                    throw new Error('Server returned non-JSON response. Please contact administrator.');
+                }
+            })
+            .then(data => {
+                // Force progress to complete
+                progress = 100;
+                document.getElementById('uploadProgressBar').style.width = '100%';
+                document.getElementById('uploadProgressBar').setAttribute('aria-valuenow', 100);
+                
+                // Process preview data
+                renderPreviewData(data);
+                
+                // Move to preview step
+                showStep('previewStep');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                
+                // Use SweetAlert for error notification
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Upload Failed',
+                        text: error.message || 'Failed to upload file',
+                        confirmButtonText: 'OK'
+                    });
+                } else {
+                    showNotification('Error', error.message || 'Failed to upload file', 'error');
+                }
+                
+                // Reset upload form
+                if (importForm) importForm.classList.remove('d-none');
+                document.getElementById('uploadProgress').classList.add('d-none');
+                document.getElementById('uploadBtn').disabled = false;
+                
+                // Reset progress bar
+                document.getElementById('uploadProgressBar').style.width = '0%';
+                document.getElementById('uploadProgressBar').setAttribute('aria-valuenow', 0);
+            });
+        });
+        
+        // Render preview data
+        function renderPreviewData(data) {
+            const tableBody = document.getElementById('previewTableBody');
+            tableBody.innerHTML = '';
+            
+            // Show skeleton loader
+            document.getElementById('previewSkeletonLoader').classList.remove('d-none');
+            document.getElementById('previewData').classList.add('d-none');
+            
+            // Simulate data processing delay
+            setTimeout(() => {
+                // Update counts
+                let newCount = 0;
+                let updateCount = 0;
+                let errorCount = 0;
+                
+                data.forEach(item => {
+                    const row = document.createElement('tr');
+                    
+                    // Set row class based on status
+                    if (item.status === 'error') {
+                        row.className = 'table-danger';
+                        errorCount++;
+                    } else if (item.status === 'update') {
+                        row.className = 'table-warning';
+                        updateCount++;
+                    } else {
+                        row.className = 'table-success';
+                        newCount++;
+                    }
+                    
+                    // Add cells
+                    row.innerHTML = `
+                        <td>${item.last_name}</td>
+                        <td>${item.first_name}</td>
+                        <td>${item.middle_initial || ''}</td>
+                        <td>${item.address}</td>
+                        <td>${item.old_pd_number || '-'}</td>
+                        <td>${item.new_pd_number}</td>
+                        <td>
+                            ${item.status === 'error' ? 
+                                '<span class="badge bg-danger">Error</span>' : 
+                                (item.status === 'update' ? 
+                                '<span class="badge bg-warning text-dark">Update</span>' : 
+                                '<span class="badge bg-success">New</span>')}
+                        </td>
+                        <td>${item.note || ''}</td>
+                    `;
+                    
+                    tableBody.appendChild(row);
+                });
+                
+                // Update count displays
+                document.getElementById('newCount').textContent = newCount;
+                document.getElementById('updateCount').textContent = updateCount;
+                document.getElementById('errorCount').textContent = errorCount;
+                
+                // Hide skeleton, show data
+                document.getElementById('previewSkeletonLoader').classList.add('d-none');
+                document.getElementById('previewData').classList.remove('d-none');
+            }, 1000);
+        }
+        
+        // Back button handler
+        document.getElementById('backToUploadBtn').addEventListener('click', function() {
+            // Reset the upload form
+            document.getElementById('importForm').classList.remove('d-none');
+            document.getElementById('uploadProgress').classList.add('d-none');
+            document.getElementById('uploadBtn').disabled = false;
+            document.getElementById('uploadProgressBar').style.width = '0%';
+            document.getElementById('uploadProgressBar').setAttribute('aria-valuenow', 0);
+            
+            // Go back to upload step
+            showStep('uploadStep');
+        });
+        
+        // Confirm import button handler
+        document.getElementById('confirmImportBtn').addEventListener('click', function() {
+            // Show loading overlay
+            showLoading('Processing import...');
+            
+            // Send confirmation to server
+            fetch('{% url "driver_import_confirm" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                // First check if the response is OK
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        try {
+                            // Try to parse as JSON first
+                            const errorData = JSON.parse(text);
+                            throw new Error(errorData.error || 'Server error occurred');
+                        } catch (e) {
+                            // If not JSON, it's probably HTML error
+                            throw new Error('Server error: ' + response.status);
+                        }
+                    });
+                }
+                
+                // Try to get content type
+                const contentType = response.headers.get('content-type');
+                
+                // Check response format - if it's JSON, parse as JSON
+                if (contentType && contentType.includes('application/json')) {
+                    return response.json();
+                } else {
+                    // If not JSON, throw an error
+                    throw new Error('Server returned non-JSON response. Please contact administrator.');
+                }
+            })
+            .then(data => {
+                // Hide loading overlay
+                hideLoading();
+                
+                // Update summary (keep this for data reference but don't show the success step)
+                document.getElementById('totalRecords').textContent = data.total;
+                document.getElementById('newDrivers').textContent = data.new;
+                document.getElementById('updatedDrivers').textContent = data.updated;
+                document.getElementById('errorRecords').textContent = data.errors;
+                
+                // Don't show the success step anymore
+                // showStep('successStep');
+                
+                // Show success notification with SweetAlert instead of toast
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: `Drivers imported successfully. ${data.new} new, ${data.updated} updated.`,
+                        confirmButtonText: 'Great!'
+                    }).then(() => {
+                        // Close the modal after SweetAlert is closed
+                        const importModal = bootstrap.Modal.getInstance(document.getElementById('importModal'));
+                        if (importModal) {
+                            importModal.hide();
+                        }
+                        
+                        // Refresh the table data
+                        document.getElementById('driversTableBody').classList.add('d-none');
+                        document.getElementById('tableSkeletonLoader').classList.remove('d-none');
+                        location.reload();
+                    });
+                } else {
+                    // Fallback to simple notification if SweetAlert is not available
+                    showNotification('Success', 'Drivers imported successfully', 'success');
+                    
+                    // Close the modal
+                    const importModal = bootstrap.Modal.getInstance(document.getElementById('importModal'));
+                    if (importModal) {
+                        importModal.hide();
+                    }
+                    
+                    // Refresh the table data
+                    document.getElementById('driversTableBody').classList.add('d-none');
+                    document.getElementById('tableSkeletonLoader').classList.remove('d-none');
+                    location.reload();
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Import error:', error);
+                
+                // Show error notification with SweetAlert instead of toast
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: error.message || 'Failed to import drivers',
+                        confirmButtonText: 'OK'
+                    });
+                } else {
+                    // Fallback to simple notification if SweetAlert is not available
+                    showNotification('Error', error.message || 'Failed to import drivers', 'error');
+                }
+            });
+        });
+        
+        // Done button handler - refresh table
+        document.getElementById('doneBtn').addEventListener('click', function() {
+            // Show table skeleton loader
+            document.getElementById('driversTableBody').classList.add('d-none');
+            document.getElementById('tableSkeletonLoader').classList.remove('d-none');
+            
+            // Refresh the page to show updated data
+            location.reload();
+        });
+        
+        // Reload page with skeleton loader for all pagination and search links
+        document.querySelectorAll('.pagination a, form[action="{% url "admin_driver_list" %}"] button[type="submit"]').forEach(link => {
+            link.addEventListener('click', function(e) {
+                if (!this.classList.contains('disabled') && !this.parentElement.classList.contains('active')) {
+                    document.getElementById('driversTableBody').classList.add('d-none');
+                    document.getElementById('tableSkeletonLoader').classList.remove('d-none');
+                }
+            });
+        });
+    });
+</script>
 {% endblock %} 

@@ -2,6 +2,10 @@
 {% load static %}
 
 {% block content %}
+<!-- Add SweetAlert2 Library -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+
 <div class="container-fluid py-4">
     <div class="card shadow-sm border-0 rounded-3">
         <div class="card-header bg-white py-3">
@@ -12,20 +16,96 @@
         </div>
         
         <div class="card-body p-4">
-            <form method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+            {% if messages %}
+            <div class="alert alert-success">
+                {% for message in messages %}
+                {{ message }}
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- Search Section -->
+            <div class="search-section mb-4">
+                <div class="info-card">
+                    <h5 class="section-title">Quick Search</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="search-container">
+                                <label for="operatorSearch" class="form-label">Search Operators by PD/PO Number</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><span class="material-icons">business</span></span>
+                                    <input type="text" class="form-control" id="operatorSearch" 
+                                           placeholder="Enter PD/PO number..." autocomplete="off">
+                                    <button class="btn btn-primary" type="button" id="searchOperatorBtn">
+                                        <span class="material-icons">search</span>
+                                    </button>
+                                </div>
+                                <div id="operatorResults" class="search-results"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="search-container">
+                                <label for="driverSearch" class="form-label">Search Drivers by PD Number</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><span class="material-icons">drive_eta</span></span>
+                                    <input type="text" class="form-control" id="driverSearch" 
+                                           placeholder="Enter PD number..." autocomplete="off">
+                                    <button class="btn btn-primary" type="button" id="searchDriverBtn">
+                                        <span class="material-icons">search</span>
+                                    </button>
+                                </div>
+                                <div id="driverResults" class="search-results"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <form method="POST" enctype="multipart/form-data" id="violationForm" class="needs-validation" novalidate>
                 {% csrf_token %}
+                
+                <!-- Hidden fields for storing selected ID values -->
+                <input type="hidden" id="selectedOperatorId" name="selected_operator_id" value="">
+                <input type="hidden" id="selectedDriverId" name="selected_driver_id" value="">
                 
                 <div class="row g-4">
                     <!-- Left Column: Image Upload -->
                     <div class="col-lg-4">
                         <div class="upload-card">
-                            <div class="image-preview-container mb-4">
-                                <div class="image-preview" id="imagePreview">
-                                    <span class="material-icons">add_photo_alternate</span>
-                                    <p class="text-muted">Click to upload violation image</p>
+                            <!-- Driver photo -->
+                            <div class="mb-4">
+                                <h6 class="mb-2">Driver Photo</h6>
+                                <div class="image-upload-container">
+                                    <div class="upload-preview" id="driverPhotoPreview">
+                                        <span class="material-icons">account_circle</span>
+                                        <div class="upload-text">Click to upload driver photo</div>
+                                    </div>
+                                    <input type="file" class="d-none" id="driver_photo" name="driver_photo" accept="image/*">
                                 </div>
-                                <input type="file" class="d-none" id="violation_image" name="violation_image" 
-                                       accept="image/*" required>
+                            </div>
+                            
+                            <!-- Plate photo -->
+                            <div class="mb-4">
+                                <h6 class="mb-2">Plate/Vehicle Photo</h6>
+                                <div class="image-upload-container">
+                                    <div class="upload-preview" id="platePhotoPreview">
+                                        <span class="material-icons">directions_car</span>
+                                        <div class="upload-text">Click to upload plate photo</div>
+                                    </div>
+                                    <input type="file" class="d-none" id="plate_photo" name="vehicle_photo" accept="image/*">
+                                </div>
+                            </div>
+                            
+                            <!-- Secondary ID photo -->
+                            <div class="mb-4">
+                                <h6 class="mb-2">Secondary ID Photo</h6>
+                                <div class="image-upload-container">
+                                    <div class="upload-preview" id="secondaryPhotoPreview">
+                                        <span class="material-icons">image</span>
+                                        <div class="upload-text">Click to upload ID photo</div>
+                                    </div>
+                                    <input type="file" class="d-none" id="secondary_photo" name="secondary_photo" accept="image/*">
+                                </div>
                             </div>
                             
                             <div class="upload-info">
@@ -43,16 +123,122 @@
                     <!-- Right Column: Violation Details -->
                     <div class="col-lg-8">
                         <div class="info-card">
-                            <!-- Vehicle Information -->
+                            <!-- Hidden field for generated timestamp -->
+                            <input type="hidden" id="generated_timestamp" name="generated_timestamp">
+                            
+                            <!-- Driver's Details -->
                             <div class="section mb-4">
-                                <h5 class="section-title">Vehicle Information</h5>
+                                <h5 class="section-title">Driver's Details</h5>
                                 <div class="row g-3">
+                                    <div class="col-md-12">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="driver_name" 
+                                                   name="driver_name">
+                                            <label for="driver_name">Driver's Name</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="novr_number" 
+                                                   name="novr_number">
+                                            <label for="novr_number">NOVR #</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="pin_number" 
+                                                   name="pin_number">
+                                            <label for="pin_number">PIN #</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="pd_number" 
+                                                   name="pd_number">
+                                            <label for="pd_number">PD Number</label>
+                                        </div>
+                                    </div>
                                     <div class="col-md-6">
                                         <div class="form-floating">
                                             <input type="text" class="form-control" id="license_number" 
                                                    name="license_number" required pattern="[A-Z0-9]{2}-[A-Z0-9]{4}">
                                             <label for="license_number">License Number</label>
                                             <div class="form-text">Format: XX-XXXX</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <div class="form-floating">
+                                            <textarea class="form-control" id="driver_address" 
+                                                      name="driver_address" style="height: 80px"></textarea>
+                                            <label for="driver_address">Driver Address</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Operator's Details -->
+                            <div class="section mb-4">
+                                <h5 class="section-title">Operator's Details</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="potpot_number" 
+                                                   name="potpot_number">
+                                            <label for="potpot_number">POTPOT No.</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <div class="form-floating">
+                                            <textarea class="form-control" id="operator_address" 
+                                                      name="operator_address" style="height: 80px"></textarea>
+                                            <label for="operator_address">Operator Address</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Vehicle Information -->
+                            <div class="section mb-4">
+                                <h5 class="section-title">Vehicle Information</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="plate_number" 
+                                                   name="plate_number">
+                                            <label for="plate_number">Plate Number</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="vehicle_type" 
+                                                   name="vehicle_type">
+                                            <label for="vehicle_type">Vehicle Type/Make</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="color" 
+                                                   name="color">
+                                            <label for="color">Vehicle Color</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <select class="form-select" id="classification" name="classification">
+                                                <option value="">Select classification</option>
+                                                <option value="Private">Private</option>
+                                                <option value="Public">Public</option>
+                                                <option value="Government">Government</option>
+                                                <option value="Commercial">Commercial</option>
+                                            </select>
+                                            <label for="classification">Classification</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="registration_number" 
+                                                   name="registration_number">
+                                            <label for="registration_number">Registration Number</label>
                                         </div>
                                     </div>
                                 </div>
@@ -62,14 +248,56 @@
                             <div class="section mb-4">
                                 <h5 class="section-title">Violation Details</h5>
                                 <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <div class="form-floating">
+                                            <input type="date" class="form-control" id="violation_date" 
+                                                   name="violation_date">
+                                            <label for="violation_date">Date</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-floating">
+                                            <input type="time" class="form-control" id="violation_time" 
+                                                   name="violation_time">
+                                            <label for="violation_time">Time</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="street_name" 
+                                                   name="street_name">
+                                            <label for="street_name">Street</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="landmark" 
+                                                   name="landmark">
+                                            <label for="landmark">Landmark</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="violation_code" 
+                                                   name="violation_code">
+                                            <label for="violation_code">Code</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-floating">
+                                            <input type="number" class="form-control" id="fine_amount" 
+                                                   name="fine_amount" min="0">
+                                            <label for="fine_amount">Penalty Amount (₱)</label>
+                                        </div>
+                                    </div>
                                     <div class="col-md-12">
                                         <div class="form-floating">
                                             <input type="text" class="form-control" id="location" 
                                                    name="location" required>
-                                            <label for="location">Location</label>
+                                            <label for="location">Complete Location</label>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-12">
                                         <div class="form-floating">
                                             <select class="form-select" id="violation_type" name="violation_type" required>
                                                 <option value="">Select violation type</option>
@@ -77,14 +305,121 @@
                                                 <option value="{{ code }}">{{ label }}</option>
                                                 {% endfor %}
                                             </select>
-                                            <label for="violation_type">Violation Type</label>
+                                            <label for="violation_type">Violation Description</label>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-12">
+                                        <div class="form-check mt-3">
+                                            <input class="form-check-input" type="checkbox" id="is_tdz_violation" name="is_tdz_violation">
+                                            <label class="form-check-label" for="is_tdz_violation">
+                                                Traffic Discipline Zone Violation (doubles fine)
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Certificate Information -->
+                            <div class="section mb-4">
+                                <h5 class="section-title">Certificate Information</h5>
+                                <div class="certificate-content">
+                                    <div class="certificate-officials">
+                                        <div class="official-info">
+                                            <div class="official-label">Operations Officer</div>
+                                            <div class="official-name">REYNALDO E. CRISOSTOMO, JR.</div>
+                                            <input type="hidden" name="operations_officer" value="REYNALDO E. CRISOSTOMO, JR.">
+                                        </div>
+                                        <div class="official-info">
+                                            <div class="official-label">CTTM Officer</div>
+                                            <div class="official-name">EDILBERITO B. EURAOBA II</div>
+                                            <input type="hidden" name="cttm_officer" value="EDILBERITO B. EURAOBA II">
+                                        </div>
+                                    </div>
+                                    <div class="certificate-text-block">
+                                        <div class="text-block-title">Certificate Text</div>
+                                        <div class="text-block-content">
+                                            Usa ko ka awtorısadong opisyal sa City Transportation and Traffic Management Office. Sumala sa among pag-inspeksyon sa mga halagway nga nakuha sa CCTV, ang ımong sakyanan gipa-tunkor ug halabapas sa Ordinansa sa Seguridad sa Bayawan.
+                                        </div>
+                                        <input type="hidden" name="certificate_text" value="Usa ko ka awtorısadong opisyal sa City Transportation and Traffic Management Office. Sumala sa among pag-inspeksyon sa mga halagway nga nakuha sa CCTV, ang ımong sakyanan gipa-tunkor ug halabapas sa Ordinansa sa Seguridad sa Bayawan.">
+                                    </div>
+                                    <div class="certificate-text-block warning-block">
+                                        <div class="text-block-title">Warning Text</div>
+                                        <div class="text-block-content text-danger">
+                                            SIPAHIMANGONG ANG TAGTUNGOD NGA MO-AKSYON GAYUD BAYON NI-INING NOTISYA. ANG KABALAY-KASALIKAY SIGEAS SA PITO (7) KA ADLAW HUMAN MADAWAT NIINING NOTISYA. NAGKASABOT LAMANG NGA GI-AKO SA TAGTUNGOD ANG MAONG VIOLATIONS. PAGATABANGAN UG ALARMA ANG DPRNA SA BUSINESS ONE STOP SHOP (BOSS) KASANGPANAN MADAOT PAGAABOT ANG OPENA SA PAG-REVOKE SA MAYOR'S PERMIT.
+                                        </div>
+                                        <input type="hidden" name="warning_text" value="SIPAHIMANGONG ANG TAGTUNGOD NGA MO-AKSYON GAYUD BAYON NI-INING NOTISYA. ANG KABALAY-KASALIKAY SIGEAS SA PITO (7) KA ADLAW HUMAN MADAWAT NIINING NOTISYA. NAGKASABOT LAMANG NGA GI-AKO SA TAGTUNGOD ANG MAONG VIOLATIONS. PAGATABANGAN UG ALARMA ANG DPRNA SA BUSINESS ONE STOP SHOP (BOSS) KASANGPANAN MADAOT PAGAABOT ANG OPENA SA PAG-REVOKE SA MAYOR'S PERMIT.">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <style>
+                            .certificate-content {
+                                background-color: #f8f9fa;
+                                border-radius: 8px;
+                                padding: 15px;
+                            }
+                            
+                            .certificate-officials {
+                                display: flex;
+                                justify-content: space-between;
+                                margin-bottom: 20px;
+                                gap: 20px;
+                            }
+                            
+                            .official-info {
+                                flex: 1;
+                            }
+                            
+                            .official-label {
+                                font-size: 0.8rem;
+                                color: #6c757d;
+                                margin-bottom: 5px;
+                            }
+                            
+                            .official-name {
+                                font-size: 1rem;
+                                font-weight: 600;
+                                color: #343a40;
+                            }
+                            
+                            .certificate-text-block {
+                                margin-bottom: 20px;
+                                background-color: white;
+                                border: 1px solid #dee2e6;
+                                border-radius: 6px;
+                                padding: 15px;
+                            }
+                            
+                            .text-block-title {
+                                font-size: 0.8rem;
+                                color: #6c757d;
+                                margin-bottom: 10px;
+                                font-weight: 600;
+                            }
+                            
+                            .text-block-content {
+                                font-size: 0.95rem;
+                                line-height: 1.5;
+                                color: #212529;
+                            }
+                            
+                            .warning-block {
+                                border-left: 3px solid #dc3545;
+                            }
+                            
+                            .warning-block .text-block-content {
+                                font-weight: 500;
+                            }
+                            </style>
+
+                            <!-- Additional Details -->
+                            <div class="section mb-4">
+                                <h5 class="section-title">Additional Details</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-12">
                                         <div class="form-floating">
-                                            <input type="number" class="form-control" id="fine_amount" 
-                                                   name="fine_amount" required min="0">
-                                            <label for="fine_amount">Fine Amount (₱)</label>
+                                            <textarea class="form-control" id="description" name="description" style="height: 100px"></textarea>
+                                            <label for="description">Notes/Remarks</label>
                                         </div>
                                     </div>
                                 </div>
@@ -108,151 +443,355 @@
 </div>
 
 <style>
-.upload-card {
-    background: white;
-    border-radius: 15px;
-    padding: 2rem;
-    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
-}
-
-.image-preview-container {
-    width: 100%;
-    aspect-ratio: 4/3;
-    border: 2px dashed #dee2e6;
-    border-radius: 12px;
-    overflow: hidden;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.image-preview-container:hover {
-    border-color: var(--primary-color);
-}
-
-.image-preview {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background-color: #f8f9fa;
-}
-
-.image-preview .material-icons {
-    font-size: 48px;
-    color: #adb5bd;
-    margin-bottom: 1rem;
-}
-
-.image-preview img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.upload-info {
-    margin-top: 2rem;
-    padding: 1.5rem;
-    background: #f8f9fa;
-    border-radius: 12px;
-}
-
-.requirements-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.requirements-list li {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.75rem;
-    font-size: 0.9rem;
-}
-
-.requirements-list .material-icons {
-    font-size: 1rem;
-    color: var(--accent-teal);
-}
-
-.info-card {
-    background: white;
-    border-radius: 15px;
-    padding: 2rem;
-    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
-}
-
-.section-title {
-    color: var(--text-dark);
-    font-weight: 600;
-    margin-bottom: 1.5rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 2px solid var(--primary-color);
-}
-
-.form-floating {
-    margin-bottom: 1rem;
-}
-
-.form-control:focus,
-.form-select:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.25);
-}
-
-.form-select {
-    height: 3.5rem;
-}
-
-.btn {
-    padding: 0.5rem 1.5rem;
-    font-weight: 500;
-}
-
-@media (max-width: 992px) {
-    .upload-card {
-        margin-bottom: 2rem;
+    /* Form container */
+    .container-fluid {
+        max-width: 1400px;
     }
-}
+    
+    /* Card styling */
+    .card {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    .card-header {
+        background: white;
+        border-bottom: 1px solid rgba(0,0,0,0.1);
+    }
+    
+    .info-card {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+    }
+    
+    .section-title {
+        color: var(--text-dark);
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid var(--primary-color);
+    }
+    
+    /* Upload styling */
+    .upload-card {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+    }
+    
+    .image-upload-container {
+        width: 100%;
+    }
+    
+    .upload-preview {
+        width: 100%;
+        height: 250px; /* Increased height to make it square */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background-color: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .upload-preview:hover {
+        border-color: var(--primary-color);
+    }
+    
+    .upload-preview .material-icons {
+        font-size: 36px;
+        color: #adb5bd;
+        margin-bottom: 0.5rem;
+    }
+    
+    .upload-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .upload-text {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+    
+    /* Requirements list */
+    .requirements-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .requirements-list li {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+        font-size: 0.9rem;
+    }
+    
+    .requirements-list .material-icons {
+        font-size: 1rem;
+        color: var(--accent-teal);
+    }
+    
+    .upload-info {
+        margin-top: 2rem;
+        padding: 1.5rem;
+        background: #f8f9fa;
+        border-radius: 12px;
+    }
+    
+    /* Form styling */
+    .form-floating {
+        margin-bottom: 1rem;
+    }
+    
+    .form-control:focus,
+    .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.25);
+    }
+    
+    .form-select {
+        height: 3.5rem;
+    }
+    
+    .btn {
+        padding: 0.5rem 1.5rem;
+        font-weight: 500;
+    }
+    
+    @media (max-width: 992px) {
+        .upload-card {
+            margin-bottom: 2rem;
+        }
+    }
+    
+    .text-danger {
+        color: #dc3545;
+    }
+    
+    /* Search Section Styles */
+    .search-container {
+        position: relative;
+        margin-bottom: 1rem;
+    }
+    
+    .search-results {
+        position: absolute;
+        width: 100%;
+        max-height: 300px;
+        overflow-y: auto;
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 0 0 6px 6px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        z-index: 1000;
+        display: none;
+    }
+    
+    .search-result-item {
+        padding: 10px 15px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+    
+    .search-result-item:hover {
+        background-color: rgba(37, 99, 235, 0.1);
+    }
+    
+    .search-result-item:last-child {
+        border-bottom: none;
+    }
+    
+    .search-result-item .item-name {
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+    
+    .search-result-item .item-details {
+        font-size: 0.85rem;
+        color: var(--text-light);
+    }
+    
+    .search-result-item .pd-number {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        background: rgba(37, 99, 235, 0.1);
+        padding: 2px 8px;
+        border-radius: 4px;
+        display: inline-block;
+    }
+    
+    .no-results {
+        padding: 15px;
+        text-align: center;
+        color: var(--text-light);
+    }
+    
+    .item-selected {
+        background-color: rgba(37, 99, 235, 0.2);
+    }
 </style>
 
 <script>
-// Image preview functionality
-const imagePreview = document.getElementById('imagePreview');
-const imageInput = document.getElementById('violation_image');
-
-imagePreview.addEventListener('click', () => {
-    imageInput.click();
-});
-
-imageInput.addEventListener('change', function(e) {
-    if (this.files && this.files[0]) {
-        const reader = new FileReader();
+// Add SweetAlert2 dynamic loader to ensure availability
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof Swal === 'undefined') {
+        // If SweetAlert is not defined, load it dynamically
+        const sweetAlertScript = document.createElement('script');
+        sweetAlertScript.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js';
+        document.head.appendChild(sweetAlertScript);
         
-        reader.onload = function(e) {
-            imagePreview.innerHTML = `<img src="${e.target.result}" alt="Violation Preview">`;
-        }
-        
-        reader.readAsDataURL(this.files[0]);
+        // Add CSS
+        const sweetAlertCSS = document.createElement('link');
+        sweetAlertCSS.rel = 'stylesheet';
+        sweetAlertCSS.href = 'https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css';
+        document.head.appendChild(sweetAlertCSS);
     }
 });
 
-// Form validation
-(function () {
-    'use strict'
-    const forms = document.querySelectorAll('.needs-validation')
-    Array.from(forms).forEach(form => {
-        form.addEventListener('submit', event => {
-            if (!form.checkValidity()) {
-                event.preventDefault()
-                event.stopPropagation()
+// Automatically set the generated timestamp when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Set current date and time for generated timestamp
+    const now = new Date();
+    const formattedDateTime = now.toISOString().slice(0, 16); // Format: YYYY-MM-DDThh:mm
+    document.getElementById('generated_timestamp').value = formattedDateTime;
+    
+    // Setup image uploads
+    setupImageUploadHandlers();
+});
+
+// Setup additional image upload fields
+function setupImageUploadHandlers() {
+    setupSingleImageUpload('driverPhotoPreview', 'driver_photo');
+    setupSingleImageUpload('platePhotoPreview', 'plate_photo');
+    setupSingleImageUpload('secondaryPhotoPreview', 'secondary_photo');
+}
+
+function setupSingleImageUpload(previewId, inputId) {
+    const preview = document.getElementById(previewId);
+    const input = document.getElementById(inputId);
+    
+    if (!preview || !input) return;
+    
+    preview.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        input.click();
+    });
+    
+    input.addEventListener('change', function(e) {
+        if (this.files && this.files[0]) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                preview.innerHTML = `<img src="${e.target.result}" alt="Preview" style="width:100%;height:100%;object-fit:cover;">`;
+                
+                // Show success notification with SweetAlert
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Image Uploaded',
+                        text: 'Image preview is ready',
+                        confirmButtonText: 'OK'
+                    });
+                }
             }
-            form.classList.add('was-validated')
-        }, false)
-    })
-})()
+            
+            reader.readAsDataURL(this.files[0]);
+        }
+    });
+}
+
+// Form validation - kept only one handler at the end, removed duplicates
+const form = document.getElementById('violationForm');
+form.addEventListener('submit', function(event) {
+    if (!this.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        // Show validation error with SweetAlert
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'error',
+                title: 'Form Validation Error',
+                text: 'Please complete all required fields correctly',
+                confirmButtonText: 'OK'
+            });
+        }
+    } else {
+        event.preventDefault(); // Prevent default form submission
+        
+        // If form is valid, show a loading message
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'Processing Violation...',
+                text: 'Please wait while we process your submission',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+        }
+        
+        // Create FormData from the form
+        const formData = new FormData(this);
+        
+        // Submit the form via AJAX
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: data.message,
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    // Redirect after confirmation
+                    window.location.href = data.redirect_url;
+                });
+            } else {
+                // Show error message
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.message || 'An error occurred while processing your request.',
+                    confirmButtonText: 'OK'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'An error occurred while processing your request. Please try again.',
+                confirmButtonText: 'OK'
+            });
+        });
+    }
+    this.classList.add('was-validated');
+});
 
 // License number format validation
 document.getElementById('license_number').addEventListener('input', function(e) {
@@ -261,6 +800,348 @@ document.getElementById('license_number').addEventListener('input', function(e) 
         this.setCustomValidity('Please use the format: XX-XXXX');
     } else {
         this.setCustomValidity('');
+    }
+});
+
+// Operator and Driver Search Functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Image Upload Preview
+    const driverPhotoPreview = document.getElementById('driverPhotoPreview');
+    const platePhotoPreview = document.getElementById('platePhotoPreview');
+    const secondaryPhotoPreview = document.getElementById('secondaryPhotoPreview');
+    
+    const driverPhoto = document.getElementById('driver_photo');
+    const platePhoto = document.getElementById('plate_photo');
+    const secondaryPhoto = document.getElementById('secondary_photo');
+    
+    driverPhotoPreview.addEventListener('click', () => {
+        driverPhoto.click();
+    });
+    
+    platePhotoPreview.addEventListener('click', () => {
+        platePhoto.click();
+    });
+    
+    secondaryPhotoPreview.addEventListener('click', () => {
+        secondaryPhoto.click();
+    });
+    
+    // Handle image preview
+    function handleImagePreview(input, preview) {
+        input.addEventListener('change', function(e) {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    preview.innerHTML = `<img src="${e.target.result}" alt="Preview" style="width: 100%; height: 100%; object-fit: cover;">`;
+                    
+                    // Show success notification with SweetAlert
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Image Uploaded',
+                            text: 'Image preview is ready',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                }
+                
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+    }
+    
+    handleImagePreview(driverPhoto, driverPhotoPreview);
+    handleImagePreview(platePhoto, platePhotoPreview);
+    handleImagePreview(secondaryPhoto, secondaryPhotoPreview);
+    
+    // Operator and Driver Search elements
+    const operatorSearch = document.getElementById('operatorSearch');
+    const driverSearch = document.getElementById('driverSearch');
+    const operatorResults = document.getElementById('operatorResults');
+    const driverResults = document.getElementById('driverResults');
+    const searchOperatorBtn = document.getElementById('searchOperatorBtn');
+    const searchDriverBtn = document.getElementById('searchDriverBtn');
+    
+    // Selected IDs
+    const selectedOperatorId = document.getElementById('selectedOperatorId');
+    const selectedDriverId = document.getElementById('selectedDriverId');
+    
+    // Form fields
+    const driverNameField = document.getElementById('driver_name');
+    const pdNumberField = document.getElementById('pd_number');
+    const licenseNumberField = document.getElementById('license_number');
+    const driverAddressField = document.getElementById('driver_address');
+    const potpotNumberField = document.getElementById('potpot_number');
+    const operatorAddressField = document.getElementById('operator_address');
+    
+    // Search for operators
+    searchOperatorBtn.addEventListener('click', () => {
+        const query = operatorSearch.value.trim();
+        if (query.length < 3) {
+            // Use SweetAlert for validation error
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Search Query Too Short',
+                    text: 'Please enter at least 3 characters',
+                    confirmButtonText: 'OK'
+                });
+            } else {
+                alert('Please enter at least 3 characters');
+            }
+            return;
+        }
+        
+        fetch(`/api/search-operators/?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                operatorResults.innerHTML = '';
+                operatorResults.style.display = 'block';
+                
+                if (data.length === 0) {
+                    operatorResults.innerHTML = '<div class="no-results">No operators found</div>';
+                    return;
+                }
+                
+                data.forEach(operator => {
+                    const resultItem = document.createElement('div');
+                    resultItem.className = 'search-result-item';
+                    resultItem.innerHTML = `
+                        <div class="item-name">${operator.last_name}, ${operator.first_name}</div>
+                        <div class="item-details">Address: ${operator.address}</div>
+                        <div class="mt-1">
+                            <span class="pd-number">PD: ${operator.new_pd_number}</span>
+                            ${operator.old_pd_number ? `<span class="pd-number ms-2">Old PD: ${operator.old_pd_number}</span>` : ''}
+                        </div>
+                    `;
+                    
+                    // Add click event to select operator
+                    resultItem.addEventListener('click', () => {
+                        selectOperator(operator);
+                    });
+                    
+                    operatorResults.appendChild(resultItem);
+                });
+            })
+            .catch(error => {
+                console.error('Error searching operators:', error);
+                operatorResults.innerHTML = '<div class="no-results">Error searching operators</div>';
+                operatorResults.style.display = 'block';
+                
+                // Show error with SweetAlert
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Search Error',
+                        text: 'Failed to search operators. Please try again.',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            });
+    });
+    
+    // Search for drivers
+    searchDriverBtn.addEventListener('click', () => {
+        const query = driverSearch.value.trim();
+        if (query.length < 3) {
+            // Use SweetAlert for validation error
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Search Query Too Short',
+                    text: 'Please enter at least 3 characters',
+                    confirmButtonText: 'OK'
+                });
+            } else {
+                alert('Please enter at least 3 characters');
+            }
+            return;
+        }
+        
+        fetch(`/api/search-drivers/?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                driverResults.innerHTML = '';
+                driverResults.style.display = 'block';
+                
+                if (data.length === 0) {
+                    driverResults.innerHTML = '<div class="no-results">No drivers found</div>';
+                    return;
+                }
+                
+                data.forEach(driver => {
+                    const resultItem = document.createElement('div');
+                    resultItem.className = 'search-result-item';
+                    resultItem.innerHTML = `
+                        <div class="item-name">${driver.last_name}, ${driver.first_name}</div>
+                        <div class="item-details">Address: ${driver.address}</div>
+                        <div class="mt-1">
+                            <span class="pd-number">PD: ${driver.new_pd_number}</span>
+                            ${driver.old_pd_number ? `<span class="pd-number ms-2">Old PD: ${driver.old_pd_number}</span>` : ''}
+                        </div>
+                    `;
+                    
+                    // Add click event to select driver
+                    resultItem.addEventListener('click', () => {
+                        selectDriver(driver);
+                    });
+                    
+                    driverResults.appendChild(resultItem);
+                });
+            })
+            .catch(error => {
+                console.error('Error searching drivers:', error);
+                driverResults.innerHTML = '<div class="no-results">Error searching drivers</div>';
+                driverResults.style.display = 'block';
+                
+                // Show error with SweetAlert
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Search Error',
+                        text: 'Failed to search drivers. Please try again.',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            });
+    });
+    
+    // Select operator and populate fields
+    function selectOperator(operator) {
+        // Set selected operator ID
+        selectedOperatorId.value = operator.id;
+        
+        // Update the search field
+        operatorSearch.value = `${operator.new_pd_number} - ${operator.last_name}, ${operator.first_name}`;
+        
+        // Close results
+        operatorResults.style.display = 'none';
+        
+        // Populate the form fields if they exist
+        if (potpotNumberField) {
+            potpotNumberField.value = operator.new_pd_number;
+        }
+        
+        if (operatorAddressField) {
+            operatorAddressField.value = operator.address;
+        }
+        
+        // Show success notification with SweetAlert
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'success',
+                title: 'Operator Selected',
+                text: 'Operator information loaded successfully!',
+                confirmButtonText: 'OK'
+            });
+        }
+    }
+    
+    // Select driver and populate fields
+    function selectDriver(driver) {
+        // Set selected driver ID
+        selectedDriverId.value = driver.id;
+        
+        // Update the search field
+        driverSearch.value = `${driver.new_pd_number} - ${driver.last_name}, ${driver.first_name}`;
+        
+        // Close results
+        driverResults.style.display = 'none';
+        
+        // Populate the form fields if they exist
+        if (driverNameField) {
+            driverNameField.value = `${driver.first_name} ${driver.last_name}`;
+        }
+        
+        if (pdNumberField) {
+            pdNumberField.value = driver.new_pd_number;
+        }
+        
+        if (licenseNumberField) {
+            licenseNumberField.value = driver.license_number || '';
+        }
+        
+        if (driverAddressField) {
+            driverAddressField.value = driver.address;
+        }
+        
+        // If driver has operator info, populate that too
+        if (driver.operator) {
+            selectedOperatorId.value = driver.operator.id;
+            operatorSearch.value = `${driver.operator.new_pd_number} - ${driver.operator.last_name}, ${driver.operator.first_name}`;
+            
+            if (potpotNumberField) {
+                potpotNumberField.value = driver.operator.new_pd_number;
+            }
+        }
+        
+        // Show success notification with SweetAlert
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'success',
+                title: 'Driver Selected',
+                text: 'Driver information loaded successfully!',
+                confirmButtonText: 'OK'
+            });
+        }
+    }
+    
+    // Close result containers when clicking outside
+    document.addEventListener('click', (event) => {
+        if (!operatorSearch.contains(event.target) && !operatorResults.contains(event.target) && !searchOperatorBtn.contains(event.target)) {
+            operatorResults.style.display = 'none';
+        }
+        if (!driverSearch.contains(event.target) && !driverResults.contains(event.target) && !searchDriverBtn.contains(event.target)) {
+            driverResults.style.display = 'none';
+        }
+    });
+    
+    // Input event listeners for autocomplete
+    operatorSearch.addEventListener('input', debounce(() => {
+        if (operatorSearch.value.trim().length >= 3) {
+            searchOperatorBtn.click();
+        }
+    }, 300));
+    
+    driverSearch.addEventListener('input', debounce(() => {
+        if (driverSearch.value.trim().length >= 3) {
+            searchDriverBtn.click();
+        }
+    }, 300));
+    
+    // Helper function to debounce inputs
+    function debounce(func, wait) {
+        let timeout;
+        return function() {
+            const context = this;
+            const args = arguments;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), wait);
+        };
+    }
+    
+    // Show success message (kept as fallback)
+    function showSuccessMessage(message) {
+        // Create alert element
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-success alert-dismissible fade show';
+        alertDiv.role = 'alert';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        // Insert at top of form
+        const form = document.getElementById('violationForm');
+        form.insertBefore(alertDiv, form.firstChild);
+        
+        // Auto-dismiss after 3 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.parentNode.removeChild(alertDiv);
+            }
+        }, 3000);
     }
 });
 </script>

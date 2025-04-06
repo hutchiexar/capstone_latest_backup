@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "traffic_violation_system",
+    "traffic_violation_system.educational.apps.EducationalConfig",
     "sslserver",
     "django_extensions",
     "rest_framework",
@@ -213,6 +214,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'traffic_violation_system',
+    'traffic_violation_system.educational.apps.EducationalConfig',
     'sslserver',
     'django_extensions',
     'rest_framework',
@@ -222,6 +224,10 @@ STRIPE_PUBLIC_KEY = 'pk_test_51QMUtiRtsOGIIsiiixsia2aXfEA3K3aWdsxOUP70JIVEqoBPOO
 STRIPE_SECRET_KEY = 'sk_test_51QMUtiRtsOGIIsii5FbSeuUGHw5rhyUaVkIJfAVA8UbqHpW4YRTm7BjIftFB34UQC7G1sqqVQrdpTo9b2YadUjcQ00I21Bdd4g'
 PAYPAL_CLIENT_ID = 'AeBk0i0IG66r6i0kFzphzpKjAekDL5WUS-fBRR8KSTFNr4HEQjiviJTdFEvX1Hy13jElkjiGdJ4OQe-W'
 PAYPAL_CLIENT_SECRET = 'yEPApFknBCa218RIXGFHVZU7QdFfeZFGHp53QVw79ZblnBVpUl3wqqbf81SxDI0tO7FdsVDGHNoYK0dFA'
+
+# PayMongo API Keys
+PAYMONGO_PUBLIC_KEY = 'pk_test_yourpaymongokeypublicvalue'
+PAYMONGO_SECRET_KEY = 'sk_test_yourpaymongosecretkeyvalue'
 
 # Django REST Framework settings
 REST_FRAMEWORK = {

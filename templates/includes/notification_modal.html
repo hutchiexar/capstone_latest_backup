@@ -1,0 +1,467 @@
+<!-- Notification Detail Modal using MicroModal.js -->
+<div class="modal micromodal-slide" id="modal-notification-detail" aria-hidden="true">
+    <div class="modal__overlay" tabindex="-1" data-micromodal-close>
+        <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="modal-notification-detail-title">
+            <header class="modal__header">
+                <div class="d-flex align-items-center">
+                    <span class="material-symbols-rounded me-2 notification-type-icon">notifications</span>
+                    <h3 class="modal__title notification-title" id="modal-notification-detail-title">
+                        System Notification
+                    </h3>
+                </div>
+                <button class="modal__close" aria-label="Close modal" data-micromodal-close></button>
+            </header>
+            <main class="modal__content" id="modal-notification-detail-content">
+                <!-- Loading state -->
+                <div id="notification-loading" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Loading notification details...</p>
+                </div>
+                
+                <!-- Error state -->
+                <div id="notification-error" class="alert alert-danger m-3 d-none">
+                    <span class="material-icons me-2">error_outline</span>
+                    <span class="error-message">Error loading notification details.</span>
+                </div>
+                
+                <!-- Content state -->
+                <div id="notification-content" style="display: none;">
+                    <!-- Announcement header container with title and badge -->
+                    <div class="announcement-header-container" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center border rounded p-3 bg-light">
+                            <h4 class="announcement-title-text m-0"></h4>
+                            <span class="badge bg-light text-secondary">System</span>
+                        </div>
+                    </div>
+                    
+                    <div class="notification-detail-card mt-2">
+                        <div class="notification-body">
+                            <!-- Basic notification message -->
+                            <p class="notification-message"></p>
+                            
+                            <!-- Announcement content (displayed only for announcement notifications) -->
+                            <div class="announcement-content-container mt-3" style="display: none;">
+                                <h5 class="content-section-title mb-2">Announcement Content</h5>
+                                <div class="announcement-content"></div>
+                                
+                                <!-- Read more toggle button for long content -->
+                                <div class="text-center mt-3 read-more-container" style="display: none;">
+                                    <button class="btn btn-sm btn-outline-primary read-more-toggle">
+                                        Read More <span class="material-icons" style="font-size: 1rem;">expand_more</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="notification-metadata pt-2 mt-3 border-top">
+                            <div class="d-flex justify-content-between text-muted small">
+                                <div>
+                                    <span class="metadata-label">Received:</span> 
+                                    <span class="notification-time"></span>
+                                </div>
+                                <div>
+                                    <span class="metadata-label">Status:</span> 
+                                    <span class="notification-status"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            <footer class="modal__footer">
+                <button class="btn btn-light-subtle" data-micromodal-close aria-label="Close this dialog">Close</button>
+                <button class="btn btn-primary mark-read-btn">Mark as Read</button>
+            </footer>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* MicroModal base styles */
+    .modal {
+        font-family: var(--font-primary, 'Poppins', sans-serif);
+    }
+    
+    .modal__overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(15, 23, 42, 0.65);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1050;
+    }
+    
+    .modal__container {
+        background-color: var(--white, #ffffff);
+        padding: 1.75rem;
+        width: 90%;
+        max-width: 520px;
+        max-height: 90vh;
+        border-radius: 1rem;
+        overflow-y: auto;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 
+                    0 8px 10px -6px rgba(0, 0, 0, 0.05);
+    }
+    
+    .modal__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+        padding-bottom: 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .modal__title {
+        margin: 0;
+        font-weight: 600;
+        font-size: 1.25rem;
+        line-height: 1.25;
+        color: var(--dark-blue, #1e293b);
+    }
+    
+    .modal__close {
+        background: transparent;
+        border: 0;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .modal__close:before {
+        content: '✕';
+        font-size: 1rem;
+        color: var(--neutral-gray, #64748b);
+    }
+    
+    .modal__close:hover {
+        background-color: rgba(241, 245, 249, 0.9);
+    }
+    
+    .modal__content {
+        margin-bottom: 1.5rem;
+        color: var(--dark-blue, #334155);
+        line-height: 1.5;
+    }
+    
+    .modal__footer {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        border-top: 1px solid rgba(226, 232, 240, 0.8);
+        padding-top: 1.5rem;
+        gap: 1rem;
+    }
+    
+    /* Animation for the modal */
+    .micromodal-slide {
+        display: none;
+    }
+    
+    .micromodal-slide.is-open {
+        display: block;
+    }
+    
+    .micromodal-slide[aria-hidden="false"] .modal__overlay {
+        animation: mmfadeIn 0.3s cubic-bezier(0.0, 0.0, 0.2, 1);
+    }
+    
+    .micromodal-slide[aria-hidden="false"] .modal__container {
+        animation: mmslideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    
+    .micromodal-slide[aria-hidden="true"] .modal__overlay {
+        animation: mmfadeOut 0.2s cubic-bezier(0.0, 0.0, 0.2, 1);
+    }
+    
+    .micromodal-slide[aria-hidden="true"] .modal__container {
+        animation: mmslideOut 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    
+    .micromodal-slide .modal__container,
+    .micromodal-slide .modal__overlay {
+        will-change: transform;
+    }
+    
+    @keyframes mmfadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    @keyframes mmfadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+    }
+    
+    @keyframes mmslideIn {
+        from { transform: translateY(20%); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    
+    @keyframes mmslideOut {
+        from { transform: translateY(0); opacity: 1; }
+        to { transform: translateY(20%); opacity: 0; }
+    }
+    
+    /* Notification specific styles */
+    .notification-detail-card {
+        padding: 1.35rem;
+        background-color: var(--bg-light, #f8fafc);
+        border-radius: 0.75rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+    }
+    
+    /* Badge styling */
+    .notification-type-badge {
+        font-size: 0.75rem;
+        padding: 0.35em 0.75em;
+        font-weight: 500;
+        border-radius: 10rem;
+        letter-spacing: 0.01em;
+    }
+    
+    /* Announcement title styling */
+    .announcement-header-container {
+        position: relative;
+    }
+    
+    .announcement-header-container .d-flex {
+        transition: all 0.3s ease;
+    }
+    
+    .announcement-header-container .d-flex:hover {
+        border-color: rgba(59, 130, 246, 0.5);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    
+    .announcement-title-text {
+        font-size: 1.15rem;
+        font-weight: 600;
+        color: var(--dark-blue, #1e293b);
+        line-height: 1.3;
+    }
+    
+    .announcement-header-container .badge {
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--secondary-color, #64748b);
+    }
+    
+    /* Content section divider */
+    .content-section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--dark-blue, #1e293b);
+        margin-bottom: 1rem;
+    }
+    
+    /* Metadata styling */
+    .metadata-label {
+        font-weight: 500;
+        color: var(--text-muted, #64748b);
+    }
+    
+    .notification-status .text-success {
+        color: #10b981 !important;
+    }
+    
+    .notification-status .text-primary {
+        color: #3b82f6 !important;
+    }
+    
+    /* Type-specific styles */
+    .notification-type-badge.VIOLATION {
+        background-color: rgba(239, 68, 68, 0.15);
+        color: #ef4444;
+    }
+    
+    .notification-type-badge.PAYMENT {
+        background-color: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+    }
+    
+    .notification-type-badge.STATUS {
+        background-color: rgba(59, 130, 246, 0.15);
+        color: #3b82f6;
+    }
+    
+    .notification-type-badge.SYSTEM {
+        background-color: rgba(100, 116, 139, 0.15);
+        color: #64748b;
+    }
+    
+    .notification-message {
+        margin-bottom: 0;
+        line-height: 1.6;
+        font-size: 0.95rem;
+        color: var(--dark-blue, #334155);
+    }
+    
+    .notification-type-icon.VIOLATION {
+        color: #ef4444;
+    }
+    
+    .notification-type-icon.PAYMENT {
+        color: #10b981;
+    }
+    
+    .notification-type-icon.STATUS {
+        color: #3b82f6;
+    }
+    
+    .notification-type-icon.SYSTEM {
+        color: #64748b;
+    }
+    
+    /* Announcement content styles */
+    .announcement-content {
+        transition: max-height 0.5s ease;
+        overflow: hidden;
+        max-height: 200px;
+        line-height: 1.6;
+        font-size: 0.95rem;
+        color: var(--dark-blue, #334155);
+    }
+    
+    .announcement-content.expanded {
+        max-height: 1000px;
+    }
+    
+    .read-more-toggle {
+        transition: all 0.3s ease;
+        font-weight: 500;
+        padding: 0.375rem 0.75rem;
+        border-radius: 0.5rem;
+    }
+    
+    .read-more-toggle .material-icons {
+        transition: transform 0.3s ease;
+        vertical-align: middle;
+    }
+    
+    .read-more-toggle.expanded .material-icons {
+        transform: rotate(180deg);
+    }
+    
+    /* Button styles */
+    .btn {
+        border-radius: 0.5rem;
+        padding: 0.6rem 1.25rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .btn-primary {
+        background-color: var(--primary-color, #3b82f6);
+        border-color: var(--primary-color, #3b82f6);
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.25);
+    }
+    
+    .btn-primary:hover {
+        background-color: #2563eb;
+        border-color: #2563eb;
+        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.35);
+        transform: translateY(-1px);
+    }
+    
+    .btn-light-subtle {
+        background-color: #f1f5f9;
+        border-color: #e2e8f0;
+        color: #64748b;
+    }
+    
+    .btn-light-subtle:hover {
+        background-color: #e2e8f0;
+        color: #334155;
+        transform: translateY(-1px);
+    }
+    
+    .btn-outline-primary {
+        color: var(--primary-color, #3b82f6);
+        border-color: var(--primary-color, #3b82f6);
+    }
+    
+    .btn-outline-primary:hover {
+        background-color: #3b82f6;
+        border-color: #3b82f6;
+        color: white;
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.25);
+    }
+    
+    /* Loading spinner enhancements */
+    .spinner-border {
+        border-width: 0.15em;
+        animation-duration: 0.75s;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 576px) {
+        .modal__container {
+            padding: 1.25rem;
+            width: 95%;
+            border-radius: 0.75rem;
+        }
+        
+        .modal__header {
+            padding-bottom: 1rem;
+            margin-bottom: 1.25rem;
+        }
+        
+        .modal__footer {
+            padding-top: 1.25rem;
+            gap: 0.75rem;
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+        
+        .notification-detail-card {
+            padding: 1rem;
+        }
+        
+        .announcement-title-text {
+            font-size: 1rem;
+        }
+    }
+</style>
+
+<!-- Include MicroModal.js if not already loaded -->
+<script>
+    // Check if MicroModal is already loaded
+    if (typeof MicroModal === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/micromodal/dist/micromodal.min.js';
+        script.onload = function() {
+            console.log('MicroModal loaded dynamically');
+            MicroModal.init({
+                openTrigger: 'data-micromodal-trigger',
+                closeTrigger: 'data-micromodal-close',
+                disableFocus: false,
+                disableScroll: true,
+                awaitOpenAnimation: true,
+                awaitCloseAnimation: true,
+                debugMode: false
+            });
+        };
+        document.head.appendChild(script);
+    } else {
+        console.log('MicroModal already loaded');
+    }
+</script> 

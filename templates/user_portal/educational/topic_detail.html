@@ -1,0 +1,694 @@
+{% extends 'user_portal/base_user.html' %}
+{% load static %}
+
+{% block title %}{{ topic.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Logo styles */
+    .logos-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 10px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+    }
+    .logo-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    .logo-item img {
+        height: 60px;
+        width: auto;
+        margin-bottom: 5px;
+    }
+    .logo-name {
+        font-size: 12px;
+        font-weight: bold;
+        color: #333;
+    }
+
+    /* Main container styling */
+    .elearning-container {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        max-width: 1100px;
+        margin: 20px auto;
+        padding: 0;
+        display: flex;
+    }
+    
+    /* Sidebar styling */
+    .elearning-sidebar {
+        width: 300px;
+        background-color: #0039cb;
+        border-radius: 8px 0 0 8px;
+        padding: 1rem 0;
+        color: white;
+        overflow-y: auto;
+        max-height: 700px;
+    }
+    
+    /* Main content area */
+    .elearning-content {
+        flex: 1;
+        padding: 1.5rem;
+        position: relative;
+    }
+    
+    /* Category list styling */
+    .category-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .category-item {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .category-link {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        color: white;
+        padding: 0.85rem 1.25rem;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    
+    .category-link:hover, .category-link.active {
+        background-color: rgba(255, 255, 255, 0.1);
+        text-decoration: none;
+    }
+    
+    .category-number {
+        font-weight: 600;
+        color: white;
+        margin-right: 0.75rem;
+        min-width: 25px;
+    }
+    
+    .category-title {
+        font-weight: 500;
+        flex-grow: 1;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+    }
+    
+    .category-arrow {
+        color: white;
+        margin-left: 0.5rem;
+        transition: transform 0.3s;
+    }
+    
+    .category-arrow.rotated {
+        transform: rotate(90deg);
+    }
+    
+    /* Subtopics styling */
+    .subtopics-container {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+        background-color: rgba(0, 0, 0, 0.2);
+    }
+    
+    .subtopics-container.expanded {
+        max-height: 1000px;
+    }
+    
+    .subtopic-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .subtopic-item {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .subtopic-link {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        color: rgba(255, 255, 255, 0.9);
+        padding: 0.65rem 1rem 0.65rem 3rem;
+        transition: all 0.2s ease;
+        font-size: 0.85rem;
+    }
+    
+    .subtopic-link:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .subtopic-link.active {
+        background-color: rgba(255, 255, 255, 0.2);
+        color: white;
+        font-weight: 500;
+    }
+    
+    /* Topic detail styles */
+    .topic-header {
+        margin-bottom: 1.5rem;
+    }
+    
+    .breadcrumb-nav {
+        display: flex;
+        margin-bottom: 1rem;
+        font-size: 0.85rem;
+    }
+    
+    .breadcrumb-item {
+        color: #0039cb;
+    }
+    
+    .breadcrumb-separator {
+        margin: 0 0.5rem;
+        color: #757575;
+    }
+    
+    .topic-title {
+        color: #0039cb;
+        font-size: 1.75rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+    }
+    
+    .topic-content {
+        margin-bottom: 1.5rem;
+        line-height: 1.7;
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 0.5rem 0;
+    }
+    
+    .topic-content img {
+        max-width: 100%;
+        height: auto;
+        margin: 1rem 0;
+        display: block;
+        border-radius: 4px;
+    }
+    
+    .topic-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e0e0e0;
+    }
+    
+    .action-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.25rem;
+        border-radius: 4px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+    }
+    
+    .bookmark-btn {
+        background-color: #f5f5f5;
+        color: #616161;
+        border: 1px solid #e0e0e0;
+    }
+    
+    .bookmark-btn:hover {
+        background-color: #eeeeee;
+    }
+    
+    .bookmark-btn.active {
+        color: #0039cb;
+        background-color: rgba(0, 57, 203, 0.1);
+    }
+    
+    .complete-btn {
+        background-color: #0039cb;
+        color: white;
+    }
+    
+    .complete-btn:hover {
+        background-color: #002984;
+    }
+    
+    .complete-btn.completed {
+        background-color: #2e7d32;
+    }
+    
+    .attachments-section {
+        margin-top: 1.5rem;
+        padding: 1.25rem;
+        background-color: #f9fafd;
+        border-radius: 8px;
+        border: 1px solid #e8eaf0;
+    }
+    
+    .attachments-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #0039cb;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .attachments-title i {
+        margin-right: 0.5rem;
+    }
+    
+    /* Skeleton loaders */
+    .skeleton {
+        background: #e8eaf0;
+        background-image: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0),
+            rgba(255, 255, 255, 0.5),
+            rgba(255, 255, 255, 0)
+        );
+        background-size: 40px 100%;
+        background-repeat: no-repeat;
+        background-position: left -40px top 0;
+        animation: shine 1.5s ease infinite;
+        border-radius: 4px;
+        display: none;
+    }
+    
+    .skeleton-loader {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        padding: 1.5rem;
+        z-index: 1;
+    }
+    
+    .skeleton-breadcrumb {
+        display: flex;
+        margin-bottom: 1rem;
+    }
+    
+    .skeleton-breadcrumb-item {
+        height: 16px;
+        width: 80px;
+        margin-right: 20px;
+    }
+    
+    .skeleton-title {
+        height: 36px;
+        width: 70%;
+        margin-bottom: 1.5rem;
+    }
+    
+    .skeleton-content {
+        margin-bottom: 2rem;
+    }
+    
+    .skeleton-paragraph {
+        height: 16px;
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+    
+    .skeleton-paragraph:last-child {
+        width: 85%;
+    }
+    
+    .skeleton-actions {
+        display: flex;
+        margin-top: 1.5rem;
+    }
+    
+    .skeleton-btn {
+        height: 40px;
+        width: 150px;
+        margin-right: 15px;
+    }
+    
+    @keyframes shine {
+        to {
+            background-position: right -40px top 0;
+        }
+    }
+    
+    .topic-content-container {
+        display: none;
+    }
+    
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+        .elearning-container {
+            flex-direction: column;
+        }
+        
+        .elearning-sidebar {
+            width: 100%;
+            border-radius: 8px 8px 0 0;
+            max-height: 400px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="elearning-container">
+        <!-- Sidebar Navigation -->
+        <div class="elearning-sidebar">
+            <ul class="category-list">
+                {% for category in categories %}
+                <li class="category-item">
+                    <div class="category-link {% if topic.category.id == category.id %}active{% endif %}" data-category-id="{{ category.id }}">
+                        <span class="category-number">{{ forloop.counter }}.</span>
+                        <span class="category-title">{{ category.title|upper }}</span>
+                        <span class="category-arrow {% if topic.category.id == category.id %}rotated{% endif %}">
+                            <i class="material-icons">chevron_right</i>
+                        </span>
+                    </div>
+                    <div class="subtopics-container {% if topic.category.id == category.id %}expanded{% endif %}" id="subtopics-{{ category.id }}" {% if topic.category.id == category.id %}data-loaded="true"{% endif %}>
+                        <ul class="subtopic-list">
+                            <li class="subtopic-item">
+                                <a href="{% url 'educational:topic_list' %}?category={{ category.id }}" class="subtopic-link">
+                                    View All Topics
+                                </a>
+                            </li>
+                            {% if topic.category.id == category.id %}
+                                {% for related_topic in related_topics %}
+                                <li class="subtopic-item">
+                                    <a href="{% url 'educational:topic_detail' topic_id=related_topic.id %}" class="subtopic-link">
+                                        {{ related_topic.title }}
+                                    </a>
+                                </li>
+                                {% endfor %}
+                                <li class="subtopic-item">
+                                    <a href="{% url 'educational:topic_detail' topic_id=topic.id %}" class="subtopic-link active">
+                                        {{ topic.title }}
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </li>
+                {% empty %}
+                <li class="category-item">
+                    <div class="category-link">
+                        <span class="category-title">No categories available</span>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="elearning-content">
+            <!-- Skeleton Loader -->
+            <div class="skeleton-loader skeleton">
+                <div class="skeleton-breadcrumb">
+                    <div class="skeleton-breadcrumb-item skeleton"></div>
+                    <div class="skeleton-breadcrumb-item skeleton"></div>
+                    <div class="skeleton-breadcrumb-item skeleton"></div>
+                </div>
+                <div class="skeleton-title skeleton"></div>
+                <div class="skeleton-content">
+                    <div class="skeleton-paragraph skeleton"></div>
+                    <div class="skeleton-paragraph skeleton"></div>
+                    <div class="skeleton-paragraph skeleton"></div>
+                    <div class="skeleton-paragraph skeleton"></div>
+                    <div class="skeleton-paragraph skeleton"></div>
+                </div>
+                <div class="skeleton-actions">
+                    <div class="skeleton-btn skeleton"></div>
+                    <div class="skeleton-btn skeleton"></div>
+                </div>
+            </div>
+            
+            <!-- Actual Content -->
+            <div class="topic-content-container">
+                <div class="topic-header">
+                    <div class="breadcrumb-nav">
+                        <a href="{% url 'educational:landing_page' %}" class="breadcrumb-item">GETTING READY TO DRIVE</a>
+                        <span class="breadcrumb-separator">/</span>
+                        <a href="{% url 'educational:topic_list' %}?category={{ topic.category.id }}" class="breadcrumb-item">{{ topic.category.title|upper }}</a>
+                        <span class="breadcrumb-separator">/</span>
+                        <span class="breadcrumb-item">{{ topic.title|upper }}</span>
+                    </div>
+                    
+                    <h1 class="topic-title">{{ topic.title|upper }}</h1>
+                </div>
+                
+                <div class="topic-content">
+                    {{ topic.content|safe }}
+                </div>
+                
+                {% if topic.attachments.exists %}
+                <div class="attachments-section">
+                    <h3 class="attachments-title">
+                        <i class="material-icons">attachment</i>
+                        Attachments
+                    </h3>
+                    <div class="list-group">
+                        {% for attachment in topic.attachments.all %}
+                        <a href="{{ attachment.file.url }}" class="list-group-item list-group-item-action" target="_blank">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="material-icons small me-2">description</i>
+                                    <span>{{ attachment.title }}</span>
+                                </div>
+                                <span class="badge bg-primary">{{ attachment.get_file_type_display }}</span>
+                            </div>
+                            {% if attachment.description %}
+                            <small class="text-muted">{{ attachment.description }}</small>
+                            {% endif %}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="topic-actions">
+                    <button class="action-btn bookmark-btn {% if is_bookmarked %}active{% endif %}" id="bookmarkBtn">
+                        <i class="material-icons">{% if is_bookmarked %}bookmark{% else %}bookmark_border{% endif %}</i>
+                        <span>{% if is_bookmarked %}Bookmarked{% else %}Bookmark{% endif %}</span>
+                    </button>
+                    
+                    <button class="action-btn complete-btn {% if is_completed %}completed{% endif %}" id="completeBtn">
+                        <i class="material-icons">{% if is_completed %}check_circle{% else %}check_circle_outline{% endif %}</i>
+                        <span>{% if is_completed %}Completed{% else %}Mark as Completed{% endif %}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Show skeleton loaders and hide content initially
+        document.querySelector('.skeleton-loader').style.display = 'block';
+        document.querySelector('.topic-content-container').style.display = 'none';
+        
+        // Simulate loading time (remove this in production)
+        setTimeout(function() {
+            document.querySelector('.skeleton-loader').style.display = 'none';
+            document.querySelector('.topic-content-container').style.display = 'block';
+        }, 800);
+        
+        // Add click handlers for category items
+        const categoryLinks = document.querySelectorAll('.category-link');
+        
+        categoryLinks.forEach(function(link) {
+            link.addEventListener('click', function() {
+                const categoryId = this.dataset.categoryId;
+                const subtopicsContainer = document.getElementById(`subtopics-${categoryId}`);
+                const arrow = this.querySelector('.category-arrow');
+                
+                // Toggle the subtopics visibility
+                subtopicsContainer.classList.toggle('expanded');
+                arrow.classList.toggle('rotated');
+                
+                // Fetch topics for this category if not already loaded
+                if (!subtopicsContainer.dataset.loaded) {
+                    fetchTopicsForCategory(categoryId, subtopicsContainer);
+                }
+            });
+        });
+        
+        // Function to fetch topics for a category
+        function fetchTopicsForCategory(categoryId, container) {
+            // Show loading state
+            container.innerHTML = '<div class="p-3 text-center"><div class="spinner-border spinner-border-sm text-light" role="status"></div></div>';
+            
+            // Fetch topics for this category
+            fetch(`{% url 'educational:get_category_topics' %}?category=${categoryId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const subtopicList = document.createElement('ul');
+                    subtopicList.className = 'subtopic-list';
+                    
+                    // Add "View All" link
+                    const viewAllItem = document.createElement('li');
+                    viewAllItem.className = 'subtopic-item';
+                    viewAllItem.innerHTML = `
+                        <a href="{% url 'educational:topic_list' %}?category=${categoryId}" class="subtopic-link">
+                            View All Topics
+                        </a>
+                    `;
+                    subtopicList.appendChild(viewAllItem);
+                    
+                    // Add topic links
+                    if (data.topics && data.topics.length > 0) {
+                        const currentTopicId = "{{ topic.id }}";
+                        
+                        data.topics.forEach(function(topic) {
+                            const topicItem = document.createElement('li');
+                            topicItem.className = 'subtopic-item';
+                            const isActive = topic.id.toString() === currentTopicId;
+                            
+                            topicItem.innerHTML = '<a href="' + 
+                                '{% url "educational:topic_detail" topic_id=0 %}'.replace('0', topic.id) + 
+                                '" class="subtopic-link ' + (isActive ? 'active' : '') + '">' +
+                                topic.title +
+                                '</a>';
+                            subtopicList.appendChild(topicItem);
+                        });
+                    } else {
+                        const noTopicsItem = document.createElement('li');
+                        noTopicsItem.className = 'subtopic-item';
+                        noTopicsItem.innerHTML = '<div class="subtopic-link">No topics available</div>';
+                        subtopicList.appendChild(noTopicsItem);
+                    }
+                    
+                    // Replace loading indicator with topics
+                    container.innerHTML = '';
+                    container.appendChild(subtopicList);
+                    container.dataset.loaded = 'true';
+                })
+                .catch(error => {
+                    console.error('Error fetching topics:', error);
+                    container.innerHTML = '<div class="p-3 text-center text-light">Error loading topics</div>';
+                });
+        }
+        
+        // Track progress for this topic
+        fetch("{% url 'educational:track_progress' topic_id=topic.id %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        // Bookmark button functionality
+        const bookmarkBtn = document.getElementById('bookmarkBtn');
+        if (bookmarkBtn) {
+            bookmarkBtn.addEventListener('click', toggleBookmark);
+        }
+        
+        // Complete button functionality
+        const completeBtn = document.getElementById('completeBtn');
+        if (completeBtn) {
+            completeBtn.addEventListener('click', markTopicCompleted);
+        }
+    });
+    
+    // Toggle bookmark
+    function toggleBookmark() {
+        fetch("{% url 'educational:toggle_bookmark' topic_id=topic.id %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const button = document.getElementById('bookmarkBtn');
+            if (data.status === 'added') {
+                button.classList.add('active');
+                button.querySelector('i').textContent = 'bookmark';
+                button.querySelector('span').textContent = 'Bookmarked';
+                showToast('Topic bookmarked successfully!', 'success');
+            } else {
+                button.classList.remove('active');
+                button.querySelector('i').textContent = 'bookmark_border';
+                button.querySelector('span').textContent = 'Bookmark';
+                showToast('Bookmark removed', 'info');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('An error occurred', 'error');
+        });
+    }
+    
+    // Mark topic as completed
+    function markTopicCompleted() {
+        fetch("{% url 'educational:mark_as_completed' topic_id=topic.id %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const button = document.getElementById('completeBtn');
+                button.classList.add('completed');
+                button.querySelector('i').textContent = 'check_circle';
+                button.querySelector('span').textContent = 'Completed';
+                showToast('Topic marked as completed!', 'success');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('An error occurred', 'error');
+        });
+    }
+    
+    // Show toast notification using SweetAlert
+    function showToast(message, icon) {
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: icon,
+            title: message,
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true
+        });
+    }
+    
+    // Get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+{% endblock %} 

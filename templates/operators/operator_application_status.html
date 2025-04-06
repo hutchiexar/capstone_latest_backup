@@ -1,105 +1,548 @@
 {% extends 'user_portal/base_user.html' %}
 {% load static %}
+{% load custom_filters %}
 
 {% block title %}{{ title }}{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Modern Color Palette */
+    :root {
+        --primary-color: #3563E9;
+        --primary-light: #EEF3FF;
+        --success-color: #0CAA1D;
+        --danger-color: #F53D3D;
+        --warning-color: #FFB800;
+        --info-color: #4DA7FF;
+        --dark-blue: #0F1C3F;
+        --neutral-gray: #737791;
+        --light-gray: #F6F7F9;
+        --white: #FFFFFF;
+    }
+
+    /* Common Utility Classes */
+    .shadow-lg { box-shadow: 0 10px 20px rgba(0,0,0,0.08); }
+    .shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .rounded-xl { border-radius: 1rem; }
+    .rounded-lg { border-radius: 0.75rem; }
+    .transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 300ms; }
+    
+    /* Animation */
+    @keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+    }
+    
+    @keyframes spinner {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Container */
+    .application-container {
+        animation: fadeIn 0.5s ease-out;
+    }
+    
+    /* Hide any extra back buttons outside our container */
+    .application-container + a[href*="dashboard"],
+    .application-container ~ a[href*="dashboard"],
+    a.back-to-dashboard-btn,
+    a[href*="dashboard"]:not(.card-footer a):not(.card a):not(.empty-state a) {
+        display: none !important;
+    }
+    
+    /* Hide specifically the button circled in red */
+    .container > a[href*="dashboard"] {
+        display: none !important;
+    }
+    
+    /* Card Design */
+    .application-card {
+        transition: all 0.3s ease;
+        border: none;
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    
+    .application-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+    }
+    
+    /* Header Icon */
+    .header-icon {
+        width: 64px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 16px;
+        background-color: var(--primary-light);
+        margin-right: 1.5rem;
+        flex-shrink: 0;
+    }
+    
+    .header-icon .material-icons {
+        font-size: 32px;
+        color: var(--primary-color);
+    }
+    
+    /* Table Container */
+    .table-container {
+        border-radius: 0.75rem;
+        overflow: hidden;
+    }
+    
+    .application-table {
+        margin-bottom: 0;
+    }
+    
+    .application-table thead {
+        background-color: var(--light-gray);
+    }
+    
+    .application-table th {
+        font-weight: 600;
+        color: var(--dark-blue);
+        padding: 1rem 1.5rem;
+        white-space: nowrap;
+    }
+    
+    .application-table td {
+        padding: 1rem 1.5rem;
+        vertical-align: middle;
+        border-bottom: 1px solid var(--light-gray);
+    }
+    
+    /* Status Badge */
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 2rem;
+        font-weight: 500;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    .status-badge-pending {
+        background-color: #FFF4DE;
+        color: #FF8A00;
+    }
+    
+    .status-badge-approved {
+        background-color: #E6F7EE;
+        color: var(--success-color);
+    }
+    
+    .status-badge-rejected {
+        background-color: #FEEBEB;
+        color: var(--danger-color);
+    }
+    
+    /* Document Links */
+    .document-link {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        background-color: var(--white);
+        border: 1px solid #E2E8F0;
+        border-radius: 0.5rem;
+        color: var(--dark-blue);
+        font-weight: 500;
+        transition: all 0.2s ease;
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+        text-decoration: none;
+    }
+    
+    .document-link:hover {
+        background-color: var(--primary-light);
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+        transform: translateY(-2px);
+    }
+    
+    .document-link .material-icons {
+        font-size: 1.25rem;
+        margin-right: 0.5rem;
+        color: var(--primary-color);
+    }
+    
+    /* Empty States */
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 4rem 1rem;
+    }
+    
+    .empty-state-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background-color: #EEF3FF;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+    }
+    
+    .empty-state-icon .material-icons {
+        font-size: 40px;
+        color: var(--primary-color);
+    }
+    
+    /* Action Buttons */
+    .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        font-weight: 500;
+        border-radius: 0.5rem;
+        padding: 0.5rem 1.25rem;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    .btn-primary:hover {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(53, 99, 233, 0.25);
+    }
+    
+    .btn-outline-secondary {
+        color: var(--dark-blue);
+        border-color: #E2E8F0;
+        font-weight: 500;
+        border-radius: 0.5rem;
+        padding: 0.5rem 1.25rem;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    .btn-outline-secondary:hover {
+        background-color: var(--light-gray);
+        color: var(--dark-blue);
+        border-color: #CBD5E1;
+    }
+
+    /* Loading skeleton */
+    .text-skeleton { 
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); 
+        background-size: 200% 100%; 
+        animation: shimmer 1.5s infinite; 
+        height: 1rem; 
+        margin-bottom: 0.5rem; 
+        border-radius: 0.25rem; 
+    }
+    
+    .table-skeleton {
+        padding: 1rem 1.5rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid py-4">
-    <!-- Header Section -->
-    <div class="card shadow-sm border-0 rounded-3 mb-4">
-        <div class="card-body p-4">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <div class="d-flex align-items-center">
-                        <span class="material-icons me-2" style="color: var(--primary-color)">fact_check</span>
-                        <h4 class="mb-0">Operator Application Status</h4>
-                    </div>
-                    <p class="text-muted mt-2 mb-0">View the status of your operator application(s)</p>
-                </div>
-                <div>
-                    <a href="{% url 'user_portal:user_dashboard' %}" class="btn btn-outline-secondary d-flex align-items-center px-4 py-2">
-                        <span class="material-icons fs-5 me-2">arrow_back</span> Back to Dashboard
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Application Status Card -->
-    <div class="card shadow-sm border-0 rounded-3">
-        <div class="card-header bg-transparent border-0 py-3">
-            <div class="d-flex align-items-center">
-                <span class="material-icons me-2" style="color: var(--primary-color)">history</span>
-                <h5 class="mb-0">Your Applications</h5>
-            </div>
-        </div>
-
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="border-top-0 px-4 py-3">Submitted Date</th>
-                            <th class="border-top-0 px-4 py-3">Status</th>
-                            <th class="border-top-0 px-4 py-3">Processed Date</th>
-                            <th class="border-top-0 px-4 py-3">Admin Notes</th>
-                            <th class="border-top-0 px-4 py-3">Documents</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for application in applications %}
-                        <tr>
-                            <td class="px-4 py-3">{{ application.submitted_at|date:"F d, Y g:i A" }}</td>
-                            <td class="px-4 py-3">
-                                {% if application.status == 'PENDING' %}
-                                <span class="badge bg-warning text-dark p-2">Pending Review</span>
-                                {% elif application.status == 'APPROVED' %}
-                                <span class="badge bg-success p-2">Approved</span>
-                                {% elif application.status == 'REJECTED' %}
-                                <span class="badge bg-danger p-2">Rejected</span>
-                                {% endif %}
-                            </td>
-                            <td class="px-4 py-3">{{ application.processed_at|date:"F d, Y"|default:"Not processed yet" }}</td>
-                            <td class="px-4 py-3">{{ application.notes|default:"No notes provided" }}</td>
-                            <td class="px-4 py-3">
-                                <a href="{{ application.business_permit.url }}" target="_blank" class="btn btn-sm btn-outline-secondary me-1">
-                                    <span class="material-icons fs-6">description</span> Business Permit
-                                </a>
-                                {% if application.other_documents %}
-                                <a href="{{ application.other_documents.url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                                    <span class="material-icons fs-6">description</span> Other Docs
-                                </a>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="5" class="text-center py-5">
-                                <div class="d-flex flex-column align-items-center py-4">
-                                    <span class="material-icons" style="font-size: 64px; color: #c0c0c0;">folder_open</span>
-                                    <p class="mt-3 mb-0 fs-5">No applications submitted yet.</p>
-                                    <a href="{% url 'operator_apply' %}" class="btn btn-primary mt-3">
-                                        <span class="material-icons me-2">add</span> Apply Now
-                                    </a>
+<div class="container py-3 py-md-5 application-container">
+    <!-- Loading Skeleton (hidden when data is loaded) -->
+    <div id="application-skeleton">
+        <!-- Header Section Skeleton -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-lg rounded-xl">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <div class="text-skeleton rounded-lg me-3" style="width: 64px; height: 64px;"></div>
+                                <div>
+                                    <div class="text-skeleton" style="width: 220px; height: 24px;"></div>
+                                    <div class="text-skeleton mt-2" style="width: 300px; height: 16px;"></div>
                                 </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                            </div>
+                            <div class="text-skeleton" style="width: 120px; height: 40px; border-radius: 0.5rem;"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         
-        <!-- Action Button for New Application -->
-        {% if not applications or not applications.0.status == 'PENDING' %}
-        <div class="card-footer bg-transparent py-3">
-            <div class="d-flex justify-content-end">
-                <a href="{% url 'operator_apply' %}" class="btn btn-primary d-flex align-items-center px-4 py-2">
-                    <span class="material-icons fs-5 me-2">add</span> Submit New Application
-                </a>
+        <!-- Status Card Skeleton -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-lg rounded-xl">
+                    <div class="card-header bg-transparent border-0 py-3">
+                        <div class="text-skeleton" style="width: 180px; height: 24px;"></div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-skeleton p-4">
+                            <!-- Table Header Skeleton -->
+                            <div class="d-flex mb-4">
+                                <div class="text-skeleton me-3" style="width: 20%; height: 20px;"></div>
+                                <div class="text-skeleton me-3" style="width: 15%; height: 20px;"></div>
+                                <div class="text-skeleton me-3" style="width: 20%; height: 20px;"></div>
+                                <div class="text-skeleton me-3" style="width: 20%; height: 20px;"></div>
+                                <div class="text-skeleton" style="width: 25%; height: 20px;"></div>
+                            </div>
+                            
+                            <!-- Table Row Skeletons -->
+                            {% for i in '123'|make_list %}
+                            <div class="d-flex py-3 mb-3" style="border-bottom: 1px solid var(--light-gray);">
+                                <div class="text-skeleton me-3" style="width: 20%; height: 16px;"></div>
+                                <div class="text-skeleton me-3" style="width: 15%; height: 16px;"></div>
+                                <div class="text-skeleton me-3" style="width: 20%; height: 16px;"></div>
+                                <div class="text-skeleton me-3" style="width: 20%; height: 16px;"></div>
+                                <div class="text-skeleton" style="width: 25%; height: 16px;"></div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent py-3">
+                        <div class="d-flex justify-content-end">
+                            <div class="text-skeleton" style="width: 150px; height: 40px; border-radius: 0.5rem;"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        {% endif %}
+    </div>
+    
+    <!-- Actual Content (initially hidden) -->
+    <div id="application-content" style="display: none;">
+        <!-- Header Section -->
+        <div class="card application-card shadow-lg border-0 rounded-xl mb-4">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <div class="header-icon">
+                            <span class="material-icons">fact_check</span>
+                        </div>
+                        <div>
+                            <h4 class="mb-0 fw-bold">Operator Application Status</h4>
+                            <p class="text-muted mt-2 mb-0">View the status of your operator application(s)</p>
+                        </div>
+                    </div>
+                    <div>
+                        <a href="{% url 'user_portal:user_dashboard' %}" class="btn btn-outline-secondary d-flex align-items-center px-4 py-2">
+                            <span class="material-icons fs-5 me-2">arrow_back</span> Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Application Notice - Only shown when there's a pending application -->
+        {% for application in applications %}
+            {% if application.status == 'PENDING' and forloop.first %}
+            <div class="card application-card shadow-lg border-0 rounded-xl mb-4" style="border-left: 4px solid var(--warning-color) !important; background-color: #FFF9E6;">
+                <div class="card-body p-4">
+                    <div class="d-flex">
+                        <div class="me-3" style="color: var(--warning-color);">
+                            <span class="material-icons" style="font-size: 36px;">hourglass_top</span>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-2">Application In Process</h5>
+                            <p class="mb-2">Your operator application is currently being reviewed by our administrators. This process typically takes 1-3 business days.</p>
+                            <p class="mb-0 mt-3">
+                                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
+                                    <span class="material-icons me-1" style="font-size: 16px;">schedule</span>
+                                    Submitted on {{ application.submitted_at|date:"F d, Y" }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        {% endfor %}
+
+        <!-- Application Status Card -->
+        <div class="card application-card shadow-lg border-0 rounded-xl">
+            <div class="card-header bg-transparent border-0 py-3">
+                <div class="d-flex align-items-center">
+                    <span class="material-icons me-2" style="color: var(--primary-color)">history</span>
+                    <h5 class="mb-0 fw-bold">Your Applications</h5>
+                </div>
+            </div>
+
+            <div class="card-body p-0">
+                <div class="table-container">
+                    <table class="table application-table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Submitted Date</th>
+                                <th>Status</th>
+                                <th>Processed Date</th>
+                                <th>Admin Notes</th>
+                                <th>Documents</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for application in applications %}
+                            <tr>
+                                <td>{{ application.submitted_at|date:"F d, Y g:i A" }}</td>
+                                <td>
+                                    {% if application.status == 'PENDING' %}
+                                    <span class="status-badge status-badge-pending">
+                                        <span class="material-icons me-1" style="font-size: 16px;">pending</span>
+                                        Pending Review
+                                    </span>
+                                    {% elif application.status == 'APPROVED' %}
+                                    <span class="status-badge status-badge-approved">
+                                        <span class="material-icons me-1" style="font-size: 16px;">check_circle</span>
+                                        Approved
+                                    </span>
+                                    {% elif application.status == 'REJECTED' %}
+                                    <span class="status-badge status-badge-rejected">
+                                        <span class="material-icons me-1" style="font-size: 16px;">cancel</span>
+                                        Rejected
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ application.processed_at|date:"F d, Y"|default:"Not processed yet" }}</td>
+                                <td>{{ application.notes|default:"No notes provided" }}</td>
+                                <td>
+                                    <a href="{{ application.business_permit.url }}" target="_blank" class="document-link">
+                                        <span class="material-icons">description</span> Business Permit
+                                    </a>
+                                    {% if application.police_clearance and application.police_clearance.name %}
+                                    <a href="{{ application.police_clearance.url }}" target="_blank" class="document-link">
+                                        <span class="material-icons">security</span> Police Clearance
+                                    </a>
+                                    {% endif %}
+                                    {% if application.barangay_certificate and application.barangay_certificate.name %}
+                                    <a href="{{ application.barangay_certificate.url }}" target="_blank" class="document-link">
+                                        <span class="material-icons">location_city</span> Barangay Certificate
+                                    </a>
+                                    {% endif %}
+                                    {% if application.cedula and application.cedula.name %}
+                                    <a href="{{ application.cedula.url }}" target="_blank" class="document-link">
+                                        <span class="material-icons">receipt</span> Cedula
+                                    </a>
+                                    {% endif %}
+                                    {% if application.cenro_tickets and application.cenro_tickets.name %}
+                                    <a href="{{ application.cenro_tickets.url }}" target="_blank" class="document-link">
+                                        <span class="material-icons">eco</span> CENRO Tickets
+                                    </a>
+                                    {% endif %}
+                                    {% if application.mayors_permit and application.mayors_permit.name %}
+                                    <a href="{{ application.mayors_permit.url }}" target="_blank" class="document-link">
+                                        <span class="material-icons">description</span> Mayor's Permit
+                                    </a>
+                                    {% endif %}
+                                    {% if application.other_documents and application.other_documents.name %}
+                                    <a href="{{ application.other_documents.url }}" target="_blank" class="document-link">
+                                        <span class="material-icons">description</span> Other Docs
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5">
+                                    <div class="empty-state">
+                                        <div class="empty-state-icon">
+                                            <span class="material-icons">folder_open</span>
+                                        </div>
+                                        <h5 class="mb-2">No applications submitted yet</h5>
+                                        <p class="text-muted mb-4">You haven't submitted any operator applications</p>
+                                        <div class="d-grid gap-3 d-sm-flex justify-content-sm-center">
+                                            <a href="{% url 'operator_apply' %}" class="btn btn-primary">
+                                                <span class="material-icons me-2">add</span> Apply Now
+                                            </a>
+                                            <a href="{% url 'user_portal:user_dashboard' %}" class="btn btn-outline-secondary">
+                                                <span class="material-icons me-2">arrow_back</span> Back to Dashboard
+                                            </a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Action Button for New Application - Part of the card -->
+            <div class="card-footer bg-transparent py-3 px-4">
+                <div class="d-flex {% if applications and applications.0.status == 'PENDING' %}justify-content-end{% else %}justify-content-between{% endif %}">
+                    {% if applications and not applications.0.status == 'PENDING' %}
+                    <a href="{% url 'user_portal:user_dashboard' %}" class="btn btn-outline-secondary d-flex align-items-center px-4 py-2">
+                        <span class="material-icons fs-5 me-2">arrow_back</span> Back to Dashboard
+                    </a>
+                    <a href="{% url 'operator_apply' %}" class="btn btn-primary d-flex align-items-center px-4 py-2">
+                        <span class="material-icons fs-5 me-2">add</span> Submit New Application
+                    </a>
+                    {% elif applications and applications.0.status == 'PENDING' %}
+                    <a href="{% url 'user_portal:user_dashboard' %}" class="btn btn-outline-secondary d-flex align-items-center px-4 py-2">
+                        <span class="material-icons fs-5 me-2">arrow_back</span> Back to Dashboard
+                    </a>
+                    {% else %}
+                    <a href="{% url 'user_portal:user_dashboard' %}" class="btn btn-outline-secondary d-flex align-items-center px-4 py-2">
+                        <span class="material-icons fs-5 me-2">arrow_back</span> Back to Dashboard
+                    </a>
+                    <a href="{% url 'operator_apply' %}" class="btn btn-primary d-flex align-items-center px-4 py-2">
+                        <span class="material-icons fs-5 me-2">add</span> Submit New Application
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<!-- Override the extra back to dashboard button -->
+<style>
+a[href*="dashboard"] { display: none !important; }
+.container > a[href*="dashboard"] { display: none !important; }
+.application-container a[href*="dashboard"] { display: initial !important; }
+.card-footer a[href*="dashboard"], .empty-state a[href*="dashboard"] { display: initial !important; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Show skeleton loading on page load
+        const applicationSkeleton = document.getElementById('application-skeleton');
+        const applicationContent = document.getElementById('application-content');
+        
+        // Simulate loading for demonstration
+        applicationSkeleton.style.display = 'block';
+        applicationContent.style.display = 'none';
+        
+        // After "loading" show the content
+        setTimeout(function() {
+            applicationSkeleton.style.display = 'none';
+            applicationContent.style.display = 'block';
+        }, 800);
+        
+        // Check for success parameter in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('application') === 'success') {
+            // Show success message using SweetAlert
+            Swal.fire({
+                icon: 'success',
+                title: 'Application Submitted!',
+                text: 'Your operator application has been submitted successfully. We will review it shortly.',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#3563E9'
+            });
+            
+            // Clean up URL after showing message
+            const url = new URL(window.location.href);
+            url.searchParams.delete('application');
+            window.history.replaceState({}, document.title, url);
+        }
+    });
+</script>
 {% endblock %} 

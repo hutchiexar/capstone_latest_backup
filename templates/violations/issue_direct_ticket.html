@@ -806,6 +806,22 @@
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
 
 <script>
+// Add SweetAlert2 Library
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof Swal === 'undefined') {
+        // If SweetAlert is not defined, load it dynamically
+        const sweetAlertScript = document.createElement('script');
+        sweetAlertScript.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js';
+        document.head.appendChild(sweetAlertScript);
+        
+        // Add CSS
+        const sweetAlertCSS = document.createElement('link');
+        sweetAlertCSS.rel = 'stylesheet';
+        sweetAlertCSS.href = 'https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css';
+        document.head.appendChild(sweetAlertCSS);
+    }
+});
+
 // Form steps handling
 let currentStep = 0;
 const steps = document.querySelectorAll('.form-step');
@@ -1331,7 +1347,8 @@ document.getElementById('ticketForm').addEventListener('submit', async function(
             method: 'POST',
             body: formData,
             headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest'
             }
         });
 
@@ -1357,17 +1374,28 @@ document.getElementById('ticketForm').addEventListener('submit', async function(
                     printWindow.close();
                 }
                 
-                // 5. Show success message
-                const successMessage = document.createElement('div');
-                successMessage.className = 'alert alert-success alert-dismissible fade show mb-4';
-                successMessage.innerHTML = `
-                    <strong>Success!</strong> Ticket issued successfully and sent to printer.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                `;
-
-                // Get the form element directly and insert the message at the beginning
-                const formElement = this; // 'this' refers to the form being submitted
-                formElement.parentNode.insertBefore(successMessage, formElement);
+                // 5. Show success message with SweetAlert
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: 'Ticket issued successfully and sent to printer',
+                        confirmButtonText: 'OK',
+                        timer: 10000, // 10 seconds timer
+                        timerProgressBar: true,
+                        showClass: {
+                            popup: 'animate__animated animate__fadeIn'
+                        },
+                        didDestroy: () => {
+                            // Redirect to violations list after SweetAlert is closed
+                            window.location.href = '/violations/';
+                        }
+                    });
+                } else {
+                    // Fallback to standard alert if SweetAlert is not available
+                    alert('Ticket issued successfully and sent to printer');
+                    window.location.href = '/violations/';
+                }
                 
                 // 6. Reset form after successful submission
                 this.reset();
@@ -1670,6 +1698,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // REMOVED DUPLICATE FORM SUBMISSION EVENT LISTENER
+    
     // Update camera instructions if the element exists
     const cameraInstructions = document.querySelector('.camera-instructions small');
     if (cameraInstructions) {

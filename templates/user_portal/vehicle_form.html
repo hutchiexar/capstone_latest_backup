@@ -1,0 +1,223 @@
+{% extends 'user_portal/base_user.html' %}
+{% load static %}
+
+{% block title %}{% if is_create %}Register Vehicle{% else %}Edit Vehicle{% endif %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 4px 25px rgba(0, 0, 0, 0.05);
+    }
+
+    .form-section {
+        margin-bottom: 2rem;
+    }
+
+    .form-section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        color: var(--dark-blue);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-section-title .material-icons {
+        font-size: 1.25rem;
+        color: var(--primary-color);
+    }
+
+    .form-label {
+        font-weight: 500;
+        color: var(--dark-blue);
+        margin-bottom: 0.5rem;
+    }
+
+    .form-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+
+    .form-control {
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+        padding: 0.75rem 1rem;
+    }
+
+    .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.25);
+    }
+
+    .form-select {
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+        padding: 0.75rem 1rem;
+        background-position: right 1rem center;
+    }
+
+    .btn-submit {
+        padding: 0.75rem 2rem;
+        font-weight: 500;
+    }
+
+    .required-field::after {
+        content: "*";
+        color: var(--danger-color);
+        margin-left: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Page Header -->
+    <div class="mb-4">
+        <h1 class="h3 mb-2">{% if is_create %}Register New Vehicle{% else %}Edit Vehicle Details{% endif %}</h1>
+        <p class="text-muted mb-0">{% if is_create %}Add your vehicle information to the system{% else %}Update your vehicle information{% endif %}</p>
+    </div>
+
+    <div class="card form-card">
+        <div class="card-body p-4">
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+
+                <!-- Vehicle Information -->
+                <div class="form-section">
+                    <h3 class="form-section-title">
+                        <span class="material-icons">directions_car</span>
+                        Vehicle Information
+                    </h3>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="plate_number" class="form-label required-field">Plate Number</label>
+                            <input type="text" class="form-control" id="plate_number" name="plate_number" 
+                                   value="{{ form.plate_number.value|default:'' }}" required>
+                            <div class="form-text">Enter your vehicle's plate number</div>
+                            {% if form.plate_number.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.plate_number.errors|join:", " }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="vehicle_type" class="form-label required-field">Vehicle Type</label>
+                            <select class="form-select" id="vehicle_type" name="vehicle_type" required>
+                                <option value="">Select vehicle type</option>
+                                <option value="Sedan" {% if form.vehicle_type.value == 'Sedan' %}selected{% endif %}>Sedan</option>
+                                <option value="SUV" {% if form.vehicle_type.value == 'SUV' %}selected{% endif %}>SUV</option>
+                                <option value="Van" {% if form.vehicle_type.value == 'Van' %}selected{% endif %}>Van</option>
+                                <option value="Pickup" {% if form.vehicle_type.value == 'Pickup' %}selected{% endif %}>Pickup</option>
+                                <option value="Motorcycle" {% if form.vehicle_type.value == 'Motorcycle' %}selected{% endif %}>Motorcycle</option>
+                            </select>
+                            {% if form.vehicle_type.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.vehicle_type.errors|join:", " }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="color" class="form-label required-field">Color</label>
+                            <input type="text" class="form-control" id="color" name="color" 
+                                   value="{{ form.color.value|default:'' }}" required>
+                            {% if form.color.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.color.errors|join:", " }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="classification" class="form-label required-field">Classification</label>
+                            <select class="form-select" id="classification" name="classification" required>
+                                <option value="">Select classification</option>
+                                <option value="Private" {% if form.classification.value == 'Private' %}selected{% endif %}>Private</option>
+                                <option value="Government" {% if form.classification.value == 'Government' %}selected{% endif %}>Government</option>
+                            </select>
+                            {% if form.classification.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.classification.errors|join:", " }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Registration Information -->
+                <div class="form-section">
+                    <h3 class="form-section-title">
+                        <span class="material-icons">description</span>
+                        Registration Information
+                    </h3>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="registration_number" class="form-label required-field">Registration Number</label>
+                            <input type="text" class="form-control" id="registration_number" name="registration_number" 
+                                   value="{{ form.registration_number.value|default:'' }}" required>
+                            <div class="form-text">Enter your vehicle's registration number from LTO</div>
+                            {% if form.registration_number.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.registration_number.errors|join:", " }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="registration_date" class="form-label required-field">Registration Date</label>
+                            <input type="date" class="form-control" id="registration_date" name="registration_date" 
+                                   value="{{ form.registration_date.value|date:'Y-m-d'|default:'' }}" required>
+                            {% if form.registration_date.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.registration_date.errors|join:", " }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <a href="{% url 'vehicle_list' %}" class="btn btn-outline-secondary">
+                        <span class="material-icons">arrow_back</span>
+                        Back to Vehicles
+                    </a>
+                    <button type="submit" class="btn btn-primary btn-submit">
+                        <span class="material-icons">{% if is_create %}add{% else %}save{% endif %}</span>
+                        {% if is_create %}Register Vehicle{% else %}Save Changes{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Form validation
+(function () {
+    'use strict'
+    
+    // Fetch all forms we want to apply validation styles to
+    var forms = document.querySelectorAll('.needs-validation')
+    
+    // Loop over them and prevent submission
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+</script>
+{% endblock %} 

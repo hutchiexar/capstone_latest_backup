@@ -1,6 +1,27 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<!-- Add Micromodal.js for detail view modals -->
+<script src="https://unpkg.com/micromodal/dist/micromodal.min.js"></script>
+
+<!-- Add SweetAlert2 for confirmations -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+<!-- Fallback if CDN fails -->
+<script>
+    if (typeof Swal === 'undefined') {
+        // Create a script element and append it to the document
+        const script = document.createElement('script');
+        script.src = "https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js";
+        document.head.appendChild(script);
+        
+        const link = document.createElement('link');
+        link.rel = "stylesheet";
+        link.href = "https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css";
+        document.head.appendChild(link);
+    }
+</script>
+
 <div class="container-fluid py-4">
     <!-- Messages Section -->
     {% if messages %}
@@ -56,12 +77,50 @@
                         <tr>
                             <td>{{ violation.id }}</td>
                             <td>
-                                <div class="image-preview">
+                                <div class="images-preview">
                                     {% if violation.image %}
-                                    <img src="{{ violation.image.url }}" alt="Violation Image" class="violation-thumbnail" onclick="showImageModal('{{ violation.image.url }}')">
-                                    {% else %}
+                                    <div class="image-preview" 
+                                         data-violation-id="{{ violation.id }}"
+                                         role="button"
+                                         aria-label="View main violation image">
+                                        <img src="{{ violation.image.url }}" alt="Violation Image" class="violation-thumbnail">
+                                        <div class="img-type">M</div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if violation.driver_photo %}
+                                    <div class="image-preview"
+                                         data-violation-id="{{ violation.id }}"
+                                         role="button"
+                                         aria-label="View driver photo">
+                                        <img src="{{ violation.driver_photo.url }}" alt="Driver Photo" class="violation-thumbnail">
+                                        <div class="img-type">D</div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if violation.vehicle_photo %}
+                                    <div class="image-preview"
+                                         data-violation-id="{{ violation.id }}"
+                                         role="button"
+                                         aria-label="View vehicle photo">
+                                        <img src="{{ violation.vehicle_photo.url }}" alt="Vehicle Photo" class="violation-thumbnail">
+                                        <div class="img-type">V</div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if violation.secondary_photo %}
+                                    <div class="image-preview"
+                                         data-violation-id="{{ violation.id }}"
+                                         role="button"
+                                         aria-label="View secondary photo">
+                                        <img src="{{ violation.secondary_photo.url }}" alt="Secondary Photo" class="violation-thumbnail">
+                                        <div class="img-type">S</div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if not violation.image and not violation.driver_photo and not violation.vehicle_photo and not violation.secondary_photo %}
                                     <div class="no-image">
-                                        <span class="material-icons">image_not_supported</span>
+                                        <span class="material-icons">hide_image</span>
                                     </div>
                                     {% endif %}
                                 </div>
@@ -87,7 +146,11 @@
                             </td>
                             <td class="text-end">
                                 <div class="action-buttons">
-                                    <button type="button" class="btn btn-action btn-view" data-bs-toggle="tooltip" data-bs-placement="top" title="View Details" onclick="showViolationDetail({{ violation.id }})">
+                                    <button type="button" class="btn btn-action btn-view view-violation-btn" 
+                                           data-violation-id="{{ violation.id }}" 
+                                           data-bs-toggle="tooltip" 
+                                           data-bs-placement="top" 
+                                           title="View Details">
                                         <i class="fas fa-eye"></i>
                                     </button>
                                 </div>
@@ -125,17 +188,22 @@
     </div>
 </div>
 
-<!-- Violation Detail Modal -->
-<div class="modal fade" id="violationDetailModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">Violation Details</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <!-- Content will be loaded dynamically -->
-            </div>
+<!-- Micromodal.js Violation Detail Modal -->
+<div class="modal micromodal-slide" id="modal-violation-detail" aria-hidden="true">
+    <div class="modal__overlay" tabindex="-1" data-micromodal-close>
+        <div class="modal__container modal-lg" role="dialog" aria-modal="true" aria-labelledby="modal-violation-detail-title">
+            <header class="modal__header">
+                <h2 class="modal__title" id="modal-violation-detail-title">NCAP Citation Details</h2>
+                <button class="modal__close" aria-label="Close modal" data-micromodal-close></button>
+            </header>
+            <main class="modal__content" id="modal-violation-detail-content">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3">Loading violation details...</p>
+                </div>
+            </main>
         </div>
     </div>
 </div>
@@ -184,26 +252,47 @@
 
 /* Image Preview Styles */
 .image-preview {
-    width: 60px;
-    height: 60px;
+    width: 40px;
+    height: 40px;
     border-radius: 6px;
     overflow: hidden;
     background: #f8f9fa;
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.image-preview:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .violation-thumbnail {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    cursor: pointer;
-    transition: transform 0.2s ease;
+    transition: transform 0.3s ease;
 }
 
-.violation-thumbnail:hover {
-    transform: scale(1.05);
+.img-type {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    font-size: 0.625rem;
+    font-weight: bold;
+    padding: 2px 4px;
+    border-radius: 0 0 4px 0;
+}
+
+.images-preview {
+    display: flex;
+    gap: 6px;
 }
 
 .no-image {
@@ -216,7 +305,7 @@
 }
 
 .no-image .material-icons {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     color: #adb5bd;
 }
 
@@ -338,29 +427,255 @@
         50% { opacity: 1; }
     }
 }
+
+/**************************\
+  Micromodal.js Styles
+\**************************/
+
+.modal {
+  font-family: -apple-system, BlinkMacSystemFont, avenir next, avenir, helvetica neue,
+    helvetica, ubuntu, roboto, noto, segoe ui, arial, sans-serif;
+}
+
+.modal__overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.modal__container {
+  background-color: #fff;
+  padding: 20px;
+  max-width: 90%;
+  width: 800px;
+  max-height: 90vh;
+  border-radius: 10px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  box-shadow: 0 15px 30px 0 rgba(0, 0, 0, 0.11),
+    0 5px 15px 0 rgba(0, 0, 0, 0.08);
+}
+
+.modal-lg {
+  max-width: 90%;
+  width: 800px;
+}
+
+.modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #eaeaea;
+  padding-bottom: 15px;
+}
+
+.modal__title {
+  margin-top: 0;
+  margin-bottom: 0;
+  font-weight: 600;
+  font-size: 1.25rem;
+  line-height: 1.25;
+  color: #00449e;
+  box-sizing: border-box;
+}
+
+.modal__close {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  position: relative;
+  width: 25px;
+  height: 25px;
+}
+
+.modal__close:before,
+.modal__close:after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 18px;
+  background-color: #333;
+  top: 3px;
+  left: 11px;
+}
+
+.modal__close:before {
+  transform: rotate(45deg);
+}
+
+.modal__close:after {
+  transform: rotate(-45deg);
+}
+
+.modal__content {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+  color: rgba(0, 0, 0, 0.8);
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.micromodal-slide {
+  display: none;
+}
+
+.micromodal-slide.is-open {
+  display: block;
+}
+
+.micromodal-slide[aria-hidden="false"] .modal__overlay {
+  animation: mmfadeIn .3s cubic-bezier(0, 0, .2, 1);
+}
+
+.micromodal-slide[aria-hidden="false"] .modal__container {
+  animation: mmslideIn .3s cubic-bezier(0, 0, .2, 1);
+}
+
+.micromodal-slide[aria-hidden="true"] .modal__overlay {
+  animation: mmfadeOut .3s cubic-bezier(0, 0, .2, 1);
+}
+
+.micromodal-slide[aria-hidden="true"] .modal__container {
+  animation: mmslideOut .3s cubic-bezier(0, 0, .2, 1);
+}
+
+.micromodal-slide .modal__container,
+.micromodal-slide .modal__overlay {
+  will-change: transform;
+}
+
+@keyframes mmfadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes mmfadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes mmslideIn {
+  from { transform: translateY(15%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes mmslideOut {
+  from { transform: translateY(0); }
+  to { transform: translateY(-10%); }
+}
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Micromodal
+    MicroModal.init({
+        openTrigger: 'data-micromodal-trigger',
+        closeTrigger: 'data-micromodal-close',
+        disableFocus: false,
+        disableScroll: true,
+        awaitOpenAnimation: true,
+        awaitCloseAnimation: true
+    });
+
     // Initialize tooltips
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
 
+    // Add event listeners for violation detail views
+    const viewButtons = document.querySelectorAll('.view-violation-btn');
+    const imagePreviewElements = document.querySelectorAll('.image-preview');
+    
+    // Add listeners to view buttons
+    viewButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const violationId = this.getAttribute('data-violation-id');
+            if (violationId) {
+                showViolationDetail(violationId);
+            }
+        });
+    });
+    
+    // Add listeners to image previews
+    imagePreviewElements.forEach(preview => {
+        preview.addEventListener('click', function() {
+            const violationId = this.getAttribute('data-violation-id');
+            if (violationId) {
+                showViolationDetail(violationId);
+            }
+        });
+    });
+
     // Custom search functionality
     const searchInput = document.getElementById('searchInput');
     const tableRows = document.querySelectorAll('#ncapViolationsTable tbody tr');
 
-    searchInput.addEventListener('keyup', function() {
-        const searchTerm = this.value.toLowerCase();
-        
-        tableRows.forEach(row => {
-            const text = row.textContent.toLowerCase();
-            row.style.display = text.includes(searchTerm) ? '' : 'none';
+    if (searchInput) {
+        searchInput.addEventListener('keyup', function() {
+            const searchTerm = this.value.toLowerCase();
+            
+            tableRows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
         });
-    });
+    }
 });
+
+/**
+ * Show violation details in a modal
+ * Uses AJAX to fetch violation details with Micromodal.js
+ */
+function showViolationDetail(violationId) {
+    if (!violationId) return;
+    
+    // Get modal content element
+    const modalContent = document.getElementById('modal-violation-detail-content');
+    
+    // Show loading spinner in the modal
+    modalContent.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3">Loading violation details...</p>
+        </div>
+    `;
+    
+    // Show the modal
+    MicroModal.show('modal-violation-detail');
+    
+    // Fetch violation details - Fix: Use the correct URL path for violations
+    fetch(`/violation/${violationId}/modal/`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status} ${response.statusText}`);
+            }
+            return response.text();
+        })
+        .then(html => {
+            // Update modal content with fetched details
+            modalContent.innerHTML = html;
+        })
+        .catch(error => {
+            // Show error message in the modal
+            modalContent.innerHTML = `
+                <div class="alert alert-danger">
+                    <p>Error loading violation details:</p>
+                    <p>${error.message}</p>
+                </div>
+            `;
+        });
+}
 
 function showImageModal(imageUrl) {
     const previewImage = document.getElementById('previewImage');
@@ -369,59 +684,21 @@ function showImageModal(imageUrl) {
     modal.show();
 }
 
-function showViolationDetail(violationId) {
-    const modalBody = document.querySelector('#violationDetailModal .modal-body');
-    const modal = new bootstrap.Modal(document.getElementById('violationDetailModal'));
-    
-    modalBody.innerHTML = `
-        <div class="text-center py-5">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-        </div>
-    `;
-    
-    modal.show();
-
-    fetch(`/violation/${violationId}/modal/`)
-        .then(response => response.text())
-        .then(html => {
-            modalBody.innerHTML = html;
-        })
-        .catch(error => {
-            modalBody.innerHTML = `
-                <div class="alert alert-danger">
-                    Error loading violation details: ${error.message}
-                </div>
-            `;
-        });
-}
-
-// Add touch scroll handling for modal
-document.addEventListener('DOMContentLoaded', function() {
-    const modal = document.getElementById('violationDetailModal');
-    
-    if (modal) {
-        modal.addEventListener('shown.bs.modal', function() {
-            document.body.style.overflow = 'hidden';
-            document.body.style.position = 'fixed';
-            document.body.style.width = '100%';
-        });
-
-        modal.addEventListener('hidden.bs.modal', function() {
-            document.body.style.overflow = '';
-            document.body.style.position = '';
-            document.body.style.width = '';
-        });
-
-        // Handle modal scroll on iOS
-        if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-            modal.querySelector('.modal-body').addEventListener('touchmove', function(e) {
-                e.stopPropagation();
-            });
+// Helper function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
         }
     }
-});
+    return cookieValue;
+}
 </script>
 
 {% include 'includes/pagination.html' %}

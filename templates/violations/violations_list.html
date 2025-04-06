@@ -1,6 +1,27 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<!-- Add Micromodal.js for detail view modals -->
+<script src="https://unpkg.com/micromodal/dist/micromodal.min.js"></script>
+
+<!-- Add SweetAlert2 for confirmations -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+<!-- Fallback if CDN fails -->
+<script>
+    if (typeof Swal === 'undefined') {
+        // Create a script element and append it to the document
+        const script = document.createElement('script');
+        script.src = "https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js";
+        document.head.appendChild(script);
+        
+        const link = document.createElement('link');
+        link.rel = "stylesheet";
+        link.href = "https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css";
+        document.head.appendChild(link);
+    }
+</script>
+
 <div class="container-fluid py-4">
     <!-- Header Section -->
     <div class="card shadow-sm border-0 rounded-3 mb-4">
@@ -20,18 +41,18 @@
     <!-- Main Content Card -->
     <div class="card shadow-sm border-0 rounded-3">
         <div class="card-body p-4">
-            <!-- Table Container - Desktop View -->
-            <div class="table-responsive d-none d-md-block">
-                <table class="table table-hover align-middle" id="violationsTable">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
                     <thead>
                         <tr>
                             <th>ID</th>
+                            <th>Images</th>
                             <th>Date</th>
                             <th>Violator</th>
-                            <th>Type</th>
-                            <th>Amount</th>
+                            <th>License</th>
+                            <th>Violation</th>
+                            <th>Fine Amount</th>
                             <th>Status</th>
-                            <th>User Account</th>
                             <th class="text-end">Actions</th>
                         </tr>
                     </thead>
@@ -39,157 +60,92 @@
                         {% for violation in violations %}
                         <tr>
                             <td>{{ violation.id }}</td>
+                            <td>
+                                <div class="images-preview d-flex">
+                                    {% if violation.image %}
+                                    <div class="image-preview me-1">
+                                        <img src="{{ violation.image.url }}" alt="Violation Image" class="violation-thumbnail" 
+                                             data-violation-id="{{ violation.id }}" />
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if violation.driver_photo %}
+                                    <div class="image-preview me-1">
+                                        <img src="{{ violation.driver_photo.url }}" alt="Driver Photo" class="violation-thumbnail" 
+                                             data-violation-id="{{ violation.id }}" />
+                                        <div class="img-type">D</div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if violation.vehicle_photo %}
+                                    <div class="image-preview me-1">
+                                        <img src="{{ violation.vehicle_photo.url }}" alt="Vehicle Photo" class="violation-thumbnail" 
+                                             data-violation-id="{{ violation.id }}" />
+                                        <div class="img-type">V</div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if violation.secondary_photo %}
+                                    <div class="image-preview">
+                                        <img src="{{ violation.secondary_photo.url }}" alt="Secondary Photo" class="violation-thumbnail" 
+                                             data-violation-id="{{ violation.id }}" />
+                                        <div class="img-type">S</div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if not violation.image and not violation.driver_photo and not violation.vehicle_photo and not violation.secondary_photo %}
+                                    <div class="image-preview">
+                                        <div class="no-image">
+                                            <span class="material-icons">image_not_supported</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </td>
                             <td>{{ violation.violation_date|date:"M d, Y" }}</td>
-                            <td>
-                                <div class="d-flex flex-column">
-                                    <span class="fw-medium">{{ violation.violator.first_name }} {{ violation.violator.last_name }}</span>
-                                    <small class="text-muted">{{ violation.violator.license_number }}</small>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="violation-types">
-                                    {% for type in violation.get_violation_types %}
-                                    <span class="violation-type">{{ type }}</span>
-                                    {% if not forloop.last %}<span class="separator">•</span>{% endif %}
-                                    {% endfor %}
-                                </div>
-                            </td>
+                            <td>{{ violation.violator.first_name }} {{ violation.violator.last_name }}</td>
+                            <td>{{ violation.violator.license_number }}</td>
+                            <td>{{ violation.get_violation_type_display }}</td>
                             <td>₱{{ violation.fine_amount }}</td>
                             <td>
                                 {% include 'includes/status_badge.html' with status=violation.status display_text=violation.get_status_display %}
                             </td>
-                            <td>
-                                {% if violation.user_account %}
-                                    <span class="badge bg-success">
-                                        <span class="material-icons fs-6">person</span>
-                                        {{ violation.user_account.username }}
-                                    </span>
-                                {% else %}
-                                    <span class="badge bg-secondary">
-                                        <span class="material-icons fs-6">person_off</span>
-                                        None
-                                    </span>
-                                {% endif %}
-                            </td>
                             <td class="text-end">
-                                <div class="action-buttons">
-                                    <button onclick="showViolationDetail({{ violation.id }})" 
-                                            class="btn btn-action btn-view">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                </div>
+                                <a href="javascript:void(0);" class="btn btn-sm btn-primary view-violation-btn" data-violation-id="{{ violation.id }}">
+                                    <span class="material-icons">visibility</span>
+                                </a>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="8" class="text-center py-4">
-                                <div class="text-muted">
-                                    <span class="material-icons d-block mb-2" style="font-size: 2.5rem; opacity: 0.5;">search_off</span>
-                                    <p class="mb-0">No traffic violations found</p>
-                                </div>
-                            </td>
+                            <td colspan="9" class="text-center py-4">No violations found</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
             
-            <!-- Mobile Card View -->
-            <div class="violation-cards d-md-none">
-                {% for violation in violations %}
-                <div class="violation-card">
-                    <div class="violation-card-header">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="violation-id">#{{ violation.id }}</span>
-                            <span class="violation-date text-muted">{{ violation.violation_date|date:"M d, Y" }}</span>
-                        </div>
-                        <div class="violation-violator">
-                            <span class="fw-medium">{{ violation.violator.first_name }} {{ violation.violator.last_name }}</span>
-                            <span class="d-block text-muted small">{{ violation.violator.license_number }}</span>
-                        </div>
-                    </div>
-                    <div class="violation-card-content">
-                        <div class="violation-type-container">
-                            {% for type in violation.get_violation_types %}
-                            <span class="violation-type-mobile">{{ type }}</span>
-                            {% if not forloop.last %}<span class="separator">•</span>{% endif %}
-                            {% endfor %}
-                        </div>
-                    </div>
-                    <div class="violation-card-footer">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                {% include 'includes/status_badge.html' with status=violation.status display_text=violation.get_status_display %}
-                            </div>
-                            <div class="violation-amount">₱{{ violation.fine_amount }}</div>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mt-2">
-                            <div>
-                                {% if violation.user_account %}
-                                    <span class="badge bg-success">
-                                        <span class="material-icons fs-6">person</span>
-                                        {{ violation.user_account.username }}
-                                    </span>
-                                {% else %}
-                                    <span class="badge bg-secondary">
-                                        <span class="material-icons fs-6">person_off</span>
-                                        None
-                                    </span>
-                                {% endif %}
-                            </div>
-                            <div>
-                                <button onclick="showViolationDetail({{ violation.id }})" 
-                                        class="btn btn-sm btn-primary">
-                                    <i class="fas fa-eye me-1"></i> View
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% empty %}
-                <div class="text-center py-4">
-                    <div class="text-muted">
-                        <span class="material-icons d-block mb-2" style="font-size: 2.5rem; opacity: 0.5;">search_off</span>
-                        <p class="mb-0">No traffic violations found</p>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
+            {% include 'includes/pagination.html' with page_obj=page_obj %}
         </div>
     </div>
 </div>
 
-<!-- Status Change Modal -->
-<div class="modal fade" id="statusChangeModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">Update Status</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <div class="status-options">
-                    {% for status_code, status_label in status_choices %}
-                    <button class="status-option" data-status="{{ status_code }}">
-                        <span class="status-dot status-{{ status_code|lower }}"></span>
-                        {{ status_label }}
-                    </button>
-                    {% endfor %}
+<!-- Micromodal.js Violation Detail Modal -->
+<div class="modal micromodal-slide" id="modal-violation-detail" aria-hidden="true">
+    <div class="modal__overlay" tabindex="-1" data-micromodal-close>
+        <div class="modal__container modal-lg" role="dialog" aria-modal="true" aria-labelledby="modal-violation-detail-title">
+            <header class="modal__header">
+                <h2 class="modal__title" id="modal-violation-detail-title">Violation Details</h2>
+                <button class="modal__close" aria-label="Close modal" data-micromodal-close></button>
+            </header>
+            <main class="modal__content" id="modal-violation-detail-content">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3">Loading violation details...</p>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Violation Detail Modal -->
-<div class="modal fade" id="violationDetailModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">Violation Details</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body"></div>
+            </main>
         </div>
     </div>
 </div>
@@ -486,42 +442,392 @@
     background-size: 1000px 100%;
     animation: shimmer 2s infinite;
 }
+
+/* Image Preview Styles */
+.images-preview {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.image-preview {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.violation-thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    cursor: pointer;
+}
+
+.img-type {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    font-size: 10px;
+    padding: 1px 3px;
+    border-top-left-radius: 4px;
+}
+
+.no-image {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+.no-image .material-icons {
+    font-size: 18px;
+    color: #adb5bd;
+}
+
+/**************************\
+  Micromodal.js Styles
+\**************************/
+
+.modal {
+  font-family: -apple-system, BlinkMacSystemFont, avenir next, avenir, helvetica neue,
+    helvetica, ubuntu, roboto, noto, segoe ui, arial, sans-serif;
+}
+
+.modal__overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.modal__container {
+  background-color: #fff;
+  padding: 20px;
+  max-width: 90%;
+  width: 800px;
+  max-height: 90vh;
+  border-radius: 10px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  box-shadow: 0 15px 30px 0 rgba(0, 0, 0, 0.11),
+    0 5px 15px 0 rgba(0, 0, 0, 0.08);
+}
+
+.modal-lg {
+  max-width: 90%;
+  width: 800px;
+}
+
+.modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #eaeaea;
+  padding-bottom: 15px;
+}
+
+.modal__title {
+  margin-top: 0;
+  margin-bottom: 0;
+  font-weight: 600;
+  font-size: 1.25rem;
+  line-height: 1.25;
+  color: #00449e;
+  box-sizing: border-box;
+}
+
+.modal__close {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  position: relative;
+  width: 25px;
+  height: 25px;
+}
+
+.modal__close:before,
+.modal__close:after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 18px;
+  background-color: #333;
+  top: 3px;
+  left: 11px;
+}
+
+.modal__close:before {
+  transform: rotate(45deg);
+}
+
+.modal__close:after {
+  transform: rotate(-45deg);
+}
+
+.modal__content {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+  color: rgba(0, 0, 0, 0.8);
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.micromodal-slide {
+  display: none;
+}
+
+.micromodal-slide.is-open {
+  display: block;
+}
+
+.micromodal-slide[aria-hidden="false"] .modal__overlay {
+  animation: mmfadeIn .3s cubic-bezier(0, 0, .2, 1);
+}
+
+.micromodal-slide[aria-hidden="false"] .modal__container {
+  animation: mmslideIn .3s cubic-bezier(0, 0, .2, 1);
+}
+
+.micromodal-slide[aria-hidden="true"] .modal__overlay {
+  animation: mmfadeOut .3s cubic-bezier(0, 0, .2, 1);
+}
+
+.micromodal-slide[aria-hidden="true"] .modal__container {
+  animation: mmslideOut .3s cubic-bezier(0, 0, .2, 1);
+}
+
+.micromodal-slide .modal__container,
+.micromodal-slide .modal__overlay {
+  will-change: transform;
+}
+
+@keyframes mmfadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes mmfadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes mmslideIn {
+  from { transform: translateY(15%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes mmslideOut {
+  from { transform: translateY(0); }
+  to { transform: translateY(-10%); }
+}
 </style>
 
 <script>
-let currentViolationId = null;
-
-function showStatusModal(violationId, currentStatus) {
-    currentViolationId = violationId;
-    const modal = new bootstrap.Modal(document.getElementById('statusChangeModal'));
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Micromodal
+    MicroModal.init({
+        openTrigger: 'data-micromodal-trigger',
+        closeTrigger: 'data-micromodal-close',
+        disableFocus: false,
+        disableScroll: true,
+        awaitOpenAnimation: true,
+        awaitCloseAnimation: true
+    });
     
-    // Highlight current status
+    // Add event listeners for violation detail views
+    const viewButtons = document.querySelectorAll('.view-violation-btn');
+    const thumbnails = document.querySelectorAll('.violation-thumbnail');
+    
+    // Add listeners to view buttons
+    viewButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const violationId = this.getAttribute('data-violation-id');
+            if (violationId) {
+                showViolationDetail(violationId);
+            }
+        });
+    });
+    
+    // Add listeners to thumbnails
+    thumbnails.forEach(thumbnail => {
+        thumbnail.addEventListener('click', function() {
+            const violationId = this.getAttribute('data-violation-id');
+            if (violationId) {
+                showViolationDetail(violationId);
+            }
+        });
+    });
+    
+    // Handle status modal trigger
     document.querySelectorAll('.status-option').forEach(option => {
-        if (option.dataset.status === currentStatus) {
-            option.classList.add('active');
-        } else {
-            option.classList.remove('active');
-        }
+        option.addEventListener('click', function() {
+            const violationId = option.closest('[data-violation-id]').getAttribute('data-violation-id');
+            const newStatus = this.getAttribute('data-status');
+            if (violationId && newStatus) {
+                updateViolationStatus(violationId, newStatus);
+            }
+        });
     });
-    
-    modal.show();
-}
 
-// Add click handlers to status options
-document.querySelectorAll('.status-option').forEach(option => {
-    option.addEventListener('click', function() {
-        if (currentViolationId) {
-            updateViolationStatus(currentViolationId, this.dataset.status);
-            bootstrap.Modal.getInstance(document.getElementById('statusChangeModal')).hide();
+    // Custom search functionality
+    const searchForm = document.querySelector('.search-form');
+    if (searchForm) {
+        const clearButton = document.querySelector('.clear-search');
+        if (clearButton) {
+            clearButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = this.getAttribute('href');
+            });
         }
-    });
+    }
+    
+    // DataTable initialization (if available)
+    if (typeof $ !== 'undefined' && $.fn.DataTable) {
+        const table = $('#violationsTable').DataTable({
+            pageLength: 10,
+            order: [[1, "desc"]],
+            dom: 'rt<"bottom d-flex justify-content-between align-items-center pt-3"ip>',
+            responsive: true,
+            columnDefs: [
+                { responsivePriority: 1, targets: [0, 2, 5, 7] }, // ID, Violator, Status, Actions
+                { responsivePriority: 2, targets: [6] }, // User Account
+                { responsivePriority: 3, targets: [1, 3, 4] } // Date, Type, Amount
+            ]
+        });
+
+        // Custom search functionality
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('keyup', function() {
+                table.search(this.value).draw();
+            });
+        }
+    }
 });
 
+function showViolationDetail(violationId) {
+    if (!violationId) return;
+    
+    // Get modal content element
+    const modalContent = document.getElementById('modal-violation-detail-content');
+    
+    // Show loading spinner in the modal
+    modalContent.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3">Loading violation details...</p>
+        </div>
+    `;
+    
+    // Show the modal
+    MicroModal.show('modal-violation-detail');
+    
+    // Fetch violation details
+    fetch(`/violation/${violationId}/modal/`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status} ${response.statusText}`);
+            }
+            return response.text();
+        })
+        .then(html => {
+            // Update modal content with fetched details
+            modalContent.innerHTML = html;
+        })
+        .catch(error => {
+            // Show error message in the modal
+            modalContent.innerHTML = `
+                <div class="alert alert-danger">
+                    <p>Error loading violation details:</p>
+                    <p>${error.message}</p>
+                </div>
+            `;
+        });
+}
+
+function showStatusModal(violationId, currentStatus) {
+    // Use SweetAlert2 for the status change confirmation
+    const statusOptions = document.createElement('div');
+    statusOptions.className = 'status-options';
+    
+    // Get status options from current page data (if available)
+    const statusChoices = [
+        { code: 'PENDING', label: 'Pending' },
+        { code: 'ADJUDICATED', label: 'Adjudicated' },
+        { code: 'PAID', label: 'Paid' },
+        { code: 'SETTLED', label: 'Settled' },
+        { code: 'OVERDUE', label: 'Overdue' }
+    ];
+    
+    // Create status options HTML
+    statusChoices.forEach(status => {
+        const button = document.createElement('button');
+        button.className = `status-option ${status.code === currentStatus ? 'active' : ''}`;
+        button.setAttribute('data-status', status.code);
+        button.innerHTML = `
+            <span class="status-dot status-${status.code.toLowerCase()}"></span>
+            ${status.label}
+        `;
+        button.onclick = () => {
+            updateViolationStatus(violationId, status.code);
+            Swal.close();
+        };
+        statusOptions.appendChild(button);
+    });
+    
+    Swal.fire({
+        title: 'Update Status',
+        html: statusOptions.outerHTML,
+        showCancelButton: true,
+        showConfirmButton: false,
+        cancelButtonText: 'Cancel',
+        customClass: {
+            container: 'status-modal-container'
+        }
+    });
+}
+
 function updateViolationStatus(violationId, newStatus) {
-    confirmAction(
-        'Update Violation Status',
-        `Are you sure you want to change this violation's status to ${newStatus.toLowerCase()}?`,
-        () => {
+    if (!violationId || !newStatus) return;
+    
+    // Use SweetAlert for confirmation
+    Swal.fire({
+        title: 'Update Violation Status',
+        text: `Are you sure you want to change this violation's status to ${newStatus.toLowerCase()}?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, Update Status'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Show loading state
+            Swal.fire({
+                title: 'Updating...',
+                html: '<div class="spinner-border text-primary" role="status"></div>',
+                showConfirmButton: false,
+                allowOutsideClick: false
+            });
+            
+            // Send the update request
             fetch(`/violations/${violationId}/update-status/`, {
                 method: 'POST',
                 headers: {
@@ -530,81 +836,51 @@ function updateViolationStatus(violationId, newStatus) {
                 },
                 body: `status=${newStatus}`
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status} ${response.statusText}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.status === 'success') {
-                    window.location.reload();
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'Violation status has been updated',
+                        icon: 'success'
+                    }).then(() => {
+                        window.location.reload();
+                    });
                 } else {
-                    alert(data.message || 'Error updating status');
+                    throw new Error(data.message || 'Error updating status');
                 }
             })
             .catch(error => {
-                alert('Error: ' + error);
+                Swal.fire({
+                    title: 'Error',
+                    text: error.message,
+                    icon: 'error'
+                });
             });
         }
-    );
+    });
 }
 
-// Initialize DataTable
-$(document).ready(function() {
-    const table = $('#violationsTable').DataTable({
-        pageLength: 10,
-        order: [[1, "desc"]],
-        dom: 'rt<"bottom d-flex justify-content-between align-items-center pt-3"ip>',
-        responsive: true,
-        columnDefs: [
-            { responsivePriority: 1, targets: [0, 2, 5, 7] }, // ID, Violator, Status, Actions
-            { responsivePriority: 2, targets: [6] }, // User Account
-            { responsivePriority: 3, targets: [1, 3, 4] } // Date, Type, Amount
-        ]
-    });
-
-    // Custom search functionality
-    $('#searchInput').on('keyup', function() {
-        table.search($(this).val()).draw();
-    });
-});
-
-function showViolationDetail(violationId) {
-    const modalBody = document.querySelector('#violationDetailModal .modal-body');
-    const modal = new bootstrap.Modal(document.getElementById('violationDetailModal'));
-    
-    modalBody.innerHTML = `
-        <div class="text-center py-5">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-        </div>
-    `;
-    
-    modal.show();
-
-    fetch(`/violation/${violationId}/modal/`)
-        .then(response => response.text())
-        .then(html => {
-            modalBody.innerHTML = html;
-        })
-        .catch(error => {
-            modalBody.innerHTML = `
-                <div class="alert alert-danger">
-                    Error loading violation details: ${error.message}
-                </div>
-            `;
-        });
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    const searchForm = document.querySelector('.search-form');
-
-    // Handle clear search
-    const clearButton = document.querySelector('.clear-search');
-    if (clearButton) {
-        clearButton.addEventListener('click', function(e) {
-            e.preventDefault();
-            window.location.href = this.getAttribute('href');
-        });
+// Helper function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
     }
-});
+    return cookieValue;
+}
 </script>
 
 {% include 'includes/pagination.html' %}

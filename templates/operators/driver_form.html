@@ -1,0 +1,220 @@
+{% extends 'user_portal/base_user.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-header bg-transparent d-flex align-items-center px-4 py-3 border-bottom">
+            <span class="material-icons me-2" style="color: var(--primary-color); font-size: 24px;">
+                {% if is_create %}person_add{% else %}edit{% endif %}
+            </span>
+            <h4 class="mb-0 fw-bold">{{ title }}</h4>
+        </div>
+        <div class="card-body p-4">
+            <form method="POST" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                {% if form.errors %}
+                <div class="alert alert-danger">
+                    <p class="mb-0"><strong>Please correct the following errors:</strong></p>
+                    <ul class="mb-0">
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <li>{{ field.label }}: {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                
+                <!-- Personal Information -->
+                <div class="mb-4">
+                    <h5 class="fw-bold mb-3">Personal Information</h5>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-5">
+                            <label for="{{ form.last_name.id_for_label }}" class="form-label">Last Name</label>
+                            {{ form.last_name }}
+                            {% if form.last_name.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.last_name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-5">
+                            <label for="{{ form.first_name.id_for_label }}" class="form-label">First Name</label>
+                            {{ form.first_name }}
+                            {% if form.first_name.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.first_name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-2">
+                            <label for="{{ form.middle_initial.id_for_label }}" class="form-label">M.I.</label>
+                            {{ form.middle_initial }}
+                            {% if form.middle_initial.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.middle_initial.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.address.id_for_label }}" class="form-label">Address</label>
+                        {{ form.address }}
+                        {% if form.address.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.address.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Driver License & Contact Information -->
+                <div class="mb-4">
+                    <h5 class="fw-bold mb-3">License & Contact Information</h5>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.license_number.id_for_label }}" class="form-label">Driver's License Number</label>
+                            {{ form.license_number }}
+                            {% if form.license_number.help_text %}
+                                <div class="form-text">{{ form.license_number.help_text }}</div>
+                            {% endif %}
+                            {% if form.license_number.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.license_number.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.contact_number.id_for_label }}" class="form-label">Contact Number</label>
+                            {{ form.contact_number }}
+                            {% if form.contact_number.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.contact_number.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Emergency Contact Information -->
+                <div class="mb-4">
+                    <h5 class="fw-bold mb-3">Emergency Contact</h5>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.emergency_contact.id_for_label }}" class="form-label">Emergency Contact Name</label>
+                            {{ form.emergency_contact }}
+                            {% if form.emergency_contact.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.emergency_contact.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.emergency_contact_number.id_for_label }}" class="form-label">Emergency Contact Number</label>
+                            {{ form.emergency_contact_number }}
+                            {% if form.emergency_contact_number.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.emergency_contact_number.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Status -->
+                <div class="mb-4">
+                    <h5 class="fw-bold mb-3">Status</h5>
+                    <div class="form-check mb-3">
+                        {{ form.active }}
+                        <label class="form-check-label" for="{{ form.active.id_for_label }}">
+                            This driver is currently active
+                        </label>
+                        {% if form.active.help_text %}
+                            <div class="form-text">{{ form.active.help_text }}</div>
+                        {% endif %}
+                        {% if form.active.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.active.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="d-flex justify-content-end">
+                    <a href="{% url 'operator_dashboard' %}" class="btn btn-outline-secondary d-flex align-items-center px-4 py-2 me-2">
+                        <span class="material-icons fs-5 me-2">arrow_back</span> Back to Dashboard
+                    </a>
+                    <button type="submit" class="btn btn-primary d-flex align-items-center px-4 py-2">
+                        <span class="material-icons fs-5 me-2">{% if is_create %}add{% else %}save{% endif %}</span> {{ submit_text }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Help Panel -->
+    <div class="card shadow-sm border-0 rounded-3 mt-4">
+        <div class="card-header bg-transparent d-flex align-items-center px-4 py-3 border-bottom">
+            <span class="material-icons me-2" style="color: var(--primary-color); font-size: 24px;">help_outline</span>
+            <h5 class="mb-0 fw-bold">About Driver Registration</h5>
+        </div>
+        <div class="card-body p-4">
+            <p class="mb-2"><strong>PD Number Generation:</strong> The system automatically generates a unique driver ID number which will be used for identification purposes.</p>
+            <p class="mb-2"><strong>Driver Assignments:</strong> After registration, you'll be able to assign this driver to specific vehicles in your fleet.</p>
+            <p class="mb-0"><strong>Requirements:</strong> Ensure that all driver information, particularly license numbers, is accurate and up-to-date. This helps maintain regulatory compliance.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Form validation script
+    (function () {
+        'use strict'
+        
+        // Fetch all forms we want to apply validation to
+        var forms = document.querySelectorAll('.needs-validation')
+        
+        // Loop over them and prevent submission
+        Array.prototype.slice.call(forms)
+            .forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                    }
+                    
+                    form.classList.add('was-validated')
+                }, false)
+            })
+    })()
+</script>
+{% endblock %} 

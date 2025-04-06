@@ -2,6 +2,10 @@
 {% load static %}
 
 {% block content %}
+<!-- Add SweetAlert2 Library -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+
 <div class="container-fluid py-4">
     <div class="card shadow-sm border-0 rounded-3">
         <div class="card-header bg-white py-3">
@@ -23,148 +27,294 @@
             </div>
             {% endif %}
             
-            <form method="POST" enctype="multipart/form-data" class="needs-validation" novalidate action="{% url 'save_ncap_violation' %}">
-                {% csrf_token %}
-                
-                <div class="row g-4">
-                    <!-- Left Column: Image Upload -->
-                    <div class="col-lg-4">
-                        <div class="upload-card">
-                            <div class="image-preview-container mb-4">
-                                <div class="image-preview" id="imagePreview">
-                                    <span class="material-icons">add_photo_alternate</span>
-                                    <p class="text-muted">Click to upload violation image</p>
-                                </div>
-                                {{ form.image.errors }}
-                                {{ form.image }}
+            <!-- Skeleton loader for page loading -->
+            <div id="pageSkeletonLoader" class="skeleton-page-loader">
+                <!-- Search Section Skeleton -->
+                <div class="mb-4">
+                    <div class="skeleton-card">
+                        <div class="skeleton-title"></div>
+                        <div class="row g-3 mt-3">
+                            <div class="col-md-6">
+                                <div class="skeleton-input"></div>
                             </div>
-                            
-                            <div class="upload-info">
-                                <h6 class="mb-3">Image Requirements</h6>
-                                <ul class="requirements-list">
-                                    <li><span class="material-icons">check_circle</span> Clear and visible license plate</li>
-                                    <li><span class="material-icons">check_circle</span> Good lighting conditions</li>
-                                    <li><span class="material-icons">check_circle</span> JPG, JPEG, or PNG format</li>
-                                    <li><span class="material-icons">check_circle</span> Max file size: 5MB</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Right Column: Violation Details -->
-                    <div class="col-lg-8">
-                        <div class="info-card">
-                            <!-- Violator Information -->
-                            <div class="section mb-4">
-                                <h5 class="section-title">Violator Information</h5>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <div class="form-floating">
-                                            {{ form.license_number }}
-                                            <label for="{{ form.license_number.id_for_label }}">License Number</label>
-                                            {{ form.license_number.errors }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-floating">
-                                            {{ form.first_name }}
-                                            <label for="{{ form.first_name.id_for_label }}">First Name</label>
-                                            {{ form.first_name.errors }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-floating">
-                                            {{ form.last_name }}
-                                            <label for="{{ form.last_name.id_for_label }}">Last Name</label>
-                                            {{ form.last_name.errors }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Vehicle Information -->
-                            <div class="section mb-4">
-                                <h5 class="section-title">Vehicle Information</h5>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <div class="form-floating">
-                                            {{ form.plate_number }}
-                                            <label for="{{ form.plate_number.id_for_label }}">Plate Number</label>
-                                            {{ form.plate_number.errors }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-floating">
-                                            {{ form.vehicle_type }}
-                                            <label for="{{ form.vehicle_type.id_for_label }}">Vehicle Type</label>
-                                            {{ form.vehicle_type.errors }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-floating">
-                                            {{ form.color }}
-                                            <label for="{{ form.color.id_for_label }}">Color</label>
-                                            {{ form.color.errors }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-floating">
-                                            {{ form.classification }}
-                                            <label for="{{ form.classification.id_for_label }}">Classification</label>
-                                            {{ form.classification.errors }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Violation Details -->
-                            <div class="section mb-4">
-                                <h5 class="section-title">Violation Details</h5>
-                                <div class="row g-3">
-                                    <div class="col-md-12">
-                                        <div class="form-floating">
-                                            {{ form.location }}
-                                            <label for="{{ form.location.id_for_label }}">Location</label>
-                                            {{ form.location.errors }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-floating">
-                                            {{ form.violation_date }}
-                                            <label for="{{ form.violation_date.id_for_label }}">Violation Date</label>
-                                            {{ form.violation_date.errors }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-floating">
-                                            {{ form.violation_type }}
-                                            <label for="{{ form.violation_type.id_for_label }}">Violation Type</label>
-                                            {{ form.violation_type.errors }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-floating">
-                                            {{ form.fine_amount }}
-                                            <label for="{{ form.fine_amount.id_for_label }}">Fine Amount (₱)</label>
-                                            {{ form.fine_amount.errors }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Action Buttons -->
-                            <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-                                <a href="{% url 'ncap_violations_list' %}" class="btn btn-outline-secondary">
-                                    <span class="material-icons me-2">arrow_back</span>Cancel
-                                </a>
-                                <button type="submit" class="btn btn-primary">
-                                    <span class="material-icons me-2">save</span>{{ button_text|default:"Record Violation" }}
-                                </button>
+                            <div class="col-md-6">
+                                <div class="skeleton-input"></div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </form>
+                
+                <div class="row g-4">
+                    <!-- Image Upload Skeleton -->
+                    <div class="col-lg-4">
+                        <div class="skeleton-card">
+                            <div class="skeleton-image"></div>
+                            <div class="mt-4">
+                                <div class="skeleton-text"></div>
+                                <div class="skeleton-text-sm mt-2"></div>
+                                <div class="skeleton-text-sm mt-2"></div>
+                                <div class="skeleton-text-sm mt-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Form Fields Skeleton -->
+                    <div class="col-lg-8">
+                        <div class="skeleton-card">
+                            <div class="skeleton-title"></div>
+                            <div class="row g-3 mt-3">
+                                <div class="col-md-6">
+                                    <div class="skeleton-input"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="skeleton-input"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="skeleton-input"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="skeleton-title mt-4"></div>
+                            <div class="row g-3 mt-3">
+                                <div class="col-md-6">
+                                    <div class="skeleton-input"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="skeleton-input"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="skeleton-input"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="skeleton-input"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="skeleton-title mt-4"></div>
+                            <div class="row g-3 mt-3">
+                                <div class="col-md-12">
+                                    <div class="skeleton-input"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="skeleton-input"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="skeleton-input"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-end mt-4 pt-3">
+                                <div class="skeleton-button me-2"></div>
+                                <div class="skeleton-button-primary"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Actual content (hidden until loaded) -->
+            <div id="pageContent" style="display: none;">
+                <!-- Search Section -->
+                <div class="search-section mb-4">
+                    <div class="info-card">
+                        <h5 class="section-title">Quick Search</h5>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="search-container">
+                                    <label for="operatorSearch" class="form-label">Search Operators by PD/PO Number</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><span class="material-icons">business</span></span>
+                                        <input type="text" class="form-control" id="operatorSearch" 
+                                               placeholder="Enter PD/PO number..." autocomplete="off">
+                                        <button class="btn btn-primary" type="button" id="searchOperatorBtn">
+                                            <span class="material-icons">search</span>
+                                        </button>
+                                    </div>
+                                    <div id="operatorResults" class="search-results">
+                                        <!-- Search results skeleton loaders -->
+                                        <div class="skeleton-results d-none">
+                                            <div class="skeleton-result-item"></div>
+                                            <div class="skeleton-result-item"></div>
+                                            <div class="skeleton-result-item"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="search-container">
+                                    <label for="driverSearch" class="form-label">Search Drivers by PD Number</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><span class="material-icons">drive_eta</span></span>
+                                        <input type="text" class="form-control" id="driverSearch" 
+                                               placeholder="Enter PD number..." autocomplete="off">
+                                        <button class="btn btn-primary" type="button" id="searchDriverBtn">
+                                            <span class="material-icons">search</span>
+                                        </button>
+                                    </div>
+                                    <div id="driverResults" class="search-results">
+                                        <!-- Search results skeleton loaders -->
+                                        <div class="skeleton-results d-none">
+                                            <div class="skeleton-result-item"></div>
+                                            <div class="skeleton-result-item"></div>
+                                            <div class="skeleton-result-item"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <form method="POST" enctype="multipart/form-data" class="needs-validation" novalidate action="{% url 'save_ncap_violation' %}">
+                    {% csrf_token %}
+                    <!-- Hidden fields for storing selected ID values -->
+                    <input type="hidden" id="selectedOperatorId" name="selected_operator_id" value="">
+                    <input type="hidden" id="selectedDriverId" name="selected_driver_id" value="">
+                    
+                    <div class="row g-4">
+                        <!-- Left Column: Image Upload -->
+                        <div class="col-lg-4">
+                            <div class="upload-card">
+                                <div class="image-preview-container mb-4">
+                                    <div class="image-preview" id="imagePreview">
+                                        <span class="material-icons">add_photo_alternate</span>
+                                        <p class="text-muted">Click to upload violation image</p>
+                                    </div>
+                                    <!-- Image upload skeleton -->
+                                    <div class="image-uploading-skeleton d-none">
+                                        <div class="skeleton-pulse"></div>
+                                    </div>
+                                    {{ form.image.errors }}
+                                    {{ form.image }}
+                                </div>
+                                
+                                <div class="upload-info">
+                                    <h6 class="mb-3">Image Requirements</h6>
+                                    <ul class="requirements-list">
+                                        <li><span class="material-icons">check_circle</span> Clear and visible license plate</li>
+                                        <li><span class="material-icons">check_circle</span> Good lighting conditions</li>
+                                        <li><span class="material-icons">check_circle</span> JPG, JPEG, or PNG format</li>
+                                        <li><span class="material-icons">check_circle</span> Max file size: 5MB</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Violation Details -->
+                        <div class="col-lg-8">
+                            <div class="info-card">
+                                <!-- Violator Information -->
+                                <div class="section mb-4">
+                                    <h5 class="section-title">Violator Information</h5>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                {{ form.license_number }}
+                                                <label for="{{ form.license_number.id_for_label }}">License Number</label>
+                                                {{ form.license_number.errors }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                {{ form.first_name }}
+                                                <label for="{{ form.first_name.id_for_label }}">First Name</label>
+                                                {{ form.first_name.errors }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                {{ form.last_name }}
+                                                <label for="{{ form.last_name.id_for_label }}">Last Name</label>
+                                                {{ form.last_name.errors }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Vehicle Information -->
+                                <div class="section mb-4">
+                                    <h5 class="section-title">Vehicle Information</h5>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                {{ form.plate_number }}
+                                                <label for="{{ form.plate_number.id_for_label }}">Plate Number</label>
+                                                {{ form.plate_number.errors }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                {{ form.vehicle_type }}
+                                                <label for="{{ form.vehicle_type.id_for_label }}">Vehicle Type</label>
+                                                {{ form.vehicle_type.errors }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                {{ form.color }}
+                                                <label for="{{ form.color.id_for_label }}">Color</label>
+                                                {{ form.color.errors }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                {{ form.classification }}
+                                                <label for="{{ form.classification.id_for_label }}">Classification</label>
+                                                {{ form.classification.errors }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Violation Details -->
+                                <div class="section mb-4">
+                                    <h5 class="section-title">Violation Details</h5>
+                                    <div class="row g-3">
+                                        <div class="col-md-12">
+                                            <div class="form-floating">
+                                                {{ form.location }}
+                                                <label for="{{ form.location.id_for_label }}">Location</label>
+                                                {{ form.location.errors }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                {{ form.violation_date }}
+                                                <label for="{{ form.violation_date.id_for_label }}">Violation Date</label>
+                                                {{ form.violation_date.errors }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                {{ form.violation_type }}
+                                                <label for="{{ form.violation_type.id_for_label }}">Violation Type</label>
+                                                {{ form.violation_type.errors }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                {{ form.fine_amount }}
+                                                <label for="{{ form.fine_amount.id_for_label }}">Fine Amount (₱)</label>
+                                                {{ form.fine_amount.errors }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                                    <a href="{% url 'ncap_violations_list' %}" class="btn btn-outline-secondary">
+                                        <span class="material-icons me-2">arrow_back</span>Cancel
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <span class="material-icons me-2">save</span>{{ button_text|default:"Record Violation" }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>
@@ -185,6 +335,7 @@
     overflow: hidden;
     cursor: pointer;
     transition: all 0.3s ease;
+    position: relative;
 }
 
 .image-preview-container:hover {
@@ -292,13 +443,224 @@
 #id_image {
     display: none;
 }
+
+/* Search Section Styles */
+.search-container {
+    position: relative;
+    margin-bottom: 1rem;
+}
+
+.search-results {
+    position: absolute;
+    width: 100%;
+    max-height: 300px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    z-index: 1000;
+    display: none;
+}
+
+.search-result-item {
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.search-result-item:hover {
+    background-color: rgba(37, 99, 235, 0.1);
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.search-result-item .item-name {
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.search-result-item .item-details {
+    font-size: 0.85rem;
+    color: var(--text-light);
+}
+
+.search-result-item .pd-number {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    background: rgba(37, 99, 235, 0.1);
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.no-results {
+    padding: 15px;
+    text-align: center;
+    color: var(--text-light);
+}
+
+.item-selected {
+    background-color: rgba(37, 99, 235, 0.2);
+}
+
+/* Skeleton loader styles */
+.skeleton-page-loader {
+    width: 100%;
+}
+
+.skeleton-card {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+    margin-bottom: 1.5rem;
+}
+
+.skeleton-title {
+    height: 24px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 4px;
+    width: 180px;
+    margin-bottom: 1.5rem;
+}
+
+.skeleton-input {
+    height: 56px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+.skeleton-text {
+    height: 20px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 4px;
+    width: 100%;
+}
+
+.skeleton-text-sm {
+    height: 16px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 4px;
+    width: 90%;
+}
+
+.skeleton-image {
+    width: 100%;
+    aspect-ratio: 4/3;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 12px;
+}
+
+.skeleton-button {
+    height: 40px;
+    width: 100px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 8px;
+}
+
+.skeleton-button-primary {
+    height: 40px;
+    width: 150px;
+    background: linear-gradient(90deg, #e6effd 25%, #d1e0fb 50%, #e6effd 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 8px;
+}
+
+.skeleton-result-item {
+    height: 80px;
+    margin-bottom: 8px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 6px;
+}
+
+.skeleton-results {
+    padding: 10px;
+}
+
+.image-uploading-skeleton {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.skeleton-pulse {
+    width: 80%;
+    height: 80%;
+    background: linear-gradient(90deg, rgba(240, 240, 240, 0.5) 25%, rgba(224, 224, 224, 0.5) 50%, rgba(240, 240, 240, 0.5) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 12px;
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
 </style>
 
 <script>
+// Add SweetAlert2 dynamic loader to ensure availability
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof Swal === 'undefined') {
+        // If SweetAlert is not defined, load it dynamically
+        const sweetAlertScript = document.createElement('script');
+        sweetAlertScript.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js';
+        document.head.appendChild(sweetAlertScript);
+        
+        // Add CSS
+        const sweetAlertCSS = document.createElement('link');
+        sweetAlertCSS.rel = 'stylesheet';
+        sweetAlertCSS.href = 'https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css';
+        document.head.appendChild(sweetAlertCSS);
+    }
+});
+
 // Image preview functionality
 document.addEventListener('DOMContentLoaded', function() {
+    // Page loader functionality
+    const pageSkeletonLoader = document.getElementById('pageSkeletonLoader');
+    const pageContent = document.getElementById('pageContent');
+    
+    // Simulate loading delay
+    setTimeout(() => {
+        pageSkeletonLoader.style.display = 'none';
+        pageContent.style.display = 'block';
+    }, 1500); // 1.5 seconds loading simulation
+    
     const imagePreview = document.getElementById('imagePreview');
     const imageInput = document.getElementById('id_image');
+    const imageUploadingSkeleton = document.querySelector('.image-uploading-skeleton');
     
     // Hide the default file input
     imageInput.classList.add('d-none');
@@ -309,10 +671,32 @@ document.addEventListener('DOMContentLoaded', function() {
     
     imageInput.addEventListener('change', function(e) {
         if (this.files && this.files[0]) {
+            // Show skeleton loader
+            imageUploadingSkeleton.classList.remove('d-none');
+            
             const reader = new FileReader();
             
             reader.onload = function(e) {
-                imagePreview.innerHTML = `<img src="${e.target.result}" alt="Violation Preview">`;
+                // Simulate loading delay
+                setTimeout(() => {
+                    // Hide skeleton and show image
+                    imageUploadingSkeleton.classList.add('d-none');
+                    imagePreview.innerHTML = `<img src="${e.target.result}" alt="Violation Preview">`;
+                    
+                    // Use SweetAlert for success notification instead of toast
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Image Uploaded',
+                            text: 'Image preview is ready',
+                            toast: true,
+                            position: 'bottom-end',
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true
+                        });
+                    }
+                }, 1200); // 1.2 seconds loading simulation
             }
             
             reader.readAsDataURL(this.files[0]);
@@ -326,11 +710,338 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!form.checkValidity()) {
                 event.preventDefault();
                 event.stopPropagation();
+                
+                // Show validation error with SweetAlert
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Form Validation Error',
+                        text: 'Please complete all required fields correctly',
+                        confirmButtonText: 'OK'
+                    });
+                }
             }
             
             form.classList.add('was-validated');
         }, false);
     });
+    
+    // Operator and Driver Search Functionality
+    const operatorSearch = document.getElementById('operatorSearch');
+    const driverSearch = document.getElementById('driverSearch');
+    const operatorResults = document.getElementById('operatorResults');
+    const driverResults = document.getElementById('driverResults');
+    const searchOperatorBtn = document.getElementById('searchOperatorBtn');
+    const searchDriverBtn = document.getElementById('searchDriverBtn');
+    const operatorSkeletonResults = operatorResults.querySelector('.skeleton-results');
+    const driverSkeletonResults = driverResults.querySelector('.skeleton-results');
+    
+    // Selected IDs
+    const selectedOperatorId = document.getElementById('selectedOperatorId');
+    const selectedDriverId = document.getElementById('selectedDriverId');
+    
+    // Form fields
+    const licenseNumber = document.getElementById('{{ form.license_number.id_for_label }}');
+    const firstName = document.getElementById('{{ form.first_name.id_for_label }}');
+    const lastName = document.getElementById('{{ form.last_name.id_for_label }}');
+    const plateNumber = document.getElementById('{{ form.plate_number.id_for_label }}');
+    const vehicleType = document.getElementById('{{ form.vehicle_type.id_for_label }}');
+    const vehicleColor = document.getElementById('{{ form.color.id_for_label }}');
+    const vehicleClassification = document.getElementById('{{ form.classification.id_for_label }}');
+    
+    // Search for operators
+    searchOperatorBtn.addEventListener('click', () => {
+        const query = operatorSearch.value.trim();
+        if (query.length < 3) {
+            // Use SweetAlert for validation error
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Search Query Too Short',
+                    text: 'Please enter at least 3 characters',
+                    confirmButtonText: 'OK'
+                });
+            } else {
+                alert('Please enter at least 3 characters');
+            }
+            return;
+        }
+        
+        // Show skeleton loaders
+        operatorResults.style.display = 'block';
+        operatorSkeletonResults.classList.remove('d-none');
+        
+        fetch(`/api/search-operators/?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                // Simulate loading delay
+                setTimeout(() => {
+                    operatorResults.innerHTML = '';
+                    operatorResults.style.display = 'block';
+                    
+                    if (data.length === 0) {
+                        operatorResults.innerHTML = '<div class="no-results">No operators found</div>';
+                        return;
+                    }
+                    
+                    data.forEach(operator => {
+                        const resultItem = document.createElement('div');
+                        resultItem.className = 'search-result-item';
+                        resultItem.innerHTML = `
+                            <div class="item-name">${operator.last_name}, ${operator.first_name}</div>
+                            <div class="item-details">Address: ${operator.address}</div>
+                            <div class="mt-1">
+                                <span class="pd-number">PD: ${operator.new_pd_number}</span>
+                                ${operator.old_pd_number ? `<span class="pd-number ms-2">Old PD: ${operator.old_pd_number}</span>` : ''}
+                            </div>
+                        `;
+                        
+                        // Add click event to select operator
+                        resultItem.addEventListener('click', () => {
+                            selectOperator(operator);
+                        });
+                        
+                        operatorResults.appendChild(resultItem);
+                    });
+                }, 1000); // 1 second loading simulation
+            })
+            .catch(error => {
+                console.error('Error searching operators:', error);
+                operatorResults.innerHTML = '<div class="no-results">Error searching operators</div>';
+                operatorResults.style.display = 'block';
+                
+                // Show error with SweetAlert
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Search Error',
+                        text: 'Failed to search operators. Please try again.',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            });
+    });
+    
+    // Search for drivers
+    searchDriverBtn.addEventListener('click', () => {
+        const query = driverSearch.value.trim();
+        if (query.length < 3) {
+            // Use SweetAlert for validation error
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Search Query Too Short',
+                    text: 'Please enter at least 3 characters',
+                    confirmButtonText: 'OK'
+                });
+            } else {
+                alert('Please enter at least 3 characters');
+            }
+            return;
+        }
+        
+        // Show skeleton loaders
+        driverResults.style.display = 'block';
+        driverSkeletonResults.classList.remove('d-none');
+        
+        fetch(`/api/search-drivers/?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                // Simulate loading delay
+                setTimeout(() => {
+                    driverResults.innerHTML = '';
+                    driverResults.style.display = 'block';
+                    
+                    if (data.length === 0) {
+                        driverResults.innerHTML = '<div class="no-results">No drivers found</div>';
+                        return;
+                    }
+                    
+                    data.forEach(driver => {
+                        const resultItem = document.createElement('div');
+                        resultItem.className = 'search-result-item';
+                        resultItem.innerHTML = `
+                            <div class="item-name">${driver.last_name}, ${driver.first_name}</div>
+                            <div class="item-details">Address: ${driver.address}</div>
+                            <div class="mt-1">
+                                <span class="pd-number">PD: ${driver.new_pd_number}</span>
+                                ${driver.old_pd_number ? `<span class="pd-number ms-2">Old PD: ${driver.old_pd_number}</span>` : ''}
+                            </div>
+                        `;
+                        
+                        // Add click event to select driver
+                        resultItem.addEventListener('click', () => {
+                            selectDriver(driver);
+                        });
+                        
+                        driverResults.appendChild(resultItem);
+                    });
+                }, 1000); // 1 second loading simulation
+            })
+            .catch(error => {
+                console.error('Error searching drivers:', error);
+                driverResults.innerHTML = '<div class="no-results">Error searching drivers</div>';
+                driverResults.style.display = 'block';
+                
+                // Show error with SweetAlert
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Search Error',
+                        text: 'Failed to search drivers. Please try again.',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            });
+    });
+    
+    // Select operator and populate fields
+    function selectOperator(operator) {
+        // Set selected operator ID
+        selectedOperatorId.value = operator.id;
+        
+        // Update the search field
+        operatorSearch.value = `${operator.new_pd_number} - ${operator.last_name}, ${operator.first_name}`;
+        
+        // Highlight the selected item and close results
+        const items = operatorResults.querySelectorAll('.search-result-item');
+        items.forEach(item => item.classList.remove('item-selected'));
+        operatorResults.style.display = 'none';
+        
+        // Populate the form fields
+        if (!lastName.value && !firstName.value) {
+            // Only populate if fields are empty
+            lastName.value = operator.last_name;
+            firstName.value = operator.first_name;
+        }
+        
+        // Show success notification with SweetAlert
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'success',
+                title: 'Operator Selected',
+                text: 'Operator information loaded successfully!',
+                toast: true,
+                position: 'bottom-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true
+            });
+        } else {
+            // Fallback to showToast if needed
+            showToast('Operator information loaded successfully!');
+        }
+    }
+    
+    // Select driver and populate fields
+    function selectDriver(driver) {
+        // Set selected driver ID
+        selectedDriverId.value = driver.id;
+        
+        // Update the search field
+        driverSearch.value = `${driver.new_pd_number} - ${driver.last_name}, ${driver.first_name}`;
+        
+        // Highlight the selected item and close results
+        const items = driverResults.querySelectorAll('.search-result-item');
+        items.forEach(item => item.classList.remove('item-selected'));
+        driverResults.style.display = 'none';
+        
+        // Populate the form fields related to the driver
+        lastName.value = driver.last_name;
+        firstName.value = driver.first_name;
+        licenseNumber.value = driver.license_number || '';
+        
+        // If driver has operator info, populate that too
+        if (driver.operator) {
+            selectedOperatorId.value = driver.operator.id;
+            operatorSearch.value = `${driver.operator.new_pd_number} - ${driver.operator.last_name}, ${driver.operator.first_name}`;
+        }
+        
+        // Show success notification with SweetAlert
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'success',
+                title: 'Driver Selected',
+                text: 'Driver information loaded successfully!',
+                toast: true,
+                position: 'bottom-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true
+            });
+        } else {
+            // Fallback to showToast if needed
+            showToast('Driver information loaded successfully!');
+        }
+    }
+    
+    // Close result containers when clicking outside
+    document.addEventListener('click', (event) => {
+        if (!operatorSearch.contains(event.target) && !operatorResults.contains(event.target) && !searchOperatorBtn.contains(event.target)) {
+            operatorResults.style.display = 'none';
+        }
+        if (!driverSearch.contains(event.target) && !driverResults.contains(event.target) && !searchDriverBtn.contains(event.target)) {
+            driverResults.style.display = 'none';
+        }
+    });
+    
+    // Input event listeners for autocomplete
+    operatorSearch.addEventListener('input', debounce(() => {
+        if (operatorSearch.value.trim().length >= 3) {
+            searchOperatorBtn.click();
+        }
+    }, 300));
+    
+    driverSearch.addEventListener('input', debounce(() => {
+        if (driverSearch.value.trim().length >= 3) {
+            searchDriverBtn.click();
+        }
+    }, 300));
+    
+    // Helper function to debounce inputs
+    function debounce(func, wait) {
+        let timeout;
+        return function() {
+            const context = this;
+            const args = arguments;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), wait);
+        };
+    }
+    
+    // Show toast notification (kept as fallback)
+    function showToast(message) {
+        const toast = new bootstrap.Toast(document.createElement('div'));
+        const toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        toastContainer.style.zIndex = 1070;
+        
+        const toastElement = document.createElement('div');
+        toastElement.className = 'toast align-items-center text-white bg-success border-0';
+        toastElement.setAttribute('role', 'alert');
+        toastElement.setAttribute('aria-live', 'assertive');
+        toastElement.setAttribute('aria-atomic', 'true');
+        
+        toastElement.innerHTML = `
+            <div class="d-flex">
+              <div class="toast-body">
+                ${message}
+              </div>
+              <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        `;
+        
+        toastContainer.appendChild(toastElement);
+        document.body.appendChild(toastContainer);
+        
+        const toastInstance = new bootstrap.Toast(toastElement, { delay: 3000 });
+        toastInstance.show();
+        
+        // Remove the toast container after toast is hidden
+        toastElement.addEventListener('hidden.bs.toast', () => {
+            document.body.removeChild(toastContainer);
+        });
+    }
 });
 </script>
 {% endblock %} 

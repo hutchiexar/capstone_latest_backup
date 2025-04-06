@@ -1,0 +1,133 @@
+{% extends 'user_portal/base_user.html' %}
+{% load static %}
+
+{% block title %}Driver-Vehicle Assignments{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-header bg-transparent d-flex align-items-center px-4 py-3 border-bottom">
+            <span class="material-icons me-2" style="color: var(--primary-color); font-size: 24px;">assignment</span>
+            <h4 class="mb-0 fw-bold">Driver-Vehicle Assignments</h4>
+        </div>
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <p class="mb-0 text-muted">Manage which drivers are assigned to which vehicles</p>
+                <a href="{% url 'assign_driver_to_vehicle' %}" class="btn btn-primary d-flex align-items-center px-3 py-2 rounded-pill">
+                    <span class="material-icons me-2">link</span> Create New Assignment
+                </a>
+            </div>
+            
+            <h5 class="fw-bold mb-3">Active Assignments</h5>
+            {% if active_assignments %}
+            <div class="table-responsive mb-4">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="px-4 py-3">#</th>
+                            <th class="px-4 py-3">Driver</th>
+                            <th class="px-4 py-3">Driver PD #</th>
+                            <th class="px-4 py-3">Vehicle PD #</th>
+                            <th class="px-4 py-3">Vehicle Type</th>
+                            <th class="px-4 py-3">Assigned On</th>
+                            <th class="px-4 py-3 text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for assignment in active_assignments %}
+                        <tr>
+                            <td class="px-4 py-3">{{ forloop.counter }}</td>
+                            <td class="px-4 py-3 fw-medium">{{ assignment.driver.last_name }}, {{ assignment.driver.first_name }}</td>
+                            <td class="px-4 py-3">{{ assignment.driver.new_pd_number }}</td>
+                            <td class="px-4 py-3">{{ assignment.vehicle.new_pd_number }}</td>
+                            <td class="px-4 py-3">{{ assignment.vehicle.get_vehicle_type_display }}</td>
+                            <td class="px-4 py-3">{{ assignment.start_date|date:"M d, Y" }}</td>
+                            <td class="px-4 py-3 text-end">
+                                <a href="{% url 'end_driver_assignment' assignment.id %}" class="btn btn-sm btn-outline-danger d-flex align-items-center p-2 rounded-circle" title="End Assignment">
+                                    <span class="material-icons">link_off</span>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info d-flex align-items-center mb-4">
+                <span class="material-icons me-2">info</span>
+                <div>
+                    No active driver-vehicle assignments. Create an assignment to link drivers with vehicles.
+                </div>
+            </div>
+            {% endif %}
+            
+            <h5 class="fw-bold mb-3">Recent Assignment History</h5>
+            {% if past_assignments %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="px-4 py-3">Driver</th>
+                            <th class="px-4 py-3">Vehicle PD #</th>
+                            <th class="px-4 py-3">Start Date</th>
+                            <th class="px-4 py-3">End Date</th>
+                            <th class="px-4 py-3">Duration</th>
+                            <th class="px-4 py-3">Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for assignment in past_assignments %}
+                        <tr>
+                            <td class="px-4 py-3 fw-medium">{{ assignment.driver.last_name }}, {{ assignment.driver.first_name }}</td>
+                            <td class="px-4 py-3">{{ assignment.vehicle.new_pd_number }}</td>
+                            <td class="px-4 py-3">{{ assignment.start_date|date:"M d, Y" }}</td>
+                            <td class="px-4 py-3">{{ assignment.end_date|date:"M d, Y" }}</td>
+                            <td class="px-4 py-3">
+                                {% if assignment.start_date and assignment.end_date %}
+                                    {{ assignment.end_date|timeuntil:assignment.start_date }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3">{{ assignment.notes|truncatechars:50|default:"-" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-secondary d-flex align-items-center">
+                <span class="material-icons me-2">history</span>
+                <div>
+                    No past assignment history available.
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Info Card -->
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-header bg-transparent d-flex align-items-center px-4 py-3 border-bottom">
+            <span class="material-icons me-2" style="color: var(--primary-color); font-size: 24px;">info</span>
+            <h5 class="mb-0 fw-bold">About Driver-Vehicle Assignments</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="fw-bold">Assignment Process</h6>
+                    <p class="mb-1">Each vehicle can only have one active driver at a time.</p>
+                    <p class="mb-1">When a new driver is assigned to a vehicle, any existing assignment is automatically ended.</p>
+                    <p class="mb-0">All assignment changes are tracked with timestamps for audit purposes.</p>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="fw-bold">Record Keeping</h6>
+                    <p class="mb-1">The system maintains a complete history of all driver-vehicle assignments.</p>
+                    <p class="mb-1">This historical data can be used for regulatory compliance and dispute resolution.</p>
+                    <p class="mb-0">Add notes to assignments to provide context for future reference.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

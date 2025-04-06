@@ -8,18 +8,29 @@
     </div>
 </div>
 
+<!-- Add SweetAlert2 for notifications if not already included in parent template -->
+<script>
+    if (typeof Swal === 'undefined') {
+        // Create a script element and append it to the document
+        const script = document.createElement('script');
+        script.src = "https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js";
+        document.head.appendChild(script);
+        
+        const link = document.createElement('link');
+        link.rel = "stylesheet";
+        link.href = "https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css";
+        document.head.appendChild(link);
+    }
+</script>
+
 <div class="modal-content">
     <!-- Violation Header -->
-    <div class="violation-header">
+    <div class="violation-header compact">
         <div class="d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
                 <div class="violation-info">
                     <div class="violation-badge">#{{ violation.id }}</div>
-                    <h5 class="violation-title">NCAP Citation Record</h5>
-                    <div class="violation-date">
-                        <span class="material-icons">event</span>
-                        {{ violation.violation_date|date:"F d, Y H:i" }}
-                    </div>
+                    <h5 class="violation-title mb-0">NCAP Citation Record</h5>
                 </div>
             </div>
             <div class="violation-status">
@@ -28,77 +39,274 @@
                 </span>
             </div>
         </div>
-        <div class="violation-amount mt-3">
-            <span class="amount-label">Fine Amount:</span>
+        <div class="violation-amount mt-2">
             <span class="amount-value">₱{{ violation.fine_amount }}</span>
         </div>
     </div>
 
     <div class="modal-body">
-        <div class="violation-grid">
-            <!-- Violation Image Card -->
-            <div class="info-card image-card">
+        <div class="violation-detail-container">
+            <!-- Violation Images Section -->
+            <div class="images-section mb-4">
+                <h6 class="detail-section-title">Violation Images</h6>
+                <div class="violation-images-container">
+                    {% if violation.image or violation.driver_photo or violation.vehicle_photo or violation.secondary_photo %}
+                    <div class="violation-images-list">
+                        {% if violation.driver_photo %}
+                        <div class="image-card-horizontal modal-list-item">
+                            <div class="image-wrapper-small">
+                                <img src="{{ violation.driver_photo.url }}" alt="Driver Photo" class="violation-image">
+                                <div class="image-overlay">
+                                    <span class="material-icons">zoom_in</span>
+                                </div>
+                            </div>
+                            <div class="image-details">
+                                <div class="image-detail-title">Driver Photo</div>
+                                <div class="image-detail-info">
+                                    <div class="detail-item">
+                                        <span class="detail-label">Date Taken:</span>
+                                        <span class="detail-value">{{ violation.violation_date|date:"M d, Y" }}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Image Type:</span>
+                                        <span class="detail-value">Driver Identification</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if violation.vehicle_photo %}
+                        <div class="image-card-horizontal modal-list-item">
+                            <div class="image-wrapper-small">
+                                <img src="{{ violation.vehicle_photo.url }}" alt="Vehicle Photo" class="violation-image">
+                                <div class="image-overlay">
+                                    <span class="material-icons">zoom_in</span>
+                                </div>
+                            </div>
+                            <div class="image-details">
+                                <div class="image-detail-title">Vehicle Photo</div>
+                                <div class="image-detail-info">
+                                    <div class="detail-item">
+                                        <span class="detail-label">Vehicle Type:</span>
+                                        <span class="detail-value">{{ violation.vehicle_type|default:"Unknown" }}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Plate Number:</span>
+                                        <span class="detail-value">{{ violation.plate_number|default:"Not Available" }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if violation.image %}
+                        <div class="image-card-horizontal modal-list-item">
+                            <div class="image-wrapper-small">
+                                <img src="{{ violation.image.url }}" alt="Violation Image" class="violation-image">
+                                <div class="image-overlay">
+                                    <span class="material-icons">zoom_in</span>
+                                </div>
+                            </div>
+                            <div class="image-details">
+                                <div class="image-detail-title">Violation Evidence</div>
+                                <div class="image-detail-info">
+                                    <div class="detail-item">
+                                        <span class="detail-label">Location:</span>
+                                        <span class="detail-value">{{ violation.location|default:"Unspecified" }}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Violation Type:</span>
+                                        <span class="detail-value">{{ violation.violation_type }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if violation.secondary_photo %}
+                        <div class="image-card-horizontal modal-list-item">
+                            <div class="image-wrapper-small">
+                                <img src="{{ violation.secondary_photo.url }}" alt="Secondary Photo" class="violation-image">
+                                <div class="image-overlay">
+                                    <span class="material-icons">zoom_in</span>
+                                </div>
+                            </div>
+                            <div class="image-details">
+                                <div class="image-detail-title">ID Document</div>
+                                <div class="image-detail-info">
+                                    <div class="detail-item">
+                                        <span class="detail-label">Document Type:</span>
+                                        <span class="detail-value">Identification</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">License No:</span>
+                                        <span class="detail-value">{{ violation.violator.license_number|default:"N/A" }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="no-images">
+                        <span class="material-icons">hide_image</span>
+                        <span>No images available</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Vehicle Information -->
+            <div class="info-card simple-view">
                 <div class="info-header">
-                    <span class="material-icons">photo_camera</span>
-                    <h6>Violation Evidence</h6>
+                    <span class="material-icons">directions_car</span>
+                    <h6>Vehicle Information</h6>
                 </div>
                 <div class="info-content">
-                    <div class="image-container">
-                        <img src="{{ violation.image.url }}" alt="Violation Evidence" class="violation-image">
+                    {% if violation.plate_number %}
+                    <div class="labeled-field">
+                        <div class="field-label">Plate Number:</div>
+                        <div class="field-value">{{ violation.plate_number }}</div>
+                    </div>
+                    {% endif %}
+                    {% if not violation.plate_number and violation.potpot_number %}
+                    <div class="labeled-field">
+                        <div class="field-label">PotPot Number:</div>
+                        <div class="field-value">{{ violation.potpot_number }}</div>
+                    </div>
+                    {% endif %}
+                    <div class="labeled-field">
+                        <div class="field-label">MV File Number:</div>
+                        <div class="field-value">{{ violation.mv_file_number|default:"" }}</div>
+                    </div>
+                    <div class="labeled-field">
+                        <div class="field-label">Vehicle Type:</div>
+                        <div class="field-value">{{ violation.vehicle_type|default:"" }}</div>
                     </div>
                 </div>
             </div>
 
+            <!-- Operator Information -->
+            {% if violation.operator_name or violation.operator_id or violation.potpot_number or violation.franchise_number or violation.mayor_permit or violation.operator_address %}
+            <div class="info-card simple-view">
+                <div class="info-header">
+                    <span class="material-icons">business</span>
+                    <h6>Operator Information</h6>
+                </div>
+                <div class="info-content">
+                    {% if violation.operator_name %}
+                    <div class="labeled-field">
+                        <div class="field-label">Operator Name:</div>
+                        <div class="field-value">{{ violation.operator_name }}</div>
+                    </div>
+                    {% endif %}
+                    {% if violation.operator_id %}
+                    <div class="labeled-field">
+                        <div class="field-label">Operator ID:</div>
+                        <div class="field-value">{{ violation.operator_id }}</div>
+                    </div>
+                    {% endif %}
+                    {% if violation.potpot_number %}
+                    <div class="labeled-field">
+                        <div class="field-label">POTPOT Number:</div>
+                        <div class="field-value">{{ violation.potpot_number }}</div>
+                    </div>
+                    {% endif %}
+                    {% if violation.franchise_number %}
+                    <div class="labeled-field">
+                        <div class="field-label">Franchise Number:</div>
+                        <div class="field-value">{{ violation.franchise_number }}</div>
+                    </div>
+                    {% endif %}
+                    {% if violation.mayor_permit %}
+                    <div class="labeled-field">
+                        <div class="field-label">Mayor's Permit:</div>
+                        <div class="field-value">{{ violation.mayor_permit }}</div>
+                    </div>
+                    {% endif %}
+                    {% if violation.operator_address %}
+                    <div class="labeled-field">
+                        <div class="field-label">Operator Address:</div>
+                        <div class="field-value">{{ violation.operator_address }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Driver Information -->
+            <div class="info-card simple-view">
+                <div class="info-header">
+                    <span class="material-icons">drive_eta</span>
+                    <h6>Driver Information</h6>
+                </div>
+                <div class="info-content">
+                    {% if violation.driver_name %}
+                    <div class="labeled-field">
+                        <div class="field-label">Driver Name:</div>
+                        <div class="field-value">{{ violation.driver_name }}</div>
+                    </div>
+                    {% endif %}
+                    {% if violation.novr_number %}
+                    <div class="labeled-field">
+                        <div class="field-label">NOVR Number:</div>
+                        <div class="field-value">{{ violation.novr_number }}</div>
+                    </div>
+                    {% endif %}
+                    {% if violation.pin_number %}
+                    <div class="labeled-field">
+                        <div class="field-label">PIN Number:</div>
+                        <div class="field-value">{{ violation.pin_number }}</div>
+                    </div>
+                    {% endif %}
+                    {% if violation.pd_number %}
+                    <div class="labeled-field">
+                        <div class="field-label">PD Number:</div>
+                        <div class="field-value">{{ violation.pd_number }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
             <!-- Violator Information -->
-            <div class="info-card">
+            <div class="info-card simple-view">
                 <div class="info-header">
                     <span class="material-icons">person</span>
                     <h6>Violator Information</h6>
                 </div>
                 <div class="info-content">
-                    <div class="info-group">
-                        <label>License Number</label>
-                        <div class="info-value">{{ violation.violator.license_number }}</div>
+                    <div class="labeled-field">
+                        <div class="field-label">License Number:</div>
+                        <div class="field-value">{{ violation.violator.license_number }}</div>
                     </div>
-                    <div class="info-group">
-                        <label>Full Name</label>
-                        <div class="info-value">{{ violation.violator.first_name }} {{ violation.violator.last_name }}</div>
+                    <div class="labeled-field">
+                        <div class="field-label">Full Name:</div>
+                        <div class="field-value">{{ violation.violator.first_name }} {{ violation.violator.last_name }}</div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Violation Details -->
-            <div class="info-card">
-                <div class="info-header">
-                    <span class="material-icons">gavel</span>
-                    <h6>Violation Details</h6>
-                </div>
-                <div class="info-content">
-                    <div class="info-group">
-                        <label>Violation Type</label>
-                        <div class="info-value violation-type">{{ violation.violation_type }}</div>
+                    {% if violation.violator.address %}
+                    <div class="labeled-field">
+                        <div class="field-label">Address:</div>
+                        <div class="field-value">{{ violation.violator.address }}</div>
                     </div>
-                    <div class="info-group">
-                        <label>Location</label>
-                        <div class="info-value">{{ violation.location }}</div>
-                    </div>
+                    {% endif %}
                 </div>
             </div>
 
             <!-- Payment Information -->
-            <div class="info-card">
+            <div class="info-card simple-view">
                 <div class="info-header">
                     <span class="material-icons">payments</span>
                     <h6>Payment Information</h6>
                 </div>
                 <div class="info-content">
-                    <div class="info-group">
-                        <label>Fine Amount</label>
-                        <div class="info-value amount">₱{{ violation.fine_amount }}</div>
+                    <div class="labeled-field">
+                        <div class="field-label">Fine Amount:</div>
+                        <div class="field-value amount">₱{{ violation.fine_amount }}</div>
                     </div>
-                    <div class="info-group">
-                        <label>Due Date</label>
-                        <div class="info-value {% if violation.is_overdue %}text-danger{% endif %}">
+                    <div class="labeled-field">
+                        <div class="field-label">Due Date:</div>
+                        <div class="field-value {% if violation.is_overdue %}text-danger{% endif %}">
                             {{ violation.payment_due_date|date:"F d, Y" }}
                         </div>
                     </div>
@@ -106,28 +314,26 @@
             </div>
 
             <!-- Enforcer Information -->
-            <div class="info-card enforcer-card">
+            <div class="info-card simple-view">
                 <div class="info-header">
                     <span class="material-icons">badge</span>
                     <h6>Enforcer Information</h6>
                 </div>
                 <div class="info-content">
-                    <div class="enforcer-grid">
-                        {% if violation.enforcer %}
-                        <div class="info-group">
-                            <label>Enforcer Name</label>
-                            <div class="info-value">{{ violation.enforcer.get_full_name }}</div>
-                        </div>
-                        <div class="info-group">
-                            <label>Enforcer ID</label>
-                            <div class="info-value">{{ violation.enforcer.userprofile.enforcer_id }}</div>
-                        </div>
-                        {% else %}
-                        <div class="info-group">
-                            <div class="info-value text-muted">No enforcer information available</div>
-                        </div>
-                        {% endif %}
+                    {% if violation.enforcer %}
+                    <div class="labeled-field">
+                        <div class="field-label">Enforcer Name:</div>
+                        <div class="field-value">{{ violation.enforcer.get_full_name }}</div>
                     </div>
+                    <div class="labeled-field">
+                        <div class="field-label">Enforcer ID:</div>
+                        <div class="field-value">{{ violation.enforcer.userprofile.enforcer_id }}</div>
+                    </div>
+                    {% else %}
+                    <div class="labeled-field">
+                        <div class="field-value text-muted">No enforcer information available</div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             
@@ -193,6 +399,10 @@
     border-bottom: 1px solid rgba(0,0,0,0.08);
 }
 
+.violation-header.compact {
+    padding: 0.75rem 1rem;
+}
+
 .violation-info {
     display: flex;
     flex-direction: column;
@@ -201,150 +411,92 @@
 
 .violation-badge {
     display: inline-block;
-    padding: 0.25rem 0.75rem;
+    padding: 0.15rem 0.5rem;
     background: var(--primary-color);
     color: #fff;
     border-radius: 6px;
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     font-weight: 600;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
 }
 
 .violation-title {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 600;
     color: var(--text-dark);
     margin: 0;
 }
 
 .violation-date {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--text-light);
-    font-size: 0.875rem;
-}
-
-.violation-date .material-icons {
-    font-size: 1rem;
+    display: none;
 }
 
 .violation-amount {
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid rgba(0,0,0,0.08);
+    margin-top: 0.5rem;
 }
 
 .amount-label {
-    font-size: 0.875rem;
-    color: var(--text-light);
-    margin-right: 0.5rem;
+    display: none;
 }
 
 .amount-value {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 600;
     color: var(--primary-color);
-    padding: 0.25rem 0.75rem;
+    padding: 0.15rem 0.5rem;
     background: rgba(0,35,102,0.08);
     border-radius: 6px;
 }
 
 /* Modal Body Layout */
 .modal-body {
-    padding: 1rem;
+    padding: 0.75rem;
+    font-size: 0.9rem;
 }
 
-.violation-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1rem;
+.violation-detail-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
 }
 
 /* Info Cards */
 .info-card {
     background: #fff;
-    border-radius: 12px;
+    border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-}
-
-.image-card {
-    grid-column: 1 / -1;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    margin-bottom: 0.75rem;
 }
 
 .info-header {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
     background: rgba(0,0,0,0.02);
     border-bottom: 1px solid rgba(0,0,0,0.06);
 }
 
 .info-header .material-icons {
     color: var(--primary-color);
-    font-size: 1.25rem;
+    font-size: 1rem;
 }
 
 .info-header h6 {
     margin: 0;
-    font-size: 0.9375rem;
+    font-size: 0.85rem;
     font-weight: 600;
     color: var(--text-dark);
 }
 
 .info-content {
-    padding: 0.75rem 1rem;
-}
-
-/* Image Container */
-.image-container {
-    width: 100%;
-    max-height: 500px;
-    border-radius: 8px;
-    overflow: hidden;
-    background: #f8f9fa;
-    position: relative;
-    aspect-ratio: 16/9;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.violation-image {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    display: block;
-    transition: transform 0.3s ease;
-}
-
-/* Optional: Add zoom on hover */
-.image-container:hover .violation-image {
-    transform: scale(1.02);
-}
-
-/* Add image loading state */
-.image-container::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.03);
-    z-index: 0;
-}
-
-.image-container img {
-    position: relative;
-    z-index: 1;
+    padding: 0.5rem 0.75rem;
 }
 
 /* Info Groups */
 .info-group {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
     display: flex;
     align-items: baseline;
     flex-wrap: wrap;
@@ -356,25 +508,21 @@
 
 .info-group label {
     display: inline-block;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
-    color: var(--text-dark);
+    color: var(--text-light);
     margin-bottom: 0;
     margin-right: 0.5rem;
-    min-width: 100px;
+    min-width: 90px;
     text-transform: capitalize;
     letter-spacing: 0.5px;
 }
 
-.info-group label::after {
-    content: ":";
-}
-
 .info-value {
     flex: 1;
-    font-size: 0.9375rem;
+    font-size: 0.85rem;
     color: var(--text-dark);
-    line-height: 1.5;
+    line-height: 1.4;
 }
 
 /* Enforcer Grid */
@@ -495,6 +643,326 @@
     margin-bottom: 1rem;
     position: relative;
 }
+
+.images-section {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.image-thumbnail {
+    width: 120px;
+    height: 120px;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    border: 1px solid #dee2e6;
+    transition: transform 0.2s ease;
+}
+
+.image-thumbnail:hover {
+    transform: scale(1.05);
+}
+
+.image-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.image-label {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+}
+
+.no-images {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 120px;
+    background-color: #eee;
+    border-radius: 8px;
+    color: #888;
+}
+
+.no-images .material-icons {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Improved image section styling */
+.violation-images-container {
+    background-color: rgba(0, 0, 0, 0.02);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 0.75rem;
+}
+
+.violation-images-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
+}
+
+.image-card {
+    background: white;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+    cursor: pointer;
+    height: 100%;
+}
+
+.image-wrapper {
+    position: relative;
+    aspect-ratio: 1/1;
+    overflow: hidden;
+}
+
+.violation-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.image-label {
+    padding: 4px;
+    font-size: 0.7rem;
+    text-align: center;
+    color: var(--text-dark);
+    font-weight: 500;
+    background: #f8f9fa;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.no-images {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 32px;
+    color: #6c757d;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 8px;
+    border: 1px dashed #dee2e6;
+}
+
+.no-images .material-icons {
+    font-size: 40px;
+    opacity: 0.7;
+}
+
+.detail-section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--text-dark);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.detail-section-title::before {
+    content: '';
+    width: 4px;
+    height: 16px;
+    background: var(--primary-color);
+    display: inline-block;
+    border-radius: 4px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+    .violation-images-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .info-group {
+        flex-direction: column;
+    }
+    
+    .info-group label {
+        margin-bottom: 0.2rem;
+    }
+    
+    .info-value {
+        width: 100%;
+    }
+}
+
+/* Summary section styles */
+.violation-summary {
+    background-color: #f8fafc;
+    border-radius: 8px;
+    padding: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.summary-item {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 8px;
+}
+
+.summary-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.summary-value {
+    font-size: 0.95rem;
+    color: var(--text-dark);
+    font-weight: 500;
+}
+
+.summary-value.violation-type {
+    color: var(--primary-color);
+}
+
+@media (min-width: 768px) {
+    .summary-item {
+        height: 100%;
+    }
+}
+
+/* Add styles for the simple view with labeled fields */
+.simple-view .info-content {
+    padding: 10px 15px;
+}
+
+.labeled-field {
+    padding: 4px 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.field-label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.field-value {
+    font-size: 1rem;
+    color: #343a40;
+    font-weight: 500;
+}
+
+.simple-view .info-header {
+    padding: 10px 15px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.simple-view .info-header .material-icons {
+    font-size: 18px;
+}
+
+.simple-view .info-header h6 {
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .labeled-field {
+        margin-bottom: 5px;
+    }
+}
+
+/* Add horizontal image card styles */
+.violation-images-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.image-card-horizontal {
+    display: flex;
+    background: white;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+    cursor: pointer;
+    min-height: 95px;
+}
+
+.image-card-horizontal:hover {
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.image-wrapper-small {
+    position: relative;
+    width: 95px;
+    height: 95px;
+    min-width: 95px;
+    overflow: hidden;
+}
+
+.image-details {
+    flex: 1;
+    padding: 8px 12px;
+    display: flex;
+    flex-direction: column;
+}
+
+.image-detail-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 5px;
+}
+
+.image-detail-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.detail-item {
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+}
+
+.detail-label {
+    color: #6c757d;
+    font-weight: 500;
+    margin-right: 5px;
+    min-width: 90px;
+}
+
+.detail-value {
+    color: #343a40;
+}
+
+@media (max-width: 576px) {
+    .image-wrapper-small {
+        width: 80px;
+        height: 80px;
+        min-width: 80px;
+    }
+    
+    .detail-label {
+        min-width: 75px;
+    }
+}
 </style>
 
 <script>
@@ -506,5 +974,42 @@ document.addEventListener('DOMContentLoaded', function() {
             e.stopPropagation();
         }, { passive: true });
     }
+    
+    // Print Receipt button click handler
+    const printBtn = document.getElementById('printReceiptBtn');
+    if (printBtn) {
+        printBtn.addEventListener('click', function() {
+            // Use SweetAlert for notifications
+            Swal.fire({
+                icon: 'info',
+                title: 'Print Receipt',
+                text: 'Receipt printing functionality will be implemented soon',
+                toast: true,
+                position: 'bottom-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true
+            });
+        });
+    }
+    
+    // Pay Now button click handler
+    const payBtn = document.getElementById('payNowBtn');
+    if (payBtn) {
+        payBtn.addEventListener('click', function() {
+            // Use SweetAlert for notifications
+            Swal.fire({
+                icon: 'info',
+                title: 'Payment',
+                text: 'Payment functionality will be implemented soon',
+                toast: true,
+                position: 'bottom-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true
+            });
+        });
+    }
 });
 </script>
+

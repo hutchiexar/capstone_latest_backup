@@ -1,0 +1,390 @@
+/**
+ * Framer Motion Animation Styles
+ * Additional styles to enhance modal animations
+ */
+
+/* Prevent scrollbar jumps during modal transitions */
+body.modal-open {
+    padding-right: 0 !important;
+    overflow-y: hidden !important;
+}
+
+/* Improved backdrop animations */
+.modal-backdrop {
+    opacity: 0 !important;
+    transition: opacity 0.3s ease !important;
+    backdrop-filter: blur(3px);
+}
+
+.modal-backdrop.show {
+    opacity: 0.5 !important;
+}
+
+/* Modal dialog initial state (prevents FOUC) */
+.modal.fade .modal-dialog:not([style*="opacity"]) {
+    opacity: 0;
+}
+
+/* Animation utility classes */
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: .8;
+    }
+}
+
+.animate-bounce {
+    animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(-5%);
+        animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+    }
+    50% {
+        transform: translateY(0);
+        animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Enhanced focus states for better accessibility */
+.modal-content button:focus,
+.modal-content a:focus,
+.modal-content input:focus,
+.modal-content select:focus,
+.modal-content textarea:focus {
+    outline: 2px solid rgba(var(--bs-primary-rgb), 0.5) !important;
+    outline-offset: 2px !important;
+}
+
+/* Loading animations for modal content */
+.modal-loading {
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-loading::after {
+    content: "";
+    width: 30px;
+    height: 30px;
+    border: 3px solid rgba(var(--bs-primary-rgb), 0.3);
+    border-radius: 50%;
+    border-top-color: var(--bs-primary);
+    animation: spin 1s linear infinite;
+}
+
+/* Enhanced modal transitions */
+.modal-enter {
+    opacity: 0;
+    transform: scale(0.95);
+}
+
+.modal-enter-active {
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity 300ms, transform 300ms;
+}
+
+.modal-exit {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.modal-exit-active {
+    opacity: 0;
+    transform: scale(0.95);
+    transition: opacity 200ms, transform 200ms;
+}
+
+/* Prevent content shift */
+.modal {
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+}
+
+/* Optional staggered animations for list items within modals */
+.modal-list-item {
+    opacity: 0;
+    transform: translateY(10px);
+    animation: fadeInUp 0.5s forwards;
+}
+
+.modal-list-item:nth-child(1) { animation-delay: 0.1s; }
+.modal-list-item:nth-child(2) { animation-delay: 0.15s; }
+.modal-list-item:nth-child(3) { animation-delay: 0.2s; }
+.modal-list-item:nth-child(4) { animation-delay: 0.25s; }
+.modal-list-item:nth-child(5) { animation-delay: 0.3s; }
+.modal-list-item:nth-child(6) { animation-delay: 0.35s; }
+.modal-list-item:nth-child(7) { animation-delay: 0.4s; }
+.modal-list-item:nth-child(8) { animation-delay: 0.45s; }
+.modal-list-item:nth-child(9) { animation-delay: 0.5s; }
+.modal-list-item:nth-child(10) { animation-delay: 0.55s; }
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Admin Modal Specific Styles */
+.admin-modal .modal-content {
+    border-radius: 12px !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1) !important;
+    border: none !important;
+}
+
+.admin-modal .modal-header {
+    border-radius: 12px 12px 0 0 !important;
+    padding: 1.25rem 1.5rem !important;
+    background: linear-gradient(to right, var(--primary-color), #3a7bd5) !important;
+    color: white !important;
+    border-bottom: none !important;
+}
+
+.admin-modal .modal-footer {
+    border-radius: 0 0 12px 12px !important;
+    padding: 1.25rem 1.5rem !important;
+    background-color: #f8f9fa !important;
+    border-top: none !important;
+}
+
+.admin-modal .btn-close {
+    color: white !important;
+    opacity: 0.8 !important;
+    filter: brightness(0) invert(1) !important;
+}
+
+.admin-modal .btn-close:hover {
+    opacity: 1 !important;
+}
+
+/* Enhanced admin-specific animations */
+.admin-modal .modal-list-item {
+    animation-duration: 0.6s !important;
+}
+
+.admin-modal .modal-body {
+    padding: 1.5rem !important;
+}
+
+/* Enhanced focus effects for admin modals */
+.admin-modal button:focus,
+.admin-modal input:focus,
+.admin-modal select:focus,
+.admin-modal textarea:focus {
+    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25) !important;
+}
+
+/* Enhanced animation for modal appearance */
+.admin-modal.modal.fade .modal-dialog {
+    transform: scale(0.9) !important;
+}
+
+.admin-modal.modal.show .modal-dialog {
+    transform: scale(1) !important;
+}
+
+/* Image Preview Modal Specific Styles */
+#imagePreviewModal .modal-body {
+    padding: 0 !important;
+    overflow: hidden !important;
+    border-radius: 0 0 12px 12px !important;
+}
+
+#imagePreviewModal img {
+    transition: transform 0.3s ease;
+    transform-origin: center;
+}
+
+#imagePreviewModal.show img {
+    animation: zoomIn 0.5s forwards;
+}
+
+@keyframes zoomIn {
+    0% { transform: scale(0.9); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Special animation for showing violation thumbnails in the modal */
+.violation-thumbnail.animated {
+    animation: pulse 2s infinite;
+}
+
+/* Payment record modals */
+#violationDetailModal .modal-body .row {
+    opacity: 0;
+    animation: fadeInStaggered 0.5s forwards;
+}
+
+#violationDetailModal .modal-body .row:nth-child(1) { animation-delay: 0.1s; }
+#violationDetailModal .modal-body .row:nth-child(2) { animation-delay: 0.15s; }
+#violationDetailModal .modal-body .row:nth-child(3) { animation-delay: 0.2s; }
+#violationDetailModal .modal-body .row:nth-child(4) { animation-delay: 0.25s; }
+#violationDetailModal .modal-body .row:nth-child(5) { animation-delay: 0.3s; }
+
+@keyframes fadeInStaggered {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Status change modal animations */
+#statusChangeModal .status-option {
+    opacity: 0;
+    transform: translateX(-10px);
+    animation: slideInOptions 0.3s forwards;
+}
+
+#statusChangeModal .status-option:nth-child(1) { animation-delay: 0.05s; }
+#statusChangeModal .status-option:nth-child(2) { animation-delay: 0.1s; }
+#statusChangeModal .status-option:nth-child(3) { animation-delay: 0.15s; }
+#statusChangeModal .status-option:nth-child(4) { animation-delay: 0.2s; }
+#statusChangeModal .status-option:nth-child(5) { animation-delay: 0.25s; }
+
+@keyframes slideInOptions {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* Hover effects for buttons in modals */
+.modal .btn:not(.btn-close) {
+    transition: all 0.2s ease;
+}
+
+.modal .btn:not(.btn-close):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Image Viewer Modal Specific Styles */
+#imageViewerModal .modal-content {
+    background-color: #111827;
+    border: none;
+    overflow: hidden;
+    border-radius: 12px;
+}
+
+#imageViewerModal .modal-header {
+    background-color: var(--primary-color);
+    color: white;
+    border-bottom: none;
+    padding: 1rem 1.5rem;
+}
+
+#imageViewerModal .modal-body {
+    padding: 0;
+}
+
+#imageViewerModal .btn-close {
+    filter: brightness(0) invert(1);
+    opacity: 0.8;
+}
+
+#imageViewerModal .btn-close:hover {
+    opacity: 1;
+}
+
+#imageViewerModal.show .main-image {
+    animation: fadeInZoom 0.5s forwards;
+}
+
+@keyframes fadeInZoom {
+    0% { opacity: 0; transform: scale(0.9); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+/* Touch-enabled devices */
+@media (hover: none) {
+    .image-gallery-main {
+        touch-action: pan-y pinch-zoom;
+    }
+    
+    .image-overlay {
+        opacity: 0.5;
+        background: rgba(0, 0, 0, 0.3);
+    }
+    
+    .btn-circle {
+        width: 48px;
+        height: 48px;
+    }
+    
+    #imageViewerModal .btn-close {
+        width: 44px;
+        height: 44px;
+        background-size: 50%;
+    }
+}
+
+/* Modern animation styles for modals */
+.modal .modal-content {
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.modal-header {
+    background: linear-gradient(90deg, var(--primary-color) 0%, #1f64c8 100%);
+    color: white;
+    border-bottom: none;
+    padding: 1.25rem 1.5rem;
+}
+
+.modal-header .btn-close {
+    filter: brightness(0) invert(1);
+    opacity: 0.8;
+}
+
+.modal-header .btn-close:hover {
+    opacity: 1;
+}
+
+.modal-footer {
+    background: #f8f9fa;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 0 0 12px 12px;
+}
+
+.modal-body {
+    padding: 1.5rem;
+    background: #fff;
+}
+
+/* A11y improvements */
+.modal-content:focus {
+    outline: none;
+}
+
+/* Ensure modal has proper focus styles for keyboard navigation */
+.modal-content button:focus,
+.modal-content a:focus {
+    outline: 2px solid rgba(var(--bs-primary-rgb), 0.5);
+    outline-offset: 2px;
+}

@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Violation, Violator, UserProfile, Operator, Payment, ActivityLog, Announcement, LocationHistory, Vehicle, OperatorApplication, Driver
+from .models import Violation, Violator, UserProfile, Operator, Payment, ActivityLog, Announcement, LocationHistory, Vehicle, OperatorApplication, Driver, DriverVehicleAssignment
 import os
 
 class NCAPViolationForm(forms.ModelForm):
@@ -157,14 +157,32 @@ class ImportOperatorsForm(forms.Form):
 class OperatorApplicationForm(forms.ModelForm):
     class Meta:
         model = OperatorApplication
-        fields = ['business_permit', 'other_documents']
+        fields = [
+            'business_permit', 
+            'police_clearance', 
+            'barangay_certificate', 
+            'cedula', 
+            'cenro_tickets',
+            'mayors_permit', 
+            'other_documents'
+        ]
         widgets = {
             'business_permit': forms.FileInput(attrs={'class': 'form-control'}),
+            'police_clearance': forms.FileInput(attrs={'class': 'form-control'}),
+            'barangay_certificate': forms.FileInput(attrs={'class': 'form-control'}),
+            'cedula': forms.FileInput(attrs={'class': 'form-control'}),
+            'cenro_tickets': forms.FileInput(attrs={'class': 'form-control'}),
+            'mayors_permit': forms.FileInput(attrs={'class': 'form-control'}),
             'other_documents': forms.FileInput(attrs={'class': 'form-control'}),
         }
         help_texts = {
             'business_permit': 'Upload a scanned copy of your business permit (PDF/JPG/PNG)',
-            'other_documents': 'Upload any additional required documents (PDF/JPG/PNG)',
+            'police_clearance': 'Upload a scanned copy of your police clearance (JPG/PNG)',
+            'barangay_certificate': 'Upload a scanned copy of your barangay certificate (JPG/PNG)',
+            'cedula': 'Upload a scanned copy of your community tax certificate (JPG/PNG)',
+            'cenro_tickets': 'Upload a scanned copy of your CENRO tickets or permits (JPG/PNG)',
+            'mayors_permit': 'Upload a scanned copy of your mayor\'s permit (PDF/JPG/PNG)',
+            'other_documents': 'Upload any additional supporting documents (PDF/JPG/PNG)',
         }
     
     def __init__(self, *args, **kwargs):
@@ -260,19 +278,103 @@ class OperatorImportForm(forms.Form):
     )
 
 class DriverForm(forms.ModelForm):
-    """Form for creating/updating driver information"""
+    """Form for creating and updating drivers"""
     class Meta:
         model = Driver
-        fields = ['last_name', 'first_name', 'middle_initial', 'address', 'old_pd_number', 'new_pd_number', 'operator']
+        fields = [
+            'last_name', 'first_name', 'middle_initial', 'address',
+            'license_number', 'contact_number', 'emergency_contact',
+            'emergency_contact_number', 'active'
+        ]
         widgets = {
             'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last Name'}),
             'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First Name'}),
             'middle_initial': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'M.I.'}),
             'address': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Address', 'rows': 3}),
-            'old_pd_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Old P.D. No.'}),
-            'new_pd_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'New P.D. No.'}),
-            'operator': forms.Select(attrs={'class': 'form-control'}),
+            'license_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Driver license number'}),
+            'contact_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Contact number'}),
+            'emergency_contact': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Emergency contact name'}),
+            'emergency_contact_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Emergency contact number'}),
+            'active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        self.operator = kwargs.pop('operator', None)
+        super().__init__(*args, **kwargs)
+        
+        # Add help texts
+        self.fields['license_number'].help_text = "Valid driver's license number"
+        self.fields['active'].help_text = "Whether this driver is currently employed"
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.operator:
+            instance.operator = self.operator
+        if commit:
+            instance.save()
+        return instance
+
+class DriverVehicleAssignmentForm(forms.ModelForm):
+    """Form for assigning drivers to vehicles"""
+    class Meta:
+        model = DriverVehicleAssignment
+        fields = ['driver', 'vehicle', 'notes']
+        widgets = {
+            'driver': forms.Select(attrs={'class': 'form-select'}),
+            'vehicle': forms.Select(attrs={'class': 'form-select'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Assignment notes', 'rows': 3}),
+        }
+        
+    def __init__(self, *args, **kwargs):
+        self.operator = kwargs.pop('operator', None)
+        super().__init__(*args, **kwargs)
+        
+        # Filter drivers and vehicles by operator
+        if self.operator:
+            self.fields['driver'].queryset = Driver.objects.filter(operator=self.operator, active=True)
+            self.fields['vehicle'].queryset = Vehicle.objects.filter(operator=self.operator, active=True)
+            
+        # Add help texts
+        self.fields['driver'].help_text = "Select the driver to assign"
+        self.fields['vehicle'].help_text = "Select the vehicle to assign to this driver"
+        self.fields['notes'].help_text = "Optional notes about this assignment"
+
+class VehicleForm(forms.ModelForm):
+    """Form for creating and updating vehicles"""
+    class Meta:
+        model = Vehicle
+        fields = [
+            'vehicle_type', 'plate_number', 'engine_number', 'chassis_number',
+            'capacity', 'year_model', 'color', 'notes', 'active'
+        ]
+        widgets = {
+            'vehicle_type': forms.Select(attrs={'class': 'form-select', 'placeholder': 'Select vehicle type'}),
+            'plate_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter plate number'}),
+            'engine_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter engine number'}),
+            'chassis_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter chassis number'}),
+            'capacity': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Passenger capacity'}),
+            'year_model': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter year model'}),
+            'color': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter vehicle color'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Additional notes', 'rows': 3}),
+            'active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.operator = kwargs.pop('operator', None)
+        super().__init__(*args, **kwargs)
+        
+        # Add help texts
+        self.fields['vehicle_type'].help_text = "Type of public utility vehicle"
+        self.fields['capacity'].help_text = "Maximum number of passengers"
+        self.fields['active'].help_text = "Whether this vehicle is currently active in your fleet"
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.operator:
+            instance.operator = self.operator
+        if commit:
+            instance.save()
+        return instance 
 
 class DriverImportForm(forms.Form):
     """Form for importing drivers from CSV/Excel file - only reads the Drivers worksheet"""
