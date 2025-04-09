@@ -458,9 +458,20 @@
                                 </h5>
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                        <label for="vehicle_type" class="form-label">Type/Make of Vehicle</label>
-                                        <input type="text" class="form-control" id="vehicle_type" name="vehicle_type" required>
-                                        <div class="invalid-feedback">Please provide the vehicle type/make.</div>
+                                        <label for="vehicle_type" class="form-label">Vehicle Type</label>
+                                        <select class="form-select" id="vehicle_type" name="vehicle_type" required>
+                                            <option value="">Select vehicle type</option>
+                                            <option value="Motorcycle">Motorcycle</option>
+                                            <option value="Tricycle">Tricycle</option>
+                                            <option value="Car">Car</option>
+                                            <option value="SUV">SUV</option>
+                                            <option value="Van">Van</option>
+                                            <option value="Truck">Truck</option>
+                                            <option value="Bus">Bus</option>
+                                            <option value="Jeepney">Jeepney</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                        <div class="invalid-feedback">Please select the vehicle type.</div>
                                 </div>
                                 <div class="col-md-6">
                                         <label for="classification" class="form-label">Classification</label>
@@ -543,10 +554,25 @@
                                         <div class="invalid-feedback">Please provide the year model.</div>
                                 </div>
                                 <div class="col-md-6">
+                                        <label for="capacity" class="form-label">Capacity</label>
+                                        <input type="text" class="form-control" id="capacity" name="capacity" required>
+                                        <div class="invalid-feedback">Please provide the capacity.</div>
+                                </div>
+                                <div class="col-md-6">
                                         <label for="expiry_date" class="form-label">Expiry Date</label>
                                         <input type="date" class="form-control" id="expiry_date" name="expiry_date" required>
                                         <div class="invalid-feedback">Please provide the expiry date.</div>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Active Status -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
+                                <label class="form-check-label" for="is_active">
+                                    This vehicle is currently active
+                                </label>
                             </div>
                         </div>
 
@@ -727,7 +753,7 @@ document.addEventListener('DOMContentLoaded', function() {
     {% if form_data %}
     // Populate text/select fields
     const fields = ['or_number', 'cr_number', 'plate_number', 'vehicle_type', 'make', 
-                    'model', 'year_model', 'color', 'classification'];
+                    'model', 'year_model', 'color', 'classification', 'capacity'];
     
     fields.forEach(field => {
         const element = document.getElementById(field);

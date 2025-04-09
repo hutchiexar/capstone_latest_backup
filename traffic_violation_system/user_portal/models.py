@@ -134,6 +134,7 @@ class VehicleRegistration(models.Model):
     model = models.CharField(max_length=100)
     year_model = models.CharField(max_length=4)
     color = models.CharField(max_length=50)
+    capacity = models.CharField(max_length=50, default="")
     classification = models.CharField(max_length=20, choices=[
         ('Private', 'Private'),
         ('Public', 'Public'),

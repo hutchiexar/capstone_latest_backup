@@ -525,6 +525,14 @@ class Vehicle(models.Model):
     capacity = models.PositiveIntegerField(default=4)
     year_model = models.CharField(max_length=4, blank=True, null=True)
     color = models.CharField(max_length=50, blank=True, null=True)
+    registration_number = models.CharField(max_length=50, blank=True, null=True)
+    registration_date = models.DateField(blank=True, null=True)
+    classification = models.CharField(max_length=20, choices=[
+        ('Private', 'Private'),
+        ('Public', 'Public'),
+        ('Government', 'Government'),
+        ('Commercial', 'Commercial')
+    ], blank=True, null=True)
     active = models.BooleanField(default=True)
     notes = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)

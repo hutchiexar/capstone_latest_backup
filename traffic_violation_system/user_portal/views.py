@@ -391,7 +391,7 @@ def register_vehicle(request):
             # Validate required fields first 
             required_fields = ['or_number', 'cr_number', 'plate_number', 'vehicle_type', 
                               'make', 'model', 'year_model', 'color', 'classification',
-                              'registration_date', 'expiry_date']
+                              'registration_date', 'expiry_date', 'capacity']
             
             for field in required_fields:
                 if not request.POST.get(field):
@@ -434,7 +434,9 @@ def register_vehicle(request):
                 color=request.POST['color'],
                 classification=request.POST['classification'],
                 registration_date=registration_date,
-                expiry_date=expiry_date
+                expiry_date=expiry_date,
+                is_active='is_active' in request.POST,
+                capacity=request.POST['capacity']
             )
             
             # Handle OR/CR image upload

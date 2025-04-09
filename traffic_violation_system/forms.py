@@ -345,7 +345,8 @@ class VehicleForm(forms.ModelForm):
         model = Vehicle
         fields = [
             'vehicle_type', 'plate_number', 'engine_number', 'chassis_number',
-            'capacity', 'year_model', 'color', 'notes', 'active'
+            'capacity', 'year_model', 'color', 'notes', 'active',
+            'registration_number', 'registration_date', 'classification'
         ]
         widgets = {
             'vehicle_type': forms.Select(attrs={'class': 'form-select', 'placeholder': 'Select vehicle type'}),
@@ -357,6 +358,15 @@ class VehicleForm(forms.ModelForm):
             'color': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter vehicle color'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Additional notes', 'rows': 3}),
             'active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'registration_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter registration number'}),
+            'registration_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'classification': forms.Select(attrs={'class': 'form-select', 'placeholder': 'Select classification'}, choices=[
+                ('', 'Select classification'),
+                ('Private', 'Private'),
+                ('Public', 'Public'),
+                ('Government', 'Government'),
+                ('Commercial', 'Commercial')
+            ]),
         }
 
     def __init__(self, *args, **kwargs):

@@ -116,6 +116,17 @@
                                 </div>
                             {% endif %}
                         </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.capacity.id_for_label }}" class="form-label">Capacity</label>
+                            {{ form.capacity }}
+                            {% if form.capacity.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.capacity.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
                 
