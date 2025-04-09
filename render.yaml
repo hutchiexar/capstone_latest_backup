@@ -2,7 +2,7 @@ services:
   - type: web
     name: traffic-violation-system
     env: python
-    buildCommand: ./build.sh
+    buildCommand: chmod +x build.sh && ./build.sh
     startCommand: gunicorn CAPSTONE_PROJECT.wsgi:application
     envVars:
       - key: DJANGO_SETTINGS_MODULE
@@ -17,6 +17,8 @@ services:
           property: connectionString
       - key: DJANGO_ALLOWED_HOSTS
         value: ".onrender.com"
+      - key: PYTHON_VERSION
+        value: "3.9.0"
     disk:
       name: media
       mountPath: /opt/render/project/src/media
@@ -24,4 +26,5 @@ services:
       
 databases:
   - name: traffic_violation_db
-    databaseName: traffic_violation_db 
+    databaseName: traffic_violation_db
+    ipAllowList: [] 

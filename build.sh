@@ -1,12 +1,13 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Exit on error
 set -o errexit
 
-# Install dependencies
+echo "Installing dependencies..."
+pip install --upgrade pip
 pip install -r requirements.txt
 
-# Install MySQL client (needed for MySQL database connection)
-apt-get update && apt-get install -y default-libmysqlclient-dev
-
-# Set up django project
+echo "Setting up database..."
 python manage.py migrate --noinput
+
+echo "Collecting static files..."
 python manage.py collectstatic --noinput 
