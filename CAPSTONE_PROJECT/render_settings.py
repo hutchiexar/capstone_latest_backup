@@ -29,6 +29,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
+# Make sure media files are served correctly
+DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+
 # Disable security settings for initial testing
 SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = False

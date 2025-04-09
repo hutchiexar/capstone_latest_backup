@@ -8,6 +8,9 @@ pip install --upgrade pip
 echo "Installing dependencies..."
 pip install -r requirements.txt
 
+echo "Creating media directory..."
+mkdir -p media
+
 echo "Running migrations..."
 python manage.py migrate --noinput
 
