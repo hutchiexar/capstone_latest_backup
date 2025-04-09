@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: traffic-violation-system
+    env: python
+    buildCommand: ./build.sh
+    startCommand: gunicorn CAPSTONE_PROJECT.wsgi:application
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: CAPSTONE_PROJECT.render_settings
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: traffic_violation_db
+          property: connectionString
+      - key: DJANGO_ALLOWED_HOSTS
+        value: ".onrender.com"
+    disk:
+      name: media
+      mountPath: /opt/render/project/src/media
+      sizeGB: 10
+      
+databases:
+  - name: traffic_violation_db
+    databaseName: traffic_violation_db 

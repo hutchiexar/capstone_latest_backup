@@ -11,6 +11,10 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "CAPSTONE_PROJECT.settings")
+# Check if we're running on Render.com
+if 'RENDER' in os.environ:
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "CAPSTONE_PROJECT.render_settings")
+else:
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "CAPSTONE_PROJECT.settings")
 
 application = get_wsgi_application()
