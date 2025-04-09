@@ -341,32 +341,30 @@ class DriverVehicleAssignmentForm(forms.ModelForm):
 
 class VehicleForm(forms.ModelForm):
     """Form for creating and updating vehicles"""
+    
+    capacity = forms.IntegerField(
+        required=True,
+        min_value=1,
+        max_value=100,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Passenger capacity'}),
+        help_text="Maximum number of passengers (default 4 for private vehicles)"
+    )
+    
     class Meta:
         model = Vehicle
         fields = [
             'vehicle_type', 'plate_number', 'engine_number', 'chassis_number',
-            'capacity', 'year_model', 'color', 'notes', 'active',
-            'registration_number', 'registration_date', 'classification'
+            'capacity', 'year_model', 'color', 'notes', 'active'
         ]
         widgets = {
             'vehicle_type': forms.Select(attrs={'class': 'form-select', 'placeholder': 'Select vehicle type'}),
             'plate_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter plate number'}),
             'engine_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter engine number'}),
             'chassis_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter chassis number'}),
-            'capacity': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Passenger capacity'}),
             'year_model': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter year model'}),
             'color': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter vehicle color'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Additional notes', 'rows': 3}),
             'active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'registration_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter registration number'}),
-            'registration_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'classification': forms.Select(attrs={'class': 'form-select', 'placeholder': 'Select classification'}, choices=[
-                ('', 'Select classification'),
-                ('Private', 'Private'),
-                ('Public', 'Public'),
-                ('Government', 'Government'),
-                ('Commercial', 'Commercial')
-            ]),
         }
 
     def __init__(self, *args, **kwargs):
@@ -375,7 +373,6 @@ class VehicleForm(forms.ModelForm):
         
         # Add help texts
         self.fields['vehicle_type'].help_text = "Type of public utility vehicle"
-        self.fields['capacity'].help_text = "Maximum number of passengers"
         self.fields['active'].help_text = "Whether this vehicle is currently active in your fleet"
 
     def save(self, commit=True):
@@ -384,7 +381,7 @@ class VehicleForm(forms.ModelForm):
             instance.operator = self.operator
         if commit:
             instance.save()
-        return instance 
+        return instance
 
 class DriverImportForm(forms.Form):
     """Form for importing drivers from CSV/Excel file - only reads the Drivers worksheet"""

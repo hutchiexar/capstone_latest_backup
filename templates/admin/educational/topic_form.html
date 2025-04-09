@@ -116,7 +116,9 @@
                         <!-- Content with regular textarea -->
                         <div class="mb-3">
                             <label for="content" class="form-label">Content <span class="text-danger">*</span></label>
+                            <div class="input-group">
                             <textarea class="form-control content-textarea" id="content" name="content" placeholder="Write your educational content here..." required>{% if is_edit %}{{ topic.content|safe }}{% endif %}</textarea>
+                            </div>
                             <div class="form-text">
                                 <span class="material-icons align-middle me-1 fs-5">info</span>
                                 <span>You can use basic HTML tags for formatting (<strong>&lt;h1&gt;</strong>, <strong>&lt;p&gt;</strong>, <strong>&lt;ul&gt;</strong>, <strong>&lt;strong&gt;</strong>, etc.)</span>
@@ -140,7 +142,7 @@
                                     Preview
                                 </button>
                             </div>
-                            <div class="form-text">Upload PDFs, images, videos or other files. Max 10MB per file.</div>
+                            <div class="form-text">Upload PDFs, images, videos or other files. Max 10MB per file. PDFs will be viewable in the user portal.</div>
                             <div id="attachmentPreview" class="mt-2"></div>
                         </div>
 
@@ -255,7 +257,7 @@
     </form>
 </div>
 
-<!-- Preview Modal using Micromodal.js -->
+<!-- Preview Modal using Bootstrap modal -->
 <div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
@@ -281,26 +283,53 @@
 {{ block.super }}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM Content Loaded');
+        
         // File preview functionality
         const attachmentsInput = document.getElementById('attachments');
         const previewBtn = document.getElementById('previewBtn');
         const previewContainer = document.getElementById('attachmentPreview');
 
+        // Enable/disable preview button based on file selection
         attachmentsInput.addEventListener('change', function() {
-            if (this.files.length > 0) {
-                previewBtn.disabled = false;
-            } else {
-                previewBtn.disabled = true;
+            const hasFiles = this.files.length > 0;
+            previewBtn.disabled = !hasFiles;
+            
+            if (!hasFiles) {
                 previewContainer.style.display = 'none';
+            } else {
+                // Auto preview for non-PDF files
+                const file = this.files[0];
+                if (!file.type.includes('pdf')) {
+                    previewFile(file);
+                } else {
+                    // For PDFs show simple info and auto-extract content
+                    previewContainer.innerHTML = `
+                        <div class="alert alert-info">
+                            <span class="material-icons me-2">picture_as_pdf</span>
+                            PDF File: ${file.name} (${Math.round(file.size / 1024)} KB) - Extracting content...
+                        </div>`;
+                    previewContainer.style.display = 'block';
+                    
+                    // Auto extract PDF content
+                    extractPdfContent(file);
+                }
             }
         });
 
         // Preview button functionality
         previewBtn.addEventListener('click', function() {
             const file = attachmentsInput.files[0];
+            if (!file) return;
+            
+            previewFile(file);
+        });
+        
+        // Function to preview a file
+        function previewFile(file) {
             previewContainer.innerHTML = '';
             previewContainer.style.display = 'block';
-
+            
             if (file.type.startsWith('image/')) {
                 const img = document.createElement('img');
                 img.classList.add('img-fluid');
@@ -319,7 +348,7 @@
                 previewContainer.innerHTML = `
                     <div class="alert alert-info">
                         <span class="material-icons me-2">picture_as_pdf</span>
-                        PDF Preview: ${file.name} (${Math.round(file.size / 1024)} KB)
+                        PDF File: ${file.name} (${Math.round(file.size / 1024)} KB) - Will be available in the user portal
                     </div>`;
             } else if (file.type.startsWith('video/')) {
                 previewContainer.innerHTML = `
@@ -334,7 +363,7 @@
                         File: ${file.name} (${Math.round(file.size / 1024)} KB)
                     </div>`;
             }
-        });
+        }
 
         // Preview Content Button
         document.getElementById('previewContentBtn')?.addEventListener('click', function() {
@@ -347,10 +376,92 @@
             document.getElementById('previewCategory').textContent = categoryText;
             document.getElementById('previewContent').innerHTML = content;
 
-            // Show the modal
             const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
             previewModal.show();
         });
+
+        // Function to automatically extract PDF content
+        async function extractPdfContent(pdfFile) {
+            try {
+                const formData = new FormData();
+                formData.append('pdf_file', pdfFile);
+
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                
+                if (!csrfToken) {
+                    throw new Error('CSRF token not found');
+                }
+
+                // Show extraction in progress
+                const contentTextarea = document.getElementById('content');
+                const originalText = contentTextarea.value;
+                
+                // Update preview container to show progress
+                previewContainer.innerHTML = `
+                    <div class="alert alert-info">
+                        <div class="d-flex align-items-center">
+                            <div class="spinner-border spinner-border-sm me-2" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <span>Extracting content from ${pdfFile.name}...</span>
+                        </div>
+                    </div>`;
+
+                const url = '{% url "educational:extract_pdf_text" %}';
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Get text from all pages and combine them
+                    let extractedText = '';
+                    
+                    data.images.forEach(page => {
+                        extractedText += `<h3>Page ${page.page}</h3>\n`;
+                        extractedText += page.text || ''; // Use the text data from each page
+                        extractedText += '\n\n';
+                    });
+                    
+                    // Insert extracted text into content textarea
+                    if (originalText.trim() !== '') {
+                        // If there's already content, append to it
+                        contentTextarea.value = originalText + '\n\n' + extractedText;
+                    } else {
+                        // Otherwise just set the new content
+                        contentTextarea.value = extractedText;
+                    }
+                    
+                    // Update preview to show success
+                    previewContainer.innerHTML = `
+                        <div class="alert alert-success">
+                            <span class="material-icons me-2">check_circle</span>
+                            Successfully extracted content from ${pdfFile.name} (${data.images.length} pages)
+                        </div>`;
+                } else {
+                    throw new Error(data.error || 'Failed to process PDF');
+                }
+            } catch (error) {
+                console.error('Error during PDF text extraction:', error);
+                
+                // Show error in preview container
+                previewContainer.innerHTML = `
+                    <div class="alert alert-danger">
+                        <span class="material-icons me-2">error</span>
+                        Error extracting text from PDF: ${error.message}
+                    </div>`;
+            }
+        }
     });
 </script>
 {% endblock %} 

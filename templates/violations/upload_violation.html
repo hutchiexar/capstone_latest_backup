@@ -6,6 +6,111 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
 
+<!-- Custom Styles for Enhanced UI -->
+<style>
+    .search-section .info-card {
+        background-color: #e6f2ff; /* Light blue background */
+        border-left: 4px solid #0d6efd; /* Blue left border */
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Enhanced shadow */
+    }
+    
+    .info-card, .upload-card, .section {
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08); /* Enhanced shadow for all containers */
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+    }
+    
+    .info-card:hover, .upload-card:hover, .section:hover {
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12); /* Deeper shadow on hover */
+    }
+    
+    .search-section .section-title {
+        color: #0d6efd; /* Blue title */
+    }
+    
+    .search-section .form-label {
+        color: #0a58ca; /* Darker blue for labels */
+        font-weight: 500;
+    }
+    
+    .card {
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); /* Enhanced shadow for main card */
+    }
+    
+    /* Enhanced section titles */
+    .section-title {
+        position: relative;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+        font-weight: 600;
+    }
+    
+    .section-title:after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        height: 3px;
+        width: 50px;
+        background-color: #0d6efd;
+    }
+    
+    /* Form control enhancements */
+    .form-control:focus {
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+    }
+    
+    /* Better shadows for nested elements */
+    .image-upload-container, .alert, .selected-violations-container table {
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+    
+    /* Add smooth transitions to all interactive elements */
+    .btn, .form-control, .form-select {
+        transition: all 0.2s ease-in-out;
+    }
+    
+    /* Improved form styling for single-column layout */
+    .upload-preview {
+        height: 140px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border: 1px dashed #ced4da;
+        border-radius: 8px;
+        cursor: pointer;
+        background-color: #f8f9fa;
+        transition: all 0.2s ease;
+    }
+    
+    .upload-preview:hover {
+        background-color: #e9ecef;
+        border-color: #adb5bd;
+    }
+    
+    .upload-preview .material-icons {
+        font-size: 3rem;
+        color: #6c757d;
+        margin-bottom: 10px;
+    }
+    
+    /* Form actions styling */
+    .form-actions {
+        background-color: #f8f9fa;
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: 0 -5px 10px rgba(0, 0, 0, 0.05);
+        margin-top: 20px;
+    }
+    
+    .btn-submit {
+        min-width: 120px;
+    }
+</style>
+
 <div class="container-fluid py-4">
     <div class="card shadow-sm border-0 rounded-3">
         <div class="card-header bg-white py-3">
@@ -24,7 +129,7 @@
             </div>
             {% endif %}
             
-            <!-- Search Section -->
+            <!-- Search Section - Now with blue theme -->
             <div class="search-section mb-4">
                 <div class="info-card">
                     <h5 class="section-title">Quick Search</h5>
@@ -58,6 +163,17 @@
                             </div>
                         </div>
                     </div>
+                    <!-- Add Vehicle Type Dropdown to the Search Section -->
+                    <div class="col-md-12 mt-3">
+                        <div class="form-group">
+                            <label for="vehicle_penalty_type" class="form-label">Vehicle Penalty Type</label>
+                            <select class="form-control" id="vehicle_penalty_type" name="vehicle_penalty_type" onchange="recalculateTotal()">
+                                <option value="regular">Regular Vehicles (₱300.00)</option>
+                                <option value="potpot">Pot-Pot / e-Pot Vehicles (₱50.00)</option>
+                            </select>
+                            <small class="form-text text-muted">Select the appropriate penalty rate based on the vehicle type.</small>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -68,66 +184,80 @@
                 <input type="hidden" id="selectedOperatorId" name="selected_operator_id" value="">
                 <input type="hidden" id="selectedDriverId" name="selected_driver_id" value="">
                 
-                <div class="row g-4">
-                    <!-- Left Column: Image Upload -->
-                    <div class="col-lg-4">
-                        <div class="upload-card">
-                            <!-- Driver photo -->
-                            <div class="mb-4">
-                                <h6 class="mb-2">Driver Photo</h6>
-                                <div class="image-upload-container">
-                                    <div class="upload-preview" id="driverPhotoPreview">
-                                        <span class="material-icons">account_circle</span>
-                                        <div class="upload-text">Click to upload driver photo</div>
+                <!-- IMAGE UPLOADS NOW AT THE TOP -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="upload-card" style="background-color: #f8f9fa; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
+                            <h5 class="section-title">Upload Images</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <!-- Driver photo -->
+                                    <div class="mb-4">
+                                        <h6 class="mb-2">Driver Photo</h6>
+                                        <div class="image-upload-container">
+                                            <div class="upload-preview" id="driverPhotoPreview">
+                                                <span class="material-icons">account_circle</span>
+                                                <div class="upload-text">Click to upload driver photo</div>
+                                            </div>
+                                            <input type="file" class="d-none" id="driver_photo" name="driver_photo" accept="image/*">
+                                        </div>
                                     </div>
-                                    <input type="file" class="d-none" id="driver_photo" name="driver_photo" accept="image/*">
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <!-- Plate photo -->
+                                    <div class="mb-4">
+                                        <h6 class="mb-2">Plate/Vehicle Photo</h6>
+                                        <div class="image-upload-container">
+                                            <div class="upload-preview" id="platePhotoPreview">
+                                                <span class="material-icons">directions_car</span>
+                                                <div class="upload-text">Click to upload plate photo</div>
+                                            </div>
+                                            <input type="file" class="d-none" id="plate_photo" name="vehicle_photo" accept="image/*">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <!-- Secondary ID photo -->
+                                    <div class="mb-4">
+                                        <h6 class="mb-2">Secondary ID Photo</h6>
+                                        <div class="image-upload-container">
+                                            <div class="upload-preview" id="secondaryPhotoPreview">
+                                                <span class="material-icons">image</span>
+                                                <div class="upload-text">Click to upload ID photo</div>
+                                            </div>
+                                            <input type="file" class="d-none" id="secondary_photo" name="secondary_photo" accept="image/*">
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             
-                            <!-- Plate photo -->
-                            <div class="mb-4">
-                                <h6 class="mb-2">Plate/Vehicle Photo</h6>
-                                <div class="image-upload-container">
-                                    <div class="upload-preview" id="platePhotoPreview">
-                                        <span class="material-icons">directions_car</span>
-                                        <div class="upload-text">Click to upload plate photo</div>
+                            <div class="mt-2">
+                                <div class="alert alert-info">
+                                    <h6 class="mb-2">Image Requirements</h6>
+                                    <div class="row">
+                                        <div class="col-md-3"><span class="material-icons">check_circle</span> Clear and visible license plate</div>
+                                        <div class="col-md-3"><span class="material-icons">check_circle</span> Good lighting conditions</div>
+                                        <div class="col-md-3"><span class="material-icons">check_circle</span> JPG, JPEG, or PNG format</div>
+                                        <div class="col-md-3"><span class="material-icons">check_circle</span> Max file size: 5MB</div>
                                     </div>
-                                    <input type="file" class="d-none" id="plate_photo" name="vehicle_photo" accept="image/*">
                                 </div>
-                            </div>
-                            
-                            <!-- Secondary ID photo -->
-                            <div class="mb-4">
-                                <h6 class="mb-2">Secondary ID Photo</h6>
-                                <div class="image-upload-container">
-                                    <div class="upload-preview" id="secondaryPhotoPreview">
-                                        <span class="material-icons">image</span>
-                                        <div class="upload-text">Click to upload ID photo</div>
-                                    </div>
-                                    <input type="file" class="d-none" id="secondary_photo" name="secondary_photo" accept="image/*">
-                                </div>
-                            </div>
-                            
-                            <div class="upload-info">
-                                <h6 class="mb-3">Image Requirements</h6>
-                                <ul class="requirements-list">
-                                    <li><span class="material-icons">check_circle</span> Clear and visible license plate</li>
-                                    <li><span class="material-icons">check_circle</span> Good lighting conditions</li>
-                                    <li><span class="material-icons">check_circle</span> JPG, JPEG, or PNG format</li>
-                                    <li><span class="material-icons">check_circle</span> Max file size: 5MB</li>
-                                </ul>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Right Column: Violation Details -->
-                    <div class="col-lg-8">
-                        <div class="info-card">
+                </div>
+                
+                <!-- FORM FIELDS IN SINGLE COLUMN -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="info-card" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
                             <!-- Hidden field for generated timestamp -->
                             <input type="hidden" id="generated_timestamp" name="generated_timestamp">
                             
                             <!-- Driver's Details -->
-                            <div class="section mb-4">
+                            <div class="section mb-4" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
                                 <h5 class="section-title">Driver's Details</h5>
                                 <div class="row g-3">
                                     <div class="col-md-12">
@@ -137,33 +267,33 @@
                                             <label for="driver_name">Driver's Name</label>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-3">
                                         <div class="form-floating">
                                             <input type="text" class="form-control" id="novr_number" 
                                                    name="novr_number">
                                             <label for="novr_number">NOVR #</label>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-3">
                                         <div class="form-floating">
                                             <input type="text" class="form-control" id="pin_number" 
                                                    name="pin_number">
                                             <label for="pin_number">PIN #</label>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-3">
                                         <div class="form-floating">
                                             <input type="text" class="form-control" id="pd_number" 
                                                    name="pd_number">
                                             <label for="pd_number">PD Number</label>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-3">
                                         <div class="form-floating">
                                             <input type="text" class="form-control" id="license_number" 
-                                                   name="license_number" required pattern="[A-Z0-9]{2}-[A-Z0-9]{4}">
+                                                   name="license_number" pattern="[A-Z0-9]{3}-[0-9]{2}-[0-9]{6}" title="Format: XXX-XX-XXXXXX">
                                             <label for="license_number">License Number</label>
-                                            <div class="form-text">Format: XX-XXXX</div>
+                                            <div class="form-text">Format: XXX-XX-XXXXXX (e.g., G12-24-001899) - Optional</div>
                                         </div>
                                     </div>
                                     <div class="col-md-12">
@@ -177,7 +307,7 @@
                             </div>
                             
                             <!-- Operator's Details -->
-                            <div class="section mb-4">
+                            <div class="section mb-4" id="operator_details_section" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
                                 <h5 class="section-title">Operator's Details</h5>
                                 <div class="row g-3">
                                     <div class="col-md-6">
@@ -187,7 +317,7 @@
                                             <label for="potpot_number">POTPOT No.</label>
                                         </div>
                                     </div>
-                                    <div class="col-md-12">
+                                    <div class="col-md-6">
                                         <div class="form-floating">
                                             <textarea class="form-control" id="operator_address" 
                                                       name="operator_address" style="height: 80px"></textarea>
@@ -198,31 +328,31 @@
                             </div>
 
                             <!-- Vehicle Information -->
-                            <div class="section mb-4">
+                            <div class="section mb-4" id="vehicle_information_section" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
                                 <h5 class="section-title">Vehicle Information</h5>
                                 <div class="row g-3">
-                                    <div class="col-md-6">
+                                    <div class="col-md-3">
                                         <div class="form-floating">
                                             <input type="text" class="form-control" id="plate_number" 
                                                    name="plate_number">
                                             <label for="plate_number">Plate Number</label>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-3">
                                         <div class="form-floating">
                                             <input type="text" class="form-control" id="vehicle_type" 
                                                    name="vehicle_type">
                                             <label for="vehicle_type">Vehicle Type/Make</label>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-3">
                                         <div class="form-floating">
                                             <input type="text" class="form-control" id="color" 
                                                    name="color">
                                             <label for="color">Vehicle Color</label>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-3">
                                         <div class="form-floating">
                                             <select class="form-select" id="classification" name="classification">
                                                 <option value="">Select classification</option>
@@ -239,13 +369,14 @@
                                             <input type="text" class="form-control" id="registration_number" 
                                                    name="registration_number">
                                             <label for="registration_number">Registration Number</label>
+                                            <div class="form-text">Optional - Vehicle registration information</div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- Violation Details -->
-                            <div class="section mb-4">
+                            
+                            <!-- Rest of the form remains the same structure -->
+                            <div class="section mb-4" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
                                 <h5 class="section-title">Violation Details</h5>
                                 <div class="row g-3">
                                     <div class="col-md-4">
@@ -276,18 +407,34 @@
                                             <label for="landmark">Landmark</label>
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
-                                        <div class="form-floating">
-                                            <input type="text" class="form-control" id="violation_code" 
-                                                   name="violation_code">
-                                            <label for="violation_code">Code</label>
-                                        </div>
-                                    </div>
+                                    <!-- Remove the original vehicle_penalty_type dropdown from here -->
                                     <div class="col-md-4">
                                         <div class="form-floating">
                                             <input type="number" class="form-control" id="fine_amount" 
-                                                   name="fine_amount" min="0">
-                                            <label for="fine_amount">Penalty Amount (₱)</label>
+                                                   name="fine_amount" min="0" readonly>
+                                            <label for="fine_amount">Total Penalty Amount (₱)</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mt-2">
+                                            <div class="alert alert-success p-2 mb-0">
+                                                <strong>Final Amount:</strong> ₱<span id="final_amount_display">0.00</span>
+                                                <div id="tdz_multiplier_info" style="display:none" class="small mt-1">
+                                                    <i class="fas fa-info-circle"></i> Doubled for Traffic Discipline Zone
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12" id="penalty_info_box">
+                                        <div class="alert alert-info mt-2">
+                                            <h6 class="alert-heading mb-2">Violation Penalty Information</h6>
+                                            <div id="penalty_breakdown">
+                                                <div><strong>Per Violation Rate:</strong> ₱300.00 for each violation by Regular Vehicles or ₱50.00 for each violation by Pot-Pot/e-Pot Vehicles</div>
+                                                <div><strong>Multiple Violations:</strong> The total amount will be the base rate multiplied by the number of violations</div>
+                                                <div><strong>TDZ Violations:</strong> Penalties are doubled in Traffic Discipline Zones</div>
+                                                <div><strong>Late Payment:</strong> 1% monthly interest will be applied after the 3-day payment deadline</div>
+                                                <div><strong>Note:</strong> A driver seminar is mandatory before payment is accepted</div>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="col-md-12">
@@ -298,21 +445,76 @@
                                         </div>
                                     </div>
                                     <div class="col-md-12">
-                                        <div class="form-floating">
-                                            <select class="form-select" id="violation_type" name="violation_type" required>
-                                                <option value="">Select violation type</option>
-                                                {% for code, label in violation_choices %}
-                                                <option value="{{ code }}">{{ label }}</option>
-                                                {% endfor %}
-                                            </select>
-                                            <label for="violation_type">Violation Description</label>
+                                        <h6 class="mb-2">Traffic Violations Captured under NCAP</h6>
+                                        <p class="small text-muted mb-3">These violations are subject to NCAP if detected by safety cameras. Each violation adds to the total penalty.</p>
+                                        
+                                        <!-- Multiple Violations Selection -->
+                                        <div class="violation-selection-container mb-3">
+                                            <div class="row">
+                                                <div class="col-md-8">
+                                                    <select class="form-select" id="violation_selector">
+                                                        <option value="">Select violation type to add</option>
+                                                        <option value="Beating the red light">Beating the red light</option>
+                                                        <option value="Illegal parking">Illegal parking</option>
+                                                        <option value="Disregarding traffic signs">Disregarding traffic signs (e.g., One-way, No U-turn, No left/right turn)</option>
+                                                        <option value="Entering restricted lanes">Entering restricted lanes (e.g., PUV/reserved lanes)</option>
+                                                        <option value="Stopping/parking on pedestrian lanes">Stopping/parking on pedestrian lanes or junction boxes</option>
+                                                        <option value="Overspeeding">Overspeeding (30 kph inside, 50 kph outside the Traffic Discipline Zone)</option>
+                                                        <option value="Failure to yield to pedestrians">Failure to yield to pedestrians at crosswalks</option>
+                                                        <option value="Blocking intersections">Blocking intersections</option>
+                                                        <option value="Reckless driving">Reckless driving</option>
+                                                        <option value="Driving on bicycle lanes">Driving on bicycle lanes or pedestrian walkways</option>
+                                                        <option value="Overtaking violations">Overtaking violations (e.g., on bridges or no overtaking zones)</option>
+                                                        <option value="Disregarding pedestrian right of way">Disregarding pedestrian right of way</option>
+                                                        <option value="Failure to follow marked lanes">Failure to follow marked lanes</option>
+                                                        <option value="Driving through funeral processions">Driving through or obstructing funeral processions</option>
+                                                        <option value="Driving without valid license">Driving without valid license/registration (if identifiable via camera/LTO database)</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <button type="button" class="btn btn-primary w-100" id="add_violation_btn">
+                                                        <i class="fas fa-plus me-2"></i> Add Violation
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Selected Violations Table -->
+                                        <div class="selected-violations-container">
+                                            <h6 class="mb-2">Selected Violations <small class="text-muted">(Each violation adds to penalty)</small></h6>
+                                            <table class="table table-bordered table-hover" id="selected_violations_table">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th width="70%">Violation</th>
+                                                        <th width="15%">Rate</th>
+                                                        <th width="15%">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="selected_violations_body">
+                                                    <!-- Selected violations will be added here by JavaScript -->
+                                                    <tr id="no_violations_row">
+                                                        <td colspan="3" class="text-center py-3">No violations selected yet</td>
+                                                    </tr>
+                                                </tbody>
+                                                <tfoot class="table-light">
+                                                    <tr>
+                                                        <th class="text-end">Total:</th>
+                                                        <th colspan="2" id="count_display">0 violation(s)</th>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                            
+                                            <!-- Hidden input to store serialized violations data -->
+                                            <input type="hidden" id="violation_type" name="violation_type" required>
+                                            <input type="hidden" id="violation_penalties" name="violation_penalties">
                                         </div>
                                     </div>
+                                    
                                     <div class="col-md-12">
                                         <div class="form-check mt-3">
-                                            <input class="form-check-input" type="checkbox" id="is_tdz_violation" name="is_tdz_violation">
+                                            <input class="form-check-input" type="checkbox" id="is_tdz_violation" name="is_tdz_violation" onchange="recalculateTotal()" onclick="console.log('[DEBUG] TDZ checkbox clicked'); recalculateTotal()">
                                             <label class="form-check-label" for="is_tdz_violation">
-                                                Traffic Discipline Zone Violation (doubles fine)
+                                                <strong>Traffic Discipline Zone Violation (doubles fine)</strong>
                                             </label>
                                         </div>
                                     </div>
@@ -320,34 +522,46 @@
                             </div>
 
                             <!-- Certificate Information -->
-                            <div class="section mb-4">
+                            <div class="section mb-4" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
                                 <h5 class="section-title">Certificate Information</h5>
                                 <div class="certificate-content">
-                                    <div class="certificate-officials">
-                                        <div class="official-info">
-                                            <div class="official-label">Operations Officer</div>
-                                            <div class="official-name">REYNALDO E. CRISOSTOMO, JR.</div>
-                                            <input type="hidden" name="operations_officer" value="REYNALDO E. CRISOSTOMO, JR.">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="official-info mb-3">
+                                                <div class="official-label">Operations Officer</div>
+                                                <div class="official-name">REYNALDO E. CRISOSTOMO, JR.</div>
+                                                <input type="hidden" name="operations_officer" value="REYNALDO E. CRISOSTOMO, JR.">
+                                            </div>
                                         </div>
-                                        <div class="official-info">
-                                            <div class="official-label">CTTM Officer</div>
-                                            <div class="official-name">EDILBERITO B. EURAOBA II</div>
-                                            <input type="hidden" name="cttm_officer" value="EDILBERITO B. EURAOBA II">
+                                        <div class="col-md-6">
+                                            <div class="official-info mb-3">
+                                                <div class="official-label">CTTM Officer</div>
+                                                <div class="official-name">EDILBERITO B. EURAOBA II</div>
+                                                <input type="hidden" name="cttm_officer" value="EDILBERITO B. EURAOBA II">
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="certificate-text-block">
-                                        <div class="text-block-title">Certificate Text</div>
-                                        <div class="text-block-content">
-                                            Usa ko ka awtorısadong opisyal sa City Transportation and Traffic Management Office. Sumala sa among pag-inspeksyon sa mga halagway nga nakuha sa CCTV, ang ımong sakyanan gipa-tunkor ug halabapas sa Ordinansa sa Seguridad sa Bayawan.
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="certificate-text-block">
+                                                <div class="text-block-title">Certificate Text</div>
+                                                <div class="text-block-content">
+                                                    Usa ko ka awtorısadong opisyal sa City Transportation and Traffic Management Office. Sumala sa among pag-inspeksyon sa mga halagway nga nakuha sa CCTV, ang ımong sakyanan gipa-tunkor ug halabapas sa Ordinansa sa Seguridad sa Bayawan.
+                                                </div>
+                                                <input type="hidden" name="certificate_text" value="Usa ko ka awtorısadong opisyal sa City Transportation and Traffic Management Office. Sumala sa among pag-inspeksyon sa mga halagway nga nakuha sa CCTV, ang ımong sakyanan gipa-tunkor ug halabapas sa Ordinansa sa Seguridad sa Bayawan.">
+                                            </div>
                                         </div>
-                                        <input type="hidden" name="certificate_text" value="Usa ko ka awtorısadong opisyal sa City Transportation and Traffic Management Office. Sumala sa among pag-inspeksyon sa mga halagway nga nakuha sa CCTV, ang ımong sakyanan gipa-tunkor ug halabapas sa Ordinansa sa Seguridad sa Bayawan.">
                                     </div>
-                                    <div class="certificate-text-block warning-block">
-                                        <div class="text-block-title">Warning Text</div>
-                                        <div class="text-block-content text-danger">
-                                            SIPAHIMANGONG ANG TAGTUNGOD NGA MO-AKSYON GAYUD BAYON NI-INING NOTISYA. ANG KABALAY-KASALIKAY SIGEAS SA PITO (7) KA ADLAW HUMAN MADAWAT NIINING NOTISYA. NAGKASABOT LAMANG NGA GI-AKO SA TAGTUNGOD ANG MAONG VIOLATIONS. PAGATABANGAN UG ALARMA ANG DPRNA SA BUSINESS ONE STOP SHOP (BOSS) KASANGPANAN MADAOT PAGAABOT ANG OPENA SA PAG-REVOKE SA MAYOR'S PERMIT.
+                                    <div class="row mt-3">
+                                        <div class="col-md-12">
+                                            <div class="certificate-text-block warning-block">
+                                                <div class="text-block-title">Warning Text</div>
+                                                <div class="text-block-content text-danger">
+                                                    SIPAHIMANGONG ANG TAGTUNGOD NGA MO-AKSYON GAYUD BAYON NI-INING NOTISYA. ANG KABALAY-KASALIKAY SIGEAS SA PITO (7) KA ADLAW HUMAN MADAWAT NIINING NOTISYA. NAGKASABOT LAMANG NGA GI-AKO SA TAGTUNGOD ANG MAONG VIOLATIONS. PAGATABANGAN UG ALARMA ANG DPRNA SA BUSINESS ONE STOP SHOP (BOSS) KASANGPANAN MADAOT PAGAABOT ANG OPENA SA PAG-REVOKE SA MAYOR'S PERMIT.
+                                                </div>
+                                                <input type="hidden" name="warning_text" value="SIPAHIMANGONG ANG TAGTUNGOD NGA MO-AKSYON GAYUD BAYON NI-INING NOTISYA. ANG KABALAY-KASALIKAY SIGEAS SA PITO (7) KA ADLAW HUMAN MADAWAT NIINING NOTISYA. NAGKASABOT LAMANG NGA GI-AKO SA TAGTUNGOD ANG MAONG VIOLATIONS. PAGATABANGAN UG ALARMA ANG DPRNA SA BUSINESS ONE STOP SHOP (BOSS) KASANGPANAN MADAOT PAGAABOT ANG OPENA SA PAG-REVOKE SA MAYOR'S PERMIT.">
+                                            </div>
                                         </div>
-                                        <input type="hidden" name="warning_text" value="SIPAHIMANGONG ANG TAGTUNGOD NGA MO-AKSYON GAYUD BAYON NI-INING NOTISYA. ANG KABALAY-KASALIKAY SIGEAS SA PITO (7) KA ADLAW HUMAN MADAWAT NIINING NOTISYA. NAGKASABOT LAMANG NGA GI-AKO SA TAGTUNGOD ANG MAONG VIOLATIONS. PAGATABANGAN UG ALARMA ANG DPRNA SA BUSINESS ONE STOP SHOP (BOSS) KASANGPANAN MADAOT PAGAABOT ANG OPENA SA PAG-REVOKE SA MAYOR'S PERMIT.">
                                     </div>
                                 </div>
                             </div>
@@ -359,15 +573,11 @@
                                 padding: 15px;
                             }
                             
-                            .certificate-officials {
-                                display: flex;
-                                justify-content: space-between;
-                                margin-bottom: 20px;
-                                gap: 20px;
-                            }
-                            
                             .official-info {
-                                flex: 1;
+                                padding: 10px;
+                                background-color: #ffffff;
+                                border-radius: 6px;
+                                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
                             }
                             
                             .official-label {
@@ -383,11 +593,12 @@
                             }
                             
                             .certificate-text-block {
-                                margin-bottom: 20px;
+                                margin-bottom: 10px;
                                 background-color: white;
                                 border: 1px solid #dee2e6;
                                 border-radius: 6px;
                                 padding: 15px;
+                                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
                             }
                             
                             .text-block-title {
@@ -425,14 +636,18 @@
                                 </div>
                             </div>
 
-                            <!-- Action Buttons -->
-                            <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-                                <a href="{% url 'violations_list' %}" class="btn btn-outline-secondary">
-                                    <span class="material-icons me-2">arrow_back</span>Cancel
-                                </a>
-                                <button type="submit" class="btn btn-primary">
-                                    <span class="material-icons me-2">upload</span>Upload Violation
-                                </button>
+                            <!-- Add form actions at bottom -->
+                            <div class="form-actions text-end">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <button type="button" class="btn btn-outline-secondary me-2" onclick="window.history.back();">
+                                            <i class="fas fa-times me-1"></i> Cancel
+                                        </button>
+                                        <button type="submit" class="btn btn-primary btn-submit">
+                                            <i class="fas fa-save me-1"></i> Save Violation
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -642,6 +857,52 @@
     .item-selected {
         background-color: rgba(37, 99, 235, 0.2);
     }
+    
+    .empty-state {
+        text-align: center;
+        padding: 20px;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+    
+    .empty-state .material-icons {
+        font-size: 48px;
+        color: #adb5bd;
+        margin-bottom: 10px;
+    }
+    
+    .empty-state p {
+        font-size: 1rem;
+        color: #6c757d;
+        margin-bottom: 5px;
+    }
+    
+    .empty-state small {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+
+    .search-debug-info {
+        font-size: 0.75rem;
+        background-color: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+        padding: 0.5rem;
+        color: #6c757d;
+    }
+
+    .po-match-highlight {
+        background-color: rgba(25, 135, 84, 0.1) !important;
+        border-left: 4px solid #198754 !important;
+    }
+
+    .matched-po-alert {
+        color: #198754;
+        font-weight: 600;
+        font-size: 0.8rem;
+        margin-top: 0.3rem;
+        padding: 0.25rem 0;
+    }
 </style>
 
 <script>
@@ -663,6 +924,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Automatically set the generated timestamp when the page loads
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Document loaded, initializing search functionality');
+    
     // Set current date and time for generated timestamp
     const now = new Date();
     const formattedDateTime = now.toISOString().slice(0, 16); // Format: YYYY-MM-DDThh:mm
@@ -670,7 +933,47 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Setup image uploads
     setupImageUploadHandlers();
+    
+    // Generate initial NOVR and PIN numbers
+    generateNovrPinNumbers();
+    
+    // Initialize recalculate function to set initial state
+    window.recalculateTotal();
+    
+    // Add event listener for vehicle type changes
+    const vehicleTypeSelector = document.getElementById('vehicle_penalty_type');
+    if (vehicleTypeSelector) {
+        vehicleTypeSelector.addEventListener('change', function() {
+            window.recalculateTotal();
+        });
+    }
 });
+
+// Function to generate NOVR and PIN numbers
+function generateNovrPinNumbers() {
+    // Get the current sequence number from localStorage or start from 0
+    let currentSequence = parseInt(localStorage.getItem('novrPinSequence') || '0');
+    
+    // Increment the sequence number
+    currentSequence++;
+    
+    // Format with leading zeros (e.g., 01, 02, 03, etc.)
+    const generatedCode = currentSequence.toString().padStart(2, '0');
+    
+    // Store the updated sequence number for next time
+    localStorage.setItem('novrPinSequence', currentSequence.toString());
+    
+    // Set both NOVR and PIN to the same value
+    const novrField = document.getElementById('novr_number');
+    const pinField = document.getElementById('pin_number');
+    
+    if (novrField && pinField) {
+        novrField.value = generatedCode;
+        pinField.value = generatedCode;
+    }
+    
+    console.log(`Generated sequential number: ${generatedCode} (sequence: ${currentSequence})`);
+}
 
 // Setup additional image upload fields
 function setupImageUploadHandlers() {
@@ -749,15 +1052,45 @@ form.addEventListener('submit', function(event) {
         // Create FormData from the form
         const formData = new FormData(this);
         
+        // Log the form data for debugging
+        const formValues = {};
+        for (let [key, value] of formData.entries()) {
+            formValues[key] = value;
+        }
+        console.log('Form data being submitted:', formValues);
+        
         // Submit the form via AJAX
         fetch(this.action, {
             method: 'POST',
             body: formData,
             headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            credentials: 'same-origin'
         })
-        .then(response => response.json())
+        .then(response => {
+            // Check content type to handle non-JSON responses
+            const contentType = response.headers.get('content-type');
+            if (!response.ok) {
+                if (contentType && contentType.includes('text/html')) {
+                    // Handle HTML error responses differently
+                    return response.text().then(html => {
+                        console.error('Received HTML error response instead of JSON');
+                        throw new Error('Server returned HTML instead of JSON. The server might be experiencing issues.');
+                    });
+                }
+                throw new Error(`Server returned ${response.status} ${response.statusText}`);
+            }
+            
+            // Ensure we're getting JSON back
+            if (!contentType || !contentType.includes('application/json')) {
+                console.error('Received non-JSON response:', contentType);
+                throw new Error('The server did not return a valid JSON response');
+            }
+            
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 // Show success message
@@ -771,91 +1104,202 @@ form.addEventListener('submit', function(event) {
                     window.location.href = data.redirect_url;
                 });
             } else {
-                // Show error message
+                // Show error message with details if available
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
                     text: data.message || 'An error occurred while processing your request.',
-                    confirmButtonText: 'OK'
+                    confirmButtonText: 'OK',
+                    footer: data.details ? `<span class="text-danger">${data.details}</span>` : ''
                 });
             }
         })
         .catch(error => {
-            console.error('Error:', error);
+            console.error('Error during form submission:', error);
+            
+            // Provide more user-friendly error message based on error type
+            let errorMessage = 'An error occurred while processing your request. Please try again.';
+            
+            if (error.message.includes('JSON')) {
+                errorMessage = 'The server returned an invalid response format. This might be a temporary issue.';
+            } else if (error.message.includes('network')) {
+                errorMessage = 'Network error. Please check your internet connection and try again.';
+            }
+            
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
-                text: 'An error occurred while processing your request. Please try again.',
-                confirmButtonText: 'OK'
+                text: errorMessage,
+                confirmButtonText: 'OK',
+                footer: '<span class="text-muted">If this issue persists, please contact support.</span>',
+                didClose: () => {
+                    // Provide an alternative form submission method if AJAX fails
+                    const shouldSubmitDirectly = confirm("Would you like to try submitting the form directly instead?");
+                    if (shouldSubmitDirectly) {
+                        // Create a hidden form and submit it traditionally
+                        const directForm = document.createElement('form');
+                        directForm.method = 'POST';
+                        directForm.action = form.action;
+                        directForm.enctype = 'multipart/form-data';
+                        
+                        // Add CSRF token
+                        const csrfToken = document.createElement('input');
+                        csrfToken.type = 'hidden';
+                        csrfToken.name = 'csrfmiddlewaretoken';
+                        csrfToken.value = getCookie('csrftoken');
+                        directForm.appendChild(csrfToken);
+                        
+                        // Copy all form data
+                        for (let [key, value] of formData.entries()) {
+                            // Skip file inputs for now
+                            if (!(value instanceof File)) {
+                                const input = document.createElement('input');
+                                input.type = 'hidden';
+                                input.name = key;
+                                input.value = value;
+                                directForm.appendChild(input);
+                            }
+                        }
+                        
+                        // Append to body and submit
+                        document.body.appendChild(directForm);
+                        directForm.submit();
+                    }
+                }
             });
         });
     }
     this.classList.add('was-validated');
 });
 
+// Make sure CSRF token is properly retrieved
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
 // License number format validation
 document.getElementById('license_number').addEventListener('input', function(e) {
     this.value = this.value.toUpperCase();
-    if (!this.value.match(/^[A-Z0-9]{2}-[A-Z0-9]{4}$/)) {
-        this.setCustomValidity('Please use the format: XX-XXXX');
+    // Only validate if there's a value (since it's now optional)
+    if (this.value.trim() === '') {
+        this.setCustomValidity(''); // Empty value is valid
+    } else if (!this.value.match(/^[A-Z0-9]{3}-[0-9]{2}-[0-9]{6}$/)) {
+        this.setCustomValidity('Please use the format: XXX-XX-XXXXXX');
     } else {
         this.setCustomValidity('');
     }
 });
 
-// Operator and Driver Search Functionality
-document.addEventListener('DOMContentLoaded', function() {
-    // Image Upload Preview
-    const driverPhotoPreview = document.getElementById('driverPhotoPreview');
-    const platePhotoPreview = document.getElementById('platePhotoPreview');
-    const secondaryPhotoPreview = document.getElementById('secondaryPhotoPreview');
+// Recalculate total based on vehicle type and multipliers
+window.recalculateTotal = function() {
+    console.log("[DEBUG] recalculateTotal called");
     
-    const driverPhoto = document.getElementById('driver_photo');
-    const platePhoto = document.getElementById('plate_photo');
-    const secondaryPhoto = document.getElementById('secondary_photo');
+    // Get vehicle type rate
+    let ratePerViolation = 0;
+    const vehicleTypeSelector = document.getElementById('vehicle_penalty_type');
+    const finalAmountDisplay = document.getElementById('final_amount_display');
+    const tdzMultiplierInfo = document.getElementById('tdz_multiplier_info');
+    const vehicleInfoSection = document.getElementById('vehicle_information_section');
+    const operatorDetailsSection = document.getElementById('operator_details_section');
+    const fineAmountInput = document.getElementById('fine_amount');
+    const tdzViolationCheckbox = document.getElementById('is_tdz_violation');
     
-    driverPhotoPreview.addEventListener('click', () => {
-        driverPhoto.click();
-    });
+    // Verify TDZ checkbox state
+    const isTdzChecked = tdzViolationCheckbox ? tdzViolationCheckbox.checked : false;
+    console.log("[DEBUG] TDZ checkbox state:", isTdzChecked, tdzViolationCheckbox);
     
-    platePhotoPreview.addEventListener('click', () => {
-        platePhoto.click();
-    });
+    // Get access to selectedViolations array
+    const selectedViolations = window.selectedViolations || [];
     
-    secondaryPhotoPreview.addEventListener('click', () => {
-        secondaryPhoto.click();
-    });
-    
-    // Handle image preview
-    function handleImagePreview(input, preview) {
-        input.addEventListener('change', function(e) {
-            if (this.files && this.files[0]) {
-                const reader = new FileReader();
-                
-                reader.onload = function(e) {
-                    preview.innerHTML = `<img src="${e.target.result}" alt="Preview" style="width: 100%; height: 100%; object-fit: cover;">`;
-                    
-                    // Show success notification with SweetAlert
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Image Uploaded',
-                            text: 'Image preview is ready',
-                            confirmButtonText: 'OK'
-                        });
-                    }
-                }
-                
-                reader.readAsDataURL(this.files[0]);
+    if (vehicleTypeSelector && vehicleTypeSelector.value) {
+        if (vehicleTypeSelector.value === 'potpot') {
+            ratePerViolation = 50; // ₱50 for Pot-Pot vehicles
+            // Hide vehicle information section for Pot-Pot vehicles
+            if (vehicleInfoSection) {
+                vehicleInfoSection.style.display = 'none';
             }
-        });
+            // Show operator details section for Pot-Pot vehicles
+            if (operatorDetailsSection) {
+                operatorDetailsSection.style.display = 'block';
+                console.log("[DEBUG] Showing operator details for Pot-Pot vehicle");
+            }
+        } else if (vehicleTypeSelector.value === 'regular') {
+            ratePerViolation = 300; // ₱300 for regular vehicles
+            // Show vehicle information section for regular vehicles
+            if (vehicleInfoSection) {
+                vehicleInfoSection.style.display = 'block';
+            }
+            // Hide operator details section for regular vehicles
+            if (operatorDetailsSection) {
+                operatorDetailsSection.style.display = 'none';
+                console.log("[DEBUG] Hiding operator details for Regular vehicle");
+            }
+        }
     }
     
-    handleImagePreview(driverPhoto, driverPhotoPreview);
-    handleImagePreview(platePhoto, platePhotoPreview);
-    handleImagePreview(secondaryPhoto, secondaryPhotoPreview);
+    // Count total violations
+    const violationCount = selectedViolations.length;
     
-    // Operator and Driver Search elements
+    // Calculate base total (rate * number of violations)
+    let baseTotal = ratePerViolation * violationCount;
+    console.log("[DEBUG] Base total before TDZ:", baseTotal);
+    
+    // Update rates in the table rows if vehicle type changed
+    selectedViolations.forEach(violation => {
+        violation.rate = ratePerViolation;
+        const row = document.getElementById(violation.id);
+        if (row) {
+            const rateCell = row.querySelector('td:nth-child(2)');
+            if (rateCell) {
+                rateCell.textContent = `₱${ratePerViolation.toFixed(2)}`;
+            }
+        }
+    });
+    
+    // Apply TDZ multiplier if checked (double the penalty)
+    if (isTdzChecked) {
+        baseTotal *= 2; // Double the penalty in Traffic Discipline Zones
+        console.log("[DEBUG] Applied TDZ multiplier, new total:", baseTotal);
+        if (tdzMultiplierInfo) {
+            tdzMultiplierInfo.style.display = 'block';
+        }
+    } else {
+        if (tdzMultiplierInfo) {
+            tdzMultiplierInfo.style.display = 'none';
+        }
+    }
+    
+    // Update the fine amount input
+    if (fineAmountInput) {
+        fineAmountInput.value = baseTotal.toFixed(2);
+        console.log("[DEBUG] Updated fine amount input:", fineAmountInput.value);
+    }
+    
+    // Update the final amount display
+    if (finalAmountDisplay) {
+        finalAmountDisplay.textContent = baseTotal.toFixed(2);
+        console.log("[DEBUG] Updated final amount display:", finalAmountDisplay.textContent);
+    }
+    
+    return baseTotal;
+};
+
+// Operator and Driver Search Functionality
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Document loaded, initializing search functionality');
+    
+    // Get element references for search functionality
     const operatorSearch = document.getElementById('operatorSearch');
     const driverSearch = document.getElementById('driverSearch');
     const operatorResults = document.getElementById('operatorResults');
@@ -875,45 +1319,86 @@ document.addEventListener('DOMContentLoaded', function() {
     const potpotNumberField = document.getElementById('potpot_number');
     const operatorAddressField = document.getElementById('operator_address');
     
+    // Log all form fields to verify they're being found
+    console.log('Initialized form fields:', {
+        operatorSearch: operatorSearch,
+        driverSearch: driverSearch,
+        operatorResults: operatorResults,
+        driverResults: driverResults,
+        searchOperatorBtn: searchOperatorBtn,
+        searchDriverBtn: searchDriverBtn,
+        selectedOperatorId: selectedOperatorId,
+        selectedDriverId: selectedDriverId,
+        driverNameField: driverNameField,
+        pdNumberField: pdNumberField,
+        licenseNumberField: licenseNumberField,
+        driverAddressField: driverAddressField,
+        potpotNumberField: potpotNumberField,
+        operatorAddressField: operatorAddressField
+    });
+    
+    // Also check for vehicle form fields
+    const vehicleFields = {
+        plateNumber: document.getElementById('plate_number'),
+        vehicleType: document.getElementById('vehicle_type'),
+        color: document.getElementById('color'),
+        classification: document.getElementById('classification')
+    };
+    console.log('Vehicle form fields:', vehicleFields);
+    
     // Search for operators
     searchOperatorBtn.addEventListener('click', () => {
         const query = operatorSearch.value.trim();
-        if (query.length < 3) {
-            // Use SweetAlert for validation error
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Search Query Too Short',
-                    text: 'Please enter at least 3 characters',
-                    confirmButtonText: 'OK'
-                });
-            } else {
-                alert('Please enter at least 3 characters');
-            }
+        if (query.length === 0) {
             return;
         }
         
+        console.log(`Searching for operators with query: "${query}"`);
+        
         fetch(`/api/search-operators/?q=${encodeURIComponent(query)}`)
-            .then(response => response.json())
+            .then(response => {
+                console.log('Search response status:', response.status);
+                return response.json();
+            })
             .then(data => {
+                console.log(`Found ${data.length} operators matching query:`, data);
                 operatorResults.innerHTML = '';
                 operatorResults.style.display = 'block';
                 
                 if (data.length === 0) {
-                    operatorResults.innerHTML = '<div class="no-results">No operators found</div>';
+                    operatorResults.innerHTML = `
+                        <div class="empty-state">
+                            <span class="material-icons">search_off</span>
+                            <p>No operators found matching "${query}"</p>
+                            <small>Try using different keywords or check for typos</small>
+                        </div>`;
                     return;
                 }
                 
                 data.forEach(operator => {
                     const resultItem = document.createElement('div');
                     resultItem.className = 'search-result-item';
+                    
+                    // Show PO number with special highlight if it's available
+                    const poNumberDisplay = operator.po_number ? 
+                        `<div class="badge bg-success">PO: ${operator.po_number}</div>` :
+                        '';
+                    
+                    // Highlight if the query matches the PO number
+                    const isPOMatch = operator.po_number && query === operator.po_number;
+                    if (isPOMatch) {
+                        resultItem.classList.add('po-match-highlight');
+                    }
+                    
                     resultItem.innerHTML = `
                         <div class="item-name">${operator.last_name}, ${operator.first_name}</div>
-                        <div class="item-details">Address: ${operator.address}</div>
-                        <div class="mt-1">
-                            <span class="pd-number">PD: ${operator.new_pd_number}</span>
-                            ${operator.old_pd_number ? `<span class="pd-number ms-2">Old PD: ${operator.old_pd_number}</span>` : ''}
+                        <div class="d-flex mt-1 mb-1">
+                            <div class="badge bg-primary me-2">PD: ${operator.new_pd_number || 'N/A'}</div>
+                            ${operator.old_pd_number ? `<div class="badge bg-secondary me-2">Old PD: ${operator.old_pd_number}</div>` : ''}
+                            ${poNumberDisplay}
                         </div>
+                        <div class="item-details text-muted small">Address: ${operator.address || 'No address available'}</div>
+                        ${isPOMatch ? '<div class="matched-po-alert">✓ Exact PO Number Match!</div>' : ''}
                     `;
                     
                     // Add click event to select operator
@@ -923,10 +1408,68 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     operatorResults.appendChild(resultItem);
                 });
+                
+                // Add a helpful debug message
+                const debugInfo = document.createElement('div');
+                debugInfo.className = 'search-debug-info p-2 text-muted border-top mt-2';
+                debugInfo.innerHTML = `
+                    <small>Debug: Found ${data.length} operators for query "${query}"</small>
+                    <button class="btn btn-sm btn-link p-0 ms-2" id="showOperatorDetailsBtn">Show Details</button>
+                `;
+                operatorResults.appendChild(debugInfo);
+                
+                // Add event listener for the Show Details button
+                document.getElementById('showOperatorDetailsBtn').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.table(data);
+                    
+                    // Create a modal with the detailed data
+                    const detailsHtml = data.map(op => `
+                        <tr>
+                            <td>${op.id}</td>
+                            <td>${op.last_name}, ${op.first_name}</td>
+                            <td>${op.new_pd_number || 'N/A'}</td>
+                            <td>${op.old_pd_number || 'N/A'}</td>
+                            <td>${op.po_number || 'N/A'}</td>
+                        </tr>
+                    `).join('');
+                    
+                    Swal.fire({
+                        title: 'Operator Search Details',
+                        html: `
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Name</th>
+                                            <th>PD Number</th>
+                                            <th>Old PD</th>
+                                            <th>PO Number</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${detailsHtml}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="mt-3">
+                                <small class="text-muted">Query: "${query}"</small>
+                            </div>
+                        `,
+                        width: '800px',
+                    });
+                });
             })
             .catch(error => {
                 console.error('Error searching operators:', error);
-                operatorResults.innerHTML = '<div class="no-results">Error searching operators</div>';
+                operatorResults.innerHTML = `
+                    <div class="empty-state">
+                        <span class="material-icons">error_outline</span>
+                        <p>Error searching operators</p>
+                        <small>Please try again or check your connection</small>
+                    </div>`;
                 operatorResults.style.display = 'block';
                 
                 // Show error with SweetAlert
@@ -944,29 +1487,29 @@ document.addEventListener('DOMContentLoaded', function() {
     // Search for drivers
     searchDriverBtn.addEventListener('click', () => {
         const query = driverSearch.value.trim();
-        if (query.length < 3) {
-            // Use SweetAlert for validation error
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Search Query Too Short',
-                    text: 'Please enter at least 3 characters',
-                    confirmButtonText: 'OK'
-                });
-            } else {
-                alert('Please enter at least 3 characters');
-            }
+        if (query.length === 0) {
             return;
         }
         
+        console.log(`Searching for drivers with query: "${query}"`);
+        
         fetch(`/api/search-drivers/?q=${encodeURIComponent(query)}`)
-            .then(response => response.json())
+            .then(response => {
+                console.log('Driver search response status:', response.status);
+                return response.json();
+            })
             .then(data => {
+                console.log(`Found ${data.length} drivers matching query:`, data);
                 driverResults.innerHTML = '';
                 driverResults.style.display = 'block';
                 
                 if (data.length === 0) {
-                    driverResults.innerHTML = '<div class="no-results">No drivers found</div>';
+                    driverResults.innerHTML = `
+                        <div class="empty-state">
+                            <span class="material-icons">search_off</span>
+                            <p>No drivers found matching "${query}"</p>
+                            <small>Try using different keywords or check for typos</small>
+                        </div>`;
                     return;
                 }
                 
@@ -975,11 +1518,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     resultItem.className = 'search-result-item';
                     resultItem.innerHTML = `
                         <div class="item-name">${driver.last_name}, ${driver.first_name}</div>
-                        <div class="item-details">Address: ${driver.address}</div>
-                        <div class="mt-1">
-                            <span class="pd-number">PD: ${driver.new_pd_number}</span>
-                            ${driver.old_pd_number ? `<span class="pd-number ms-2">Old PD: ${driver.old_pd_number}</span>` : ''}
+                        <div class="d-flex mt-1 mb-1">
+                            <div class="badge bg-primary me-2">PD: ${driver.new_pd_number || 'N/A'}</div>
+                            ${driver.old_pd_number ? `<div class="badge bg-secondary">Old PD: ${driver.old_pd_number}</div>` : ''}
                         </div>
+                        <div class="item-details text-muted small">Address: ${driver.address || 'No address available'}</div>
                     `;
                     
                     // Add click event to select driver
@@ -989,10 +1532,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     driverResults.appendChild(resultItem);
                 });
+                
+                // Add a helpful debug message
+                const debugInfo = document.createElement('div');
+                debugInfo.className = 'search-debug-info p-2 text-muted border-top mt-2';
+                debugInfo.innerHTML = `<small>Debug: Found ${data.length} drivers for query "${query}"</small>`;
+                driverResults.appendChild(debugInfo);
             })
             .catch(error => {
                 console.error('Error searching drivers:', error);
-                driverResults.innerHTML = '<div class="no-results">Error searching drivers</div>';
+                driverResults.innerHTML = `
+                    <div class="empty-state">
+                        <span class="material-icons">error_outline</span>
+                        <p>Error searching drivers</p>
+                        <small>Please try again or check your connection</small>
+                    </div>`;
                 driverResults.style.display = 'block';
                 
                 // Show error with SweetAlert
@@ -1015,16 +1569,40 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update the search field
         operatorSearch.value = `${operator.new_pd_number} - ${operator.last_name}, ${operator.first_name}`;
         
-        // Close results
+        // Highlight the selected item and close results
+        const items = operatorResults.querySelectorAll('.search-result-item');
+        items.forEach(item => item.classList.remove('item-selected'));
         operatorResults.style.display = 'none';
         
-        // Populate the form fields if they exist
-        if (potpotNumberField) {
-            potpotNumberField.value = operator.new_pd_number;
+        // ALWAYS populate the driver's name field if it exists
+        const driverNameField = document.getElementById('driver_name');
+        if (driverNameField) {
+            // Force update the field with the operator's name
+            const fullName = `${operator.first_name} ${operator.middle_initial ? operator.middle_initial + ' ' : ''}${operator.last_name}`;
+            driverNameField.value = fullName;
+            driverNameField.dispatchEvent(new Event('input', { bubbles: true }));
+            driverNameField.dispatchEvent(new Event('change', { bubbles: true }));
         }
         
+        // Populate the form fields - FIXED: removed reference to undefined variables
+        // and handled fields differently to avoid errors
+        
+        // Always populate operator address field if it exists
+        const operatorAddressField = document.getElementById('operator_address');
         if (operatorAddressField) {
-            operatorAddressField.value = operator.address;
+            operatorAddressField.value = operator.address || '';
+            operatorAddressField.dispatchEvent(new Event('input', { bubbles: true }));
+            operatorAddressField.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        
+        // Do NOT populate the potpotNumberField, leave it empty
+        
+        // But DO set PD Number if it exists and is empty
+        const pdNumberField = document.getElementById('pd_number');
+        if (pdNumberField && !pdNumberField.value) {
+            pdNumberField.value = operator.new_pd_number || '';
+            pdNumberField.dispatchEvent(new Event('input', { bubbles: true }));
+            pdNumberField.dispatchEvent(new Event('change', { bubbles: true }));
         }
         
         // Show success notification with SweetAlert
@@ -1033,7 +1611,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 icon: 'success',
                 title: 'Operator Selected',
                 text: 'Operator information loaded successfully!',
-                confirmButtonText: 'OK'
+                toast: true,
+                position: 'bottom-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true
             });
         }
     }
@@ -1046,33 +1628,67 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update the search field
         driverSearch.value = `${driver.new_pd_number} - ${driver.last_name}, ${driver.first_name}`;
         
-        // Close results
+        // Highlight the selected item and close results
+        const items = driverResults.querySelectorAll('.search-result-item');
+        items.forEach(item => item.classList.remove('item-selected'));
         driverResults.style.display = 'none';
         
-        // Populate the form fields if they exist
+        // ALWAYS populate the driver's name field
+        const driverNameField = document.getElementById('driver_name');
         if (driverNameField) {
-            driverNameField.value = `${driver.first_name} ${driver.last_name}`;
+            // Force update the field with the driver's name
+            const fullName = `${driver.first_name} ${driver.middle_initial ? driver.middle_initial + ' ' : ''}${driver.last_name}`;
+            driverNameField.value = fullName;
+            driverNameField.dispatchEvent(new Event('input', { bubbles: true }));
+            driverNameField.dispatchEvent(new Event('change', { bubbles: true }));
         }
         
+        // Populate the form fields related to the driver
+        if (lastName) {
+            lastName.value = driver.last_name || '';
+        }
+        
+        if (firstName) {
+            firstName.value = driver.first_name || '';
+        }
+        
+        // If there's a middle initial field, populate it
+        const middleInitial = document.getElementById('middle_initial');
+        if (middleInitial && driver.middle_initial) {
+            middleInitial.value = driver.middle_initial;
+        }
+        
+        if (licenseNumber) {
+            licenseNumber.value = driver.license_number || '';
+        }
+        
+        // Populate PD number field if it exists
+        const pdNumberField = document.getElementById('pd_number');
         if (pdNumberField) {
-            pdNumberField.value = driver.new_pd_number;
+            pdNumberField.value = driver.new_pd_number || '';
+            pdNumberField.dispatchEvent(new Event('input', { bubbles: true }));
+            pdNumberField.dispatchEvent(new Event('change', { bubbles: true }));
         }
         
-        if (licenseNumberField) {
-            licenseNumberField.value = driver.license_number || '';
-        }
-        
+        // Always populate driver address field if it exists
+        const driverAddressField = document.getElementById('driver_address');
         if (driverAddressField) {
-            driverAddressField.value = driver.address;
+            driverAddressField.value = driver.address || '';
+            driverAddressField.dispatchEvent(new Event('input', { bubbles: true }));
+            driverAddressField.dispatchEvent(new Event('change', { bubbles: true }));
         }
         
-        // If driver has operator info, populate that too
+        // If driver has operator info, populate that too but NOT the potpotNumberField
         if (driver.operator) {
             selectedOperatorId.value = driver.operator.id;
             operatorSearch.value = `${driver.operator.new_pd_number} - ${driver.operator.last_name}, ${driver.operator.first_name}`;
             
-            if (potpotNumberField) {
-                potpotNumberField.value = driver.operator.new_pd_number;
+            // Always populate operator address field if it exists
+            const operatorAddressField = document.getElementById('operator_address');
+            if (operatorAddressField) {
+                operatorAddressField.value = driver.operator.address || '';
+                operatorAddressField.dispatchEvent(new Event('input', { bubbles: true }));
+                operatorAddressField.dispatchEvent(new Event('change', { bubbles: true }));
             }
         }
         
@@ -1082,7 +1698,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 icon: 'success',
                 title: 'Driver Selected',
                 text: 'Driver information loaded successfully!',
-                confirmButtonText: 'OK'
+                toast: true,
+                position: 'bottom-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true
             });
         }
     }
@@ -1099,14 +1719,18 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Input event listeners for autocomplete
     operatorSearch.addEventListener('input', debounce(() => {
-        if (operatorSearch.value.trim().length >= 3) {
+        if (operatorSearch.value.trim().length > 0) {
             searchOperatorBtn.click();
+        } else {
+            operatorResults.style.display = 'none';
         }
     }, 300));
     
     driverSearch.addEventListener('input', debounce(() => {
-        if (driverSearch.value.trim().length >= 3) {
+        if (driverSearch.value.trim().length > 0) {
             searchDriverBtn.click();
+        } else {
+            driverResults.style.display = 'none';
         }
     }, 300));
     
@@ -1142,6 +1766,574 @@ document.addEventListener('DOMContentLoaded', function() {
                 alertDiv.parentNode.removeChild(alertDiv);
             }
         }, 3000);
+    }
+});
+
+// JavaScript for Multiple Violations Selection and Calculation
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('[PENALTY] DOM loaded - initializing penalty calculator');
+    
+    // Core elements needed for calculation
+    const fineAmountInput = document.getElementById('fine_amount');
+    const finalAmountDisplay = document.getElementById('final_amount_display');
+    const tdzViolationCheckbox = document.getElementById('is_tdz_violation');
+    const vehicleTypeSelector = document.getElementById('vehicle_penalty_type');
+    const violationTypeInput = document.getElementById('violation_type');
+    const violationPenaltiesInput = document.getElementById('violation_penalties');
+    const selectedViolationsBody = document.getElementById('selected_violations_body');
+    const vehicleInfoSection = document.getElementById('vehicle_information_section');
+    const operatorDetailsSection = document.getElementById('operator_details_section');
+    const potpotNumberField = document.getElementById('potpot_number');
+    const operatorAddressField = document.getElementById('operator_address');
+    
+    // Setup initial visibility based on default selection
+    if (vehicleTypeSelector) {
+        // If no vehicle type is selected on page load or vehicle type is 'regular',
+        // hide the operator details section by default
+        if (!vehicleTypeSelector.value || vehicleTypeSelector.value === 'regular') {
+            if (operatorDetailsSection) {
+                operatorDetailsSection.style.display = 'none';
+                // Clear operator fields when hidden
+                if (potpotNumberField) potpotNumberField.value = '';
+                if (operatorAddressField) operatorAddressField.value = '';
+            }
+        }
+        
+        // Add explicit handler for vehicle type changes
+        vehicleTypeSelector.addEventListener('change', function() {
+            console.log('[PENALTY] Vehicle type changed to:', this.value);
+            
+            // Toggle operator details section visibility
+            if (operatorDetailsSection) {
+                if (this.value === 'regular') {
+                    operatorDetailsSection.style.display = 'none';
+                    // Clear operator fields when hidden
+                    if (potpotNumberField) potpotNumberField.value = '';
+                    if (operatorAddressField) operatorAddressField.value = '';
+                } else if (this.value === 'potpot') {
+                    operatorDetailsSection.style.display = 'block';
+                }
+            }
+            
+            // Recalculate penalty
+            calculatePenalty();
+        });
+    }
+    
+    // Initialize the violation storage
+    window.violationTracker = {
+        items: [],
+        addViolation: function(text, rate) {
+            const id = 'violation_' + Date.now();
+            this.items.push({id, text, rate});
+            return id;
+        },
+        removeViolation: function(id) {
+            const index = this.items.findIndex(v => v.id === id);
+            if (index !== -1) {
+                this.items.splice(index, 1);
+                return true;
+            }
+            return false;
+        },
+        getViolations: function() {
+            return this.items;
+        },
+        getCount: function() {
+            return this.items.length;
+        },
+        updateRates: function(newRate) {
+            this.items.forEach(v => v.rate = newRate);
+        },
+        getTotal: function() {
+            return this.items.reduce((sum, v) => sum + v.rate, 0);
+        }
+    };
+    
+    // Create a standalone function to calculate and update the penalty
+    function calculatePenalty() {
+        console.log('[PENALTY] Calculating penalty');
+        
+        // Get values
+        const vehicleType = vehicleTypeSelector ? vehicleTypeSelector.value : null;
+        const isTdzViolation = tdzViolationCheckbox && tdzViolationCheckbox.checked;
+        const violations = window.violationTracker.getViolations();
+        
+        console.log('[PENALTY] Inputs:', {
+            vehicleType,
+            isTdzViolation,
+            violationCount: violations.length
+        });
+        
+        // Get base rate based on vehicle type
+        let baseRate = 0;
+        if (vehicleType === 'potpot') {
+            baseRate = 50; // ₱50 for Pot-Pot vehicles
+            // Hide vehicle info section and show operator details for potpot vehicles
+            if (vehicleInfoSection) vehicleInfoSection.style.display = 'none';
+            if (document.getElementById('operator_details_section')) document.getElementById('operator_details_section').style.display = 'block';
+        } else if (vehicleType === 'regular') {
+            baseRate = 300; // ₱300 for regular vehicles
+            // Show vehicle info section and hide operator details for regular vehicles
+            if (vehicleInfoSection) vehicleInfoSection.style.display = 'block';
+            if (document.getElementById('operator_details_section')) document.getElementById('operator_details_section').style.display = 'none';
+        }
+        
+        // Update all violation rates
+        window.violationTracker.updateRates(baseRate);
+        
+        // Update rates in the table
+        violations.forEach(violation => {
+            const row = document.getElementById(violation.id);
+            if (row) {
+                const rateCell = row.querySelector('td:nth-child(2)');
+                if (rateCell) {
+                    rateCell.textContent = `₱${baseRate.toFixed(2)}`;
+                }
+            }
+        });
+        
+        // Calculate total
+        let totalPenalty = window.violationTracker.getTotal();
+        console.log('[PENALTY] Base penalty before TDZ:', totalPenalty);
+        
+        // Apply TDZ multiplier
+        if (isTdzViolation) {
+            // Explicitly double the amount
+            totalPenalty = totalPenalty * 2;
+            console.log('[PENALTY] TDZ is checked - DOUBLING penalty from', totalPenalty/2, 'to', totalPenalty);
+            
+            if (document.getElementById('tdz_multiplier_info')) {
+                document.getElementById('tdz_multiplier_info').style.display = 'block';
+            }
+        } else {
+            console.log('[PENALTY] TDZ is NOT checked - keeping original penalty:', totalPenalty);
+            if (document.getElementById('tdz_multiplier_info')) {
+                document.getElementById('tdz_multiplier_info').style.display = 'none';
+            }
+        }
+        
+        console.log('[PENALTY] Final calculated amount:', totalPenalty);
+        
+        // Update UI
+        if (fineAmountInput) {
+            fineAmountInput.value = totalPenalty.toFixed(2);
+            console.log('[PENALTY] Updated fineAmountInput:', fineAmountInput.value);
+        }
+        
+        if (finalAmountDisplay) {
+            finalAmountDisplay.textContent = totalPenalty.toFixed(2);
+            console.log('[PENALTY] Updated finalAmountDisplay:', finalAmountDisplay.textContent);
+        }
+        
+        return totalPenalty;
+    }
+    
+    // Set our calculator as the global recalculateTotal
+    window.recalculateTotal = calculatePenalty;
+    
+    // Attach event listeners
+    if (vehicleTypeSelector) {
+        vehicleTypeSelector.addEventListener('change', function() {
+            console.log('[PENALTY] Vehicle type changed to:', this.value);
+            calculatePenalty();
+        });
+    }
+    
+    if (tdzViolationCheckbox) {
+        // Remove the inline event handlers to prevent double-firing
+        tdzViolationCheckbox.removeAttribute('onchange');
+        tdzViolationCheckbox.removeAttribute('onclick');
+        
+        // Add our own event listener
+        tdzViolationCheckbox.addEventListener('change', function() {
+            console.log('[PENALTY] TDZ checkbox changed to:', this.checked);
+            // Force recalculation and double the penalty if checked
+            calculatePenalty();
+        });
+        
+        // Add click handler to debug
+        tdzViolationCheckbox.addEventListener('click', function() {
+            console.log('[PENALTY] TDZ checkbox clicked, state after click will be:', !this.checked);
+        });
+    } else {
+        console.warn('[PENALTY] TDZ checkbox not found! This will prevent the TDZ multiplier from working.');
+    }
+    
+    // Run the initial calculation after a short delay
+    setTimeout(function() {
+        console.log('[PENALTY] Running initial calculation');
+        calculatePenalty();
+    }, 300);
+    
+    // Override the violation add/remove functions
+    window.addViolation = function() {
+        const violationSelector = document.getElementById('violation_selector');
+        if (!violationSelector) return;
+        
+        const selectedOption = violationSelector.options[violationSelector.selectedIndex];
+        const violationText = selectedOption.value;
+        
+        if (!violationText) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No Violation Selected',
+                    text: 'Please select a violation to add.',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+            }
+            return;
+        }
+        
+        // Check if violation already exists
+        if (window.violationTracker.getViolations().some(v => v.text === violationText)) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Duplicate Violation',
+                    text: 'This violation has already been added.',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+            }
+            return;
+        }
+        
+        // Get current rate based on vehicle type
+        let violationRate = 0;
+        if (vehicleTypeSelector && vehicleTypeSelector.value) {
+            if (vehicleTypeSelector.value === 'potpot') {
+                violationRate = 50; // ₱50 for Pot-Pot vehicles
+            } else if (vehicleTypeSelector.value === 'regular') {
+                violationRate = 300; // ₱300 for regular vehicles
+            }
+        }
+        
+        // Add to tracker
+        const violationId = window.violationTracker.addViolation(violationText, violationRate);
+        console.log('[PENALTY] Added violation:', violationText, 'with rate:', violationRate);
+        
+        // Hide the "no violations" row if it's visible
+        const noViolationsRow = document.getElementById('no_violations_row');
+        if (noViolationsRow && noViolationsRow.style.display !== 'none') {
+            noViolationsRow.style.display = 'none';
+        }
+        
+        // Create new row
+        const newRow = document.createElement('tr');
+        newRow.id = violationId;
+        newRow.innerHTML = `
+            <td>${violationText}</td>
+            <td>₱${violationRate.toFixed(2)}</td>
+            <td>
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeViolation('${violationId}')">
+                    <i class="fas fa-trash-alt"></i> Remove
+                </button>
+            </td>
+        `;
+        
+        // Add to table
+        if (selectedViolationsBody) {
+            selectedViolationsBody.appendChild(newRow);
+        }
+        
+        // Reset selector
+        violationSelector.selectedIndex = 0;
+        
+        // Update count display
+        const countDisplay = document.getElementById('count_display');
+        if (countDisplay) {
+            countDisplay.textContent = `${window.violationTracker.getCount()} violation(s)`;
+        }
+        
+        // Update form values
+        if (violationTypeInput) {
+            violationTypeInput.value = window.violationTracker.getViolations().map(v => v.text).join(', ');
+        }
+        
+        if (violationPenaltiesInput) {
+            violationPenaltiesInput.value = JSON.stringify(window.violationTracker.getViolations());
+        }
+        
+        // Recalculate total
+        calculatePenalty();
+        
+        // Show success notification
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'success',
+                title: 'Violation Added',
+                text: 'Violation has been added to the list.',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 2000
+            });
+        }
+    };
+    
+    window.removeViolation = function(violationId) {
+        console.log('[PENALTY] Removing violation:', violationId);
+        
+        if (window.violationTracker.removeViolation(violationId)) {
+            // Remove from table
+            const rowToRemove = document.getElementById(violationId);
+            if (rowToRemove) {
+                rowToRemove.remove();
+            }
+            
+            // Show "no violations" row if no violations are left
+            const noViolationsRow = document.getElementById('no_violations_row');
+            if (window.violationTracker.getCount() === 0 && noViolationsRow) {
+                noViolationsRow.style.display = '';
+            }
+            
+            // Update count display
+            const countDisplay = document.getElementById('count_display');
+            if (countDisplay) {
+                countDisplay.textContent = `${window.violationTracker.getCount()} violation(s)`;
+            }
+            
+            // Update form values
+            if (violationTypeInput) {
+                violationTypeInput.value = window.violationTracker.getViolations().map(v => v.text).join(', ');
+            }
+            
+            if (violationPenaltiesInput) {
+                violationPenaltiesInput.value = JSON.stringify(window.violationTracker.getViolations());
+            }
+            
+            // Recalculate total
+            calculatePenalty();
+        }
+    };
+    
+    // Connect to add violation button
+    const addViolationBtn = document.getElementById('add_violation_btn');
+    if (addViolationBtn) {
+        addViolationBtn.addEventListener('click', window.addViolation);
+    }
+    
+    console.log('[PENALTY] Initialization complete');
+});
+
+function recalculateTotal() {
+    var vehicleType = document.getElementById('vehicle_penalty_type').value;
+    var fineAmount = 0;
+    
+    if (vehicleType === 'regular') {
+        fineAmount = 300.00;
+        // Show vehicle information section and hide operator details for regular vehicles
+        document.getElementById('vehicle_information_section').style.display = 'block';
+        document.getElementById('operator_details_section').style.display = 'none';
+    } else if (vehicleType === 'potpot') {
+        fineAmount = 50.00;
+        // Hide vehicle information section and show operator details for potpot vehicles
+        document.getElementById('vehicle_information_section').style.display = 'none';
+        document.getElementById('operator_details_section').style.display = 'block';
+    }
+    
+    // Set the penalty amount based on vehicle type
+    document.getElementById('penalty_amount').value = fineAmount;
+    
+    // Calculate final amount (apply multipliers if needed)
+    var finalAmount = fineAmount;
+    if (document.getElementById('is_tdz_violation').checked) {
+        finalAmount *= 2;
+        document.getElementById('tdz_multiplier_info').style.display = 'block';
+    } else {
+        document.getElementById('tdz_multiplier_info').style.display = 'none';
+    }
+    
+    // Update the displayed amounts
+    document.getElementById('final_amount_display').innerText = finalAmount.toFixed(2);
+    document.getElementById('fine_amount').value = finalAmount.toFixed(2);
+    
+    return finalAmount;
+}
+
+function updatePenaltyInfo(vehicleType, violationCount, totalAmount) {
+    var baseRate = vehicleType === 'regular' ? '₱300.00' : '₱50.00';
+    var penaltyInfoText = `
+        <strong>Base Penalty:</strong> ${baseRate} per violation<br>
+        <strong>Number of Violations:</strong> ${violationCount}<br>
+        <strong>Total Amount:</strong> ₱${totalAmount.toFixed(2)}<br>
+        <strong>Late Payment:</strong> Additional 2% interest per month<br>
+        <small class="text-muted">Note: Driver must attend traffic seminar before payment will be accepted.</small>
+    `;
+    
+    document.getElementById('penalty_info').innerHTML = penaltyInfoText;
+}
+
+// Add form submission handling with print option
+document.addEventListener('DOMContentLoaded', function() {
+    const violationForm = document.getElementById('violationForm');
+    
+    if (violationForm) {
+        violationForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Check if SweetAlert is available
+            if (typeof Swal === 'undefined') {
+                // Fall back to normal form submission if SweetAlert is not available
+                violationForm.submit();
+                return;
+            }
+            
+            // Show loading state
+            Swal.fire({
+                title: 'Saving Violation...',
+                text: 'Please wait while we process your submission',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            // Submit the form using AJAX
+            const formData = new FormData(violationForm);
+            
+            fetch(violationForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Save was successful here - data contains the saved violation information
+                console.log('Violation saved successfully with data:', data);
+                
+                // Store violation ID for later use
+                const savedViolationId = data.id || data.violation_id || 'N/A';
+                
+                // Show success message with print option
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Violation Saved Successfully!',
+                    text: 'The NCAP violation has been recorded in the system.',
+                    footer: `<span class="text-success">Violation ID: ${savedViolationId}</span>`,
+                    confirmButtonText: 'Go to Violations List',
+                    showDenyButton: true,
+                    denyButtonText: 'Print Form',
+                    denyButtonColor: '#3085d6',
+                    confirmButtonColor: '#28a745'
+                }).then((result) => {
+                    if (result.isDenied) {
+                        // Print the form using our dedicated print template
+                        if (savedViolationId && savedViolationId !== 'N/A') {
+                            printViolationForm(savedViolationId);
+                        } else {
+                            // If no ID is available, print the current window
+                            console.log('No violation ID found in response data:', data);
+                            Swal.fire({
+                                title: 'Printing current form...',
+                                text: 'Since no violation ID was returned, we will print the current form.',
+                                icon: 'info',
+                                timer: 2000,
+                                showConfirmButton: false
+                            }).then(() => {
+                                window.print();
+                                // Show success message after printing
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Print Successful',
+                                    text: 'The current form has been printed successfully!',
+                                    toast: true,
+                                    position: 'top-end',
+                                    showConfirmButton: false,
+                                    timer: 3000,
+                                    timerProgressBar: true
+                                });
+                            });
+                        }
+                    } else if (result.isConfirmed) {
+                        // Show toast notification before redirecting
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Redirecting...',
+                            text: 'Taking you to the NCAP violations list',
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 1500,
+                            timerProgressBar: true
+                        }).then(() => {
+                            // Redirect to the NCAP violations list with success parameter and violation ID
+                            window.location.href = '/ncap-violations/?success=true&id=' + (savedViolationId !== 'N/A' ? savedViolationId : '');
+                        });
+                    }
+                });
+            })
+            .catch(error => {
+                // Show error message
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Submission Error',
+                    text: 'There was a problem submitting the form. Please try again.',
+                    confirmButtonText: 'OK'
+                });
+                console.error('Error:', error);
+            });
+        });
+    }
+    
+    // Function to handle printing
+    window.printViolationForm = function(violationId) {
+        if (!violationId) {
+            console.log('No violation ID provided to printViolationForm');
+            // Print current window instead
+            window.print();
+            return;
+        }
+        
+        // Open print page in a new window
+        const printUrl = `/violation/${violationId}/print/`;
+        console.log('Opening print URL:', printUrl);
+        
+        const printWindow = window.open(printUrl, '_blank');
+        
+        if (printWindow) {
+            // Window opened successfully
+            Swal.fire({
+                icon: 'success',
+                title: 'Print Window Opened',
+                text: 'The print dialog should open automatically in the new window.',
+                confirmButtonText: 'OK'
+            }).then(() => {
+                // Show success message after printing
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Print Successful',
+                    text: 'The NCAP violation form has been printed successfully!',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+            });
+        } else {
+            // If popup is blocked, inform the user
+            Swal.fire({
+                icon: 'warning',
+                title: 'Print Window Blocked',
+                text: 'Your browser blocked the print window. Please allow popups for this site and try again.',
+                confirmButtonText: 'OK'
+            });
+        }
     }
 });
 </script>

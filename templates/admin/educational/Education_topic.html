@@ -1,0 +1,396 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Educational Topics{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <h1 class="card-title">Educational Topics</h1>
+                            <p class="text-muted">Manage all educational materials for the traffic violation system.</p>
+                        </div>
+                        <div class="ms-auto">
+                            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createTopicModal">
+                                <i class="material-icons me-1">add_circle</i> Create Topic
+                            </button>
+                            <a href="{% url 'educational:admin_dashboard' %}" class="btn btn-outline-secondary ms-2">
+                                <i class="material-icons me-1">dashboard</i> Back to Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form method="get" class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label for="search" class="form-label">Search Topics</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="material-icons">search</i></span>
+                                <input type="text" class="form-control" id="search" name="q" placeholder="Search by title or content..." 
+                                       value="{{ search_query|default:'' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="category" class="form-label">Category</label>
+                            <select class="form-select" id="category" name="category">
+                                <option value="">All Categories</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}" {% if category_filter == category.id|stringformat:"s" %}selected{% endif %}>{{ category.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="">All Statuses</option>
+                                <option value="published" {% if status_filter == 'published' %}selected{% endif %}>Published</option>
+                                <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Draft</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="sort" class="form-label">Sort By</label>
+                            <select class="form-select" id="sort" name="sort">
+                                <option value="-created_at" {% if request.GET.sort == '-created_at' %}selected{% endif %}>Newest First</option>
+                                <option value="created_at" {% if request.GET.sort == 'created_at' %}selected{% endif %}>Oldest First</option>
+                                <option value="title" {% if request.GET.sort == 'title' %}selected{% endif %}>Title (A-Z)</option>
+                                <option value="-title" {% if request.GET.sort == '-title' %}selected{% endif %}>Title (Z-A)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="material-icons align-middle">filter_list</i> Apply Filters
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-1">
+                            <div class="d-grid">
+                                <a href="{% url 'educational:admin_topic_list' %}" class="btn btn-outline-secondary">
+                                    <i class="material-icons align-middle">clear</i> Clear
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Topics List -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th width="5%">#</th>
+                                    <th width="25%">TITLE</th>
+                                    <th width="15%">CATEGORY</th>
+                                    <th width="10%">STATUS</th>
+                                    <th width="15%">CREATED</th>
+                                    <th width="15%">ACTIONS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for topic in topics %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ topic.title }}</td>
+                                    <td>
+                                        <a href="{% url 'educational:admin_topic_list' %}?category={{ topic.category.id }}" class="text-decoration-none">
+                                            {{ topic.category.title }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        {% if topic.is_published %}
+                                        <span class="badge rounded-pill bg-success">Published</span>
+                                        {% else %}
+                                        <span class="badge rounded-pill bg-secondary">Draft</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ topic.created_at|date:"M d, Y" }}</td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{% url 'educational:admin_topic_preview' topic_id=topic.id %}" class="btn btn-sm btn-outline-info" title="Preview">
+                                                <i class="material-icons small">visibility</i>
+                                            </a>
+                                            <a href="{% url 'educational:admin_topic_edit' topic_id=topic.id %}" class="btn btn-sm btn-outline-primary" title="Edit">
+                                                <i class="material-icons small">edit</i>
+                                            </a>
+                                            {% if topic.is_published %}
+                                            <a href="{% url 'educational:admin_topic_publish' topic_id=topic.id %}" class="btn btn-sm btn-outline-warning" title="Unpublish">
+                                                <i class="material-icons small">unpublished</i>
+                                            </a>
+                                            {% else %}
+                                            <a href="{% url 'educational:admin_topic_publish' topic_id=topic.id %}" class="btn btn-sm btn-outline-success" title="Publish">
+                                                <i class="material-icons small">publish</i>
+                                            </a>
+                                            {% endif %}
+                                            <a href="{% url 'educational:admin_topic_delete' topic_id=topic.id %}" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                <i class="material-icons small">delete</i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-5">
+                                        <div class="text-muted">
+                                            <i class="material-icons" style="font-size: 3rem;">article</i>
+                                            <p class="mt-3">No topics found.</p>
+                                            <button type="button" class="btn btn-success btn-sm mt-2" data-bs-toggle="modal" data-bs-target="#createTopicModal">
+                                                <i class="material-icons me-1 small">add</i> Create Your First Topic
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Topic Stats (if data available) -->
+    {% if topics %}
+    <div class="row">
+        <div class="col-lg-6 col-md-12 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h4 class="card-title mb-4">Topics Overview</h4>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Total Topics
+                            <span class="badge bg-success rounded-pill">{{ topics|length }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Published Topics
+                            <span class="badge bg-primary rounded-pill">
+                                {% with published=0 %}
+                                    {% for topic in topics %}
+                                        {% if topic.is_published %}
+                                            {% with published=published|add:1 %}{% endwith %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {{ published }}
+                                {% endwith %}
+                            </span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Draft Topics
+                            <span class="badge bg-secondary rounded-pill">
+                                {% with drafts=0 %}
+                                    {% for topic in topics %}
+                                        {% if not topic.is_published %}
+                                            {% with drafts=drafts|add:1 %}{% endwith %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {{ drafts }}
+                                {% endwith %}
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 col-md-12 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h4 class="card-title mb-4">Categories with Topics</h4>
+                    <div id="topics-by-category" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Create Topic Modal -->
+<div class="modal fade" id="createTopicModal" tabindex="-1" aria-labelledby="createTopicModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createTopicModalLabel">Create New Topic</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="create-topic-form" action="{% url 'educational:admin_topic_create' %}" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h5 class="mb-3">Topic Details</h5>
+                                    
+                                    <div class="mb-3">
+                                        <label for="topicTitle" class="form-label">Topic Title <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="topicTitle" name="title" required placeholder="e.g., Traffic Rules and Regulations">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="topicCategory" class="form-label">Category <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="topicCategory" name="category" required>
+                                            <option value="" selected disabled>Select a category</option>
+                                            {% for category in categories %}
+                                            <option value="{{ category.id }}">{{ category.title }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="topicContent" class="form-label">Content <span class="text-danger">*</span></label>
+                                        <textarea class="form-control" id="topicContent" name="content" rows="8" required placeholder="Write your educational content here..."></textarea>
+                                        <small class="text-muted">You can use basic HTML tags for formatting (<b>h1</b>, <b>p</b>, <b>ul</b>, <b>strong</b>, etc.)</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="mb-3">Attachments</h5>
+                                    <input type="file" class="form-control" name="attachments" multiple>
+                                    <small class="text-muted d-block mt-2">Upload PDFs, images, videos or other files. Max 10MB per file. PDFs will be viewable in the user portal.</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h5 class="mb-3">Publishing Options</h5>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="publishImmediately" name="is_published">
+                                        <label class="form-check-label" for="publishImmediately">Publish Immediately</label>
+                                    </div>
+                                    <small class="text-muted">If unchecked, this topic will be saved as a draft and not visible to users.</small>
+                                    
+                                    <div class="alert alert-primary mt-3">
+                                        <i class="material-icons align-middle">lightbulb</i>
+                                        Published topics appear immediately on the user portal. Make sure your content is ready before publishing.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="mb-3">Actions</h5>
+                                    <button type="submit" class="btn btn-primary w-100 mb-2">
+                                        <i class="material-icons align-middle">save</i> Save Topic
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary w-100 mb-2" id="preview-btn">
+                                        <i class="material-icons align-middle">visibility</i> Preview Content
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger w-100" data-bs-dismiss="modal">
+                                        <i class="material-icons align-middle">cancel</i> Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Category topics chart
+        var ctx = document.getElementById('topics-by-category');
+        if (ctx) {
+            var data = {
+                labels: [],
+                datasets: [{
+                    label: 'Topics',
+                    data: [],
+                    backgroundColor: [
+                        'rgba(54, 162, 235, 0.5)',
+                        'rgba(75, 192, 192, 0.5)',
+                        'rgba(153, 102, 255, 0.5)',
+                        'rgba(255, 159, 64, 0.5)',
+                        'rgba(255, 99, 132, 0.5)',
+                        'rgba(255, 205, 86, 0.5)',
+                        'rgba(201, 203, 207, 0.5)'
+                    ],
+                    borderColor: [
+                        'rgb(54, 162, 235)',
+                        'rgb(75, 192, 192)',
+                        'rgb(153, 102, 255)',
+                        'rgb(255, 159, 64)',
+                        'rgb(255, 99, 132)',
+                        'rgb(255, 205, 86)',
+                        'rgb(201, 203, 207)'
+                    ],
+                    borderWidth: 1
+                }]
+            };
+            
+            // Create a Map to count topics by category
+            var categoryMap = new Map();
+            
+            {% for topic in topics %}
+                if (!categoryMap.has("{{ topic.category.title }}")) {
+                    categoryMap.set("{{ topic.category.title }}", 0);
+                }
+                categoryMap.set("{{ topic.category.title }}", categoryMap.get("{{ topic.category.title }}") + 1);
+            {% endfor %}
+            
+            // Convert Map to arrays for Chart.js
+            categoryMap.forEach(function(count, category) {
+                data.labels.push(category);
+                data.datasets[0].data.push(count);
+            });
+            
+            var chart = new Chart(ctx, {
+                type: 'doughnut',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Preview button functionality
+        var previewBtn = document.getElementById('preview-btn');
+        if (previewBtn) {
+            previewBtn.addEventListener('click', function() {
+                var title = document.getElementById('topicTitle').value;
+                var content = document.getElementById('topicContent').value;
+                
+                if (title && content) {
+                    alert('Preview functionality would go here.\n\nTitle: ' + title + '\n\nContent preview available.');
+                } else {
+                    alert('Please fill in at least the title and content fields to preview.');
+                }
+            });
+        }
+    });
+</script>
+{% endblock %} 

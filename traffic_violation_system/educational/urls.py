@@ -30,4 +30,5 @@ urlpatterns = [
     path('admin/topics/delete/<int:topic_id>/', views.admin_topic_delete, name='admin_topic_delete'),
     path('admin/topics/publish/<int:topic_id>/', views.admin_topic_publish, name='admin_topic_publish'),
     path('admin/topics/preview/<int:topic_id>/', views.admin_topic_preview, name='admin_topic_preview'),
+    path('admin/extract-pdf-text/', views.extract_pdf_text, name='extract_pdf_text'),
 ] 

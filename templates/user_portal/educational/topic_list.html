@@ -1,5 +1,6 @@
 {% extends 'user_portal/base_user.html' %}
 {% load static %}
+{% load educationalfilters %}
 
 {% block title %}
     {% if selected_category %}
@@ -355,6 +356,84 @@
         color: white;
         text-decoration: none;
     }
+    
+    /* Add new CSS rules for PDF content display */
+    .topic-pdf-preview {
+        margin-top: 15px;
+        margin-bottom: 10px;
+        position: relative;
+        overflow: hidden;
+        border-radius: 6px;
+        background-color: #f8f9fa;
+        padding: 10px;
+        max-height: 250px;
+    }
+    
+    .topic-pdf-preview img {
+        max-height: 200px;
+        object-fit: contain;
+        display: block;
+        margin: 0 auto;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .pdf-preview-info {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(248,249,250,0.9) 40%, #f8f9fa 100%);
+        padding: 30px 15px 10px;
+        text-align: center;
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+    
+    .pdf-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: #0039cb;
+        color: white;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 4px 8px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .pdf-placeholder {
+        height: 180px;
+        background-color: #f5f7fa;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #0039cb;
+        font-weight: 500;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .pdf-icon {
+        font-size: 48px;
+        margin-bottom: 10px;
+        color: #0039cb;
+    }
+    
+    .pdf-text {
+        font-size: 18px;
+        font-weight: 600;
+    }
+    
+    .pdf-preview-container {
+        margin: 15px 0;
+    }
 </style>
 {% endblock %}
 
@@ -430,7 +509,25 @@
                                         <span class="topic-title">{{ topic.title }}</span>
                                     </div>
                                     <div class="topic-content">
-                                        {{ topic.content|safe|truncatewords_html:30 }}
+                                        {% if "PDF extracted image" in topic.content|stringformat:"s" or topic.attachments.count > 0 %}
+                                            <div class="topic-pdf-preview">
+                                                <div class="pdf-badge">
+                                                    <i class="material-icons" style="font-size: 14px;">picture_as_pdf</i>
+                                                    PDF
+                                                </div>
+                                                
+                                                <div class="pdf-preview-container">
+                                                    <div class="pdf-placeholder">
+                                                        <span class="material-icons pdf-icon">picture_as_pdf</span>
+                                                        <span class="pdf-text">Drivers Manual</span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="pdf-preview-info">Full document available when you start this topic</div>
+                                            </div>
+                                        {% else %}
+                                            {{ topic.content|safe|truncatewords_html:30 }}
+                                        {% endif %}
                                     </div>
                                     <div class="topic-footer">
                                         <div class="topic-status">

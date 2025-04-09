@@ -442,7 +442,8 @@ def upload_violation(request):
                 return JsonResponse({
                     'success': True,
                     'message': "Violation has been recorded successfully.",
-                    'redirect_url': reverse('violations_list')
+                    'redirect_url': reverse('violations_list'),
+                    'id': violation.id  # Add the violation ID to the response
                 })
             else:
                 # Regular form submission - show message and redirect
@@ -1461,8 +1462,10 @@ def submit_adjudication(request, violation_id):
         
         # Check if there are batch violations to process
         batch_violation_ids_json = request.POST.get('batch_violation_ids', '[]')
+        is_batch = False
         if batch_violation_ids_json and batch_violation_ids_json != '[]':
             batch_violation_ids = json.loads(batch_violation_ids_json)
+            is_batch = len(batch_violation_ids) > 0
             
             # Log batch adjudication in the activity log
             if batch_violation_ids:
@@ -1490,7 +1493,17 @@ def submit_adjudication(request, violation_id):
                 except Exception as e:
                     logger.error(f"Error processing batch violation {batch_id}: {str(e)}")
         
-        return redirect('adjudication_list')
+        # Get settled status for success message
+        is_settled = request.POST.get('settled_status', 'false') == 'true'
+        
+        # Redirect with success parameters
+        redirect_url = f"{reverse('adjudication_list')}?success=true"
+        if is_settled:
+            redirect_url += "&settled=true"
+        if is_batch:
+            redirect_url += "&batch=true"
+            
+        return redirect(redirect_url)
     
     except Exception as e:
         logger.error(f"Error in submit_adjudication: {str(e)}")
@@ -4359,16 +4372,17 @@ def driver_export_excel(request):
 
 @login_required
 def api_search_operators(request):
-    """API endpoint for searching operators"""
+    """API endpoint to search for operators by PD number"""
     query = request.GET.get('q', '')
     
-    if len(query) < 3:
+    if not query:
         return JsonResponse([], safe=False)
         
-    # Search for operators by new_pd_number, old_pd_number, or name
+    # Search for operators by new_pd_number, old_pd_number, po_number, or name
     operators = Operator.objects.filter(
         Q(new_pd_number__icontains=query) | 
         Q(old_pd_number__icontains=query) | 
+        Q(po_number__icontains=query) |
         Q(last_name__icontains=query) |
         Q(first_name__icontains=query)
     )[:10]  # Limit to 10 results
@@ -4376,7 +4390,22 @@ def api_search_operators(request):
     # Format the results
     results = []
     for operator in operators:
-        results.append({
+        # Get the vehicle information for this operator
+        vehicles = Vehicle.objects.filter(operator=operator)
+        vehicle_data = []
+        
+        for vehicle in vehicles:
+            vehicle_data.append({
+                'id': vehicle.id,
+                'new_pd_number': vehicle.new_pd_number,
+                'old_pd_number': vehicle.old_pd_number,
+                'vehicle_type': vehicle.vehicle_type,
+                'plate_number': vehicle.plate_number,
+                'color': vehicle.color,
+                'classification': vehicle.vehicle_type  # Use vehicle_type as classification
+            })
+        
+        operator_data = {
             'id': operator.id,
             'first_name': operator.first_name,
             'last_name': operator.last_name,
@@ -4384,16 +4413,65 @@ def api_search_operators(request):
             'address': operator.address,
             'old_pd_number': operator.old_pd_number,
             'new_pd_number': operator.new_pd_number,
-        })
+            'po_number': operator.po_number,
+            'vehicles': vehicle_data
+        }
+        
+        results.append(operator_data)
     
     return JsonResponse(results, safe=False)
+
+@login_required
+def api_get_operator(request):
+    """API endpoint to get operator details by ID"""
+    operator_id = request.GET.get('id')
+    
+    if not operator_id:
+        return JsonResponse({'error': 'No operator ID provided'}, status=400)
+    
+    try:
+        operator = Operator.objects.get(id=operator_id)
+        
+        # Get the vehicle information for this operator
+        vehicles = Vehicle.objects.filter(operator=operator)
+        vehicle_data = []
+        
+        for vehicle in vehicles:
+            vehicle_data.append({
+                'id': vehicle.id,
+                'new_pd_number': vehicle.new_pd_number,
+                'old_pd_number': vehicle.old_pd_number,
+                'vehicle_type': vehicle.vehicle_type,
+                'plate_number': vehicle.plate_number,
+                'color': vehicle.color,
+                'classification': vehicle.vehicle_type  # Use vehicle_type as classification
+            })
+        
+        operator_data = {
+            'id': operator.id,
+            'first_name': operator.first_name,
+            'last_name': operator.last_name,
+            'middle_initial': operator.middle_initial,
+            'address': operator.address,
+            'old_pd_number': operator.old_pd_number,
+            'new_pd_number': operator.new_pd_number,
+            'po_number': operator.po_number,
+            'vehicles': vehicle_data
+        }
+        
+        return JsonResponse(operator_data)
+    
+    except Operator.DoesNotExist:
+        return JsonResponse({'error': 'Operator not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 @login_required
 def api_search_drivers(request):
     """API endpoint to search for drivers by PD number"""
     query = request.GET.get('q', '')
     
-    if len(query) < 3:
+    if not query:
         return JsonResponse([], safe=False)
         
     # Search for drivers by new_pd_number, old_pd_number, or name
@@ -4415,20 +4493,118 @@ def api_search_drivers(request):
             'address': driver.address,
             'old_pd_number': driver.old_pd_number,
             'new_pd_number': driver.new_pd_number,
+            'license_number': driver.license_number,
+            'po_number': getattr(driver, 'po_number', None),  # Include if available
+            'contact_number': getattr(driver, 'contact_number', None)
         }
         
         # Add operator info if available
         if driver.operator:
+            # Get the vehicle information for this operator
+            vehicles = Vehicle.objects.filter(operator=driver.operator)
+            vehicle_data = []
+            
+            for vehicle in vehicles:
+                vehicle_data.append({
+                    'id': vehicle.id,
+                    'new_pd_number': vehicle.new_pd_number,
+                    'old_pd_number': vehicle.old_pd_number,
+                    'vehicle_type': vehicle.vehicle_type,
+                    'plate_number': vehicle.plate_number,
+                    'color': vehicle.color,
+                    'classification': vehicle.vehicle_type  # Use vehicle_type as classification
+                })
+            
             driver_data['operator'] = {
                 'id': driver.operator.id,
                 'first_name': driver.operator.first_name,
                 'last_name': driver.operator.last_name,
+                'middle_initial': driver.operator.middle_initial,
                 'new_pd_number': driver.operator.new_pd_number,
+                'old_pd_number': driver.operator.old_pd_number,
+                'po_number': driver.operator.po_number,
+                'address': driver.operator.address,
+                'vehicles': vehicle_data
             }
         
         results.append(driver_data)
     
     return JsonResponse(results, safe=False)
+
+@login_required
+def api_get_driver(request):
+    """API endpoint to get driver details by ID"""
+    driver_id = request.GET.get('id')
+    
+    if not driver_id:
+        return JsonResponse({'error': 'No driver ID provided'}, status=400)
+    
+    try:
+        driver = Driver.objects.get(id=driver_id)
+        
+        # Get the vehicle information for related driver assignments
+        current_vehicles = []
+        for assignment in DriverVehicleAssignment.objects.filter(driver=driver, end_date__isnull=True):
+            current_vehicles.append({
+                'id': assignment.vehicle.id,
+                'new_pd_number': assignment.vehicle.new_pd_number,
+                'old_pd_number': assignment.vehicle.old_pd_number,
+                'vehicle_type': assignment.vehicle.vehicle_type,
+                'plate_number': assignment.vehicle.plate_number,
+                'color': assignment.vehicle.color,
+                'classification': assignment.vehicle.vehicle_type  # Use vehicle_type as classification
+            })
+        
+        driver_data = {
+            'id': driver.id,
+            'first_name': driver.first_name,
+            'last_name': driver.last_name,
+            'middle_initial': driver.middle_initial,
+            'address': driver.address,
+            'old_pd_number': driver.old_pd_number,
+            'new_pd_number': driver.new_pd_number,
+            'license_number': driver.license_number,
+            'po_number': getattr(driver, 'po_number', None),
+            'contact_number': getattr(driver, 'contact_number', None),
+            'vehicles': current_vehicles
+        }
+        
+        # Add operator info if available
+        if driver.operator:
+            # Get the vehicle information for this operator
+            vehicles = Vehicle.objects.filter(operator=driver.operator)
+            vehicle_data = []
+            
+            for vehicle in vehicles:
+                vehicle_data.append({
+                    'id': vehicle.id,
+                    'new_pd_number': vehicle.new_pd_number,
+                    'old_pd_number': vehicle.old_pd_number,
+                    'vehicle_type': vehicle.vehicle_type,
+                    'plate_number': vehicle.plate_number,
+                    'color': vehicle.color,
+                    'classification': vehicle.vehicle_type
+                })
+            
+            driver_data['operator'] = {
+                'id': driver.operator.id,
+                'first_name': driver.operator.first_name,
+                'last_name': driver.operator.last_name,
+                'middle_initial': driver.operator.middle_initial,
+                'new_pd_number': driver.operator.new_pd_number,
+                'old_pd_number': driver.operator.old_pd_number,
+                'po_number': driver.operator.po_number,
+                'address': driver.operator.address,
+                'vehicles': vehicle_data
+            }
+        
+        return JsonResponse(driver_data)
+    
+    except Driver.DoesNotExist:
+        return JsonResponse({'error': 'Driver not found'}, status=404)
+    except Exception as e:
+        logger.error(f"Error getting driver: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
 
 def process_violation_images(request, violation):
     """Process uploaded images for a violation"""
@@ -4539,6 +4715,14 @@ def operator_register_vehicle(request):
         messages.error(request, "You must be a registered operator to add vehicles.")
         return redirect('operator_dashboard')
     
+    # Get user's personal vehicles
+    personal_vehicles = []
+    try:
+        from traffic_violation_system.user_portal.models import VehicleRegistration
+        personal_vehicles = VehicleRegistration.objects.filter(user=request.user)
+    except:
+        pass  # Fail silently if VehicleRegistration model doesn't exist
+    
     if request.method == 'POST':
         form = VehicleForm(request.POST, operator=operator)
         if form.is_valid():
@@ -4556,13 +4740,33 @@ def operator_register_vehicle(request):
             messages.success(request, f"Vehicle successfully registered with PD number {vehicle.new_pd_number}")
             return redirect('operator_dashboard')  # Redirect to dashboard instead of vehicle list
     else:
-        form = VehicleForm(operator=operator)
+        # Check if we're converting a personal vehicle
+        personal_vehicle_id = request.GET.get('personal_vehicle_id')
+        if personal_vehicle_id:
+            try:
+                from traffic_violation_system.user_portal.models import VehicleRegistration
+                personal_vehicle = VehicleRegistration.objects.get(id=personal_vehicle_id, user=request.user)
+                # Pre-populate the form with data from personal vehicle
+                initial_data = {
+                    'vehicle_type': 'Other',  # Default to 'Other' since the choices may be different
+                    'plate_number': personal_vehicle.plate_number,
+                    'color': personal_vehicle.color,
+                    'year_model': personal_vehicle.year_model,
+                    'capacity': 4,  # Default capacity
+                    'notes': f"Converted from personal vehicle. Make: {personal_vehicle.make}, Model: {personal_vehicle.model}"
+                }
+                form = VehicleForm(operator=operator, initial=initial_data)
+            except (VehicleRegistration.DoesNotExist, ImportError):
+                form = VehicleForm(operator=operator)
+        else:
+            form = VehicleForm(operator=operator)
     
     return render(request, 'operators/vehicle_form.html', {
         'form': form,
         'is_create': True,
         'title': 'Register New Vehicle',
-        'submit_text': 'Register Vehicle'
+        'submit_text': 'Register Vehicle',
+        'personal_vehicles': personal_vehicles
     })
 
 
@@ -5281,3 +5485,20 @@ def admin_report_export(request):
     # Save the workbook to the response
     workbook.save(response)
     return response
+
+@login_required
+def print_violation_form(request, violation_id):
+    """View for printing a violation form/ticket"""
+    violation = get_object_or_404(Violation, id=violation_id)
+    
+    # Check if this is an NCAP violation (with images)
+    is_ncap = bool(violation.image) or bool(violation.driver_photo) or bool(violation.vehicle_photo) or bool(violation.secondary_photo)
+    
+    # Choose the appropriate template based on violation type
+    template_name = 'violations/ncap_print_form.html' if is_ncap else 'violations/ticket_template.html'
+    
+    context = {
+        'violation': violation,
+    }
+    
+    return render(request, template_name, context)

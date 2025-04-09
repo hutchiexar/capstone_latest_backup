@@ -134,7 +134,6 @@ class VehicleRegistration(models.Model):
     model = models.CharField(max_length=100)
     year_model = models.CharField(max_length=4)
     color = models.CharField(max_length=50)
-    capacity = models.CharField(max_length=50, default="")
     classification = models.CharField(max_length=20, choices=[
         ('Private', 'Private'),
         ('Public', 'Public'),
@@ -144,6 +143,7 @@ class VehicleRegistration(models.Model):
     registration_date = models.DateField()
     expiry_date = models.DateField()
     or_cr_image = models.ImageField(upload_to='or_cr_images/')
+    capacity = models.PositiveIntegerField(default=4)  # Default to 4 passengers
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

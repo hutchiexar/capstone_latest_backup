@@ -26,114 +26,178 @@ import json
 
 @login_required
 def user_dashboard(request):
-    if request.method != 'GET':
-        return HttpResponseNotAllowed(['GET'])
-        
-    # Get violations linked to this user's license number
-    license_violations = Violation.objects.filter(
-        violator__license_number=request.user.userprofile.license_number
+    """
+    Displays the user dashboard with a summary of the user's violations and payment history.
+    """
+    user = request.user
+    license_number = user.license_number
+    
+    # Get violations linked to this user's license number and user account
+    violations = Violation.objects.filter(
+        Q(license_number=license_number) | Q(user=user)
+    ).order_by('-violation_date')
+    
+    # Separate violations into NCAP and regular
+    ncap_violations = violations.filter(
+        Q(image__isnull=False) | 
+        Q(driver_photo__isnull=False) | 
+        Q(vehicle_photo__isnull=False) | 
+        Q(secondary_photo__isnull=False)
     )
     
-    # Get violations linked directly to the user account
-    account_violations = Violation.objects.filter(
-        user_account=request.user
+    regular_violations = violations.filter(
+        Q(image__isnull=True) & 
+        Q(driver_photo__isnull=True) & 
+        Q(vehicle_photo__isnull=True) & 
+        Q(secondary_photo__isnull=True)
     )
     
-    # Combine the querysets - but we'll evaluate them first to avoid filtering issues
-    license_violations_list = list(license_violations)
-    account_violations_list = list(account_violations)
+    # Get recent violations for dashboard display (limited to 5)
+    recent_regular_violations = regular_violations[:5]
+    recent_ncap_violations = ncap_violations[:5]
     
-    # Use set operations to get distinct violations from both sources
-    all_violations_ids = set(v.id for v in license_violations_list + account_violations_list)
+    # Count violations by status
+    pending_count = violations.filter(status='PENDING').count()
+    paid_count = violations.filter(status='PAID').count()
     
-    # Calculate statistics directly without using .filter() on a union
-    # Count active violations
-    active_violations = sum(1 for v in license_violations_list + account_violations_list 
-                          if v.id in all_violations_ids and v.status in ['PENDING', 'ADJUDICATED', 'APPROVED'])
+    # Calculate total amount paid and due
+    total_paid = violations.filter(status='PAID').aggregate(Sum('fine_amount'))['fine_amount__sum'] or 0
+    total_due = violations.exclude(status='PAID').aggregate(Sum('fine_amount'))['fine_amount__sum'] or 0
     
-    # Calculate total paid
-    total_paid = sum(v.fine_amount or 0 for v in license_violations_list + account_violations_list 
-                   if v.id in all_violations_ids and v.status == 'PAID')
-    
-    # Calculate violations due soon
-    seven_days_from_now = (timezone.now() + timezone.timedelta(days=7)).date()
-    due_soon = sum(1 for v in license_violations_list + account_violations_list 
-                 if v.id in all_violations_ids and 
-                    v.status in ['PENDING', 'ADJUDICATED', 'APPROVED'] and
-                    v.payment_due_date and v.payment_due_date <= seven_days_from_now)
-    
-    # For recent violations, we'll get all violations and sort them in Python
-    all_violations = []
-    for violation in license_violations_list + account_violations_list:
-        if violation.id in all_violations_ids and violation not in all_violations:
-            all_violations.append(violation)
-    
-    # Sort by violation date (descending) and take the first 5
-    recent_violations = sorted(all_violations, key=lambda v: v.violation_date, reverse=True)[:5]
-    
-    # Get recent notifications
-    recent_notifications = UserNotification.objects.filter(
-        user=request.user,
-        is_read=False
-    ).order_by('-created_at')[:5]
-    
-    # Check if user has pending operator applications
-    has_operator_application = OperatorApplication.objects.filter(
-        user=request.user,
-        status='PENDING'
-    ).exists()
-
     context = {
-        'active_violations_count': active_violations,
+        'title': 'Dashboard',
+        'total_violations': violations.count(),
+        'regular_violations_count': regular_violations.count(),
+        'ncap_violations_count': ncap_violations.count(),
+        'pending_count': pending_count,
+        'paid_count': paid_count,
         'total_paid': total_paid,
-        'due_soon_count': due_soon,
-        'recent_violations': recent_violations,
-        'recent_notifications': recent_notifications,
-        'has_operator_application': has_operator_application,
+        'total_due': total_due,
+        'recent_regular_violations': recent_regular_violations,
+        'recent_ncap_violations': recent_ncap_violations,
     }
     
     return render(request, 'user_portal/dashboard.html', context)
 
 @login_required
 def user_violations(request):
-    # Get violations linked to this user's license number
-    license_violations = Violation.objects.filter(
-        violator__license_number=request.user.userprofile.license_number
+    """
+    Display a list of the user's regular violations.
+    """
+    user = request.user
+    license_number = user.license_number
+    
+    # Get violations linked to this user's license number and user account
+    violations = Violation.objects.filter(
+        Q(license_number=license_number) | Q(user=user)
+    ).order_by('-violation_date')
+    
+    # Filter to only include regular violations (no NCAP violations with images)
+    violations = violations.filter(
+        Q(image__isnull=True) & 
+        Q(driver_photo__isnull=True) & 
+        Q(vehicle_photo__isnull=True) & 
+        Q(secondary_photo__isnull=True)
     )
     
-    # Get violations linked directly to the user account
-    account_violations = Violation.objects.filter(
-        user_account=request.user
-    )
+    # Search functionality
+    search_query = request.GET.get('search', '')
+    if search_query:
+        violations = violations.filter(
+            Q(violation_type__icontains=search_query) |
+            Q(location__icontains=search_query) |
+            Q(novr_number__icontains=search_query) |
+            Q(pin_number__icontains=search_query)
+        )
     
-    # Evaluate the querysets to lists to avoid filtering issues
-    license_violations_list = list(license_violations)
-    account_violations_list = list(account_violations)
+    # Filter by status
+    status_filter = request.GET.get('status', '')
+    if status_filter:
+        violations = violations.filter(status=status_filter)
     
-    # Combine and remove duplicates
-    all_violations_ids = set()
-    all_violations = []
+    # Pagination
+    paginator = Paginator(violations, 10)  # 10 items per page
+    page = request.GET.get('page')
     
-    for violation in license_violations_list + account_violations_list:
-        if violation.id not in all_violations_ids:
-            all_violations_ids.add(violation.id)
-            all_violations.append(violation)
+    try:
+        violations_page = paginator.page(page)
+    except PageNotAnInteger:
+        violations_page = paginator.page(1)
+    except EmptyPage:
+        violations_page = paginator.page(paginator.num_pages)
     
-    # Sort by violation date (descending)
-    all_violations = sorted(all_violations, key=lambda v: v.violation_date or timezone.now().date(), reverse=True)
-    
-    # Filter by status if provided - we'll do this in Python
-    status = request.GET.get('status')
-    if status:
-        all_violations = [v for v in all_violations if v.status == status]
+    # Prepare status choices for filter dropdown
+    status_choices = dict(Violation.STATUS_CHOICES)
     
     context = {
-        'violations': all_violations,
-        'status_choices': Violation.STATUS_CHOICES,
-        'current_status': status,
+        'title': 'My Violations',
+        'violations': violations_page,
+        'search_query': search_query,
+        'status_filter': status_filter,
+        'status_choices': status_choices,
     }
     
     return render(request, 'user_portal/violations.html', context)
+
+@login_required
+def user_ncap_violations(request):
+    """
+    Display a list of the user's NCAP violations (with camera evidence).
+    """
+    user = request.user
+    license_number = user.license_number
+    
+    # Get violations linked to this user's license number and user account
+    violations = Violation.objects.filter(
+        Q(license_number=license_number) | Q(user=user)
+    ).order_by('-violation_date')
+    
+    # Filter to only include NCAP violations (with images)
+    violations = violations.filter(
+        Q(image__isnull=False) | 
+        Q(driver_photo__isnull=False) | 
+        Q(vehicle_photo__isnull=False) | 
+        Q(secondary_photo__isnull=False)
+    )
+    
+    # Search functionality
+    search_query = request.GET.get('search', '')
+    if search_query:
+        violations = violations.filter(
+            Q(violation_type__icontains=search_query) |
+            Q(location__icontains=search_query) |
+            Q(novr_number__icontains=search_query) |
+            Q(pin_number__icontains=search_query)
+        )
+    
+    # Filter by status
+    status_filter = request.GET.get('status', '')
+    if status_filter:
+        violations = violations.filter(status=status_filter)
+    
+    # Pagination
+    paginator = Paginator(violations, 10)  # 10 items per page
+    page = request.GET.get('page')
+    
+    try:
+        violations_page = paginator.page(page)
+    except PageNotAnInteger:
+        violations_page = paginator.page(1)
+    except EmptyPage:
+        violations_page = paginator.page(paginator.num_pages)
+    
+    # Prepare status choices for filter dropdown
+    status_choices = dict(Violation.STATUS_CHOICES)
+    
+    context = {
+        'title': 'My NCAP Violations',
+        'violations': violations_page,
+        'search_query': search_query,
+        'status_filter': status_filter,
+        'status_choices': status_choices,
+    }
+    
+    return render(request, 'user_portal/ncap_violations.html', context)
 
 @login_required
 def violation_detail(request, violation_id):
@@ -391,7 +455,7 @@ def register_vehicle(request):
             # Validate required fields first 
             required_fields = ['or_number', 'cr_number', 'plate_number', 'vehicle_type', 
                               'make', 'model', 'year_model', 'color', 'classification',
-                              'registration_date', 'expiry_date', 'capacity']
+                              'registration_date', 'expiry_date']
             
             for field in required_fields:
                 if not request.POST.get(field):
@@ -413,10 +477,19 @@ def register_vehicle(request):
                 if year_model < 1900 or year_model > current_year + 1:
                     raise ValueError(f"The year model must be between 1900 and {current_year + 1}")
                 
+                # Validate capacity if provided
+                capacity = 4  # Default capacity
+                if request.POST.get('capacity'):
+                    capacity = int(request.POST.get('capacity'))
+                    if capacity <= 0:
+                        raise ValueError("Capacity must be at least 1")
+                
             except ValueError as e:
                 if "expiry date must be after" in str(e):
                     raise ValueError(str(e))
                 elif "year model" in str(e):
+                    raise ValueError(str(e))
+                elif "Capacity must be" in str(e):
                     raise ValueError(str(e))
                 else:
                     raise ValueError("Please check the date format. It should be YYYY-MM-DD.")
@@ -435,9 +508,14 @@ def register_vehicle(request):
                 classification=request.POST['classification'],
                 registration_date=registration_date,
                 expiry_date=expiry_date,
-                is_active='is_active' in request.POST,
-                capacity=request.POST['capacity']
+                is_active='is_active' in request.POST
             )
+            
+            # Set capacity if the field exists in the model
+            try:
+                vehicle.capacity = capacity
+            except:
+                pass  # Field might not exist yet
             
             # Handle OR/CR image upload
             if request.FILES.get('or_cr_image'):
@@ -529,7 +607,7 @@ def register_vehicle(request):
 @login_required
 def vehicle_detail(request, vehicle_id):
     vehicle = get_object_or_404(VehicleRegistration, id=vehicle_id, user=request.user)
-    return JsonResponse({
+    response_data = {
         'id': vehicle.id,
         'or_number': vehicle.or_number,
         'cr_number': vehicle.cr_number,
@@ -543,7 +621,15 @@ def vehicle_detail(request, vehicle_id):
         'registration_date': vehicle.registration_date.strftime('%Y-%m-%d'),
         'expiry_date': vehicle.expiry_date.strftime('%Y-%m-%d'),
         'or_cr_image_url': vehicle.or_cr_image.url if vehicle.or_cr_image else None
-    })
+    }
+    
+    # Add capacity if available
+    try:
+        response_data['capacity'] = vehicle.capacity
+    except:
+        response_data['capacity'] = 4  # Default capacity
+        
+    return JsonResponse(response_data)
 
 @user_passes_test(lambda u: u.is_staff)
 def user_management(request):
@@ -973,12 +1059,23 @@ def education_topic_detail(request, topic_id):
         is_published=True
     ).exclude(id=topic.id)[:5]
     
+    # Check for PDF attachment to show in viewer
+    is_pdf_content = False
+    pdf_url = None
+    pdf_attachments = attachments.filter(file_type='PDF')
+    if pdf_attachments.exists():
+        # If a PDF is attached, set flag to use PDF viewer instead of regular content display
+        is_pdf_content = True
+        pdf_url = pdf_attachments.first().file.url
+    
     context = {
         'topic': topic,
         'attachments': attachments,
         'is_completed': progress.is_completed,
         'is_bookmarked': is_bookmarked,
-        'related_topics': related_topics
+        'related_topics': related_topics,
+        'is_pdf_content': is_pdf_content,
+        'pdf_url': pdf_url,
     }
     return render(request, 'user_portal/educational/topic_detail.html', context)
 

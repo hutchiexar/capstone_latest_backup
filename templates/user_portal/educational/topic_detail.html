@@ -194,9 +194,22 @@
     .topic-content img {
         max-width: 100%;
         height: auto;
-        margin: 1rem 0;
+        margin: 1.5rem auto;
         display: block;
         border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Specific styling for PDF page images */
+    .pdf-page-image img {
+        max-width: 100%;
+        width: 100%;
+        height: auto;
+        margin: 1rem auto;
+        display: block;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
     
     .topic-actions {
@@ -348,6 +361,57 @@
     }
     
     /* Mobile responsive */
+    @media (max-width: 992px) {
+        .elearning-container {
+            margin: 15px auto;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .pdf-controls {
+            padding: 12px 16px;
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .pdf-controls-left, 
+        .pdf-controls-right {
+            width: 100%;
+            justify-content: space-between;
+        }
+        
+        .pdf-controls-right {
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .pdf-search-container {
+            max-width: 100%;
+            order: 3;
+            margin-top: 12px;
+        }
+        
+        .zoom-controls {
+            min-width: auto;
+            flex: 1;
+        }
+        
+        .page-controls {
+            flex: 1;
+        }
+        
+        .btn-fit span:not(.material-icons) {
+            display: none;
+        }
+        
+        .download-btn span:not(.material-icons) {
+            display: none;
+        }
+        
+        .pdf-container {
+            height: 600px;
+        }
+    }
+    
     @media (max-width: 768px) {
         .elearning-container {
             flex-direction: column;
@@ -356,7 +420,848 @@
         .elearning-sidebar {
             width: 100%;
             border-radius: 8px 8px 0 0;
-            max-height: 400px;
+            max-height: 350px;
+        }
+        
+        .elearning-content {
+            padding: 1rem;
+        }
+        
+        .topic-title {
+            font-size: 1.4rem;
+        }
+        
+        .pdf-container {
+            height: 500px;
+            margin-bottom: 20px;
+        }
+        
+        .pdf-controls {
+            gap: 8px;
+        }
+        
+        .pdf-controls-left,
+        .pdf-controls-right {
+            gap: 8px;
+        }
+        
+        .zoom-select {
+            width: 70px;
+            padding: 8px 25px 8px 8px;
+        }
+        
+        .page-nav-btn {
+            padding: 8px 12px;
+        }
+        
+        .pdf-page-input {
+            width: 45px;
+        }
+        
+        .fit-controls {
+            gap: 4px;
+        }
+        
+        .btn-fit {
+            padding: 8px 10px;
+        }
+        
+        .download-btn {
+            padding: 8px 12px;
+            min-width: auto;
+            justify-content: center;
+        }
+        
+        .zoom-btn {
+            padding: 8px 12px;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .pdf-container {
+            height: 450px;
+        }
+        
+        /* Enhanced layout for smaller screens */
+        .pdf-controls {
+            padding: 10px;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .pdf-controls-left {
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            margin-bottom: 0;
+        }
+        
+        .pdf-controls-right {
+            justify-content: center;
+            width: 100%;
+            gap: 8px;
+        }
+        
+        .zoom-controls,
+        .page-controls {
+            flex: 0 0 auto;
+            width: 100%;
+            margin-bottom: 0;
+        }
+        
+        .pdf-search-container {
+            order: 3;
+            width: 100%;
+            max-width: 100%;
+            margin: 0; /* Remove margin */
+        }
+        
+        .fit-controls {
+            order: 4;
+            width: 100%;
+            justify-content: space-between;
+            margin: 8px 0 0 0; /* Reduce top margin, remove others */
+            gap: 8px;
+        }
+        
+        .btn-fit {
+            flex: 1;
+            justify-content: center;
+            padding: 10px;
+        }
+        
+        .download-btn {
+            order: 5;
+            width: 100%;
+            margin: 8px 0 0 0; /* Reduce top margin, remove others */
+            padding: 10px;
+        }
+        
+        /* Enhance readability of buttons */
+        .btn-text {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .material-icons {
+            font-size: 20px !important;
+        }
+        
+        /* Topic actions adjustment */
+        .topic-actions {
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .action-btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+    
+    @media (max-width: 360px) {
+        .zoom-select {
+            width: 70px;
+            padding-left: 5px;
+        }
+        
+        .page-indicator {
+            min-width: 70px;
+            padding: 0 10px;
+        }
+        
+        .btn-fit {
+            padding: 12px 10px;
+        }
+    }
+    
+    /* Pagination for long content */
+    .topic-content {
+        margin-bottom: 1.5rem;
+        line-height: 1.7;
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 0.5rem 0;
+    }
+    
+    .content-page {
+        display: none;
+    }
+    
+    .content-page.active {
+        display: block;
+        animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    .content-pagination {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+        padding-top: 15px;
+        border-top: 1px solid #e9ecef;
+    }
+    
+    .pagination-btn {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 16px;
+        background-color: #0039cb;
+        color: white;
+        border-radius: 4px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .pagination-btn:hover {
+        background-color: #002c9c;
+        text-decoration: none;
+        color: white;
+    }
+    
+    .pagination-btn:disabled {
+        background-color: #b0bec5;
+        cursor: not-allowed;
+    }
+    
+    .pagination-btn .material-icons {
+        font-size: 18px;
+    }
+    
+    .pagination-indicator {
+        color: #495057;
+        font-weight: 500;
+    }
+    
+    /* PDF Viewer styles */
+    .pdf-container {
+        position: relative;
+        width: 100%;
+        height: 800px;
+        margin: 0 auto;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+    }
+    
+    #pdfViewer {
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+    
+    /* Enhanced PDF controls */
+    .pdf-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 16px 20px;
+        background: linear-gradient(145deg, #f8faff, #eef6fc);
+        border-bottom: 1px solid #d0d7e6;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        border-radius: 8px 8px 0 0;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .pdf-controls-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        flex: 1;
+    }
+    
+    .pdf-controls-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        justify-content: flex-end;
+    }
+    
+    .pdf-controls .btn {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        transition: all 0.25s ease;
+        border-radius: 6px;
+    }
+    
+    .pdf-controls .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+    }
+    
+    .pdf-page-input {
+        width: 55px;
+        text-align: center;
+        border: none;
+        box-shadow: none;
+        font-weight: 600;
+        background-color: transparent;
+        font-size: 14px;
+        padding: 0;
+        margin: 0;
+        color: #0039cb;
+    }
+    
+    .pdf-controls .material-icons {
+        font-size: 20px;
+    }
+    
+    /* Search container styling */
+    .pdf-search-container {
+        position: relative;
+        margin-left: auto;
+        flex-grow: 1;
+        max-width: 260px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        border-radius: 24px;
+        overflow: hidden;
+        transition: all 0.25s ease;
+        background-color: white;
+    }
+    
+    .pdf-search-container:focus-within {
+        box-shadow: 0 3px 12px rgba(0, 57, 203, 0.15);
+        transform: translateY(-1px);
+    }
+    
+    .pdf-search-input {
+        width: 100%;
+        padding: 10px 36px 10px 18px;
+        border: 1px solid #e0e6f0;
+        background-color: white;
+        border-radius: 24px;
+        transition: all 0.25s ease;
+        font-size: 14px;
+    }
+    
+    .pdf-search-input:focus {
+        outline: none;
+        border-color: #0039cb;
+    }
+    
+    .pdf-search-clear {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        color: #6c757d;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background-color: #f1f3f9;
+        transition: all 0.2s ease;
+    }
+    
+    .pdf-search-clear:hover {
+        background-color: #e0e6f0;
+        color: #495057;
+    }
+    
+    /* Zoom controls styling */
+    .zoom-controls {
+        display: flex;
+        align-items: center;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        border: 1px solid #e0e6f0;
+        min-width: 160px;
+    }
+    
+    .zoom-btn {
+        border: none;
+        background-color: white;
+        color: #0039cb;
+        padding: 10px 16px;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        min-width: 40px;
+    }
+    
+    .zoom-btn:hover {
+        background-color: rgba(0, 57, 203, 0.08);
+    }
+    
+    .zoom-btn:active {
+        background-color: rgba(0, 57, 203, 0.15);
+    }
+    
+    .zoom-select {
+        border: none;
+        padding: 8px 30px 8px 12px;
+        border-left: 1px solid #e9ecef;
+        border-right: 1px solid #e9ecef;
+        font-weight: 600;
+        color: #0039cb;
+        cursor: pointer;
+        width: 85px;
+        background-color: white;
+        text-align: center;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230039cb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        background-size: 12px;
+        flex: 1 1 auto;
+    }
+    
+    .zoom-select:focus {
+        outline: none;
+    }
+    
+    /* Page navigation controls */
+    .page-controls {
+        display: flex;
+        align-items: center;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        border: 1px solid #e0e6f0;
+    }
+    
+    .page-nav-btn {
+        border: none;
+        background-color: white;
+        color: #0039cb;
+        padding: 10px 16px;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        min-width: 40px;
+        justify-content: center;
+        font-weight: 500;
+    }
+    
+    .page-nav-btn:hover {
+        background-color: rgba(0, 57, 203, 0.08);
+    }
+    
+    .page-nav-btn:active {
+        background-color: rgba(0, 57, 203, 0.15);
+    }
+    
+    .page-nav-btn:disabled {
+        color: #b0bec5;
+        cursor: not-allowed;
+        background-color: #f8f9fa;
+    }
+    
+    .page-indicator {
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        border-left: 1px solid #e9ecef;
+        border-right: 1px solid #e9ecef;
+        background-color: #f8faff;
+        min-width: 80px;
+        justify-content: center;
+        font-weight: 500;
+    }
+    
+    .page-indicator .input-group-text {
+        background: transparent;
+        border: none;
+        color: #495057;
+        font-weight: 500;
+    }
+    
+    /* Fit controls styling */
+    .fit-controls {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .btn-fit {
+        border: 1px solid #d0d7e6;
+        background-color: white;
+        color: #0039cb;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.25s ease;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        cursor: pointer;
+    }
+    
+    .btn-fit:hover {
+        background-color: #f0f4ff;
+        border-color: #0039cb;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    }
+    
+    .btn-fit:active {
+        background-color: #e0e6ff;
+        transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+    }
+    
+    .btn-fit.active {
+        background-color: #e0e6ff;
+        border-color: #0039cb;
+        color: #002984;
+        font-weight: 600;
+    }
+    
+    /* Download button styling */
+    .download-btn {
+        background: linear-gradient(135deg, #0043e9, #0039cb);
+        color: white;
+        border: none;
+        padding: 10px 18px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        box-shadow: 0 2px 6px rgba(0, 57, 203, 0.3);
+        white-space: nowrap;
+        min-width: 120px;
+        justify-content: center;
+    }
+    
+    .download-btn:hover {
+        background: linear-gradient(135deg, #0039cb, #002db9);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 57, 203, 0.4);
+    }
+    
+    .download-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(0, 57, 203, 0.3);
+    }
+    
+    .sidebar-active {
+        background-color: rgba(255, 255, 255, 0.2);
+        color: white;
+        font-weight: 500;
+    }
+    
+    /* New CSS for drivers manual container */
+    .drivers-manual-container {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        margin: 20px 0;
+    }
+    
+    .drivers-manual-header {
+        background-color: #0039cb;
+        color: white;
+        padding: 15px 20px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    
+    .drivers-manual-title {
+        font-size: 1.4rem;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .drivers-manual-footer {
+        padding: 20px;
+        background-color: white;
+        border-top: 1px solid #e9ecef;
+    }
+    
+    .pdf-page-image {
+        margin: 0;
+        padding: 20px;
+        background-color: white;
+    }
+    
+    .pdf-page-image img {
+        margin: 0 auto;
+        box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.15);
+        border: 1px solid #e0e0e0;
+    }
+    
+    /* Touch-optimized controls */
+    .pdf-touch-area {
+        display: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 5;
+        pointer-events: none;
+    }
+    
+    .touch-controls {
+        position: absolute;
+        bottom: 20px;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        pointer-events: auto;
+    }
+    
+    .touch-btn {
+        color: white;
+        background: transparent;
+        border: none;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .touch-btn:active {
+        background-color: rgba(255, 255, 255, 0.2);
+        transform: scale(0.95);
+    }
+    
+    .touch-btn .material-icons {
+        font-size: 24px !important;
+    }
+    
+    @media (max-width: 768px) {
+        .pdf-touch-area {
+            display: block;
+        }
+        
+        /* Add touch-friendly UI adjustments */
+        .pdf-controls button, 
+        .pdf-controls select,
+        .pdf-controls input {
+            min-height: 44px;
+            min-width: 40px;
+        }
+
+        /* Improve button spacing and text */
+        .pdf-controls {
+            padding: 10px;
+            background-color: #f8faff;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .pdf-controls-left,
+        .pdf-controls-right {
+            gap: 8px;
+        }
+        
+        /* Adjust zoom controls */
+        .zoom-controls {
+            width: 100%;
+            margin-bottom: 0;
+        }
+        
+        .zoom-btn {
+            padding: 8px 10px;
+        }
+        
+        .zoom-select {
+            width: 70px;
+            padding: 8px 20px 8px 8px;
+            font-size: 14px;
+        }
+        
+        /* Adjust page navigation */
+        .page-controls {
+            width: 100%;
+            margin-bottom: 0;
+        }
+        
+        .page-nav-btn {
+            padding: 8px 10px;
+            font-size: 14px;
+        }
+        
+        .page-indicator {
+            min-width: 70px;
+            padding: 0 10px;
+        }
+        
+        .pdf-page-input {
+            width: 40px;
+            height: 36px;
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        /* Enhance fit buttons */
+        .fit-controls {
+            gap: 8px;
+            width: 100%;
+        }
+        
+        .btn-fit {
+            padding: 8px 10px;
+            font-size: 14px;
+        }
+        
+        /* Make download button more prominent */
+        .download-btn {
+            padding: 10px;
+            min-width: 100%;
+            justify-content: center;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        
+        /* Improve loading experience */
+        #loadingIndicator {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        /* Better scrolling on mobile */
+        .elearning-content {
+            -webkit-overflow-scrolling: touch;
+            padding: 0.75rem;
+        }
+        
+        /* Swipe instructions */
+        .swipe-hint {
+            display: block;
+            text-align: center;
+            margin: 8px 0;
+            font-size: 13px;
+            color: #6c757d;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .pdf-container {
+            height: 450px;
+        }
+        
+        /* Enhanced layout for smaller screens */
+        .pdf-controls {
+            padding: 10px;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .pdf-controls-left {
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            margin-bottom: 0;
+        }
+        
+        .pdf-controls-right {
+            justify-content: center;
+            width: 100%;
+            gap: 8px;
+        }
+        
+        .zoom-controls,
+        .page-controls {
+            flex: 0 0 auto;
+            width: 100%;
+            margin-bottom: 0;
+        }
+        
+        .pdf-search-container {
+            order: 3;
+            width: 100%;
+            max-width: 100%;
+            margin: 0; /* Remove margin */
+        }
+        
+        .fit-controls {
+            order: 4;
+            width: 100%;
+            justify-content: space-between;
+            margin: 8px 0 0 0; /* Reduce top margin, remove others */
+            gap: 8px;
+        }
+        
+        .btn-fit {
+            flex: 1;
+            justify-content: center;
+            padding: 10px;
+        }
+        
+        .download-btn {
+            order: 5;
+            width: 100%;
+            margin: 8px 0 0 0; /* Reduce top margin, remove others */
+            padding: 10px;
+        }
+        
+        /* Enhance readability of buttons */
+        .btn-text {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .material-icons {
+            font-size: 20px !important;
+        }
+        
+        /* Topic actions adjustment */
+        .topic-actions {
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .action-btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+    
+    @media (max-width: 360px) {
+        .zoom-select {
+            width: 70px;
+            padding-left: 5px;
+        }
+        
+        .page-indicator {
+            min-width: 70px;
+            padding: 0 10px;
+        }
+        
+        .btn-fit {
+            padding: 12px 10px;
         }
     }
 </style>
@@ -449,7 +1354,115 @@
                 </div>
                 
                 <div class="topic-content">
-                    {{ topic.content|safe }}
+                    {% if is_pdf_content %}
+                    <!-- Enhanced PDF Controls -->
+                    <div class="pdf-controls">
+                        <div class="pdf-controls-left">
+                            <!-- Navigation Controls -->
+                            <div class="page-controls">
+                                <button class="page-nav-btn" id="prevPage" title="Previous Page">
+                                    <span class="material-icons">navigate_before</span>
+                                    <span class="btn-text">Previous</span>
+                                </button>
+                                <div class="page-indicator">
+                                    <input type="number" min="1" class="form-control pdf-page-input" id="pageNumber" value="1" aria-label="Page Number">
+                                    <span class="input-group-text" id="pageCount">/ 1</span>
+                                </div>
+                                <button class="page-nav-btn" id="nextPage" title="Next Page">
+                                    <span class="btn-text">Next</span>
+                                    <span class="material-icons">navigate_next</span>
+                                </button>
+                            </div>
+                            
+                            <!-- Zoom Controls -->
+                            <div class="zoom-controls">
+                                <button class="zoom-btn" id="zoomOut" title="Zoom Out">
+                                    <span class="material-icons">zoom_out</span>
+                                </button>
+                                <select class="zoom-select" id="zoomSelect" aria-label="Zoom Level">
+                                    <option value="0.5">50%</option>
+                                    <option value="0.75">75%</option>
+                                    <option value="1" selected>100%</option>
+                                    <option value="1.25">125%</option>
+                                    <option value="1.5">150%</option>
+                                    <option value="1.75">175%</option>
+                                    <option value="2">200%</option>
+                                    <option value="2.5">250%</option>
+                                    <option value="3">300%</option>
+                                </select>
+                                <button class="zoom-btn" id="zoomIn" title="Zoom In">
+                                    <span class="material-icons">zoom_in</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="pdf-controls-right">
+                            <!-- Search Input -->
+                            <div class="pdf-search-container">
+                                <input type="text" class="pdf-search-input" id="searchInput" placeholder="Search in document...">
+                                <span class="pdf-search-clear" id="clearSearch">
+                                    <span class="material-icons" style="font-size: 16px;">close</span>
+                                </span>
+                            </div>
+                            
+                            <!-- Fit Controls -->
+                            <div class="fit-controls">
+                                <button class="btn-fit" id="fitToWidth" title="Fit to Width">
+                                    <span class="material-icons">swap_horiz</span>
+                                    <span class="btn-text">Fit Width</span>
+                                </button>
+                                <button class="btn-fit" id="fitToPage" title="Fit to Page">
+                                    <span class="material-icons">fit_screen</span>
+                                    <span class="btn-text">Fit Page</span>
+                                </button>
+                            </div>
+                            
+                            <!-- Download Button -->
+                            <button class="download-btn" id="downloadPdf" title="Download PDF">
+                                <span class="material-icons">download</span>
+                                <span class="btn-text">Download</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- PDF Viewer -->
+                    <div class="pdf-container">
+                        <div id="loadingIndicator" class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status"></div>
+                            <p class="mt-2">Loading PDF...</p>
+                        </div>
+                        <canvas id="pdfViewer"></canvas>
+                        
+                        <!-- Mobile Touch Controls -->
+                        <div class="pdf-touch-area">
+                            <div class="touch-controls">
+                                <button class="touch-btn prev-page">
+                                    <i class="material-icons">navigate_before</i>
+                                </button>
+                                <span class="touch-page-indicator text-white"></span>
+                                <button class="touch-btn next-page">
+                                    <i class="material-icons">navigate_next</i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <!-- Regular Content Display with Pagination -->
+                    <div id="contentPages">
+                        <!-- This will be populated via JavaScript -->
+                    </div>
+                    
+                    <!-- Pagination controls -->
+                    <div class="content-pagination">
+                        <button class="pagination-btn prev-page-btn" disabled>
+                            <span class="material-icons me-1">arrow_back</span> Previous
+                        </button>
+                        <div class="pagination-indicator">Page <span id="currentPage">1</span> of <span id="totalPages">1</span></div>
+                        <button class="pagination-btn next-page-btn">
+                            Next <span class="material-icons ms-1">arrow_forward</span>
+                        </button>
+                    </div>
+                    {% endif %}
                 </div>
                 
                 {% if topic.attachments.exists %}
@@ -492,10 +1505,18 @@
         </div>
     </div>
 </div>
+
+<!-- Swipe hint for mobile users -->
+<div class="swipe-hint d-none d-md-none">
+    <i class="material-icons small">swipe</i> Swipe left/right to navigate pages
+</div>
 {% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- PDF.js library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Show skeleton loaders and hide content initially
@@ -506,6 +1527,11 @@
         setTimeout(function() {
             document.querySelector('.skeleton-loader').style.display = 'none';
             document.querySelector('.topic-content-container').style.display = 'block';
+            
+            {% if is_pdf_content %}
+            // Initialize PDF viewer
+            initPdfViewer();
+            {% endif %}
         }, 800);
         
         // Add click handlers for category items
@@ -604,7 +1630,672 @@
         if (completeBtn) {
             completeBtn.addEventListener('click', markTopicCompleted);
         }
+
+        {% if not is_pdf_content %}
+        // Regular content pagination
+        const originalContent = `{{ topic.content|safe|escapejs }}`;
+        const contentContainer = document.getElementById('contentPages');
+        const currentPageIndicator = document.getElementById('currentPage');
+        const totalPagesIndicator = document.getElementById('totalPages');
+        const prevButton = document.querySelector('.prev-page-btn');
+        const nextButton = document.querySelector('.next-page-btn');
+        
+        // Function to split content into pages
+        function splitIntoPages(content, maxChars = 5000) {
+            // Check for PDF content based on direct string matching
+            if (content.includes('PDF extracted image') || content.includes('data-content-type="pdf"') || content.includes('pdf-page-image')) {
+                console.log("PDF content detected in topic");
+                
+                // Create a clean container for PDF content
+                const pdfContainer = `
+                    <div class="drivers-manual-container">
+                        <div class="drivers-manual-header">
+                            <h2 class="drivers-manual-title">
+                                <span class="material-icons">menu_book</span>
+                                Drivers Manual
+                            </h2>
+                        </div>
+                        
+                        <!-- Simple approach: directly display the first PDF image -->
+                        <div class="pdf-content-preview">
+                            <img src="PDF extracted image 1" alt="PDF Page 1" class="img-fluid">
+                        </div>
+                        
+                        <div class="drivers-manual-footer">
+                            <p class="text-center text-muted">View the full PDF document for all pages</p>
+                            <div class="d-flex justify-content-center mt-3">
+                                <a href="{% if pdf_url %}{{ pdf_url }}{% endif %}" class="btn btn-primary d-flex align-items-center" target="_blank">
+                                    <span class="material-icons me-2">visibility</span>
+                                    View Full Document
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                return [pdfContainer];
+            } else {
+                // Original code for non-PDF content
+                const pages = [];
+                let currentPage = '';
+                
+                // Split by paragraphs first
+                const paragraphs = content.split(/<\/p>|<\/div>|<\/h\d>/);
+                
+                for (const para of paragraphs) {
+                    if (!para.trim()) continue; // Skip empty paragraphs
+                    
+                    // Add closing tag back
+                    const paraWithClosing = para + (para.includes('<p') ? '</p>' : 
+                                                  para.includes('<div') ? '</div>' : 
+                                                  para.includes('<h') ? '</h' + para.match(/<h(\d)/)?.[1] + '>' : '');
+                    
+                    // If adding this paragraph would exceed the limit, start a new page
+                    if (currentPage && (currentPage.length + paraWithClosing.length) > maxChars) {
+                        pages.push(currentPage);
+                        currentPage = paraWithClosing;
+                    } else {
+                        currentPage += paraWithClosing;
+                    }
+                }
+                
+                // Add the last page if not empty
+                if (currentPage) {
+                    pages.push(currentPage);
+                }
+                
+                return pages;
+            }
+        }
+        
+        // Get pages
+        const pages = splitIntoPages(originalContent);
+        let currentPageIndex = 0;
+        
+        // Update total pages indicator
+        totalPagesIndicator.textContent = pages.length;
+        
+        // Function to show a specific page
+        function showPage(index) {
+            // Clear content container
+            contentContainer.innerHTML = '';
+            
+            // Create page element
+            const pageDiv = document.createElement('div');
+            pageDiv.className = 'content-page active';
+            pageDiv.innerHTML = pages[index];
+            contentContainer.appendChild(pageDiv);
+            
+            // Update current page indicator
+            currentPageIndex = index;
+            currentPageIndicator.textContent = index + 1;
+            
+            // Update button states
+            prevButton.disabled = index === 0;
+            nextButton.disabled = index === pages.length - 1;
+            
+            // Scroll to top of content
+            contentContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        // Show first page
+        if (pages.length > 0) {
+            showPage(0);
+        }
+        
+        // Add event listeners to buttons
+        prevButton.addEventListener('click', function() {
+            if (currentPageIndex > 0) {
+                showPage(currentPageIndex - 1);
+            }
+        });
+        
+        nextButton.addEventListener('click', function() {
+            if (currentPageIndex < pages.length - 1) {
+                showPage(currentPageIndex + 1);
+            }
+        });
+        
+        // Hide pagination if only one page
+        if (pages.length <= 1) {
+            document.querySelector('.content-pagination').style.display = 'none';
+        }
+        {% endif %}
     });
+    
+    {% if is_pdf_content %}
+    // PDF.js functionality
+    function initPdfViewer() {
+        const pdfjsLib = window['pdfjs-dist/build/pdf'];
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+        
+        // PDF viewer elements
+        const pdfContainer = document.querySelector('.pdf-container');
+        const canvas = document.getElementById('pdfViewer');
+        const ctx = canvas.getContext('2d');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const pageNumber = document.getElementById('pageNumber');
+        const pageCount = document.getElementById('pageCount');
+        const prevButton = document.getElementById('prevPage');
+        const nextButton = document.getElementById('nextPage');
+        const zoomSelect = document.getElementById('zoomSelect');
+        const zoomIn = document.getElementById('zoomIn');
+        const zoomOut = document.getElementById('zoomOut');
+        const searchInput = document.getElementById('searchInput');
+        const clearSearch = document.getElementById('clearSearch');
+        const downloadBtn = document.getElementById('downloadPdf');
+        const fitToWidth = document.querySelector('#fitToWidth');
+        const fitToPage = document.querySelector('#fitToPage');
+        
+        // PDF rendering variables
+        let pdfDoc = null;
+        let pageNum = 1;
+        let pageRendering = false;
+        let pageNumPending = null;
+        let scale = 1.0;
+        let originalPageWidth = 0;
+        let originalPageHeight = 0;
+        let pdfUrl = '{{ pdf_url }}';
+        
+        // Load the PDF
+        pdfjsLib.getDocument(pdfUrl).promise
+        .then(function(pdf) {
+            pdfDoc = pdf;
+            pageCount.textContent = '/ ' + pdf.numPages;
+            pageNumber.max = pdf.numPages;
+            
+            // Hide loading indicator
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'none';
+            }
+            
+            // Render first page
+            renderPage(pageNum);
+            
+            // Setup mobile touch controls
+            setupMobileTouchControls();
+        })
+        .catch(function(error) {
+            console.error('Error loading PDF:', error);
+            if (loadingIndicator) {
+                loadingIndicator.innerHTML = '<div class="alert alert-danger">Error loading PDF. Please try again later.</div>';
+            }
+        });
+        
+        // Render a specific page
+        function renderPage(num) {
+            pageRendering = true;
+            
+            if (loadingIndicator && pdfDoc) {
+                loadingIndicator.style.display = 'flex';
+            }
+            
+            pdfDoc.getPage(num).then(function(page) {
+                const viewport = page.getViewport({ scale: scale });
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+                if (originalPageWidth === 0) {
+                    const originalViewport = page.getViewport({ scale: 1.0 });
+                    originalPageWidth = originalViewport.width;
+                    originalPageHeight = originalViewport.height;
+                }
+                
+                const renderContext = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+                
+                const renderTask = page.render(renderContext);
+                
+                renderTask.promise.then(function() {
+                    pageRendering = false;
+                    
+                    if (loadingIndicator) {
+                        loadingIndicator.style.display = 'none';
+                    }
+                    
+                    if (pageNumPending !== null) {
+                        renderPage(pageNumPending);
+                        pageNumPending = null;
+                    }
+                    
+                    updateButtonStates();
+                    syncSidebarWithPdfNavigation(num);
+                }).catch(function(err) {
+                    console.error('Error rendering PDF page:', err);
+                    pageRendering = false;
+                    if (loadingIndicator) {
+                        loadingIndicator.innerHTML = '<div class="alert alert-danger">Error rendering PDF page. Please try again.</div>';
+                    }
+                });
+            }).catch(function(err) {
+                console.error('Error getting PDF page:', err);
+                pageRendering = false;
+                if (loadingIndicator) {
+                    loadingIndicator.innerHTML = '<div class="alert alert-danger">Error loading PDF page. Please try again.</div>';
+                }
+            });
+            
+            pageNumber.value = num;
+        }
+        
+        // Queue a page render if another is in progress
+        function queueRenderPage(num) {
+            if (pageRendering) {
+                pageNumPending = num;
+            } else {
+                renderPage(num);
+            }
+        }
+        
+        // Update button states based on current page and zoom
+        function updateButtonStates() {
+            prevButton.disabled = pageNum <= 1;
+            nextButton.disabled = pageNum >= pdfDoc.numPages;
+        }
+        
+        // Go to previous page
+        prevButton.addEventListener('click', function() {
+            if (pageNum <= 1) return;
+            pageNum--;
+            queueRenderPage(pageNum);
+        });
+        
+        // Go to next page
+        nextButton.addEventListener('click', function() {
+            if (pageNum >= pdfDoc.numPages) return;
+            pageNum++;
+            queueRenderPage(pageNum);
+        });
+        
+        // Handle page number input
+        pageNumber.addEventListener('change', function() {
+            const num = parseInt(this.value);
+            if (num > 0 && num <= pdfDoc.numPages) {
+                pageNum = num;
+                queueRenderPage(pageNum);
+            } else {
+                this.value = pageNum;
+            }
+        });
+        
+        // Handle zoom controls
+        zoomSelect.addEventListener('change', function() {
+            scale = parseFloat(this.value);
+            queueRenderPage(pageNum);
+        });
+        
+        zoomIn.addEventListener('click', function() {
+            const currentZoomIndex = zoomSelect.selectedIndex;
+            if (currentZoomIndex < zoomSelect.options.length - 1) {
+                zoomSelect.selectedIndex = currentZoomIndex + 1;
+                scale = parseFloat(zoomSelect.value);
+                queueRenderPage(pageNum);
+            }
+        });
+        
+        zoomOut.addEventListener('click', function() {
+            const currentZoomIndex = zoomSelect.selectedIndex;
+            if (currentZoomIndex > 0) {
+                zoomSelect.selectedIndex = currentZoomIndex - 1;
+                scale = parseFloat(zoomSelect.value);
+                queueRenderPage(pageNum);
+            }
+        });
+        
+        // Fit to width functionality
+        if (fitToWidth) {
+            fitToWidth.addEventListener('click', function() {
+                if (!pdfDoc) return;
+                
+                pdfDoc.getPage(pageNum).then(function(page) {
+                    if (!originalPageWidth) {
+                        const originalViewport = page.getViewport({ scale: 1.0 });
+                        originalPageWidth = originalViewport.width;
+                    }
+                    
+                    const containerWidth = pdfContainer.clientWidth;
+                    const newScale = (containerWidth - 20) / originalPageWidth;
+                    
+                    updateZoomDisplayToValue(newScale);
+                    scale = newScale;
+                    queueRenderPage(pageNum);
+                });
+            });
+        }
+        
+        // Fit to page functionality
+        if (fitToPage) {
+            fitToPage.addEventListener('click', function() {
+                if (!pdfDoc) return;
+                
+                pdfDoc.getPage(pageNum).then(function(page) {
+                    if (!originalPageWidth || !originalPageHeight) {
+                        const originalViewport = page.getViewport({ scale: 1.0 });
+                        originalPageWidth = originalViewport.width;
+                        originalPageHeight = originalViewport.height;
+                    }
+                    
+                    const containerWidth = pdfContainer.clientWidth;
+                    const containerHeight = pdfContainer.clientHeight;
+                    
+                    const widthScale = (containerWidth - 20) / originalPageWidth;
+                    const heightScale = (containerHeight - 20) / originalPageHeight;
+                    
+                    const newScale = Math.min(widthScale, heightScale);
+                    
+                    updateZoomDisplayToValue(newScale);
+                    scale = newScale;
+                    queueRenderPage(pageNum);
+                });
+            });
+        }
+        
+        // Helper function to update zoom dropdown with a custom value
+        function updateZoomDisplayToValue(newScale) {
+            const displayScale = Math.round(newScale * 100 / 5) * 5;
+            const displayValue = displayScale + '%';
+            
+            let found = false;
+            for (let i = 0; i < zoomSelect.options.length; i++) {
+                const optionValue = parseFloat(zoomSelect.options[i].value);
+                const optionScale = Math.round(optionValue * 100);
+                
+                if (Math.abs(optionScale - displayScale) <= 2) {
+                    zoomSelect.selectedIndex = i;
+                    found = true;
+                    break;
+                }
+            }
+            
+            if (!found) {
+                for (let i = zoomSelect.options.length - 1; i >= 0; i--) {
+                    if (zoomSelect.options[i].className === 'custom-zoom') {
+                        zoomSelect.remove(i);
+                    }
+                }
+                
+                const customOption = document.createElement('option');
+                customOption.value = newScale;
+                customOption.textContent = displayValue;
+                customOption.className = 'custom-zoom';
+                
+                let inserted = false;
+                for (let i = 0; i < zoomSelect.options.length; i++) {
+                    if (parseFloat(zoomSelect.options[i].value) > newScale) {
+                        zoomSelect.add(customOption, zoomSelect.options[i]);
+                        zoomSelect.selectedIndex = i;
+                        inserted = true;
+                        break;
+                    }
+                }
+                
+                if (!inserted) {
+                    zoomSelect.add(customOption);
+                    zoomSelect.selectedIndex = zoomSelect.options.length - 1;
+                }
+            }
+        }
+        
+        // Search functionality
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const query = this.value.trim();
+            
+            if (query) {
+                clearSearch.style.display = 'block';
+                searchTimeout = setTimeout(function() {
+                    searchInPdf(query);
+                }, 500);
+            } else {
+                clearSearch.style.display = 'none';
+            }
+        });
+        
+        clearSearch.addEventListener('click', function() {
+            searchInput.value = '';
+            clearSearch.style.display = 'none';
+        });
+        
+        // Handle keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.target.tagName === 'INPUT' && e.target !== pageNumber) return;
+            
+            switch(e.key) {
+                case 'ArrowLeft':
+                case 'PageUp':
+                    if (pageNum > 1) {
+                        e.preventDefault();
+                        pageNum--;
+                        queueRenderPage(pageNum);
+                    }
+                    break;
+                case 'ArrowRight':
+                case 'PageDown':
+                    if (pageNum < pdfDoc.numPages) {
+                        e.preventDefault();
+                        pageNum++;
+                        queueRenderPage(pageNum);
+                    }
+                    break;
+                case 'Home':
+                    e.preventDefault();
+                    pageNum = 1;
+                    queueRenderPage(pageNum);
+                    break;
+                case 'End':
+                    e.preventDefault();
+                    pageNum = pdfDoc.numPages;
+                    queueRenderPage(pageNum);
+                    break;
+                case '+':
+                case '=':
+                    e.preventDefault();
+                    zoomIn.click();
+                    break;
+                case '-':
+                    e.preventDefault();
+                    zoomOut.click();
+                    break;
+                case '0':
+                    e.preventDefault();
+                    scale = 1.0;
+                    for (let i = 0; i < zoomSelect.options.length; i++) {
+                        if (parseFloat(zoomSelect.options[i].value) === 1.0) {
+                            zoomSelect.selectedIndex = i;
+                            break;
+                        }
+                    }
+                    queueRenderPage(pageNum);
+                    break;
+                case 'w':
+                    if (e.ctrlKey && fitToWidth) {
+                        e.preventDefault();
+                        fitToWidth.click();
+                    }
+                    break;
+                case 'f':
+                    if (e.ctrlKey && fitToPage) {
+                        e.preventDefault();
+                        fitToPage.click();
+                    } else if (e.ctrlKey && !fitToPage) {
+                        e.preventDefault();
+                        searchInput.focus();
+                    }
+                    break;
+                case 'Escape':
+                    if (document.activeElement === searchInput) {
+                        e.preventDefault();
+                        searchInput.blur();
+                        searchInput.value = '';
+                        clearSearch.style.display = 'none';
+                    }
+                    break;
+            }
+        });
+        
+        function searchInPdf(query) {
+            if (!pdfDoc) return;
+            
+            showToast('Searching...', 'info');
+            
+            let found = false;
+            let foundPage = 0;
+            
+            const searchPages = async () => {
+                for (let i = 1; i <= pdfDoc.numPages; i++) {
+                    const page = await pdfDoc.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const text = textContent.items.map(item => item.str).join('');
+                    
+                    if (text.toLowerCase().includes(query.toLowerCase())) {
+                        found = true;
+                        foundPage = i;
+                        break;
+                    }
+                }
+                
+                if (found) {
+                    showToast(`Text found on page ${foundPage}!`, 'success');
+                    if (pageNum !== foundPage) {
+                        pageNum = foundPage;
+                        queueRenderPage(pageNum);
+                    }
+                } else {
+                    showToast('Text not found in the document.', 'warning');
+                }
+            };
+            
+            searchPages();
+        }
+        
+        // Download PDF
+        downloadBtn.addEventListener('click', function() {
+            const link = document.createElement('a');
+            link.href = pdfUrl;
+            link.download = '{{ topic.title|slugify }}.pdf';
+            link.target = '_blank';
+            link.click();
+        });
+        
+        // Sidebar scrolling sync
+        function syncSidebarWithPdfNavigation(pageNum) {
+            const sidebarItems = document.querySelectorAll('.subtopic-item');
+            const progress = pageNum / pdfDoc.numPages;
+            const activeIndex = Math.floor(progress * sidebarItems.length);
+            
+            sidebarItems.forEach((item, index) => {
+                if (!item.querySelector('.subtopic-link.active')) {
+                    item.querySelector('.subtopic-link')?.classList.remove('sidebar-active');
+                }
+                
+                const progressBar = item.querySelector('.scrollspy-progress') || document.createElement('div');
+                if (!progressBar.classList.contains('scrollspy-progress')) {
+                    progressBar.classList.add('scrollspy-progress');
+                    item.appendChild(progressBar);
+                }
+                
+                if (index < activeIndex) {
+                    progressBar.style.width = '100%';
+                } else if (index === activeIndex) {
+                    const partialProgress = (progress * sidebarItems.length) % 1;
+                    progressBar.style.width = `${partialProgress * 100}%`;
+                } else {
+                    progressBar.style.width = '0';
+                }
+            });
+            
+            if (sidebarItems[activeIndex]) {
+                const link = sidebarItems[activeIndex].querySelector('.subtopic-link');
+                if (link && !link.classList.contains('active')) {
+                    link.classList.add('sidebar-active');
+                }
+            }
+        }
+        
+        // Setup mobile touch controls
+        function setupMobileTouchControls() {
+            const touchPrevBtn = document.querySelector('.touch-btn.prev-page');
+            const touchNextBtn = document.querySelector('.touch-btn.next-page');
+            const touchPageIndicator = document.querySelector('.touch-page-indicator');
+            
+            if (touchPrevBtn && touchNextBtn) {
+                touchPrevBtn.addEventListener('click', function() {
+                    if (pageNum <= 1) return;
+                    pageNum--;
+                    queueRenderPage(pageNum);
+                    updateTouchPageIndicator();
+                });
+                
+                touchNextBtn.addEventListener('click', function() {
+                    if (pageNum >= pdfDoc.numPages) return;
+                    pageNum++;
+                    queueRenderPage(pageNum);
+                    updateTouchPageIndicator();
+                });
+                
+                updateTouchPageIndicator();
+            }
+            
+            // Add swipe gestures for mobile
+            let touchStartX = 0;
+            let touchEndX = 0;
+            
+            if (canvas) {
+                canvas.addEventListener('touchstart', function(e) {
+                    touchStartX = e.changedTouches[0].screenX;
+                }, false);
+                
+                canvas.addEventListener('touchend', function(e) {
+                    touchEndX = e.changedTouches[0].screenX;
+                    handleSwipe();
+                }, false);
+            }
+            
+            function handleSwipe() {
+                if (touchEndX < touchStartX - 50) {
+                    // Swipe left - go to next page
+                    if (pageNum < pdfDoc.numPages) {
+                        pageNum++;
+                        queueRenderPage(pageNum);
+                        updateTouchPageIndicator();
+                    }
+                }
+                
+                if (touchEndX > touchStartX + 50) {
+                    // Swipe right - go to previous page
+                    if (pageNum > 1) {
+                        pageNum--;
+                        queueRenderPage(pageNum);
+                        updateTouchPageIndicator();
+                    }
+                }
+            }
+            
+            function updateTouchPageIndicator() {
+                if (touchPageIndicator) {
+                    touchPageIndicator.textContent = `${pageNum} / ${pdfDoc.numPages}`;
+                }
+            }
+            
+            // Show swipe hint on mobile
+            if (window.innerWidth <= 768) {
+                const swipeHint = document.querySelector('.swipe-hint');
+                if (swipeHint) {
+                    swipeHint.classList.remove('d-none');
+                    setTimeout(function() {
+                        swipeHint.style.opacity = '0';
+                        setTimeout(function() {
+                            swipeHint.style.display = 'none';
+                        }, 500);
+                    }, 5000);
+                }
+            }
+        }
+    }
+    {% endif %}
     
     // Toggle bookmark
     function toggleBookmark() {

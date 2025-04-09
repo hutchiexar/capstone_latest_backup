@@ -1,0 +1,1 @@
+# Initialize the templatetags package for the educational app 

@@ -171,3 +171,75 @@ For support, please open an issue in the GitHub repository or contact the develo
 - Face Recognition Libraries
 - QR Code Generation Tools
 - All contributors and testers
+
+# CTTMO VMS Educational Module - PDF Viewer Integration
+
+This project enhances the Traffic Violation Management System's educational module by integrating a fully embedded PDF viewer for better manual and educational content presentation.
+
+## Features
+
+### PDF Viewer Integration
+
+- **Embedded PDF Viewer**: Uses PDF.js to render PDF documents directly in the browser without requiring users to download or open in a new tab
+- **Interactive Controls**: Navigation buttons, page selector, zoom controls, and search functionality
+- **Responsive Design**: Adapts to different screen sizes while maintaining usability
+- **Sidebar Navigation**: Synchronized with PDF content to highlight current section
+
+### User Experience Improvements
+
+- **Reduced Text Fatigue**: Viewing content in its original PDF format preserves professional layout and reduces wall-of-text fatigue
+- **Seamless Experience**: Users stay within the application for all educational content
+- **Content Hierarchy**: Better visual hierarchy through PDF's native formatting
+- **Accessibility**: Controls for adjusting zoom level for better readability
+
+## Technical Implementation
+
+### Libraries Used
+
+- **PDF.js**: Mozilla's powerful JavaScript library for rendering PDFs in the browser
+- **Bootstrap**: For responsive layout and UI components
+- **SweetAlert2**: For user notifications and alerts
+
+### Key Files
+
+- `topic_detail.html`: Main template file for displaying educational content
+- `views.py`: Backend logic for serving PDF content and tracking user progress
+- `models.py`: Data models for educational content and attachments
+
+### Usage
+
+1. **For Administrators**:
+   - Upload PDF documents as attachments to educational topics
+   - Select "PDF" as the file type when uploading
+   - The system will automatically use the PDF viewer when a PDF attachment is present
+
+2. **For Users**:
+   - Navigate to the Educational section
+   - PDF manuals will automatically open in the embedded viewer
+   - Use the navigation controls to browse through the document
+   - Bookmark or mark topics as completed just like regular content
+
+## Development Notes
+
+### Adding New Features
+
+To extend the PDF viewer functionality:
+- PDF.js offers additional features like annotations and form filling
+- The sidebar synchronization can be enhanced for more precise navigation
+- Advanced search with highlighting could be implemented for better text discovery
+
+### Browser Compatibility
+
+The PDF viewer is compatible with all modern browsers:
+- Chrome 50+
+- Firefox 52+
+- Safari 11+
+- Edge 79+
+
+## Troubleshooting
+
+If PDFs aren't displaying properly:
+1. Ensure PDF attachments are properly uploaded with file type set to "PDF"
+2. Check browser console for any JavaScript errors
+3. Verify that PDF.js libraries are loading properly
+4. For large PDFs, consider optimizing the file size for faster loading

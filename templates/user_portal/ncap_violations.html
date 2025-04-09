@@ -1,0 +1,296 @@
+{% extends 'user_portal/base.html' %}
+{% load static %}
+
+{% block title %}NCAP Violations{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">My NCAP Violations</h5>
+        </div>
+        <div class="card-body">
+            <!-- Search and Filter Form -->
+            <form method="get" class="mb-4 row g-3">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <input type="text" name="search" class="form-control" placeholder="Search violations..." value="{{ search_query }}">
+                        <button class="btn btn-outline-secondary" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select name="status" class="form-select" onchange="this.form.submit()">
+                        <option value="" {% if not status_filter %}selected{% endif %}>All Statuses</option>
+                        <option value="PENDING" {% if status_filter == 'PENDING' %}selected{% endif %}>Pending</option>
+                        <option value="APPROVED" {% if status_filter == 'APPROVED' %}selected{% endif %}>Approved</option>
+                        <option value="ADJUDICATED" {% if status_filter == 'ADJUDICATED' %}selected{% endif %}>Adjudicated</option>
+                        <option value="PAID" {% if status_filter == 'PAID' %}selected{% endif %}>Paid</option>
+                        <option value="DISMISSED" {% if status_filter == 'DISMISSED' %}selected{% endif %}>Dismissed</option>
+                    </select>
+                </div>
+                <div class="col-md-4 text-end">
+                    {% if search_query or status_filter %}
+                    <a href="{% url 'user_ncap_violations' %}" class="btn btn-secondary">Reset Filters</a>
+                    {% endif %}
+                </div>
+            </form>
+
+            <!-- Info about NCAP violations -->
+            <div class="alert alert-info mb-4">
+                <h5><i class="fas fa-camera me-2"></i>Non-Contact Apprehension Program (NCAP) Violations</h5>
+                <p class="mb-0">These violations were captured by traffic cameras and enforcement systems. Each violation includes photographic evidence that you can view by clicking on the "View Images" button.</p>
+            </div>
+
+            <!-- Violations Table -->
+            {% if violations %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Date</th>
+                            <th>Violation</th>
+                            <th>Status</th>
+                            <th>Penalty</th>
+                            <th>Images</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for violation in violations %}
+                        <tr>
+                            <td>{{ violation.id }}</td>
+                            <td>{{ violation.violation_date }}</td>
+                            <td>{{ violation.violation_type }}</td>
+                            <td>
+                                <span class="badge
+                                    {% if violation.status == 'PENDING' %}bg-warning
+                                    {% elif violation.status == 'APPROVED' %}bg-info
+                                    {% elif violation.status == 'ADJUDICATED' %}bg-primary
+                                    {% elif violation.status == 'PAID' %}bg-success
+                                    {% elif violation.status == 'DISMISSED' %}bg-secondary
+                                    {% else %}bg-secondary{% endif %}
+                                ">
+                                    {{ violation.get_status_display }}
+                                </span>
+                            </td>
+                            <td>₱{{ violation.fine_amount|floatformat:2 }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary view-images" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#imageModal"
+                                        data-violation-id="{{ violation.id }}">
+                                    <i class="fas fa-images me-1"></i> View Images
+                                </button>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-primary view-details" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#violationModal"
+                                        data-violation-id="{{ violation.id }}">
+                                    <i class="fas fa-info-circle me-1"></i> Details
+                                </button>
+                                {% if violation.status == 'PENDING' or violation.status == 'APPROVED' %}
+                                <a href="{% url 'contest_violation' violation.id %}" class="btn btn-sm btn-warning">
+                                    <i class="fas fa-gavel me-1"></i> Contest
+                                </a>
+                                {% endif %}
+                                {% if violation.status == 'ADJUDICATED' or violation.status == 'APPROVED' %}
+                                <a href="{% url 'payment_options' violation.id %}" class="btn btn-sm btn-success">
+                                    <i class="fas fa-money-bill-wave me-1"></i> Pay
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if violations.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-3">
+                <ul class="pagination justify-content-center">
+                    {% if violations.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ violations.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for i in violations.paginator.page_range %}
+                        {% if violations.number == i %}
+                        <li class="page-item active"><a class="page-link" href="#">{{ i }}</a></li>
+                        {% else %}
+                        <li class="page-item"><a class="page-link" href="?page={{ i }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">{{ i }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if violations.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ violations.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
+            {% else %}
+            <div class="text-center py-5">
+                <img src="{% static 'images/no-violations.svg' %}" alt="No violations" class="mb-3" style="height: 150px;">
+                <h4>No NCAP Violations Found</h4>
+                <p class="text-muted">You don't have any NCAP violations matching your search criteria.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Violation Details Modal -->
+<div class="modal fade" id="violationModal" tabindex="-1" aria-labelledby="violationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="violationModalLabel">Violation Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="violation-details-content">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading violation details...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Image Viewer Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="imageModalLabel">NCAP Violation Images</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="violation-images-content">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading violation images...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // View violation details
+        const viewDetailsButtons = document.querySelectorAll('.view-details');
+        viewDetailsButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const violationId = this.getAttribute('data-violation-id');
+                const detailsContent = document.getElementById('violation-details-content');
+                
+                // Show loading spinner
+                detailsContent.innerHTML = `
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading violation details...</p>
+                    </div>
+                `;
+                
+                // Fetch violation details
+                fetch(`/user/violation/${violationId}/details/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            detailsContent.innerHTML = data.html;
+                        } else {
+                            detailsContent.innerHTML = `
+                                <div class="alert alert-danger">
+                                    Failed to load violation details: ${data.error}
+                                </div>
+                            `;
+                        }
+                    })
+                    .catch(error => {
+                        detailsContent.innerHTML = `
+                            <div class="alert alert-danger">
+                                An error occurred while loading the violation details. Please try again.
+                            </div>
+                        `;
+                        console.error('Error fetching violation details:', error);
+                    });
+            });
+        });
+        
+        // View violation images
+        const viewImagesButtons = document.querySelectorAll('.view-images');
+        viewImagesButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const violationId = this.getAttribute('data-violation-id');
+                const imagesContent = document.getElementById('violation-images-content');
+                
+                // Show loading spinner
+                imagesContent.innerHTML = `
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading violation images...</p>
+                    </div>
+                `;
+                
+                // Fetch violation images
+                fetch(`/user/violation/${violationId}/images/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            imagesContent.innerHTML = data.html;
+                        } else {
+                            imagesContent.innerHTML = `
+                                <div class="alert alert-danger">
+                                    Failed to load violation images: ${data.error}
+                                </div>
+                            `;
+                        }
+                    })
+                    .catch(error => {
+                        imagesContent.innerHTML = `
+                            <div class="alert alert-danger">
+                                An error occurred while loading the violation images. Please try again.
+                            </div>
+                        `;
+                        console.error('Error fetching violation images:', error);
+                    });
+            });
+        });
+    });
+</script>
+{% endblock %} 

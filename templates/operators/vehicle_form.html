@@ -13,6 +13,31 @@
             <h4 class="mb-0 fw-bold">{{ title }}</h4>
         </div>
         <div class="card-body p-4">
+            {% if is_create and personal_vehicles %}
+            <div class="mb-4">
+                <div class="alert alert-info">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="material-icons me-2">info</span>
+                        <h5 class="mb-0 fw-bold">Add from Personal Vehicles</h5>
+                    </div>
+                    <p>You can quickly add one of your personal vehicles to your operator fleet.</p>
+                    <div class="form-group">
+                        <label for="personal_vehicle_select" class="form-label">Select a personal vehicle:</label>
+                        <select id="personal_vehicle_select" class="form-select mb-3">
+                            <option value="">-- Select a personal vehicle --</option>
+                            {% for vehicle in personal_vehicles %}
+                            <option value="{{ vehicle.id }}">{{ vehicle.plate_number }} - {{ vehicle.make }} {{ vehicle.model }} ({{ vehicle.color }})</option>
+                            {% endfor %}
+                        </select>
+                        <button id="load_personal_vehicle" class="btn btn-outline-primary">
+                            <span class="material-icons me-1">upload</span>
+                            Use This Vehicle
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
             <form method="POST" class="needs-validation" novalidate>
                 {% csrf_token %}
                 
@@ -61,35 +86,6 @@
                     </div>
                 </div>
                 
-                <!-- Registration Information -->
-                <div class="mb-4">
-                    <h5 class="fw-bold mb-3">Registration Information</h5>
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label for="{{ form.registration_number.id_for_label }}" class="form-label">Registration Number</label>
-                            {{ form.registration_number }}
-                            {% if form.registration_number.errors %}
-                                <div class="text-danger mt-1">
-                                    {% for error in form.registration_number.errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-6">
-                            <label for="{{ form.registration_date.id_for_label }}" class="form-label">Registration Date</label>
-                            {{ form.registration_date }}
-                            {% if form.registration_date.errors %}
-                                <div class="text-danger mt-1">
-                                    {% for error in form.registration_date.errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                
                 <!-- Additional Details -->
                 <div class="mb-4">
                     <h5 class="fw-bold mb-3">Additional Details</h5>
@@ -106,22 +102,58 @@
                             {% endif %}
                         </div>
                         <div class="col-md-6">
-                            <label for="{{ form.classification.id_for_label }}" class="form-label">Classification</label>
-                            {{ form.classification }}
-                            {% if form.classification.errors %}
+                            <label for="{{ form.capacity.id_for_label }}" class="form-label">Capacity</label>
+                            {{ form.capacity }}
+                            {% if form.capacity.help_text %}
+                                <div class="form-text">{{ form.capacity.help_text }}</div>
+                            {% endif %}
+                            {% if form.capacity.errors %}
                                 <div class="text-danger mt-1">
-                                    {% for error in form.classification.errors %}
+                                    {% for error in form.capacity.errors %}
                                         {{ error }}
                                     {% endfor %}
                                 </div>
                             {% endif %}
                         </div>
                         <div class="col-md-6">
-                            <label for="{{ form.capacity.id_for_label }}" class="form-label">Capacity</label>
-                            {{ form.capacity }}
-                            {% if form.capacity.errors %}
+                            <label for="{{ form.year_model.id_for_label }}" class="form-label">Year Model</label>
+                            {{ form.year_model }}
+                            {% if form.year_model.errors %}
                                 <div class="text-danger mt-1">
-                                    {% for error in form.capacity.errors %}
+                                    {% for error in form.year_model.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.engine_number.id_for_label }}" class="form-label">Engine Number</label>
+                            {{ form.engine_number }}
+                            {% if form.engine_number.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.engine_number.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.chassis_number.id_for_label }}" class="form-label">Chassis Number</label>
+                            {{ form.chassis_number }}
+                            {% if form.chassis_number.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.chassis_number.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-12">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.notes.errors %}
                                         {{ error }}
                                     {% endfor %}
                                 </div>
@@ -190,5 +222,20 @@
                 }, false)
             })
     })()
+    
+    // Personal vehicle selection
+    document.addEventListener('DOMContentLoaded', function() {
+        const personalVehicleSelect = document.getElementById('personal_vehicle_select');
+        const loadButton = document.getElementById('load_personal_vehicle');
+        
+        if (loadButton && personalVehicleSelect) {
+            loadButton.addEventListener('click', function() {
+                const selectedVehicleId = personalVehicleSelect.value;
+                if (selectedVehicleId) {
+                    window.location.href = '{% url "operator_register_vehicle" %}?personal_vehicle_id=' + selectedVehicleId;
+                }
+            });
+        }
+    });
 </script>
 {% endblock %} 

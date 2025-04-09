@@ -204,53 +204,86 @@ def search_users(request):
             'message': str(e)
         }, status=500)
 
-@require_POST
-@login_required
 @csrf_exempt
 def check_repeat_violator(request):
     """
     API endpoint to check if a violator has previous unsettled violations
     """
     try:
+        # Get all identification parameters
         license_number = request.POST.get('license_number', '')
         user_id = request.POST.get('user_id', '')
         source = request.POST.get('source', '')
+        first_name = request.POST.get('first_name', '')
+        last_name = request.POST.get('last_name', '')
         
-        unsettled_violations = []
+        # Use a set to track unique violation IDs
+        violation_ids = set()
         
-        # If a license number is provided, check violations for that license
+        # Check for violations using license number if provided
         if license_number:
-            unsettled_violations = Violation.objects.filter(
+            logger.debug(f"Checking violations by license: {license_number}")
+            license_violations = Violation.objects.filter(
                 violator__license_number=license_number,
                 status__in=['PENDING', 'ADJUDICATED', 'APPROVED', 'OVERDUE']
             )
+            # Add violation IDs to our set
+            violation_ids.update(license_violations.values_list('id', flat=True))
         
-        # If a user ID is provided and it's a registered user, also check their violations
+        # Check for violations using user ID if provided for registered users
         if user_id and source == 'user':
             try:
+                logger.debug(f"Checking violations by user ID: {user_id}")
                 user_violations = Violation.objects.filter(
                     user_account_id=user_id,
                     status__in=['PENDING', 'ADJUDICATED', 'APPROVED', 'OVERDUE']
                 )
-                
-                if user_violations.exists():
-                    # Combine both sets if license violations were found
-                    if unsettled_violations:
-                        # Convert to lists to avoid queryset issues
-                        combined_ids = set(list(unsettled_violations.values_list('id', flat=True)) + 
-                                        list(user_violations.values_list('id', flat=True)))
-                        unsettled_violations = Violation.objects.filter(id__in=combined_ids)
-                    else:
-                        unsettled_violations = user_violations
+                # Add violation IDs to our set
+                violation_ids.update(user_violations.values_list('id', flat=True))
             except Exception as e:
                 logger.error(f"Error checking user violations: {str(e)}")
         
-        # Count unsettled violations
-        unsettled_count = unsettled_violations.count()
+        # Check for violations using name if provided
+        if first_name and last_name:
+            try:
+                logger.debug(f"Checking violations by name: {first_name} {last_name}")
+                name_violations = Violation.objects.filter(
+                    violator__first_name__iexact=first_name,
+                    violator__last_name__iexact=last_name,
+                    status__in=['PENDING', 'ADJUDICATED', 'APPROVED', 'OVERDUE']
+                )
+                # Add violation IDs to our set
+                violation_ids.update(name_violations.values_list('id', flat=True))
+            except Exception as e:
+                logger.error(f"Error checking name-based violations: {str(e)}")
+        
+        # Get all the unique violations from our collected IDs
+        unsettled_count = len(violation_ids)
+        violation_details = []
+        
+        if unsettled_count > 0:
+            # Get the full details for the violations, using our unique IDs
+            # Get most recent violations first, limited to 3
+            latest_violations = Violation.objects.filter(
+                id__in=violation_ids
+            ).order_by('-violation_date')[:3]
+            
+            for violation in latest_violations:
+                try:
+                    violation_details.append({
+                        'id': violation.id,
+                        'date': violation.violation_date.strftime('%b %d, %Y') if violation.violation_date else 'Unknown',
+                        'type': ', '.join(violation.violations.split(',')[:2]) if violation.violations else 'Unspecified',
+                        'status': violation.status,
+                        'fine_amount': str(violation.fine_amount) if violation.fine_amount else 'N/A'
+                    })
+                except Exception as e:
+                    logger.error(f"Error processing violation detail: {str(e)}")
         
         return JsonResponse({
             'is_repeat_violator': unsettled_count > 0,
-            'unsettled_count': unsettled_count
+            'unsettled_count': unsettled_count,
+            'violation_details': violation_details
         })
         
     except Exception as e:
@@ -258,6 +291,7 @@ def check_repeat_violator(request):
         return JsonResponse({
             'is_repeat_violator': False,
             'unsettled_count': 0,
+            'violation_details': [],
             'error': str(e)
         })
 

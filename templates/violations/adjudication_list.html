@@ -22,6 +22,40 @@
     }
 </script>
 
+<!-- Check for success messages from adjudication -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check for success parameter in URL to show success message
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('success')) {
+            const isSettled = urlParams.get('settled') === 'true';
+            const isBatch = urlParams.get('batch') === 'true';
+            
+            let title = 'Adjudication Submitted Successfully';
+            let text = 'Your adjudication decision has been submitted for approval.';
+            
+            if (isSettled) {
+                title = 'Settlement Submitted Successfully';
+                text = 'The violation has been marked as settled and submitted for approval.';
+            } else if (isBatch) {
+                title = 'Batch Adjudication Submitted';
+                text = 'Your batch adjudication decisions have been submitted for approval.';
+            }
+            
+            Swal.fire({
+                icon: 'success',
+                title: title,
+                text: text,
+                confirmButtonColor: '#2563eb'
+            });
+            
+            // Remove success parameter from URL to prevent showing the message again on refresh
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, newUrl);
+        }
+    });
+</script>
+
 <div class="container-fluid py-4">
     <!-- Header Section -->
     <div class="card shadow-sm border-0 rounded-3 mb-4">

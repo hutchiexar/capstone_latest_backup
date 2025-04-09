@@ -1,321 +1,165 @@
-{% extends 'admin/base_admin.html' %}
+{% extends "base.html" %}
 {% load static %}
 
-{% block extra_css %}
-<style>
-    /* Stats Card Styling */
-    .stat-card {
-        border-radius: 8px;
-        background-color: #fff;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        height: 100%;
-        border: none;
-        transition: box-shadow 0.2s ease;
-    }
-    .stat-card:hover {
-        box-shadow: 0 3px 8px rgba(0,0,0,0.15);
-    }
-    .stat-label {
-        font-size: 1rem;
-        color: #6c757d;
-        font-weight: 500;
-        margin-bottom: 12px;
-    }
-    .stat-value {
-        font-size: 2.25rem;
-        font-weight: 700;
-        color: #212529;
-        line-height: 1;
-        margin-bottom: 0;
-    }
-    .stat-icon {
-        font-size: 24px;
-        position: absolute;
-        top: 16px;
-        right: 16px;
-    }
-    .stats-row {
-        margin-bottom: 2rem;
-    }
-    
-    /* Header styling */
-    .header-section {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .header-title {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-    }
-    .icon-circle {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .header-actions {
-        display: flex;
-        gap: 10px;
-    }
-    
-    /* Table styling */
-    .table-container {
-        border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    .table thead th {
-        background-color: #f8f9fa;
-        border-bottom: 1px solid #e9ecef;
-        font-weight: 600;
-        font-size: 0.85rem;
-        color: #495057;
-    }
-    .table tbody tr {
-        transition: background-color 0.15s ease;
-    }
-    .table tbody tr:hover {
-        background-color: rgba(0,0,0,0.02);
-    }
-    .topic-title {
-        font-weight: 600;
-        color: #212529;
-    }
-    .topic-description {
-        color: #6c757d;
-        font-size: 0.85rem;
-    }
-    .btn-icon {
-        width: 32px;
-        height: 32px;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 4px;
-        transition: all 0.2s ease;
-    }
-    .btn-icon:hover {
-        transform: translateY(-2px);
-    }
-    .btn-icon .material-icons {
-        font-size: 1rem;
-    }
-    .card-header {
-        background-color: #f8f9fa;
-        border-bottom: 1px solid #e9ecef;
-    }
-    .category-badge {
-        display: inline-flex;
-        align-items: center;
-        padding: 0.25rem 0.75rem;
-        border-radius: 50px;
-        font-size: 0.75rem;
-        font-weight: 500;
-        background-color: rgba(var(--primary-rgb), 0.1);
-        color: var(--primary-color);
-    }
-    .status-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
-        padding: 0.25rem 0.75rem;
-        border-radius: 50px;
-        font-size: 0.75rem;
-        font-weight: 500;
-    }
-    .status-badge.published {
-        background-color: rgba(25, 135, 84, 0.1);
-        color: #198754;
-    }
-    .status-badge.draft {
-        background-color: rgba(108, 117, 125, 0.1);
-        color: #6c757d;
-    }
-    .empty-state {
-        padding: 3rem;
-        text-align: center;
-    }
-    .empty-state .material-icons {
-        font-size: 3rem;
-        color: #dee2e6;
-        margin-bottom: 1rem;
-    }
-    
-    /* Colors for stat icons */
-    .text-primary-icon {
-        color: #0d6efd;
-    }
-    .text-success-icon {
-        color: #198754;
-    }
-    .text-info-icon {
-        color: #0dcaf0;
-    }
-    .text-warning-icon {
-        color: #ffc107;
-    }
-    .text-danger-icon {
-        color: #dc3545;
-    }
-    
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-        .stat-value {
-            font-size: 1.75rem;
-        }
-        .stat-icon {
-            font-size: 20px;
-        }
-    }
-</style>
-{{ block.super }}
-{% endblock %}
+{% block title %}Educational Dashboard{% endblock %}
 
-{% block admin_content %}
-<div class="container py-4">
-    <!-- Header Section -->
-    <div class="card shadow-sm border-0 rounded-3 mb-4">
-        <div class="card-body">
-            <div class="header-section">
-                <div class="header-title">
-                    <div class="icon-circle bg-primary text-white">
-                        <span class="material-icons">school</span>
-                    </div>
-                    <div>
-                        <h4 class="mb-0">Educational Dashboard</h4>
-                        <p class="text-muted mb-0">Manage educational content and monitor statistics</p>
-                    </div>
-                </div>
-                <div class="header-actions">
-                    <a href="{% url 'educational:admin_topic_create' %}" class="btn btn-primary d-flex align-items-center">
-                        <span class="material-icons me-2">add_circle</span>
-                        <span class="d-none d-sm-inline">New Topic</span>
-                        <span class="d-inline d-sm-none">Add</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Stats Overview -->
-    <div class="row stats-row">
-        <div class="col-md-6 col-lg-3 mb-4">
-            <div class="card stat-card">
-                <div class="card-body p-4 position-relative">
-                    <span class="material-icons stat-icon text-primary-icon">group</span>
-                    <div class="stat-label">Categories</div>
-                    <h2 class="stat-value">{{ categories_count }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6 col-lg-3 mb-4">
-            <div class="card stat-card">
-                <div class="card-body p-4 position-relative">
-                    <span class="material-icons stat-icon text-success-icon">menu_book</span>
-                    <div class="stat-label">Topics</div>
-                    <h2 class="stat-value">{{ topics_count }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6 col-lg-3 mb-4">
-            <div class="card stat-card">
-                <div class="card-body p-4 position-relative">
-                    <span class="material-icons stat-icon text-info-icon">check_circle</span>
-                    <div class="stat-label">Published</div>
-                    <h2 class="stat-value">{{ published_topics }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6 col-lg-3 mb-4">
-            <div class="card stat-card">
-                <div class="card-body p-4 position-relative">
-                    <span class="material-icons stat-icon text-warning-icon">edit</span>
-                    <div class="stat-label">Drafts</div>
-                    <h2 class="stat-value">{{ draft_topics }}</h2>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Recent Topics -->
-    <div class="row">
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
         <div class="col-12">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center py-3">
-                    <h5 class="mb-0 fw-bold">Recent Topics</h5>
-                    <a href="{% url 'educational:admin_topic_list' %}" class="btn btn-sm btn-outline-primary">
-                        View All
-                    </a>
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h1 class="card-title">Educational Materials Dashboard</h1>
+                    <p class="text-muted">Manage educational categories and topics for the traffic violation system.</p>
+                    <div class="d-flex mt-4">
+                        <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#createCategoryModal">
+                            <i class="material-icons me-1">create_new_folder</i> Create Category
+                        </button>
+                        <button type="button" class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#createTopicModal">
+                            <i class="material-icons me-1">add_circle</i> Create Topic
+                        </button>
+                        
+                        <div class="ms-auto">
+                            <a href="{% url 'educational:admin_category_list' %}" class="btn btn-outline-primary me-2">
+                                <i class="material-icons me-1">category</i> View Categories
+                            </a>
+                            <a href="{% url 'educational:admin_topic_list' %}" class="btn btn-outline-success">
+                                <i class="material-icons me-1">list</i> View Topics
+                            </a>
+                    </div>
+                    </div>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-container">
-                        <table class="table table-hover align-middle mb-0">
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <a href="{% url 'educational:admin_category_list' %}" class="text-decoration-none">
+                <div class="card h-100" style="background-color: #2563eb; color: white;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="card-title">Total Categories</h5>
+                                <h2 class="my-2">{{ categories_count }}</h2>
+                                <p class="mb-0">Educational categories</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="material-icons" style="font-size: 3rem; opacity: 0.5;">folder</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <a href="{% url 'educational:admin_topic_list' %}" class="text-decoration-none">
+                <div class="card h-100" style="background-color: #22c55e; color: white;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="card-title">Total Topics</h5>
+                                <h2 class="my-2">{{ topics_count }}</h2>
+                                <p class="mb-0">Educational materials</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="material-icons" style="font-size: 3rem; opacity: 0.5;">article</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <a href="{% url 'educational:admin_topic_list' %}?published=true" class="text-decoration-none">
+                <div class="card h-100" style="background-color: #3b82f6; color: white;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="card-title">Published Topics</h5>
+                                <h2 class="my-2">{{ published_topics }}</h2>
+                                <p class="mb-0">Visible to users</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="material-icons" style="font-size: 3rem; opacity: 0.5;">menu_book</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <a href="{% url 'educational:admin_topic_list' %}?progress=true" class="text-decoration-none">
+                <div class="card h-100" style="background-color: #eab308; color: #1e293b;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="card-title">Avg. Completion</h5>
+                                <h2 class="my-2">{{ avg_completion_rate }}%</h2>
+                                <p class="mb-0">User progress</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="material-icons" style="font-size: 3rem; opacity: 0.5;">school</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Recent Topics Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="card-title mb-0">Recent Topics</h4>
+                        <a href="{% url 'educational:admin_topic_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
                             <thead>
                                 <tr>
-                                    <th class="px-4 py-3">Title</th>
-                                    <th class="py-3">Category</th>
-                                    <th class="py-3">Status</th>
-                                    <th class="py-3">Created</th>
-                                    <th width="120" class="text-end pe-4 py-3">Actions</th>
+                                    <th>TITLE</th>
+                                    <th>CATEGORY</th>
+                                    <th>CREATED</th>
+                                    <th>STATUS</th>
+                                    <th>ACTIONS</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for topic in recent_topics %}
                                 <tr>
-                                    <td class="px-4 py-3">
-                                        <div class="d-flex align-items-center">
-                                            <span class="material-icons me-3 text-primary">menu_book</span>
-                                            <div>
-                                                <div class="topic-title">{{ topic.title }}</div>
-                                                <div class="topic-description">{{ topic.content|striptags|truncatechars:50 }}</div>
-                                            </div>
-                                        </div>
+                                    <td>{{ topic.title }}</td>
+                                    <td>{{ topic.category.title }}</td>
+                                    <td>{{ topic.created_at|date:"M d, Y" }}</td>
+                                    <td>
+                                        {% if topic.is_published %}
+                                        <span class="badge rounded-pill bg-success">Published</span>
+                                        {% else %}
+                                        <span class="badge rounded-pill bg-secondary">Draft</span>
+                                        {% endif %}
                                     </td>
-                                    <td class="py-3">
-                                        <span class="category-badge">{{ topic.category.title }}</span>
-                                    </td>
-                                    <td class="py-3">
-                                        <span class="status-badge {% if topic.is_published %}published{% else %}draft{% endif %}">
-                                            <span class="material-icons" style="font-size: 0.8rem;">{% if topic.is_published %}check_circle{% else %}edit{% endif %}</span>
-                                            {% if topic.is_published %}Published{% else %}Draft{% endif %}
-                                        </span>
-                                    </td>
-                                    <td class="py-3">{{ topic.created_at|date:"M d, Y" }}</td>
-                                    <td class="text-end pe-4 py-3">
-                                        <div class="d-flex gap-2 justify-content-end">
-                                            <a href="{% url 'educational:admin_topic_preview' topic_id=topic.id %}" 
-                                               class="btn btn-icon btn-outline-secondary" 
-                                               data-bs-toggle="tooltip" 
-                                               title="Preview Topic">
-                                                <span class="material-icons">visibility</span>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{% url 'educational:admin_topic_preview' topic_id=topic.id %}" class="btn btn-sm btn-outline-info" title="Preview">
+                                                <i class="material-icons small">visibility</i>
                                             </a>
-                                            <a href="{% url 'educational:admin_topic_edit' topic_id=topic.id %}" 
-                                               class="btn btn-icon btn-outline-primary" 
-                                               data-bs-toggle="tooltip" 
-                                               title="Edit Topic">
-                                                <span class="material-icons">edit</span>
+                                            <a href="{% url 'educational:admin_topic_edit' topic_id=topic.id %}" class="btn btn-sm btn-outline-primary" title="Edit">
+                                                <i class="material-icons small">edit</i>
+                                            </a>
+                                            <a href="{% url 'educational:admin_topic_delete' topic_id=topic.id %}" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                <i class="material-icons small">delete</i>
                                             </a>
                                         </div>
                                     </td>
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="5">
-                                        <div class="empty-state">
-                                            <span class="material-icons">menu_book</span>
-                                            <h6>No topics created yet</h6>
-                                            <p class="text-muted mb-3">Create your first educational topic to get started</p>
-                                            <a href="{% url 'educational:admin_topic_create' %}" class="btn btn-primary">
-                                                <span class="material-icons me-2">add</span> Create First Topic
-                                            </a>
-                                        </div>
-                                    </td>
+                                    <td colspan="5" class="text-center py-3">No topics found.</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -325,15 +169,256 @@
             </div>
         </div>
     </div>
+
+    <!-- Categories and User Engagement Section -->
+    <div class="row">
+        <!-- Categories Card -->
+        <div class="col-lg-6 col-md-12 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="card-title mb-0">Categories Overview</h4>
+                        <a href="{% url 'educational:admin_category_list' %}" class="btn btn-sm btn-outline-primary">Manage</a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Topics</th>
+                                    <th>Published</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for category in categories %}
+                                <tr>
+                                    <td>{{ category.title }}</td>
+                                    <td>{{ category.topics_count }}</td>
+                                    <td>{{ category.published_count }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center py-3">No categories found.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Progress Card -->
+        <div class="col-lg-6 col-md-12 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="card-title mb-0">User Engagement</h4>
+                        <a href="{% url 'educational:admin_topic_list' %}?progress=true" class="btn btn-sm btn-outline-primary">Full Report</a>
+                    </div>
+                    <div id="user-engagement-chart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- Tooltip Initialization -->
+<!-- Create Category Modal -->
+<div class="modal fade" id="createCategoryModal" tabindex="-1" aria-labelledby="createCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createCategoryModalLabel">Create New Category</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="create-category-form" action="{% url 'educational:admin_category_create' %}" method="post">
+                    {% csrf_token %}
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="categoryTitle" class="form-label">Category Title <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="categoryTitle" name="title" required placeholder="e.g., Traffic Safety">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="categoryDescription" class="form-label">Description</label>
+                                <textarea class="form-control" id="categoryDescription" name="description" rows="5" placeholder="Describe the purpose and content of this category..."></textarea>
+                                <small class="text-muted">A good description helps users understand what topics they'll find in this category.</small>
+                            </div>
+                            
+                            <div class="d-flex justify-content-end mt-4">
+                                <button type="button" class="btn btn-outline-secondary me-2" data-bs-dismiss="modal">
+                                    <i class="material-icons align-middle">cancel</i> Cancel
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="material-icons align-middle">save</i> Save Category
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Topic Modal -->
+<div class="modal fade" id="createTopicModal" tabindex="-1" aria-labelledby="createTopicModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createTopicModalLabel">Create New Topic</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="create-topic-form" action="{% url 'educational:admin_topic_create' %}" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h5 class="mb-3">Topic Details</h5>
+                                    
+                                    <div class="mb-3">
+                                        <label for="topicTitle" class="form-label">Topic Title <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="topicTitle" name="title" required placeholder="e.g., Traffic Rules and Regulations">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="topicCategory" class="form-label">Category <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="topicCategory" name="category_id" required>
+                                            <option value="" selected disabled>Select a category</option>
+                                            {% for category in categories %}
+                                            <option value="{{ category.id }}">{{ category.title }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="topicContent" class="form-label">Content <span class="text-danger">*</span></label>
+                                        <textarea class="form-control" id="topicContent" name="content" rows="8" required placeholder="Write your educational content here..."></textarea>
+                                        <small class="text-muted">You can use basic HTML tags for formatting (<b>h1</b>, <b>p</b>, <b>ul</b>, <b>strong</b>, etc.)</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="mb-3">Attachments</h5>
+                                    <input type="file" class="form-control" name="attachments" multiple>
+                                    <small class="text-muted d-block mt-2">Upload PDFs, images, videos or other files. Max 10MB per file. PDFs will be viewable in the user portal.</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h5 class="mb-3">Publishing Options</h5>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="publishImmediately" name="is_published">
+                                        <label class="form-check-label" for="publishImmediately">Publish Immediately</label>
+                                    </div>
+                                    <small class="text-muted">If unchecked, this topic will be saved as a draft and not visible to users.</small>
+                                    
+                                    <div class="alert alert-primary mt-3">
+                                        <i class="material-icons align-middle">lightbulb</i>
+                                        Published topics appear immediately on the user portal. Make sure your content is ready before publishing.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="mb-3">Actions</h5>
+                                    <button type="submit" class="btn btn-primary w-100 mb-2">
+                                        <i class="material-icons align-middle">save</i> Save Topic
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary w-100 mb-2" id="preview-btn">
+                                        <i class="material-icons align-middle">visibility</i> Preview Content
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger w-100" data-bs-dismiss="modal">
+                                        <i class="material-icons align-middle">cancel</i> Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
+        console.log('Dashboard loaded');
+        
+        // Check if Bootstrap is available
+        if (typeof bootstrap !== 'undefined') {
+            console.log('Bootstrap is available');
+            
+            // Initialize all modals
+            var modals = document.querySelectorAll('.modal');
+            modals.forEach(function(modal) {
+                new bootstrap.Modal(modal);
+            });
+        } else {
+            console.error('Bootstrap is not available');
+        }
+        
+        // Preview button functionality
+        var previewBtn = document.getElementById('preview-btn');
+        if (previewBtn) {
+            previewBtn.addEventListener('click', function() {
+                // Get form data and display a preview
+                var title = document.getElementById('topicTitle').value;
+                var content = document.getElementById('topicContent').value;
+                
+                if (title && content) {
+                    alert('Preview functionality would go here.\n\nTitle: ' + title + '\n\nContent preview available.');
+                } else {
+                    alert('Please fill in at least the title and content fields to preview.');
+                }
+            });
+        }
+        
+        // Sample chart for user engagement
+        var ctx = document.getElementById('user-engagement-chart');
+        if (ctx) {
+            var chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Topic Views',
+                        data: [65, 59, 80, 81, 56, 55],
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }, {
+                        label: 'Completions',
+                        data: [28, 48, 40, 19, 36, 27],
+                        backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
     });
 </script>
 {% endblock %} 

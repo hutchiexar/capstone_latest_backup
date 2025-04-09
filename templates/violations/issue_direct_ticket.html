@@ -26,6 +26,7 @@
 
     <!-- Form Container -->
     <div class="card shadow-sm border-0 rounded-3">
+        <!-- Card header with white background -->
         <div class="card-header bg-white py-3">
             <div class="d-flex align-items-center">
                 <span class="material-icons me-2" style="color: var(--primary-color)">gavel</span>
@@ -33,6 +34,10 @@
             </div>
         </div>
 
+        <!-- Alert container for repeat violator warnings -->
+        <div id="violatorAlertsContainer" class="px-4 pt-3"></div>
+
+        <!-- Card body with responsive improvements -->
         <div class="card-body p-4">
             <form method="POST" id="ticketForm" class="needs-validation" novalidate>
                 {% csrf_token %}
@@ -65,25 +70,25 @@
                                     </div>
 
                                     <!-- Add camera scanner button -->
-                                    <button type="button" id="scanLicense" class="btn btn-primary mb-3 w-100 d-flex align-items-center justify-content-center gap-2">
+                                    <button type="button" id="scanLicense" class="btn btn-primary scan-button mb-3 w-100 d-flex align-items-center justify-content-center gap-2">
                                         <span class="material-icons">camera_alt</span>
                                         <span>Scan License</span>
                                     </button>
 
                                     <!-- Add camera feed modal -->
                                     <div class="modal fade" id="cameraModal" tabindex="-1">
-                                        <div class="modal-dialog modal-dialog-centered modal-lg">
-                                            <div class="modal-content">
-                                                <div class="modal-header bg-primary text-white">
-                                                    <h5 class="modal-title">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content border-0 shadow">
+                                                <div class="modal-header bg-white text-dark border-0">
+                                                    <h5 class="modal-title d-flex align-items-center">
                                                         <span class="material-icons align-middle me-2">camera_alt</span>
                                                         <span id="scannerTitle">Document Scanner</span>
                                                     </h5>
-                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                 </div>
                                                 <div class="modal-body p-0">
                                                     <div class="camera-container position-relative">
-                                                        <!-- Scanning overlay -->
+                                                        <!-- Improved scanning overlay -->
                                                         <div id="scanningOverlay" class="scanning-overlay" style="display: none;">
                                                             <div class="scanning-line"></div>
                                                             <div class="corner-markers">
@@ -98,27 +103,49 @@
                                                         <video id="cameraFeed" class="w-100" style="display: none;"></video>
                                                         <canvas id="cameraCanvas" class="w-100" style="display: none;"></canvas>
                                                         
-                                                        <!-- Status messages -->
-                                                        <div id="cameraPermissionMsg" class="camera-message text-center py-4">
-                                                            <span class="material-icons" style="font-size: 48px;">camera_alt</span>
-                                                            <p class="mt-2">Please allow camera access to scan the document.</p>
+                                                        <!-- Improved status messages -->
+                                                        <div id="cameraPermissionMsg" class="camera-message text-center py-5">
+                                                            <div class="d-flex flex-column align-items-center">
+                                                                <span class="material-icons mb-3" style="font-size: 48px; color: var(--primary-color);">camera_alt</span>
+                                                                <p class="mb-1 fw-bold">Camera Access Required</p>
+                                                                <p class="text-muted mb-0">Please allow camera access to scan the document</p>
+                                                            </div>
                                                         </div>
                                                         
-                                                        <div id="scanningMsg" class="camera-message text-center py-4" style="display: none;">
-                                                            <div class="spinner-border text-primary mb-2" role="status">
-                                                                <span class="visually-hidden">Processing...</span>
+                                                        <div id="scanningMsg" class="camera-message text-center py-5" style="display: none;">
+                                                            <div class="d-flex flex-column align-items-center">
+                                                                <div class="spinner-border text-primary mb-3" role="status">
+                                                                    <span class="visually-hidden">Processing...</span>
+                                                                </div>
+                                                                <p class="fw-bold mb-1">Processing document...</p>
+                                                                <p class="text-muted mb-0 scanning-text">Please hold still</p>
                                                             </div>
-                                                            <p class="scanning-text">Processing document...</p>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- Scan instructions -->
+                                                    <div class="scanner-instructions bg-light p-3">
+                                                        <div class="d-flex align-items-start">
+                                                            <span class="material-icons text-primary me-2">tips_and_updates</span>
+                                                            <div>
+                                                                <p class="mb-1 fw-bold">Tips for better scanning:</p>
+                                                                <ul class="mb-0 ps-3 small text-muted">
+                                                                    <li>Ensure good lighting and avoid glare</li>
+                                                                    <li>Place document on flat surface</li>
+                                                                    <li>Make sure all text is visible and readable</li>
+                                                                    <li>Keep camera steady while scanning</li>
+                                                                </ul>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                                        <span class="material-icons align-middle me-2">close</span>
+                                                <div class="modal-footer border-0">
+                                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                                        <span class="material-icons align-middle me-1" style="font-size: 18px;">close</span>
                                                         Cancel
                                                     </button>
                                                     <button type="button" class="btn btn-primary" id="captureImage">
-                                                        <span class="material-icons align-middle me-2">photo_camera</span>
+                                                        <span class="material-icons align-middle me-1" style="font-size: 18px;">photo_camera</span>
                                                         Capture
                                                     </button>
                                                 </div>
@@ -192,11 +219,7 @@
                         <div class="col-lg-8">
                             <div class="info-card">
                                 <h5 class="section-title">Vehicle Information</h5>
-                                <!-- Add camera scanner button for vehicle info -->
-                                <button type="button" id="scanVehicle" class="btn btn-primary mb-3 w-100 d-flex align-items-center justify-content-center gap-2">
-                                    <span class="material-icons">camera_alt</span>
-                                    <span>Scan Vehicle Registration</span>
-                                </button>
+                                <!-- Scan button removed -->
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <div class="form-floating">
@@ -370,6 +393,7 @@
     padding: 1.5rem;
     border-radius: 12px;
     box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+    margin-bottom: 1.5rem;
 }
 
 .progress {
@@ -392,6 +416,7 @@
 .step {
     text-align: center;
     flex: 1;
+    position: relative;
 }
 
 .step-circle {
@@ -406,11 +431,14 @@
     margin: 0 auto 0.5rem;
     font-weight: 600;
     color: #6c757d;
+    transition: all 0.3s ease;
 }
 
 .step.active .step-circle {
     border-color: var(--primary-color);
     color: var(--primary-color);
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .step.completed .step-circle {
@@ -422,11 +450,368 @@
 .step-label {
     font-size: 0.875rem;
     color: #6c757d;
+    transition: color 0.3s ease;
 }
 
 .step.active .step-label {
     color: var(--primary-color);
     font-weight: 500;
+}
+
+/* Mobile responsiveness improvements */
+@media (max-width: 768px) {
+    .progress-container {
+        padding: 1rem;
+    }
+    
+    .step-circle {
+        width: 30px;
+        height: 30px;
+        font-size: 0.85rem;
+    }
+    
+    .step-label {
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .progress-container {
+        padding: 0.75rem;
+    }
+    
+    .step-circle {
+        width: 25px;
+        height: 25px;
+        font-size: 0.8rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .steps-container {
+        margin-top: 0.5rem;
+    }
+    
+    .step-label {
+        font-size: 0.65rem;
+    }
+}
+
+/* Improve card styles for all screen sizes */
+.card {
+    border: none;
+    transition: box-shadow 0.3s ease;
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+.info-card {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    height: 100%;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+}
+
+.info-card:hover {
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+}
+
+.section-title {
+    color: var(--text-dark);
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+/* Improve form controls for better mobile experience */
+.form-floating {
+    margin-bottom: 1rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.25);
+}
+
+/* Enhance violations list for better mobile usability */
+.violations-list {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.form-check {
+    margin-bottom: 0.75rem;
+    padding: 0.5rem;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.form-check:hover {
+    background-color: #e9ecef;
+}
+
+.form-check-label {
+    padding-left: 0.25rem;
+    user-select: none;
+}
+
+.form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Responsive adjustments for different screen sizes */
+@media (max-width: 992px) {
+    .info-card {
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .section-title {
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .card-body {
+        padding: 1.25rem;
+    }
+    
+    .info-card {
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+    }
+    
+    .section-title {
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .violations-list {
+        max-height: 300px;
+        padding: 0.75rem;
+    }
+    
+    .form-check {
+        margin-bottom: 0.5rem;
+        padding: 0.4rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .info-card {
+        padding: 1rem;
+        border-radius: 10px;
+    }
+    
+    .section-title {
+        font-size: 1rem;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.4rem;
+    }
+    
+    .violations-list {
+        max-height: 250px;
+        padding: 0.5rem;
+    }
+    
+    .form-check {
+        padding: 0.3rem;
+        margin-bottom: 0.4rem;
+    }
+    
+    .form-floating label {
+        font-size: 0.9rem;
+    }
+    
+    .form-text {
+        font-size: 0.7rem;
+    }
+    
+    .btn {
+        padding: 0.4rem 1rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* Improve alert container and violation details styling */
+#violatorAlertsContainer {
+    display: block;
+    position: relative;
+    z-index: 1000;
+    margin-bottom: 1rem;
+}
+
+.repeat-violator-alert {
+    display: block !important;
+    margin-bottom: 15px !important;
+    border-radius: 8px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    animation: pulse-warning 2s infinite;
+}
+
+.violation-details-container {
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 6px;
+    max-height: 150px;
+    overflow-y: auto;
+    background-color: rgba(255, 248, 230, 0.5);
+    scrollbar-width: thin;
+}
+
+.violation-details-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.violation-details-container::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.05);
+    border-radius: 3px;
+}
+
+.violation-details-container::-webkit-scrollbar-thumb {
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 3px;
+}
+
+.violation-item {
+    transition: background-color 0.2s;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.violation-item:last-child {
+    border-bottom: none;
+}
+
+.violation-item:hover {
+    background-color: rgba(255, 193, 7, 0.1);
+}
+
+#toggleViolationDetails {
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    color: #856404;
+    font-weight: 500;
+}
+
+#toggleViolationDetails:hover {
+    color: #533f04;
+    transform: translateY(-1px);
+}
+
+/* Make buttons more touch-friendly on mobile */
+@media (max-width: 768px) {
+    .btn {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .prev-step, .next-step, .submit-btn {
+        width: auto;
+        min-width: 120px;
+    }
+    
+    /* Fix spacing between buttons on mobile */
+    .d-flex.justify-content-between.mt-4.pt-3.border-top {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    /* Improve violation details display on mobile */
+    .violation-item h6 {
+        font-size: 0.85rem;
+    }
+    
+    .violation-item p {
+        font-size: 0.8rem;
+    }
+    
+    .violation-item small {
+        font-size: 0.7rem;
+    }
+    
+    /* Adjust badge sizes */
+    .badge {
+        font-size: 0.7rem;
+        padding: 0.25em 0.5em;
+    }
+    
+    /* Add extra spacing around violation checkboxes */
+    .violations-list .form-check {
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .violations-list .form-check-input {
+        margin-top: 0.2rem;
+    }
+    
+    /* Make sure scroll works well on touch devices */
+    .violations-list {
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* Fix navigation button appearance on small screens */
+@media (max-width: 480px) {
+    .d-flex.justify-content-between.mt-4.pt-3.border-top {
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .prev-step, .next-step, .submit-btn {
+        width: 100%;
+        margin: 0;
+    }
+    
+    /* Fix alert display on very small screens */
+    .repeat-violator-alert {
+        padding: 0.75rem;
+    }
+    
+    .repeat-violator-alert .material-icons {
+        font-size: 20px;
+    }
+    
+    .repeat-violator-alert strong {
+        font-size: 0.9rem;
+    }
+    
+    /* Ensure form fits on small screens */
+    .form-floating {
+        margin-bottom: 0.75rem;
+    }
+    
+    .form-floating > .form-control {
+        padding-top: 1.2rem;
+        height: calc(3rem + 2px);
+    }
+    
+    .form-floating > label {
+        padding: 0.5rem 0.75rem;
+    }
 }
 
 /* Cards */
@@ -636,11 +1021,11 @@
 
 /* Camera Modal Styles */
 .camera-container {
-    position: relative;
-    background: #000;
-    min-height: 300px;
-    max-height: 70vh;
+    background-color: #000;
+    min-height: 250px;
+    max-height: 50vh;
     overflow: hidden;
+    border-radius: 0;
 }
 
 .camera-message {
@@ -669,8 +1054,8 @@
     position: absolute;
     width: 100%;
     height: 2px;
-    background: rgba(0, 123, 255, 0.5);
-    box-shadow: 0 0 8px rgba(0, 123, 255, 0.8);
+    background: rgba(13, 110, 253, 0.6);
+    box-shadow: 0 0 10px rgba(13, 110, 253, 0.8), 0 0 20px rgba(13, 110, 253, 0.6);
     animation: scan 2s linear infinite;
 }
 
@@ -695,40 +1080,40 @@
     left: 0;
     right: 0;
     bottom: 0;
-    border: 2px solid rgba(255, 255, 255, 0.5);
 }
 
 .corner-marker {
     position: absolute;
-    width: 20px;
-    height: 20px;
-    border: 2px solid #00ff00;
+    width: 24px;
+    height: 24px;
+    border: 2px solid #0d6efd;
+    border-radius: 2px;
 }
 
 .top-left {
-    top: 10px;
-    left: 10px;
+    top: 15px;
+    left: 15px;
     border-right: none;
     border-bottom: none;
 }
 
 .top-right {
-    top: 10px;
-    right: 10px;
+    top: 15px;
+    right: 15px;
     border-left: none;
     border-bottom: none;
 }
 
 .bottom-left {
-    bottom: 10px;
-    left: 10px;
+    bottom: 15px;
+    left: 15px;
     border-right: none;
     border-top: none;
 }
 
 .bottom-right {
-    bottom: 10px;
-    right: 10px;
+    bottom: 15px;
+    right: 15px;
     border-left: none;
     border-top: none;
 }
@@ -736,7 +1121,7 @@
 /* Camera Feed */
 #cameraFeed, #cameraCanvas {
     background: #000;
-    max-height: 70vh;
+    max-height: 50vh;
     object-fit: cover;
 }
 
@@ -801,24 +1186,346 @@
 .autocomplete-dropdown-hidden {
     display: none !important;
 }
+
+/* Repeat Violator Alert */
+#violatorAlertsContainer {
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+}
+
+.repeat-violator-alert {
+    animation: pulse-warning 2s infinite;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-left: 4px solid #ffc107;
+    font-weight: 500;
+}
+
+.violation-details-container {
+    max-height: 150px;
+    overflow-y: auto;
+    margin-bottom: 5px;
+}
+
+.violation-item {
+    transition: background-color 0.2s;
+}
+
+.violation-item:hover {
+    background-color: rgba(255, 193, 7, 0.1);
+}
+
+#toggleViolationDetails {
+    transition: transform 0.2s;
+}
+
+#toggleViolationDetails:hover {
+    transform: scale(1.2);
+}
+
+@keyframes pulse-warning {
+    0% { 
+        box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4); 
+    }
+    70% { 
+        box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); 
+    }
+    100% { 
+        box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); 
+    }
+}
+
+/* Scanner Button Improvements */
+.scan-button {
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+}
+
+.scan-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 12px rgba(0,0,0,0.15);
+}
+
+.scan-button .material-icons {
+    font-size: 20px;
+}
+
+/* Camera Container Styles */
+.camera-container {
+    background-color: #000;
+    min-height: 250px;
+    max-height: 50vh;
+    overflow: hidden;
+    border-radius: 0;
+}
+
+/* Enhanced Scanning Animation */
+.scanning-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.scanning-line {
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    background: rgba(13, 110, 253, 0.6);
+    box-shadow: 0 0 10px rgba(13, 110, 253, 0.8), 0 0 20px rgba(13, 110, 253, 0.6);
+    animation: scan 2s linear infinite;
+}
+
+@keyframes scan {
+    0% {
+        top: 0;
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        top: 100%;
+        opacity: 1;
+    }
+}
+
+/* Enhanced Corner Markers */
+.corner-markers {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.corner-marker {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border: 2px solid #0d6efd;
+    border-radius: 2px;
+}
+
+.top-left {
+    top: 15px;
+    left: 15px;
+    border-right: none;
+    border-bottom: none;
+}
+
+.top-right {
+    top: 15px;
+    right: 15px;
+    border-left: none;
+    border-bottom: none;
+}
+
+.bottom-left {
+    bottom: 15px;
+    left: 15px;
+    border-right: none;
+    border-top: none;
+}
+
+.bottom-right {
+    bottom: 15px;
+    right: 15px;
+    border-left: none;
+    border-top: none;
+}
+
+/* Camera UI Messages */
+.camera-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    color: white;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    z-index: 10;
+}
+
+/* Responsive improvements for mobile */
+@media (max-width: 768px) {
+    .info-card {
+        padding: 1.25rem;
+    }
+    
+    .form-floating label {
+        font-size: 0.9rem;
+    }
+    
+    .scan-button {
+        width: 100%;
+        margin-bottom: 15px;
+        padding: 10px;
+    }
+    
+    .camera-container {
+        min-height: 200px;
+        max-height: 40vh;
+    }
+    
+    #cameraFeed, #cameraCanvas {
+        max-height: 40vh;
+    }
+    
+    .corner-marker {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .scanner-instructions ul {
+        font-size: 0.75rem;
+    }
+    
+    .modal-dialog {
+        margin: 0.5rem;
+        max-width: 95%;
+    }
+    
+    .modal-body {
+        padding: 0 !important;
+    }
+    
+    .camera-message {
+        width: 95%;
+    }
+    
+    .camera-message .material-icons {
+        font-size: 36px !important;
+    }
+    
+    .scanner-instructions {
+        padding: 0.75rem !important;
+    }
+    
+    .scanner-instructions ul {
+        padding-left: 1rem !important;
+    }
+    
+    .modal-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    .modal-footer {
+        padding: 0.75rem 1rem;
+    }
+    
+    #previewImage {
+        max-height: 40vh !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .progress-container {
+        padding: 1rem;
+    }
+    
+    .step-label {
+        display: none;
+    }
+    
+    .card-body {
+        padding: 1rem !important;
+    }
+    
+    .card-header h4 {
+        font-size: 1.2rem;
+    }
+    
+    .modal-footer {
+        flex-direction: column;
+    }
+    
+    .modal-footer button {
+        width: 100%;
+        margin: 0.25rem 0 !important;
+    }
+    
+    .modal-dialog {
+        margin: 0.25rem auto;
+        max-width: 98%;
+    }
+    
+    .camera-container {
+        min-height: 180px;
+        max-height: 35vh;
+    }
+    
+    #cameraFeed, #cameraCanvas {
+        max-height: 35vh;
+    }
+    
+    .corner-marker {
+        width: 15px;
+        height: 15px;
+    }
+    
+    .top-left, .bottom-left {
+        left: 8px;
+    }
+    
+    .top-right, .bottom-right {
+        right: 8px;
+    }
+    
+    .top-left, .top-right {
+        top: 8px;
+    }
+    
+    .bottom-left, .bottom-right {
+        bottom: 8px;
+    }
+    
+    .scanner-instructions p {
+        font-size: 0.85rem;
+        margin-bottom: 0.25rem !important;
+    }
+    
+    .scanner-instructions ul li {
+        font-size: 0.7rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .alert-info {
+        padding: 0.5rem;
+    }
+    
+    #previewImage {
+        max-height: 30vh !important;
+    }
+}
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
 
 <script>
-// Add SweetAlert2 Library
+// Make sure SweetAlert2 is loaded
 document.addEventListener('DOMContentLoaded', function() {
     if (typeof Swal === 'undefined') {
-        // If SweetAlert is not defined, load it dynamically
+        console.log('Loading SweetAlert2');
+        // Add SweetAlert2 library 
         const sweetAlertScript = document.createElement('script');
         sweetAlertScript.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js';
+        sweetAlertScript.async = true;
         document.head.appendChild(sweetAlertScript);
         
-        // Add CSS
-        const sweetAlertCSS = document.createElement('link');
-        sweetAlertCSS.rel = 'stylesheet';
-        sweetAlertCSS.href = 'https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css';
-        document.head.appendChild(sweetAlertCSS);
+        // Add SweetAlert2 styles
+        const sweetAlertStyles = document.createElement('link');
+        sweetAlertStyles.rel = 'stylesheet';
+        sweetAlertStyles.href = 'https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css';
+        document.head.appendChild(sweetAlertStyles);
     }
 });
 
@@ -928,18 +1635,48 @@ async function checkForRepeatViolator() {
         const licenseNumber = document.getElementById('license_number').value;
         const userId = document.getElementById('user_account_id').value;
         const violatorSource = document.getElementById('violator_source').value;
+        const firstName = document.getElementById('first_name').value;
+        const lastName = document.getElementById('last_name').value;
         
-        // Only check if we have license number or user ID
-        if (!licenseNumber && !userId) return;
+        console.log('Checking for repeat violator with:', {
+            licenseNumber, userId, firstName, lastName
+        });
+        
+        // Only check if we have enough identifying information
+        if ((!licenseNumber && !userId) && (!firstName || !lastName)) {
+            console.log('Not enough information to check for repeat violator');
+            return;
+        }
         
         // Get CSRF token
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        // Show loading indicator
+        const targetField = licenseNumber ? document.getElementById('license_number') : document.getElementById('first_name');
+        const fieldParent = targetField.parentElement;
+        
+        // Add loading state
+        if (fieldParent) {
+            fieldParent.classList.add('is-checking');
+            
+            // Add loading spinner if it doesn't exist
+            if (!fieldParent.querySelector('.checking-badge')) {
+                const loadingSpinner = document.createElement('div');
+                loadingSpinner.className = 'checking-badge position-absolute end-0 top-0 mt-3 me-3';
+                loadingSpinner.innerHTML = '<span class="spinner-border spinner-border-sm text-primary" role="status"></span> Checking...';
+                fieldParent.appendChild(loadingSpinner);
+            }
+        }
         
         // Prepare the request data
         const formData = new FormData();
         if (licenseNumber) formData.append('license_number', licenseNumber);
         if (userId) formData.append('user_id', userId);
         if (violatorSource) formData.append('source', violatorSource);
+        if (firstName) formData.append('first_name', firstName);
+        if (lastName) formData.append('last_name', lastName);
+        
+        console.log('Sending request to check for repeat violator');
         
         // Make API request to check for previous violations
         const response = await fetch('/api/check-repeat-violator/', {
@@ -950,33 +1687,321 @@ async function checkForRepeatViolator() {
             }
         });
         
+        // Remove loading state
+        if (fieldParent) {
+            fieldParent.classList.remove('is-checking');
+            const loadingBadge = fieldParent.querySelector('.checking-badge');
+            if (loadingBadge) loadingBadge.remove();
+        }
+        
         if (!response.ok) {
             throw new Error('Failed to check violator history');
         }
         
         const data = await response.json();
+        console.log('Repeat violator check response:', data);
         
-        // If there are unsettled violations, display warning 
+        // Ensure the alerts container exists
+        const alertsContainer = document.getElementById('violatorAlertsContainer');
+        if (!alertsContainer) {
+            console.error('Alert container not found! Creating one...');
+            // Create the container if it doesn't exist
+            const formCard = document.querySelector('.card-body');
+            if (formCard) {
+                const newAlertsContainer = document.createElement('div');
+                newAlertsContainer.id = 'violatorAlertsContainer';
+                newAlertsContainer.className = 'px-4 pt-3';
+                formCard.insertBefore(newAlertsContainer, formCard.firstChild);
+            }
+        }
+        
+        // Remove any existing alert first
+        const existingAlert = document.getElementById('violatorAlertsContainer')?.querySelector('.alert');
+        if (existingAlert) {
+            existingAlert.remove();
+        }
+        
+        // If there are unsettled violations, display warning with details
         if (data.is_repeat_violator && data.unsettled_count > 0) {
-            // Create warning alert
+            console.log('Displaying repeat violator alert with', data.unsettled_count, 'violations');
+            
             const alertHTML = `
-                <div class="repeat-violator-alert alert alert-warning alert-dismissible fade show mb-4" role="alert">
+                <div id="repeat-violator-alert" class="repeat-violator-alert alert alert-warning alert-dismissible fade show mb-3" role="alert">
                     <div class="d-flex align-items-center">
                         <span class="material-icons me-2">warning</span>
-                        <strong>Repeat Violator!</strong> This person has ${data.unsettled_count} unsettled violation(s).
+                        <div>
+                            <strong>Repeat Violator!</strong> This person has ${data.unsettled_count} unsettled violation(s).
+                            ${data.violation_details && data.violation_details.length > 0 ? 
+                                `<a href="#" id="toggleViolationDetails" class="ms-2 small">
+                                    <span class="material-icons" style="font-size: 14px;">expand_more</span>
+                                    View details
+                                </a>` : ''}
+                        </div>
                     </div>
+                    ${data.violation_details && data.violation_details.length > 0 ? 
+                        `<div id="violationDetailsContainer" class="violation-details-container mt-2 small" style="display:none;">
+                            <div class="list-group">
+                                ${data.violation_details.map(v => `
+                                    <div class="violation-item list-group-item list-group-item-action flex-column align-items-start p-2">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">${v.type}</h6>
+                                            <span class="badge ${v.status === 'OVERDUE' ? 'bg-danger' : 'bg-warning'}">${v.status}</span>
+                                        </div>
+                                        <p class="mb-1">Date: ${v.date} | Fine: ₱${v.fine_amount}</p>
+                                        <small class="text-muted">Violation ID: ${v.id}</small>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>` : ''}
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             `;
             
-            // Add to the beginning of step 2
-            const step2Element = document.getElementById('step2');
-            step2Element.insertAdjacentHTML('afterbegin', alertHTML);
+            // Add to the alerts container and make sure it's visible
+            const container = document.getElementById('violatorAlertsContainer');
+            if (container) {
+                container.innerHTML = alertHTML;
+                container.style.display = 'block';
+                
+                // Make sure the alert is visible
+                const alert = container.querySelector('.alert');
+                if (alert) {
+                    alert.style.display = 'block';
+                    alert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+                
+                // Add toggle functionality for violation details
+                const toggleButton = document.getElementById('toggleViolationDetails');
+                if (toggleButton) {
+                    toggleButton.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const detailsContainer = document.getElementById('violationDetailsContainer');
+                        const icon = this.querySelector('.material-icons');
+                        if (detailsContainer) {
+                            if (detailsContainer.style.display === 'none') {
+                                detailsContainer.style.display = 'block';
+                                icon.textContent = 'expand_less';
+                            } else {
+                                detailsContainer.style.display = 'none';
+                                icon.textContent = 'expand_more';
+                            }
+                        }
+                    });
+                }
+            } else {
+                console.error('Alert container still not found after creation attempt');
+                // Fallback to alert if container still not found
+                alert(`Repeat Violator: This person has ${data.unsettled_count} unsettled violation(s)`);
+            }
+            
+            // Add visual indicator to the field
+            if (licenseNumber) {
+                const licenseField = document.getElementById('license_number');
+                if (licenseField) {
+                    licenseField.classList.add('border-warning');
+                    
+                    // Add a badge next to the license field if not already present
+                    if (!licenseField.parentElement.querySelector('.repeat-badge')) {
+                        const badge = document.createElement('div');
+                        badge.className = 'repeat-badge position-absolute end-0 top-0 mt-3 me-3';
+                        badge.innerHTML = '<span class="badge bg-warning text-dark">Repeat Violator</span>';
+                        licenseField.parentElement.appendChild(badge);
+                    }
+                }
+            }
+            
+            // Find and check the "Repeat Violator" violation checkbox if it exists
+            const repeatViolatorCheckbox = Array.from(document.querySelectorAll('input[name="violation_type[]"]'))
+                .find(checkbox => checkbox.value === 'Repeat Violator');
+            
+            if (repeatViolatorCheckbox) {
+                repeatViolatorCheckbox.checked = true;
+                
+                // Recalculate fine amount
+                if (typeof updateFineAmount === 'function') {
+                    updateFineAmount();
+                }
+            }
+        } else {
+            console.log('Not a repeat violator or no unsettled violations');
+            // Remove any visual indicators
+            if (licenseNumber) {
+                const licenseField = document.getElementById('license_number');
+                const licenseParent = licenseField.parentElement;
+                
+                // Remove repeat violator badge if exists
+                const repeatBadge = licenseParent.querySelector('.repeat-badge');
+                if (repeatBadge) repeatBadge.remove();
+                
+                // Remove warning class from license field
+                licenseField.classList.remove('border-warning');
+                
+                // Uncheck repeat violator checkbox if it was checked
+                const repeatViolatorCheckbox = Array.from(document.querySelectorAll('input[name="violation_type[]"]'))
+                    .find(checkbox => checkbox.value === 'Repeat Violator');
+                if (repeatViolatorCheckbox && repeatViolatorCheckbox.checked) {
+                    repeatViolatorCheckbox.checked = false;
+                    
+                    // Recalculate fine amount
+                    if (typeof updateFineAmount === 'function') {
+                        updateFineAmount();
+                    }
+                }
+            }
         }
     } catch (error) {
         console.error('Error checking for repeat violator:', error);
     }
 }
+
+// Add this code to the DOMContentLoaded event listener
+document.addEventListener('DOMContentLoaded', function() {
+    // ... existing code ...
+    
+    // Add event listeners to trigger repeat violator check on relevant fields
+    const licenseField = document.getElementById('license_number');
+    const firstNameField = document.getElementById('first_name');
+    const lastNameField = document.getElementById('last_name');
+    
+    // Ensure violatorAlertsContainer exists
+    if (!document.getElementById('violatorAlertsContainer')) {
+        console.log('Creating violatorAlertsContainer');
+        const formCard = document.querySelector('.card-body');
+        if (formCard) {
+            const alertsContainer = document.createElement('div');
+            alertsContainer.id = 'violatorAlertsContainer';
+            alertsContainer.className = 'px-4 pt-3';
+            formCard.insertBefore(alertsContainer, formCard.firstChild);
+        }
+    }
+    
+    // Create more robust debounce function
+    const debouncedCheck = debounceFunction(checkForRepeatViolator, 800);
+    
+    if (licenseField) {
+        console.log('Adding event listeners to license field');
+        // Check on blur and also when pressing Enter
+        licenseField.addEventListener('blur', debouncedCheck);
+        licenseField.addEventListener('keyup', function(e) {
+            if (e.key === 'Enter' && this.value.length > 5) {
+                debouncedCheck();
+            }
+        });
+        
+        // Check after selection from autocomplete
+        licenseField.addEventListener('change', function() {
+            if (this.value.length > 5) {  // Only if we have a substantial value
+                setTimeout(debouncedCheck, 300);
+            }
+        });
+    }
+    
+    if (firstNameField && lastNameField) {
+        console.log('Adding event listeners to name fields');
+        // Check after both fields have values
+        firstNameField.addEventListener('blur', function() {
+            if (this.value && lastNameField.value) {
+                debouncedCheck();
+            }
+        });
+        
+        lastNameField.addEventListener('blur', function() {
+            if (this.value && firstNameField.value) {
+                debouncedCheck();
+            }
+        });
+        
+        // Also check when Enter is pressed in either field
+        firstNameField.addEventListener('keyup', function(e) {
+            if (e.key === 'Enter' && this.value && lastNameField.value) {
+                debouncedCheck();
+            }
+        });
+        
+        lastNameField.addEventListener('keyup', function(e) {
+            if (e.key === 'Enter' && this.value && firstNameField.value) {
+                debouncedCheck();
+            }
+        });
+        
+        // Check after selection from autocomplete
+        firstNameField.addEventListener('change', function() {
+            if (this.value && lastNameField.value) {
+                setTimeout(debouncedCheck, 300);
+            }
+        });
+        
+        lastNameField.addEventListener('change', function() {
+            if (this.value && firstNameField.value) {
+                setTimeout(debouncedCheck, 300);
+            }
+        });
+    }
+    
+    // Simple debounce function to prevent too many API calls
+    function debounceFunction(func, delay) {
+        let timer;
+        return function() {
+            const context = this;
+            const args = arguments;
+            clearTimeout(timer);
+            timer = setTimeout(() => func.apply(context, args), delay);
+        }
+    }
+    
+    // Add styles for the checking badge and other UI elements
+    const style = document.createElement('style');
+    style.textContent = `
+        .checking-badge {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            font-size: 0.75rem;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 2px 8px;
+            border-radius: 12px;
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .repeat-badge {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            z-index: 5;
+        }
+        .is-checking .form-control {
+            background-color: #f8f9fa;
+        }
+        #violatorAlertsContainer {
+            display: block;
+            position: relative;
+            z-index: 1000;
+        }
+        .repeat-violator-alert {
+            display: block !important;
+            margin-bottom: 15px !important;
+        }
+        .violation-details-container {
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 6px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Manually trigger check once when form loads if license or name fields are already filled
+    setTimeout(function() {
+        if ((licenseField && licenseField.value.length > 5) || 
+            (firstNameField && lastNameField && firstNameField.value && lastNameField.value)) {
+            console.log('Auto-triggering repeat violator check on page load');
+            checkForRepeatViolator();
+        }
+    }, 1000);
+});
 
 // Remove all previous signature pad code and add this new implementation
 let signaturePadInstance;
@@ -1179,29 +2204,52 @@ function updateFineAmount() {
     console.log('Found checked violations:', violationCheckboxes.length);
     
     // Default fine amount for unlisted violations
-    const DEFAULT_FINE = 500;
+    const DEFAULT_FINE = 300;
     
-    // Default fine amounts for common violation types
+    // Updated fine amounts based on the new penalty table
     const fineAmounts = {
-        'Speeding': 500,
-        'Running a Red Light': 800,
-        'Illegal Parking': 300,
-        'No Seat Belt': 250,
-        'Using Phone While Driving': 1000,
-        'Driving Under Influence': 2500,
-        'Unlicensed Driver': 1500,
-        'Reckless Driving': 2000,
-        'Expired Registration': 1000,
-        'No Helmet': 500,
-        'Obstruction': 1000,
-        'Wrong Way Driving': 600,
-        'Invalid Plate': 1000,
-        'No Muffler': 500,
-        'Permitting Hitching/Over Loading Passenger(s)': 800,
-        'Unregistered MV': 1200,
-        'Refusal to convey to proper destination': 600,
-        'Discourteous driver/Conduct': 500,
-        'Others': 500
+        'Jaywalking': 200,
+        'No Seat Belt': 200,
+        'Speeding': 300,
+        'Illegal Parking': 250,
+        'Obstruction': 250,
+        'Reckless Driving': 300,
+        'Unlicensed Driver': 500,
+        'Permitting Hitching': 500,
+        'No License': 100,
+        'DUI': 300,
+        'Using Phone While Driving': 300,
+        'Disobedience to Traffic Control': 200,
+        'Smoking While Driving': 200,
+        'Improper Use of Horn/Muffler': 250,
+        'Failure to Give Way to Pedestrian': 200,
+        'Driving Through Funeral Procession': 200,
+        'Unauthorized Sirens/Lights': 300,
+        'Driving on Reserved Lanes': 100,
+        'No Early Warning Device': 200,
+        'Defective Lights': 250,
+        'Tampered/Fake Plates': 200,
+        'Unregistered MV': 500,
+        'No Loading/Unloading Violation': 100,
+        'Sports Activities on Streets': 300,
+        'Throwing Objects on Road': 300,
+        'Drying Products on Roads': 300,
+        'Unauthorized Signs': 200,
+        'No Franchise/Fare Matrix': 175,
+        'Overloading': 250,
+        'Out-of-Route Operation': 275,
+        'Unsecured Cargo': 200,
+        'Dirty PUV': 150,
+        'Improper Attire on Motorcycle': 200,
+        'Entering Prohibited Zones': 250,
+        'Refusal to Convey': 250,
+        'Discourteous Driver': 200,
+        'Expired OR/CR': 300,
+        'No Permit': 250,
+        'Overcharging': 250,
+        'Defective Muffler': 250,
+        'Dilapidated': 300,
+        'Others': 300
     };
 
     // Calculate total based on all selected violations
@@ -1721,8 +2769,9 @@ document.addEventListener('DOMContentLoaded', function() {
         scanLicenseBtn.parentNode.insertBefore(helperText, scanLicenseBtn.nextSibling);
     }
 
+    // Initialize camera and scanning variables
     const scanButton = document.getElementById('scanLicense');
-    const scanVehicleButton = document.getElementById('scanVehicle');
+    // Vehicle scan button removed but keeping the currentScanMode logic for compatibility
     const cameraModal = new bootstrap.Modal(document.getElementById('cameraModal'));
     const cameraFeed = document.getElementById('cameraFeed');
     const cameraCanvas = document.getElementById('cameraCanvas');
@@ -1737,10 +2786,7 @@ document.addEventListener('DOMContentLoaded', function() {
         initializeCamera();
     });
 
-    scanVehicleButton.addEventListener('click', () => {
-        currentScanMode = 'vehicle';
-        initializeCamera();
-    });
+    // Vehicle scan button event handler removed
 
     async function initializeCamera() {
         try {
@@ -1803,22 +2849,25 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add preview modal HTML after the camera modal
     const previewModalHTML = `
         <div class="modal fade" id="previewModal" tabindex="-1">
-            <div class="modal-dialog modal-dialog-centered modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow">
+                    <div class="modal-header bg-white text-dark border-0">
+                        <h5 class="modal-title d-flex align-items-center">
                             <span class="material-icons align-middle me-2">preview</span>
                             Review Captured Image
                         </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="modal-body">
+                    <div class="modal-body p-3">
                         <div class="preview-container">
-                            <img id="previewImage" class="img-fluid rounded" style="width: 100%; max-height: 70vh; object-fit: contain;">
-                            <div class="mt-3">
-                                <div class="alert alert-info">
-                                    <h6 class="mb-2"><span class="material-icons align-middle me-2">check_circle</span>Please verify:</h6>
-                                    <ul class="mb-0">
+                            <div class="image-container bg-light rounded mb-3 p-2 text-center">
+                                <img id="previewImage" class="img-fluid rounded shadow-sm" style="max-height: 50vh; object-fit: contain;">
+                            </div>
+                            <div class="alert alert-info d-flex align-items-start">
+                                <span class="material-icons me-2 mt-1">check_circle</span>
+                                <div>
+                                    <h6 class="mb-2 fw-bold">Please verify:</h6>
+                                    <ul class="mb-0 small ps-3">
                                         <li>The entire document is visible</li>
                                         <li>Text is clear and readable</li>
                                         <li>No glare or shadows</li>
@@ -1828,14 +2877,14 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" id="retakeButton">
-                            <span class="material-icons align-middle me-2">camera_alt</span>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-outline-secondary" id="retakeButton">
+                            <span class="material-icons align-middle me-1" style="font-size: 18px;">camera_alt</span>
                             Retake Photo
                         </button>
                         <button type="button" class="btn btn-primary" id="proceedButton">
-                            <span class="material-icons align-middle me-2">check</span>
-                            Proceed with this Image
+                            <span class="material-icons align-middle me-1" style="font-size: 18px;">check</span>
+                            Proceed
                         </button>
                     </div>
                 </div>
@@ -1886,9 +2935,21 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         previewModal.hide();
-        const scanningMsg = document.getElementById('scanningMsg');
-        scanningMsg.style.display = 'block';
-        scanningMsg.querySelector('.scanning-text').textContent = 'Processing document...';
+        
+        // Show loading spinner with SweetAlert
+        const loadingSwal = Swal.fire({
+            title: 'Processing Document',
+            html: '<div class="d-flex flex-column align-items-center">' +
+                  '<div class="spinner-border text-primary mb-3" role="status"></div>' +
+                  '<p>Extracting information from document...</p>' +
+                  '</div>',
+            showConfirmButton: false,
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
         
         try {
             // Convert base64 to blob
@@ -1902,9 +2963,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Get CSRF token
             const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-            
-            // Show scanning message
-            scanningMsg.style.display = 'block';
             
             console.log('Sending scan request...', {
                 mode: currentScanMode,
@@ -1923,12 +2981,26 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
             console.log('Response data:', data);
 
+            // Close loading spinner
+            loadingSwal.close();
+
             if (!response.ok) {
                 throw new Error(data.message || 'Failed to process document');
             }
             
             if (data.success) {
                 console.log('Document processed successfully:', data);
+                
+                // Show success message with SweetAlert
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Scan Successful',
+                    html: `<p>Information extracted from ${currentScanMode === 'license' ? 'license' : 'vehicle registration'} successfully!</p>`,
+                    timer: 2000,
+                    timerProgressBar: true,
+                    showConfirmButton: false
+                });
+                
                 if (currentScanMode === 'license') {
                     // Fill license form fields
                     const licenseNumber = document.getElementById('license_number');
@@ -1957,6 +3029,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (data.phone_number) {
                         phoneNumber.value = data.phone_number;
                         phoneNumber.dispatchEvent(new Event('input'));
+                    }
+                    
+                    // Check for repeat violator if both names are filled
+                    if (firstName.value && lastName.value) {
+                        setTimeout(() => {
+                            checkForRepeatViolator();
+                        }, 500);
                     }
                 } else if (currentScanMode === 'vehicle') {
                     // Fill vehicle form fields
@@ -1996,42 +3075,37 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Close the modal
                 cameraModal.hide();
-                
-                // Show success message
-                const successMessage = document.createElement('div');
-                successMessage.className = 'alert alert-success alert-dismissible fade show mt-3';
-                successMessage.innerHTML = `
-                    <strong>Success!</strong> Document scanned successfully.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                `;
-                document.querySelector('.camera-container').insertAdjacentElement('afterend', successMessage);
-                
-                // Remove the message after 5 seconds
-                setTimeout(() => {
-                    successMessage.remove();
-                }, 5000);
             } else {
                 throw new Error(data.message || 'Failed to extract information from document');
             }
 
         } catch (err) {
-            console.error('Error processing image:', err);
-            const retake = confirm(
-                'Error processing document: ' + err.message + '\n\n' +
-                'Would you like to retake the photo?\n\n' +
-                'If the problem persists, you can enter the details manually.'
-            );
-            
-            if (retake) {
-                cleanup();
-                cameraModal.show();
-                cameraFeed.style.display = 'block';
-                cameraCanvas.style.display = 'none';
-                showScanningOverlay();
+            // Close loading spinner if it's still open
+            if (loadingSwal) {
+                loadingSwal.close();
             }
+            
+            console.error('Error processing image:', err);
+            
+            // Show error with SweetAlert
+            Swal.fire({
+                icon: 'error',
+                title: 'Scanning Failed',
+                text: err.message || 'Failed to process document',
+                showCancelButton: true,
+                confirmButtonText: 'Try Again',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    cleanup();
+                    cameraModal.show();
+                    cameraFeed.style.display = 'block';
+                    cameraCanvas.style.display = 'none';
+                    showScanningOverlay();
+                }
+            });
         } finally {
             cleanup();
-            scanningMsg.style.display = 'none';
             capturedImageData = null;
         }
     });
@@ -2510,11 +3584,15 @@ document.addEventListener('DOMContentLoaded', function() {
                             const autocompleteInstances = window._autocompleteInstances || {};
                             if (autocompleteInstances[fieldId]) {
                                 autocompleteInstances[fieldId].hasSelectedItem = true;
+                                autocompleteInstances[fieldId].input.classList.add('autocomplete-input-selected');
+                                autocompleteInstances[fieldId].dropdown.classList.add('autocomplete-dropdown-hidden');
                             }
                         }
                     }
                     
-                    field.dispatchEvent(new Event('input'));
+                    // Trigger both input and change events to ensure validation and any other listeners are triggered
+                    field.dispatchEvent(new Event('input', { bubbles: true }));
+                    field.dispatchEvent(new Event('change', { bubbles: true }));
                 }
             }
         }
@@ -2722,5 +3800,36 @@ function updateViolationTotal() {
         console.error('Could not find fine amount field!');
     }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Enhanced scan license button
+    const scanLicenseBtn = document.getElementById('scanLicense');
+    if (scanLicenseBtn) {
+        scanLicenseBtn.className = 'btn btn-primary scan-button w-100';
+        scanLicenseBtn.innerHTML = `
+            <span class="material-icons">camera_alt</span>
+            <span>Scan License</span>
+        `;
+    }
+    
+    // Vehicle scan button code removed
+    
+    // Initialize signature pad
+    setupSignaturePad();
+    
+    // Handle signature refusal checkbox
+    document.getElementById('noSignature').addEventListener('change', function() {
+        const signatureArea = document.getElementById('signatureArea');
+        const refusalNoteArea = document.getElementById('refusalNoteArea');
+        
+        if (this.checked) {
+            signatureArea.style.display = 'none';
+            refusalNoteArea.style.display = 'block';
+        } else {
+            signatureArea.style.display = 'block';
+            refusalNoteArea.style.display = 'none';
+        }
+    });
+});
 </script>
 {% endblock %}

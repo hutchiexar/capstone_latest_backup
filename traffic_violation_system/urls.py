@@ -25,6 +25,7 @@ urlpatterns = [
     path('violation/<int:violation_id>/modal/', views.violation_detail_modal, name='violation_detail_modal'),
     path('violation/<int:violation_id>/process-payment/', views.process_payment, name='process_payment'),
     path('violation/<int:violation_id>/record-payment/', views.record_payment, name='record_payment'),
+    path('violation/<int:violation_id>/print/', views.print_violation_form, name='print_violation_form'),
     
     # User management URLs
     path('users/', views.users_list, name='users_list'),
@@ -138,9 +139,11 @@ urlpatterns = [
     # Add API endpoints for searching operators and drivers
     path('api/search-operators/', views.api_search_operators, name='api_search_operators'),
     path('api/search-drivers/', views.api_search_drivers, name='api_search_drivers'),
+    path('api/get-operator/', views.api_get_operator, name='api_get_operator'),
+    path('api/get-driver/', views.api_get_driver, name='api_get_driver'),
 
     # Vehicle and Driver Routes - fix to use operator_ prefix and appropriate view names
-    path('operator/vehicles/register/', views.operator_register_vehicle, name='register_vehicle'),
+    path('operator/vehicles/register/', views.operator_register_vehicle, name='operator_register_vehicle'),
     path('operator/vehicles/<int:vehicle_id>/edit/', views.operator_edit_vehicle, name='edit_vehicle'),
     path('operator/vehicles/<int:vehicle_id>/delete/', views.operator_delete_vehicle, name='delete_vehicle'),
 

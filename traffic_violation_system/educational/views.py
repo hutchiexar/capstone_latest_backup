@@ -7,12 +7,18 @@ from django.utils import timezone
 from django.contrib import messages
 from django.db.models import Count, Q
 from .models import EducationalCategory, EducationalTopic, TopicAttachment, UserBookmark, UserProgress
+from django.views.decorators.http import require_http_methods
+from PyPDF2 import PdfReader
+import io
+import tempfile
+import os
+import base64
+from PIL import Image
 
 
 # Helper function to check if a user is an admin
 def is_admin(user):
     return user.is_superuser or (hasattr(user, 'userprofile') and user.userprofile.role == 'ADMIN')
-
 
 # Admin views
 @login_required
@@ -438,6 +444,15 @@ def topic_detail(request, topic_id):
             viewed.last_accessed = timezone.now()
             viewed.save()
     
+    # Check for PDF attachment to show in viewer
+    is_pdf_content = False
+    pdf_url = None
+    pdf_attachments = topic.attachments.filter(file_type='PDF')
+    if pdf_attachments.exists():
+        # If a PDF is attached, set flag to use PDF viewer instead of regular content display
+        is_pdf_content = True
+        pdf_url = pdf_attachments.first().file.url
+    
     context = {
         'topic': topic,
         'categories': categories,
@@ -445,6 +460,8 @@ def topic_detail(request, topic_id):
         'is_completed': is_completed,
         'related_topics': related_topics,
         'attachments': topic.attachments.all(),
+        'is_pdf_content': is_pdf_content,
+        'pdf_url': pdf_url,
     }
     
     return render(request, 'user_portal/educational/topic_detail.html', context)
@@ -808,4 +825,175 @@ def admin_educational_data(request):
         'search_query': search_query,
         'tab': tab
     }
-    return render(request, 'admin/educational/admin_educational_data.html', context) 
+    return render(request, 'admin/educational/admin_educational_data.html', context)
+
+@login_required
+@user_passes_test(is_admin)
+@require_http_methods(["POST"])
+def extract_pdf_text(request):
+    try:
+        print("PDF extraction request received")
+        pdf_file = request.FILES.get('pdf_file')
+        if not pdf_file:
+            print("No file uploaded")
+            return JsonResponse({
+                'success': False,
+                'error': 'No file uploaded'
+            })
+            
+        if not pdf_file.name.lower().endswith('.pdf'):
+            print(f"Invalid file type: {pdf_file.name}")
+            return JsonResponse({
+                'success': False,
+                'error': 'Please upload a valid PDF file'
+            })
+
+        print(f"Processing PDF file: {pdf_file.name}")
+        
+        # Read the PDF file as bytes
+        try:
+            import fitz  # PyMuPDF
+            
+            pdf_bytes = pdf_file.read()
+            
+            # Set a reasonable page limit to avoid heavy processing
+            MAX_PAGES = 10
+            
+            # Extract page images with lower resolution to save storage
+            page_images = []
+            
+            # Process each page
+            for page_num in range(MAX_PAGES):
+                try:
+                    # Open a new document instance for each page to avoid "document closed" errors
+                    pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
+                    
+                    # Check if we've reached the end of the document
+                    if page_num >= len(pdf_document):
+                        break
+                            
+                    print(f"Processing page {page_num + 1} of {len(pdf_document)}")
+                    page = pdf_document[page_num]
+                    
+                    # Set resolution to a lower value (100 DPI instead of 300)
+                    matrix = fitz.Matrix(1.0, 1.0)  # Scaling factor for 100 DPI
+                    pix = page.get_pixmap(matrix=matrix)
+                    
+                    # Convert to JPEG using a temporary file (better compression than PNG)
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_file:
+                        temp_filename = temp_file.name
+                    
+                    # Save the pixmap to the temporary file as JPEG
+                    success = False
+                    try:
+                        pix.save(temp_filename, "jpeg", quality=70)  # Lower quality for better compression
+                        success = True
+                    except TypeError:
+                        # Fallback if JPEG with quality parameter is not supported
+                        try:
+                            pix.save(temp_filename, "jpeg")  # Try without quality parameter
+                            success = True
+                        except:
+                            try:
+                                pix.save(temp_filename)  # Try with default format
+                                success = True
+                            except Exception as e:
+                                print(f"All PyMuPDF save methods failed: {str(e)}")
+                    
+                    # If PyMuPDF save failed, try using PIL as a fallback
+                    if not success:
+                        try:
+                            # Get pixmap dimensions and samples
+                            img_array = pix.samples
+                            width, height = pix.width, pix.height
+                            
+                            # Convert pixmap to PIL Image
+                            mode = "RGBA" if pix.alpha else "RGB"
+                            img = Image.frombytes(mode, [width, height], img_array)
+                            
+                            # Save using PIL instead
+                            img.save(temp_filename, format="JPEG", quality=70)
+                            print("Successfully saved using PIL fallback")
+                        except Exception as e:
+                            print(f"PIL fallback also failed: {str(e)}")
+                            # Continue to next page instead of failing the whole process
+                            pdf_document.close()
+                            continue
+                    
+                    # Read the file back
+                    with open(temp_filename, "rb") as f:
+                        img_bytes = f.read()
+                    
+                    # Delete the temporary file
+                    os.unlink(temp_filename)
+                    
+                    # Convert to base64 for sending to browser
+                    img_base64 = base64.b64encode(img_bytes).decode('utf-8')
+                    
+                    # Also extract text for each page for search/accessibility
+                    text = page.get_text()
+                    
+                    page_images.append({
+                        'page': page_num + 1,
+                        'data': img_base64,
+                        'text': text
+                    })
+                    
+                    print(f"Processed page {page_num + 1}, image size: {len(img_base64) // 1024}KB")
+                    
+                    # Close the document for this iteration
+                    pdf_document.close()
+                    
+                except Exception as e:
+                    print(f"Error processing page {page_num + 1}: {str(e)}")
+                    # Make sure to close the document even if there's an error
+                    try:
+                        if 'pdf_document' in locals() and pdf_document:
+                            pdf_document.close()
+                    except:
+                        pass
+                    continue
+            
+            if not page_images:
+                print("No pages could be rendered from the PDF")
+                return JsonResponse({
+                    'success': False,
+                    'error': 'No pages could be rendered from the PDF'
+                })
+            
+            print(f"Successfully rendered {len(page_images)} pages from PDF")
+            
+            # Get the total pages from a fresh document
+            try:
+                temp_doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+                total_pages = len(temp_doc)
+                temp_doc.close()
+            except:
+                total_pages = len(page_images)
+                    
+            return JsonResponse({
+                'success': True,
+                'images': page_images,
+                'total_pages': total_pages,
+                'pages_rendered': len(page_images)
+            })
+            
+        except ImportError as e:
+            print(f"Error importing PyMuPDF: {str(e)}")
+            return JsonResponse({
+                'success': False,
+                'error': 'PyMuPDF not installed. Please install it with: pip install pymupdf'
+            })
+        except Exception as e:
+            print(f"Error processing PDF: {str(e)}")
+            return JsonResponse({
+                'success': False,
+                'error': f'Error processing PDF: {str(e)}'
+            })
+            
+    except Exception as e:
+        print(f"Error during PDF processing: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': f'Error processing PDF: {str(e)}'
+        }) 
