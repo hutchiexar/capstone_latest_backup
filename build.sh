@@ -10,6 +10,7 @@ pip install -r requirements.txt
 
 echo "Creating media directory..."
 mkdir -p media
+chmod -R 777 media
 
 echo "Running migrations..."
 python manage.py migrate --noinput
