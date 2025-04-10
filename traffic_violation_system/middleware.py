@@ -1,5 +1,9 @@
 from django.shortcuts import redirect
 from django.urls import reverse
+import logging
+import sys
+import traceback
+from django.conf import settings
 
 class AuthenticationMiddleware:
     def __init__(self, get_response):
@@ -58,3 +62,37 @@ class NoCacheMiddleware:
             response['Expires'] = '0'
         
         return response
+
+class ErrorLoggingMiddleware:
+    """
+    Middleware that logs exceptions to the console.
+    """
+    def __init__(self, get_response):
+        self.get_response = get_response
+        # One-time configuration and initialization.
+        self.logger = logging.getLogger('traffic_violation_system')
+
+    def __call__(self, request):
+        # Code to be executed for each request before
+        # the view (and later middleware) are called.
+        response = self.get_response(request)
+        # Code to be executed for each request/response after
+        # the view is called.
+        return response
+
+    def process_exception(self, request, exception):
+        """
+        Process the exception and log it.
+        """
+        # Get the full traceback
+        exc_info = sys.exc_info()
+        # Format the traceback
+        tb = ''.join(traceback.format_exception(*exc_info))
+        # Log the exception
+        self.logger.error(f"Unhandled exception: {str(exception)}\n{tb}")
+        # Log request information
+        self.logger.debug(f"Request path: {request.path}")
+        self.logger.debug(f"Request method: {request.method}")
+        self.logger.debug(f"Request user: {request.user}")
+        # Continue processing
+        return None
