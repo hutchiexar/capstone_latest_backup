@@ -2756,15 +2756,7 @@ def services(request):
     return render(request, 'landing/services.html')
 
 def contact(request):
-    if request.method == 'POST':
-        # Handle contact form submission
-        name = request.POST.get('name')
-        email = request.POST.get('email')
-        message = request.POST.get('message')
-        # Add your contact form processing logic here
-        messages.success(request, 'Your message has been sent successfully!')
-        return redirect('contact')
-    return render(request, 'landing/contact.html')
+    return render(request, 'contact.html')
 
 @csrf_exempt
 def scan_document(request):
@@ -6013,3 +6005,68 @@ def print_violation_form(request, violation_id):
     }
     
     return render(request, template_name, context)
+
+@user_passes_test(lambda u: u.is_superuser)
+def debug_media(request):
+    """Diagnostic view to check media files and paths (only accessible to superusers)"""
+    import os
+    from django.conf import settings
+    
+    media_root = settings.MEDIA_ROOT
+    media_url = settings.MEDIA_URL
+    storage_class = settings.DEFAULT_FILE_STORAGE
+    
+    # Check media directories
+    media_dirs = {
+        'media_root': {
+            'path': media_root,
+            'exists': os.path.exists(media_root),
+            'is_dir': os.path.isdir(media_root) if os.path.exists(media_root) else False,
+            'permissions': oct(os.stat(media_root).st_mode & 0o777) if os.path.exists(media_root) else None,
+        }
+    }
+    
+    # Check subdirectories
+    for subdir in ['avatars', 'signatures', 'driver_photos', 'vehicle_photos', 'secondary_photos', 'qr_codes']:
+        subdir_path = os.path.join(media_root, subdir)
+        media_dirs[subdir] = {
+            'path': subdir_path,
+            'exists': os.path.exists(subdir_path),
+            'is_dir': os.path.isdir(subdir_path) if os.path.exists(subdir_path) else False,
+            'permissions': oct(os.stat(subdir_path).st_mode & 0o777) if os.path.exists(subdir_path) else None,
+        }
+    
+    # Check for profile images
+    from traffic_violation_system.models import UserProfile
+    profiles = UserProfile.objects.all()
+    profile_images = []
+    
+    for profile in profiles:
+        if profile.avatar:
+            try:
+                image_info = {
+                    'user': profile.user.username,
+                    'field_value': str(profile.avatar),
+                    'url': profile.avatar.url if hasattr(profile.avatar, 'url') else None,
+                    'path': profile.avatar.path if hasattr(profile.avatar, 'path') else None,
+                    'exists': os.path.exists(profile.avatar.path) if hasattr(profile.avatar, 'path') else False,
+                    'size': os.path.getsize(profile.avatar.path) if hasattr(profile.avatar, 'path') and os.path.exists(profile.avatar.path) else None,
+                }
+                profile_images.append(image_info)
+            except Exception as e:
+                profile_images.append({
+                    'user': profile.user.username,
+                    'field_value': str(profile.avatar),
+                    'error': str(e)
+                })
+    
+    context = {
+        'media_url': media_url,
+        'storage_class': storage_class,
+        'media_dirs': media_dirs,
+        'profile_images': profile_images,
+        'profile_count': profiles.count(),
+        'profiles_with_avatar': sum(1 for p in profiles if p.avatar),
+    }
+    
+    return render(request, 'debug/media_debug.html', context)

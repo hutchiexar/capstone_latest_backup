@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Media Configuration Debug</h1>
+    
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">Configuration</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>MEDIA_URL:</strong> {{ media_url }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Storage Class:</strong> {{ storage_class }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">Media Directories</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Directory</th>
+                            <th>Path</th>
+                            <th>Exists</th>
+                            <th>Is Directory</th>
+                            <th>Permissions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dir_name, dir_info in media_dirs.items %}
+                        <tr>
+                            <td>{{ dir_name }}</td>
+                            <td>{{ dir_info.path }}</td>
+                            <td>
+                                {% if dir_info.exists %}
+                                <span class="badge bg-success">Yes</span>
+                                {% else %}
+                                <span class="badge bg-danger">No</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if dir_info.is_dir %}
+                                <span class="badge bg-success">Yes</span>
+                                {% else %}
+                                <span class="badge bg-danger">No</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ dir_info.permissions }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">Profile Images ({{ profiles_with_avatar }} / {{ profile_count }})</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Field Value</th>
+                            <th>URL</th>
+                            <th>Path</th>
+                            <th>Exists</th>
+                            <th>Size</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for image in profile_images %}
+                        <tr>
+                            <td>{{ image.user }}</td>
+                            <td>{{ image.field_value }}</td>
+                            <td>
+                                {% if image.url %}
+                                <a href="{{ image.url }}" target="_blank">{{ image.url }}</a>
+                                {% else %}
+                                <span class="text-muted">None</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ image.path|default:'None' }}</td>
+                            <td>
+                                {% if image.error %}
+                                <span class="badge bg-warning text-dark">Error: {{ image.error }}</span>
+                                {% elif image.exists %}
+                                <span class="badge bg-success">Yes</span>
+                                {% else %}
+                                <span class="badge bg-danger">No</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ image.size|default:'N/A' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

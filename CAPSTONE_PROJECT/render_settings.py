@@ -26,6 +26,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # On Render, we need to use a persistent directory for media files
 # This is because the dyno filesystem is ephemeral
 MEDIA_URL = '/media/'
+
 # Use a persistent directory on Render
 if os.environ.get('RENDER', 'False') == 'True':
     # Render provides a persistent disk at /opt/render/project/src/
@@ -37,30 +38,48 @@ else:
 MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
-# Make sure media files are served correctly
-DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+# Use the SafeFileStorage for better file handling
+DEFAULT_FILE_STORAGE = 'traffic_violation_system.storage.SafeFileStorage'
 
 # Disable security settings for initial testing
 SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 
-# Set up logging
+# Set up logging with more detailed file logging
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': os.path.join('/opt/render/project/src/', 'app.log') if os.environ.get('RENDER', 'False') == 'True' else os.path.join(BASE_DIR, 'app.log'),
+            'formatter': 'verbose',
         },
     },
     'loggers': {
         'django': {
-            'handlers': ['console'],
+            'handlers': ['console', 'file'],
             'level': 'INFO',
+            'propagate': True,
+        },
+        'traffic_violation_system': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': True,
         },
         '': {
-            'handlers': ['console'],
+            'handlers': ['console', 'file'],
             'level': 'INFO',
         },
     },

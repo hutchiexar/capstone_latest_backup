@@ -174,4 +174,7 @@ urlpatterns = [
 
     # General driver route that redirects based on user role
     path('driver/', views.driver_list, name='driver_list'),
+
+    # Add this near the end of the file, before adding static/media URLs
+    path('debug/media/', views.debug_media, name='debug_media'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
