@@ -2,7 +2,7 @@ from django.contrib.auth import logout, authenticate, login
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
-from django.db.models import Sum, Count, Q, F, Value, BooleanField, Case, When, IntegerField
+from django.db.models import Sum, Count, Q, F, Value, BooleanField, Case, When, IntegerField, Max, Avg, Min
 from django.db.models.functions import Concat, TruncDate, TruncMonth, TruncWeek
 from django.utils import timezone
 from .models import Violation, Payment, UserProfile, ActivityLog, Violator, Announcement, AnnouncementAcknowledgment, LocationHistory, Operator, Vehicle, OperatorApplication, Driver, ViolationCertificate, DriverVehicleAssignment
@@ -30,7 +30,7 @@ from io import BytesIO
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from idanalyzer import CoreAPI
 import os
-from django.db import models
+from django.db import models, transaction
 from django.contrib.sessions.backends.db import SessionStore
 from .forms import (
     NCAPViolationForm, OperatorForm, ImportOperatorsForm,
@@ -1088,7 +1088,15 @@ def edit_profile(request):
             profile.address = request.POST.get('address')
 
             if 'avatar' in request.FILES:
+                # Add debug logging
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.info(f"Uploading avatar for user {user.username}")
+                logger.info(f"Avatar file name: {request.FILES['avatar'].name}")
+                logger.info(f"Using MEDIA_ROOT: {settings.MEDIA_ROOT}")
+                
                 profile.avatar = request.FILES['avatar']
+                logger.info(f"Avatar saved to: {profile.avatar.path if profile.avatar else 'None'}")
 
             profile.save()
 
@@ -1108,6 +1116,12 @@ def edit_profile(request):
 
             return redirect('profile')
         except Exception as e:
+            # Log detailed exception info
+            import logging, traceback
+            logger = logging.getLogger(__name__)
+            logger.error(f"Profile update error: {str(e)}")
+            logger.error(traceback.format_exc())
+            
             messages.error(request, f'Error updating profile: {str(e)}')
             return redirect('edit_profile')
 

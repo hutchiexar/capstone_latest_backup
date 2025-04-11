@@ -27,7 +27,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # This is because the dyno filesystem is ephemeral
 MEDIA_URL = '/media/'
 # Use a persistent directory on Render
-if os.environ.get('RENDER', False):
+if os.environ.get('RENDER', 'False') == 'True':
     # Render provides a persistent disk at /opt/render/project/src/
     MEDIA_ROOT = os.path.join('/opt/render/project/src/', 'media')
 else:
