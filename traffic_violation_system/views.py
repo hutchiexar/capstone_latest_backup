@@ -2242,6 +2242,14 @@ def enforcer_map(request):
 @login_required
 @csrf_exempt
 def update_location(request):
+    # Check if this is a browser request rather than an XHR/fetch request
+    is_browser_request = request.headers.get('Accept', '').find('text/html') != -1 and not request.headers.get('X-Requested-With')
+    
+    # If it's a browser request, redirect to appropriate page instead of showing JSON error
+    if is_browser_request:
+        messages.error(request, "This endpoint should not be accessed directly in the browser.")
+        return redirect('login')
+    
     # For GET requests or non-POST requests, return a clear message
     if request.method != 'POST':
         return JsonResponse({
