@@ -33,23 +33,17 @@
             <div class="card mb-4">
                 <div class="card-body">
                     <h5 class="card-title mb-3">Operator Information</h5>
-                    <dl class="row">
-                        <dt class="col-sm-3">Last Name:</dt>
-                        <dd class="col-sm-9">{{ operator.last_name }}</dd>
-                        
-                        <dt class="col-sm-3">First Name:</dt>
-                        <dd class="col-sm-9">{{ operator.first_name }}</dd>
-                        
-                        <dt class="col-sm-3">Middle Initial:</dt>
-                        <dd class="col-sm-9">{{ operator.middle_initial|default:"N/A" }}</dd>
+                    <dl class="row mb-0">
+                        <dt class="col-sm-3">Name:</dt>
+                        <dd class="col-sm-9">{{ operator.last_name }}, {{ operator.first_name }} {{ operator.middle_initial|default:"" }}</dd>
                         
                         <dt class="col-sm-3">Address:</dt>
                         <dd class="col-sm-9">{{ operator.address }}</dd>
                         
-                        <dt class="col-sm-3">Old P.D. Number:</dt>
-                        <dd class="col-sm-9">{{ operator.old_pd_number|default:"N/A" }}</dd>
+                        <dt class="col-sm-3">Old P.O. Number:</dt>
+                        <dd class="col-sm-9">{{ operator.old_pd_number|default:"None" }}</dd>
                         
-                        <dt class="col-sm-3">New P.D. Number:</dt>
+                        <dt class="col-sm-3">New P.O. Number:</dt>
                         <dd class="col-sm-9">{{ operator.new_pd_number }}</dd>
                     </dl>
                 </div>

@@ -8,7 +8,7 @@
     <!-- Header Section -->
     <div class="card shadow-sm border-0 rounded-3 mb-4">
         <div class="card-body p-4">
-            <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                 <div>
                     <div class="d-flex align-items-center">
                         <span class="material-icons me-2" style="color: var(--primary-color)">commute</span>
@@ -16,11 +16,13 @@
                     </div>
                     <p class="text-muted mt-2 mb-0">Manage all types of operators (Potpot, Jeepney, Tricycle, etc.)</p>
                 </div>
-                <div class="d-flex">
+                <div class="d-flex flex-wrap gap-2">
                     {% if user.userprofile.role == 'ADMIN' or user.userprofile.role == 'SUPERVISOR' %}
-                    <div class="btn-group me-3">
+                    <div class="btn-group me-2">
                         <a href="{% url 'operator_create' %}" class="btn btn-primary d-flex align-items-center px-4 py-2">
-                            <span class="material-icons fs-5 me-2">add</span> Add Operator
+                            <span class="material-icons fs-5 me-2">add</span> 
+                            <span class="d-none d-sm-inline">Add Operator</span>
+                            <span class="d-inline d-sm-none">Add</span>
                         </a>
                         <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split px-3" 
                                data-bs-toggle="dropdown" aria-expanded="false">
@@ -36,7 +38,8 @@
                     <div class="btn-group">
                         <button type="button" class="btn btn-outline-primary d-flex align-items-center px-3 py-2" 
                                data-bs-toggle="dropdown" aria-expanded="false">
-                            <span class="material-icons fs-5 me-2">download</span> Export
+                            <span class="material-icons fs-5 me-2">download</span> 
+                            <span class="d-none d-sm-inline">Export</span>
                         </button>
                         <ul class="dropdown-menu shadow-sm border-0">
                             <li><a class="dropdown-item d-flex align-items-center py-2 px-3" href="{% url 'operator_export_excel' %}">
@@ -59,7 +62,7 @@
             <div class="search-container flex-grow-1 flex-md-grow-0" style="max-width: 360px;">
                 <form method="GET" action="{% url 'operator_list' %}" class="d-flex">
                     <div class="input-group">
-                        <input type="text" class="form-control" name="q" placeholder="Search operators..." 
+                        <input type="text" class="form-control" name="q" id="operatorSearch" placeholder="Search operators..." 
                                value="{{ query }}" aria-label="Search operators">
                         <button type="submit" class="btn btn-primary d-flex align-items-center justify-content-center" style="width: 40px; height: 38px;">
                             <span class="material-icons" style="font-size: 20px;">search</span>
@@ -75,16 +78,16 @@
         </div>
 
         <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+            <!-- Table Container for Desktop -->
+            <div class="table-responsive d-none d-md-block">
+                <table class="table table-hover align-middle mb-0" id="operatorsTable" style="table-layout: fixed;">
                     <thead class="table-light">
                         <tr>
-                            <th class="border-top-0 px-4 py-3 fw-semibold">Last Name</th>
-                            <th class="border-top-0 px-4 py-3 fw-semibold">First Name</th>
-                            <th class="border-top-0 px-4 py-3 fw-semibold">M.I.</th>
-                            <th class="border-top-0 px-4 py-3 fw-semibold">PO Number</th>
-                            <th class="border-top-0 px-4 py-3 fw-semibold">Address</th>
-                            <th class="border-top-0 px-4 py-3 text-end fw-semibold" style="width: 120px;">Actions</th>
+                            <th style="width: 20%;" class="px-4 py-3 fw-semibold">Last Name</th>
+                            <th style="width: 20%;" class="px-4 py-3 fw-semibold">First Name</th>
+                            <th style="width: 10%;" class="px-4 py-3 fw-semibold">M.I.</th>
+                            <th style="width: 35%;" class="px-4 py-3 fw-semibold">Address</th>
+                            <th style="width: 15%;" class="px-4 py-3 text-end fw-semibold">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -93,40 +96,34 @@
                             <td class="fw-medium px-4 py-3">{{ operator.last_name }}</td>
                             <td class="px-4 py-3">{{ operator.first_name }}</td>
                             <td class="px-4 py-3">{% if operator.middle_initial and operator.middle_initial != 'nan' %}{{ operator.middle_initial }}{% else %}none{% endif %}</td>
-                            <td class="px-4 py-3">
-                                {% if operator.po_number %}
-                                <span class="badge bg-primary fw-medium px-3 py-2">{{ operator.po_number }}</span>
-                                {% else %}
-                                <span class="badge bg-secondary">Not assigned</span>
-                                {% endif %}
-                            </td>
                             <td class="px-4 py-3">{{ operator.address }}</td>
                             <td class="px-4 py-3 text-end">
-                                <div class="d-flex justify-content-end">
+                                <div class="action-buttons">
                                     <a href="{% url 'operator_detail' operator.id %}" 
-                                       class="btn btn-sm btn-outline-info d-inline-flex align-items-center justify-content-center rounded me-2" 
-                                       style="width: 36px; height: 36px;" 
-                                       title="View Details"
-                                       data-bs-toggle="tooltip">
+                                       class="btn btn-action btn-view"
+                                       data-bs-toggle="tooltip" 
+                                       data-bs-placement="top" 
+                                       title="View Details">
                                         <span class="material-icons" style="font-size: 18px;">visibility</span>
                                     </a>
                                     {% if user.userprofile.role == 'ADMIN' or user.userprofile.role == 'SUPERVISOR' %}
                                     <a href="{% url 'operator_update' operator.id %}" 
-                                       class="btn btn-sm btn-outline-primary d-inline-flex align-items-center justify-content-center rounded me-2" 
-                                       style="width: 36px; height: 36px;" 
-                                       title="Edit Operator"
-                                       data-bs-toggle="tooltip">
+                                       class="btn btn-action btn-edit" 
+                                       data-bs-toggle="tooltip" 
+                                       data-bs-placement="top" 
+                                       title="Edit Operator">
                                         <span class="material-icons" style="font-size: 18px;">edit</span>
                                     </a>
                                     {% endif %}
                                     {% if user.userprofile.role == 'ADMIN' %}
-                                    <a href="{% url 'operator_delete' operator.id %}" 
-                                       class="btn btn-sm btn-outline-danger d-inline-flex align-items-center justify-content-center rounded" 
-                                       style="width: 36px; height: 36px;" 
-                                       title="Delete Operator"
-                                       data-bs-toggle="tooltip">
+                                    <button type="button" 
+                                       class="btn btn-action btn-delete" 
+                                       data-bs-toggle="tooltip" 
+                                       data-bs-placement="top" 
+                                       onclick="confirmDelete({{ operator.id }}, '{{ operator.last_name|escapejs }}, {{ operator.first_name|escapejs }}')"
+                                       title="Delete Operator">
                                         <span class="material-icons" style="font-size: 18px;">delete</span>
-                                    </a>
+                                    </button>
                                     {% endif %}
                                 </div>
                             </td>
@@ -134,9 +131,9 @@
                         {% empty %}
                         <tr>
                             <td colspan="5" class="text-center py-5">
-                                <div class="d-flex flex-column align-items-center py-4">
-                                    <span class="material-icons" style="font-size: 64px; color: #c0c0c0;">search_off</span>
-                                    <p class="mt-3 mb-0 fs-5">No operators found.</p>
+                                <div class="text-muted">
+                                    <span class="material-icons d-block mb-2" style="font-size: 2.5rem; opacity: 0.5;">search_off</span>
+                                    <p class="mb-0">No operators found</p>
                                     <p class="text-muted mt-2">{% if query %}Try a different search.{% else %}Add one to get started.{% endif %}</p>
                                 </div>
                             </td>
@@ -144,6 +141,66 @@
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+            
+            <!-- Card View for Mobile Devices -->
+            <div class="operator-cards d-block d-md-none">
+                {% for operator in operators %}
+                <div class="operator-card" data-operator-id="{{ operator.id }}">
+                    <div class="card mb-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-0 fw-bold">{{ operator.last_name }}, {{ operator.first_name }}</h6>
+                                {% if operator.middle_initial and operator.middle_initial != 'nan' %}
+                                <small class="text-muted">M.I.: {{ operator.middle_initial }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-2">
+                                <div class="col-4">
+                                    <small class="text-muted">Address:</small>
+                                </div>
+                                <div class="col-8">
+                                    {{ operator.address|default:"Not specified" }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer p-2">
+                            <div class="mobile-actions">
+                                <a href="{% url 'operator_detail' operator.id %}" 
+                                   class="btn mobile-action-btn btn-view">
+                                    <span class="material-icons" style="font-size: 18px;">visibility</span>
+                                    <span>View</span>
+                                </a>
+                                {% if user.userprofile.role == 'ADMIN' or user.userprofile.role == 'SUPERVISOR' %}
+                                <a href="{% url 'operator_update' operator.id %}" 
+                                   class="btn mobile-action-btn btn-edit">
+                                    <span class="material-icons" style="font-size: 18px;">edit</span>
+                                    <span>Edit</span>
+                                </a>
+                                {% endif %}
+                                {% if user.userprofile.role == 'ADMIN' %}
+                                <button type="button" 
+                                   class="btn mobile-action-btn btn-delete"
+                                   onclick="confirmDelete({{ operator.id }}, '{{ operator.last_name|escapejs }}, {{ operator.first_name|escapejs }}')">
+                                    <span class="material-icons" style="font-size: 18px;">delete</span>
+                                    <span>Delete</span>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="empty-state">
+                    <div class="text-center py-4">
+                        <span class="material-icons d-block mb-2" style="font-size: 2.5rem; opacity: 0.5;">search_off</span>
+                        <p class="mb-0">No operators found</p>
+                        <p class="text-muted mt-2">{% if query %}Try a different search.{% else %}Add one to get started.{% endif %}</p>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
 
             <!-- Pagination -->
@@ -245,16 +302,1126 @@
         </div>
     </div>
 </div>
+
+<style>
+/* Table Styles */
+.table-responsive {
+    border-radius: 8px;
+    overflow: hidden;
+    max-height: calc(100vh - 330px);
+    overflow-y: auto;
+}
+
+/* Custom scrollbar styles */
+.table-responsive::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+/* Keep table header visible */
+.table thead th {
+    position: sticky;
+    top: 0;
+    background-color: #f8f9fa;
+    z-index: 1;
+}
+
+/* Ensure proper spacing */
+.card-body {
+    padding: 1rem !important;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+/* Table header shadow for visual separation */
+.table thead th {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.table {
+    font-size: 0.95rem;
+    min-width: 800px;
+}
+
+.table th {
+    font-weight: 600;
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #e9ecef;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+/* Action Buttons */
+.btn-action {
+    width: 35px;
+    height: 35px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.btn-action i, .btn-action .material-icons {
+    font-size: 1.1rem;
+}
+
+/* View Button */
+.btn-view {
+    color: var(--primary-color);
+    border-color: #e9ecef;
+    background-color: #fff;
+}
+
+.btn-view:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+/* Edit Button */
+.btn-edit {
+    color: #f59e0b;
+    border-color: #e9ecef;
+    background-color: #fff;
+}
+
+.btn-edit:hover {
+    background-color: #f59e0b;
+    border-color: #f59e0b;
+    color: white;
+}
+
+/* Delete Button */
+.btn-delete {
+    color: #f64e60;
+    border-color: #e9ecef;
+    background-color: #fff;
+}
+
+.btn-delete:hover {
+    background-color: #f64e60;
+    border-color: #f64e60;
+    color: white;
+}
+
+/* Action buttons container */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+/* Mobile Card View Styles */
+.operator-card {
+    margin-bottom: 15px;
+}
+
+.operator-card .card {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.operator-card .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.operator-card .card-header {
+    background-color: #f8f9fa;
+    padding: 12px 15px;
+    border-bottom: 1px solid #eaecef;
+}
+
+.operator-card .card-body {
+    padding: 15px;
+}
+
+.operator-card .card-footer {
+    background-color: #f8f9fa;
+    border-top: 1px solid #eaecef;
+    padding: 10px !important;
+}
+
+/* Mobile action buttons */
+.mobile-actions {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    gap: 2%;
+}
+
+.mobile-action-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 0;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    gap: 5px;
+    transition: all 0.2s ease;
+    border: none;
+    color: white;
+    text-align: center;
+    font-weight: 500;
+}
+
+.mobile-action-btn:hover {
+    opacity: 0.95;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.mobile-action-btn:active {
+    opacity: 1;
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-action-btn.btn-view {
+    background-color: var(--primary-color, #2563eb);
+}
+
+.mobile-action-btn.btn-edit {
+    background-color: #f59e0b;
+}
+
+.mobile-action-btn.btn-delete {
+    background-color: #ef4444;
+}
+
+.mobile-action-btn span {
+    font-weight: 500;
+    font-size: 0.85rem;
+    color: white;
+}
+
+/* Empty state for mobile */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+    text-align: center;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 0.75rem !important;
+    }
+    
+    .search-container {
+        width: 100%;
+        max-width: 100%;
+        margin-top: 0.75rem;
+    }
+    
+    .pagination-container {
+        overflow-x: auto;
+        padding: 0.5rem 0;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .pagination {
+        flex-wrap: nowrap;
+        min-width: max-content;
+    }
+    
+    /* For very small screens */
+    @media (max-width: 360px) {
+        .mobile-action-btn {
+            padding: 6px 0;
+        }
+        
+        .mobile-action-btn span {
+            font-size: 0.8rem;
+        }
+        
+        .mobile-action-btn .material-icons {
+            font-size: 16px !important;
+        }
+        
+        .card-header h6 {
+            font-size: 0.95rem;
+        }
+    }
+}
+</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
+    // Global function to directly redirect to operator update page
+    function redirectToOperatorUpdate(operatorId) {
+        const updateUrl = `/operators/${operatorId}/update/`;
+        window.location.href = updateUrl;
+    }
+    
+    // Function to confirm deletion using SweetAlert2
+    function confirmDelete(operatorId, operatorName) {
+        Swal.fire({
+            title: 'Delete Operator',
+            html: `Are you sure you want to delete <strong>${operatorName}</strong>?<br><br>
+                  <div class="alert alert-danger">
+                      <i class="material-icons me-2" style="vertical-align: middle;">warning</i>
+                      This action cannot be undone. All information associated with this operator will be permanently deleted.
+                  </div>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Delete Operator',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            reverseButtons: true,
+            focusCancel: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Show loading state
+                Swal.fire({
+                    title: 'Deleting...',
+                    html: 'Please wait while we delete the operator.',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                
+                // Send DELETE request using fetch API
+                fetch(`/operators/${operatorId}/delete/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ id: operatorId })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        Swal.fire({
+                            title: 'Deleted!',
+                            text: 'The operator has been deleted successfully.',
+                            icon: 'success',
+                            confirmButtonColor: '#2563eb'
+                        }).then(() => {
+                            // Reload the page to update the list
+                            window.location.reload();
+                        });
+                    } else {
+                        return response.json().then(data => {
+                            throw new Error(data.error || 'Failed to delete operator');
+                        });
+                    }
+                })
+                .catch(error => {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: error.message || 'An error occurred while deleting the operator.',
+                        icon: 'error',
+                        confirmButtonColor: '#2563eb'
+                    });
+                });
+            }
+        });
+    }
+    
+    // Function to get CSRF token from cookies
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
     $(document).ready(function() {
         // Initialize tooltips
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl)
         });
+        
+        // Initialize Micromodal
+        MicroModal.init({
+            openTrigger: 'data-micromodal-trigger',
+            closeTrigger: 'data-micromodal-close',
+            disableFocus: false,
+            disableScroll: true,
+            awaitOpenAnimation: true,
+            awaitCloseAnimation: true
+        });
+        
+        // Add event listeners to view buttons - both desktop and mobile
+        document.querySelectorAll('.btn-view, .mobile-action-btn.btn-view').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const operatorUrl = this.getAttribute('href');
+                showOperatorDetail(operatorUrl);
+            });
+        });
+        
+        // Mobile search functionality
+        const searchInput = document.getElementById('operatorSearch');
+        const operatorCards = document.querySelectorAll('.operator-card');
+        
+        if (searchInput && operatorCards.length > 0) {
+            searchInput.addEventListener('keyup', function() {
+                const searchTerm = this.value.toLowerCase();
+                
+                operatorCards.forEach(card => {
+                    const text = card.textContent.toLowerCase();
+                    card.style.display = text.includes(searchTerm) ? '' : 'none';
+                });
+            });
+        }
     });
+    
+    function showOperatorDetail(operatorUrl) {
+        // Get modal content element
+        const modalContent = document.getElementById('modal-operator-detail-content');
+        
+        // Show loading spinner in the modal
+        modalContent.innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3">Loading operator details...</p>
+            </div>
+        `;
+        
+        // Show the modal using Micromodal
+        MicroModal.show('modal-operator-detail');
+        
+        // Extract operator ID from URL for direct edit link
+        const operatorId = operatorUrl.split('/').filter(Boolean).pop();
+        const updateUrl = `/operators/${operatorId}/update/`;
+        
+        // Fetch operator details
+        fetch(operatorUrl)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status} ${response.statusText}`);
+                }
+                return response.text();
+            })
+            .then(html => {
+                // Parse the HTML to extract content
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Extract operator details from the parsed HTML
+                const personalInfo = extractPersonalInfo(doc);
+                const poNumbers = extractPONumbers(doc);
+                
+                // Update modal title with operator name
+                document.getElementById('modal-operator-detail-title').textContent = 
+                    `Operator Details: ${personalInfo.fullName || personalInfo.firstName + ' ' + personalInfo.lastName}`;
+                
+                // Update modal content with extracted details
+                modalContent.innerHTML = createOperatorDetailHTML(personalInfo, poNumbers);
+                
+                // Add edit button to modal footer with auto-redirect functionality
+                const footerElement = document.querySelector('#modal-operator-detail .modal__footer');
+                
+                // Check if the user has permissions to edit (based on the presence of edit buttons in the list)
+                const hasEditPermission = document.querySelectorAll('.btn-edit').length > 0;
+                // Check if the user has permissions to delete (based on the presence of delete buttons in the list)
+                const hasDeletePermission = document.querySelectorAll('.btn-delete').length > 0;
+                
+                let footerHTML = '';
+                
+                // Delete Operator button intentionally removed as requested by user
+                
+                if (hasEditPermission) {
+                    footerHTML += `
+                        <a href="javascript:void(0)" onclick="redirectToOperatorUpdate('${operatorId}')" class="modal__btn modal__btn-primary">
+                            <span class="material-icons me-1" style="font-size: 18px;">edit</span> Edit Operator
+                        </a>
+                    `;
+                }
+                
+                footerHTML += `
+                    <button class="modal__btn" data-micromodal-close aria-label="Close this dialog window">Close</button>
+                `;
+                
+                footerElement.innerHTML = footerHTML;
+            })
+            .catch(error => {
+                // Show error message in the modal
+                modalContent.innerHTML = `
+                    <div class="alert alert-danger">
+                        <p>Error loading operator details:</p>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            });
+    }
+    
+    function extractPersonalInfo(doc) {
+        // Extract personal information from the operator detail page using standard DOM methods
+        const personalInfoObject = {
+            fullName: '',
+            lastName: '',
+            firstName: '',
+            middleInitial: '',
+            address: '',
+            oldPONumber: '',
+            newPONumber: '',
+            permitOperatorNumber: 'Not assigned',
+            registrationDate: ''
+        };
+        
+        // Find all rows with label/value pairs
+        const rows = doc.querySelectorAll('.card-body .row');
+        
+        rows.forEach(row => {
+            const label = row.querySelector('.text-muted');
+            if (!label) return;
+            
+            const labelText = label.textContent.trim();
+            const valueElement = row.querySelector('.col-md-8') || row.querySelector('.col-7');
+            const value = valueElement ? valueElement.textContent.trim() : '';
+            
+            // Map the label to the corresponding property
+            if (labelText.includes('Full Name')) {
+                personalInfoObject.fullName = value;
+            } else if (labelText.includes('Last Name')) {
+                personalInfoObject.lastName = value;
+            } else if (labelText.includes('First Name')) {
+                personalInfoObject.firstName = value;
+            } else if (labelText.includes('Middle Initial')) {
+                personalInfoObject.middleInitial = value;
+            } else if (labelText.includes('Address')) {
+                personalInfoObject.address = value;
+            } else if (labelText.includes('Old P.O. Number')) {
+                personalInfoObject.oldPONumber = value;
+            } else if (labelText.includes('New P.O. Number')) {
+                personalInfoObject.newPONumber = value;
+            } else if (labelText.includes('Permit Operator Number')) {
+                const badge = valueElement.querySelector('.badge');
+                personalInfoObject.permitOperatorNumber = badge ? badge.textContent.trim() : 'Not assigned';
+            } else if (labelText.includes('Registration Date')) {
+                personalInfoObject.registrationDate = value;
+            }
+        });
+        
+        return personalInfoObject;
+    }
+    
+    function extractPONumbers(doc) {
+        // Extract PO Numbers information using standard DOM methods
+        // Find all card headers and then find the one with P.O. Numbers text
+        const headers = doc.querySelectorAll('.card-header');
+        let poSection = null;
+        
+        // Find the header that contains "P.O. Numbers"
+        for (const header of headers) {
+            if (header.textContent.includes('P.O. Numbers')) {
+                poSection = header.closest('.card');
+                break;
+            }
+        }
+        
+        return {
+            hasVehicles: doc.querySelector('.table-responsive table tbody tr') !== null,
+            message: doc.querySelector('.d-flex.flex-column.align-items-center .fs-5')?.textContent.trim() || 'No vehicles associated with this operator.'
+        };
+    }
+    
+    function createOperatorDetailHTML(personalInfo, poNumbers) {
+        return `
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-header bg-transparent d-flex align-items-center px-4 py-3 border-bottom">
+                            <span class="material-icons me-2" style="color: var(--primary-color); font-size: 24px;">person</span>
+                            <h5 class="mb-0 fw-bold">Personal Information</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row mb-3">
+                                <div class="col-5 col-md-4 text-muted">Full Name:</div>
+                                <div class="col-7 col-md-8">${personalInfo.firstName} ${personalInfo.middleInitial}. ${personalInfo.lastName}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-5 col-md-4 text-muted">Last Name:</div>
+                                <div class="col-7 col-md-8">${personalInfo.lastName}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-5 col-md-4 text-muted">First Name:</div>
+                                <div class="col-7 col-md-8">${personalInfo.firstName}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-5 col-md-4 text-muted">Middle Initial:</div>
+                                <div class="col-7 col-md-8">${personalInfo.middleInitial || 'none'}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-5 col-md-4 text-muted">Address:</div>
+                                <div class="col-7 col-md-8">${personalInfo.address}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-5 col-md-4 text-muted">Old P.O. Number:</div>
+                                <div class="col-7 col-md-8">${personalInfo.oldPONumber || 'None'}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-5 col-md-4 text-muted">New P.O. Number:</div>
+                                <div class="col-7 col-md-8">${personalInfo.newPONumber}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-5 col-md-4 text-muted">Permit Operator Number:</div>
+                                <div class="col-7 col-md-8">
+                                    ${personalInfo.permitOperatorNumber !== 'Not assigned' ? 
+                                    `<span class="badge bg-primary px-3 py-2 fs-6 fw-medium">${personalInfo.permitOperatorNumber}</span>` : 
+                                    `<span class="badge bg-secondary">Not assigned</span>`}
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-5 col-md-4 text-muted">Registration Date:</div>
+                                <div class="col-7 col-md-8">${personalInfo.registrationDate}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-transparent d-flex align-items-center px-4 py-3 border-bottom">
+                            <span class="material-icons me-2" style="color: var(--primary-color); font-size: 24px;">directions_car</span>
+                            <h5 class="mb-0 fw-bold">P.O. Numbers</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            ${poNumbers.hasVehicles ? 
+                            `<div class="vehicles-list">Content for vehicles list</div>` : 
+                            `<div class="text-center py-5">
+                                <div class="mb-4">
+                                    <span class="material-icons" style="font-size: 60px; color: #ccc;">directions_car</span>
+                                </div>
+                                <h5 class="mb-3">No vehicles associated with this operator.</h5>
+                                <p class="text-muted">This operator does not have any registered P.O. numbers yet.</p>
+                            </div>`}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
 </script>
+
+<!-- Operator Detail Modal using Micromodal.js -->
+<div class="modal micromodal-slide" id="modal-operator-detail" aria-hidden="true">
+    <div class="modal__overlay" tabindex="-1" data-micromodal-close>
+        <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="modal-operator-detail-title">
+            <header class="modal__header">
+                <h2 class="modal__title" id="modal-operator-detail-title">
+                    Operator Details
+                </h2>
+                <button class="modal__close" aria-label="Close modal" data-micromodal-close></button>
+            </header>
+            <main class="modal__content" id="modal-operator-detail-content">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3">Loading operator details...</p>
+                </div>
+            </main>
+            <footer class="modal__footer">
+                <button class="modal__btn" data-micromodal-close aria-label="Close this dialog window">Close</button>
+            </footer>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Table Styles */
+.table-responsive {
+    border-radius: 8px;
+    overflow: hidden;
+    max-height: calc(100vh - 330px);
+    overflow-y: auto;
+}
+
+/* Custom scrollbar styles */
+.table-responsive::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+/* Keep table header visible */
+.table thead th {
+    position: sticky;
+    top: 0;
+    background-color: #f8f9fa;
+    z-index: 1;
+}
+
+/* Ensure proper spacing */
+.card-body {
+    padding: 1rem !important;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+/* Table header shadow for visual separation */
+.table thead th {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.table {
+    font-size: 0.95rem;
+    min-width: 800px;
+}
+
+.table th {
+    font-weight: 600;
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #e9ecef;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+/* Action Buttons */
+.btn-action {
+    width: 35px;
+    height: 35px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.btn-action i, .btn-action .material-icons {
+    font-size: 1.1rem;
+}
+
+/* View Button */
+.btn-view {
+    color: var(--primary-color);
+    border-color: #e9ecef;
+    background-color: #fff;
+}
+
+.btn-view:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+/* Edit Button */
+.btn-edit {
+    color: #f59e0b;
+    border-color: #e9ecef;
+    background-color: #fff;
+}
+
+.btn-edit:hover {
+    background-color: #f59e0b;
+    border-color: #f59e0b;
+    color: white;
+}
+
+/* Delete Button */
+.btn-delete {
+    color: #f64e60;
+    border-color: #e9ecef;
+    background-color: #fff;
+}
+
+.btn-delete:hover {
+    background-color: #f64e60;
+    border-color: #f64e60;
+    color: white;
+}
+
+/* Action buttons container */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+/* Mobile Card View Styles */
+.operator-card {
+    margin-bottom: 15px;
+}
+
+.operator-card .card {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.operator-card .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.operator-card .card-header {
+    background-color: #f8f9fa;
+    padding: 12px 15px;
+    border-bottom: 1px solid #eaecef;
+}
+
+.operator-card .card-body {
+    padding: 15px;
+}
+
+.operator-card .card-footer {
+    background-color: #f8f9fa;
+    border-top: 1px solid #eaecef;
+    padding: 10px !important;
+}
+
+/* Mobile action buttons */
+.mobile-actions {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    gap: 2%;
+}
+
+.mobile-action-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 0;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    gap: 5px;
+    transition: all 0.2s ease;
+    border: none;
+    color: white;
+    text-align: center;
+    font-weight: 500;
+}
+
+.mobile-action-btn:hover {
+    opacity: 0.95;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.mobile-action-btn:active {
+    opacity: 1;
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-action-btn.btn-view {
+    background-color: var(--primary-color, #2563eb);
+}
+
+.mobile-action-btn.btn-edit {
+    background-color: #f59e0b;
+}
+
+.mobile-action-btn.btn-delete {
+    background-color: #ef4444;
+}
+
+.mobile-action-btn span {
+    font-weight: 500;
+    font-size: 0.85rem;
+    color: white;
+}
+
+/* Empty state for mobile */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+    text-align: center;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 0.75rem !important;
+    }
+    
+    .search-container {
+        width: 100%;
+        max-width: 100%;
+        margin-top: 0.75rem;
+    }
+    
+    .pagination-container {
+        overflow-x: auto;
+        padding: 0.5rem 0;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .pagination {
+        flex-wrap: nowrap;
+        min-width: max-content;
+    }
+    
+    /* For very small screens */
+    @media (max-width: 360px) {
+        .mobile-action-btn {
+            padding: 6px 0;
+        }
+        
+        .mobile-action-btn span {
+            font-size: 0.8rem;
+        }
+        
+        .mobile-action-btn .material-icons {
+            font-size: 16px !important;
+        }
+        
+        .card-header h6 {
+            font-size: 0.95rem;
+        }
+    }
+}
+
+/**************************\
+  Micromodal.js Styles
+\**************************/
+
+.modal {
+  font-family: -apple-system, BlinkMacSystemFont, avenir next, avenir, helvetica neue,
+    helvetica, ubuntu, roboto, noto, segoe ui, arial, sans-serif;
+}
+
+.modal__overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.modal__container {
+  background-color: #fff;
+  padding: 20px;
+  max-width: 1000px;
+  width: 90%;
+  max-height: 90vh;
+  border-radius: 10px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  box-shadow: 0 15px 30px 0 rgba(0, 0, 0, 0.11),
+    0 5px 15px 0 rgba(0, 0, 0, 0.08);
+}
+
+.modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #eaeaea;
+  padding-bottom: 15px;
+}
+
+.modal__title {
+  margin-top: 0;
+  margin-bottom: 0;
+  font-weight: 600;
+  font-size: 1.25rem;
+  line-height: 1.25;
+  color: var(--primary-color, #00449e);
+  box-sizing: border-box;
+}
+
+.modal__close {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  position: relative;
+  width: 25px;
+  height: 25px;
+}
+
+.modal__close:before,
+.modal__close:after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 18px;
+  background-color: #333;
+  top: 3px;
+  left: 11px;
+}
+
+.modal__close:before {
+  transform: rotate(45deg);
+}
+
+.modal__close:after {
+  transform: rotate(-45deg);
+}
+
+.modal__content {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+  color: rgba(0, 0, 0, 0.8);
+}
+
+.modal__btn {
+  font-size: 0.875rem;
+  padding: 0.5rem 1rem;
+  background-color: #e6e6e6;
+  color: rgba(0, 0, 0, 0.8);
+  border-radius: 0.25rem;
+  border: 0;
+  cursor: pointer;
+  line-height: 1;
+  margin-right: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  min-width: 120px;
+  justify-content: center;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.modal__btn:hover {
+  background-color: #d4d4d4;
+  text-decoration: none;
+  color: rgba(0, 0, 0, 0.9);
+}
+
+.modal__footer {
+  display: flex;
+  gap: 10px;
+  border-top: 1px solid #eaeaea;
+  padding-top: 15px;
+}
+
+.modal__btn-primary {
+  background-color: var(--primary-color, #2563eb);
+  color: #fff;
+  font-weight: 500;
+  padding: 0.625rem 1.25rem;
+  transition: all 0.2s ease;
+  border-radius: 0.375rem;
+  text-decoration: none;
+}
+
+.modal__btn-primary:hover {
+  background-color: var(--primary-color-dark, #1d4ed8);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  text-decoration: none;
+}
+
+.micromodal-slide {
+  display: none;
+}
+
+.micromodal-slide.is-open {
+  display: block;
+}
+
+.micromodal-slide[aria-hidden="false"] .modal__overlay {
+  animation: mmfadeIn .3s cubic-bezier(0, 0, .2, 1);
+}
+
+.micromodal-slide[aria-hidden="false"] .modal__container {
+  animation: mmslideIn .3s cubic-bezier(0, 0, .2, 1);
+}
+
+.micromodal-slide[aria-hidden="true"] .modal__overlay {
+  animation: mmfadeOut .3s cubic-bezier(0, 0, .2, 1);
+}
+
+.micromodal-slide[aria-hidden="true"] .modal__container {
+  animation: mmslideOut .3s cubic-bezier(0, 0, .2, 1);
+}
+
+.micromodal-slide .modal__container,
+.micromodal-slide .modal__overlay {
+  will-change: transform;
+}
+
+@keyframes mmfadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes mmfadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes mmslideIn {
+  from { transform: translateY(15%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes mmslideOut {
+  from { transform: translateY(0); }
+  to { transform: translateY(-10%); }
+}
+
+/* Custom styles for operator detail modal */
+#modal-operator-detail .modal__container {
+  max-width: 90%;
+  width: 1000px;
+}
+</style>
 {% endblock %} 

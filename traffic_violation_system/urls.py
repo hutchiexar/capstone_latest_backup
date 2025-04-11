@@ -161,6 +161,7 @@ urlpatterns = [
     path('management/drivers/create/', views.driver_create, name='driver_create'),
     path('management/drivers/<int:pk>/update/', views.driver_update, name='driver_update'),
     path('management/drivers/<int:pk>/delete/', views.driver_delete, name='driver_delete'),
+    path('management/drivers/<int:pk>/', views.driver_detail, name='driver_detail'),
     path('management/drivers/import/', views.driver_import, name='driver_import'),
     path('management/drivers/import/confirm/', views.driver_import_confirm, name='driver_import_confirm'),
 

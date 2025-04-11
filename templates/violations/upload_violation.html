@@ -180,6 +180,9 @@
             <form method="POST" enctype="multipart/form-data" id="violationForm" class="needs-validation" novalidate>
                 {% csrf_token %}
                 
+                <!-- Hidden field for duplicate submission prevention -->
+                <input type="hidden" id="request_id" name="request_id" value="">
+                
                 <!-- Hidden fields for storing selected ID values -->
                 <input type="hidden" id="selectedOperatorId" name="selected_operator_id" value="">
                 <input type="hidden" id="selectedDriverId" name="selected_driver_id" value="">
@@ -257,8 +260,11 @@
                             <input type="hidden" id="generated_timestamp" name="generated_timestamp">
                             
                             <!-- Driver's Details -->
-                            <div class="section mb-4" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
-                                <h5 class="section-title">Driver's Details</h5>
+                            <div class="section mb-4" id="driver_details_section" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
+                                <h5 class="section-title">Driver's Details <span id="driver_auto_populated" class="badge bg-success ms-2" style="display: none;">Auto-populated</span></h5>
+                                <div class="alert alert-info mb-3 small" role="alert">
+                                    <i class="fas fa-info-circle"></i> Search and select a driver above to auto-populate these fields.
+                                </div>
                                 <div class="row g-3">
                                     <div class="col-md-12">
                                         <div class="form-floating">
@@ -308,8 +314,25 @@
                             
                             <!-- Operator's Details -->
                             <div class="section mb-4" id="operator_details_section" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
-                                <h5 class="section-title">Operator's Details</h5>
+                                <h5 class="section-title">Operator's Details <span id="operator_auto_populated" class="badge bg-success ms-2" style="display: none;">Auto-populated</span></h5>
+                                <div class="alert alert-info mb-3 small" role="alert">
+                                    <i class="fas fa-info-circle"></i> Search and select an operator above to auto-populate these fields.
+                                </div>
                                 <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="operator_name" 
+                                                   name="operator_name">
+                                            <label for="operator_name">Operator's Name</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="operator_pd_number" 
+                                                   name="operator_pd_number">
+                                            <label for="operator_pd_number">Operator PD Number</label>
+                                        </div>
+                                    </div>
                                     <div class="col-md-6">
                                         <div class="form-floating">
                                             <input type="text" class="form-control" id="potpot_number" 
@@ -1052,6 +1075,52 @@ form.addEventListener('submit', function(event) {
         // Create FormData from the form
         const formData = new FormData(this);
         
+        // Perform client-side validation
+        let validationErrors = [];
+        
+        // Required fields
+        const requiredFields = ['violation_type', 'location', 'violation_date', 'fine_amount'];
+        requiredFields.forEach(field => {
+            const value = formData.get(field);
+            if (!value || value.trim() === '') {
+                validationErrors.push(`${field.replace('_', ' ')} is required`);
+                // Add visual indicator
+                const element = document.getElementById(field);
+                if (element) {
+                    element.classList.add('is-invalid');
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'invalid-feedback';
+                    errorDiv.textContent = 'This field is required';
+                    element.parentNode.appendChild(errorDiv);
+                }
+            }
+        });
+        
+        // Validate fine amount is a number
+        const fineAmount = formData.get('fine_amount');
+        if (fineAmount && isNaN(parseFloat(fineAmount))) {
+            validationErrors.push('Fine amount must be a valid number');
+            const element = document.getElementById('fine_amount');
+            if (element) {
+                element.classList.add('is-invalid');
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'invalid-feedback';
+                errorDiv.textContent = 'Please enter a valid number';
+                element.parentNode.appendChild(errorDiv);
+            }
+        }
+        
+        // If there are validation errors, show them and stop the submission
+        if (validationErrors.length > 0) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Validation Error',
+                html: `<ul class="text-left"><li>${validationErrors.join('</li><li>')}</li></ul>`,
+                confirmButtonText: 'OK'
+            });
+            return; // Stop form submission
+        }
+        
         // Log the form data for debugging
         const formValues = {};
         for (let [key, value] of formData.entries()) {
@@ -1059,10 +1128,25 @@ form.addEventListener('submit', function(event) {
         }
         console.log('Form data being submitted:', formValues);
         
-        // Submit the form via AJAX
+        // Show a loading indicator with a more detailed message
+        Swal.fire({
+            title: 'Processing Violation...',
+            html: 'Uploading images and processing data. This may take a moment...',
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        // Submit the form via AJAX with a longer timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+        
         fetch(this.action, {
             method: 'POST',
             body: formData,
+            signal: controller.signal,
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
                 'X-CSRFToken': getCookie('csrftoken')
@@ -1070,28 +1154,49 @@ form.addEventListener('submit', function(event) {
             credentials: 'same-origin'
         })
         .then(response => {
+            clearTimeout(timeoutId); // Clear the timeout
+            
+            // Add a clearer log message for debugging
+            console.log(`Server response status: ${response.status}, contentType: ${response.headers.get('content-type')}`);
+            
             // Check content type to handle non-JSON responses
             const contentType = response.headers.get('content-type');
+            
+            // Handle error responses
             if (!response.ok) {
+                console.error(`Server error: ${response.status} ${response.statusText}`);
+                
+                // For HTML error responses (server error pages)
                 if (contentType && contentType.includes('text/html')) {
-                    // Handle HTML error responses differently
-                    return response.text().then(html => {
-                        console.error('Received HTML error response instead of JSON');
-                        throw new Error('Server returned HTML instead of JSON. The server might be experiencing issues.');
+                    // Don't try to parse HTML as JSON, just throw a clear error
+                    throw new Error('The server encountered an error processing your request. Please try again.');
+                }
+                
+                // For JSON error responses
+                if (contentType && contentType.includes('application/json')) {
+                    return response.json().then(errorData => {
+                        console.log('Error data from server:', errorData);
+                        const errorMsg = errorData.message || `Error ${response.status}: ${response.statusText}`;
+                        const errorDetails = errorData.details || '';
+                        throw { message: errorMsg, details: errorDetails, type: 'server_validation' };
                     });
                 }
-                throw new Error(`Server returned ${response.status} ${response.statusText}`);
+                
+                // For other error types
+                throw new Error(`Error ${response.status}: ${response.statusText}`);
             }
             
-            // Ensure we're getting JSON back
+            // For successful responses, verify it's JSON
             if (!contentType || !contentType.includes('application/json')) {
-                console.error('Received non-JSON response:', contentType);
-                throw new Error('The server did not return a valid JSON response');
+                console.error('Received non-JSON success response:', contentType);
+                throw new Error('The server did not return a valid JSON response.');
             }
             
             return response.json();
         })
         .then(data => {
+            console.log('Success response:', data);
+            
             if (data.success) {
                 // Show success message
                 Swal.fire({
@@ -1116,14 +1221,36 @@ form.addEventListener('submit', function(event) {
         })
         .catch(error => {
             console.error('Error during form submission:', error);
+            clearTimeout(timeoutId); // Clear the timeout if it hasn't fired yet
             
             // Provide more user-friendly error message based on error type
             let errorMessage = 'An error occurred while processing your request. Please try again.';
+            let errorDetails = '';
             
-            if (error.message.includes('JSON')) {
+            if (error.name === 'AbortError') {
+                errorMessage = 'The request took too long to complete and was canceled. This might be due to large image files or network issues.';
+                errorDetails = 'Try using smaller image files or check your internet connection.';
+            } else if (error.message && error.message.includes('JSON')) {
                 errorMessage = 'The server returned an invalid response format. This might be a temporary issue.';
-            } else if (error.message.includes('network')) {
+                errorDetails = 'The server might be experiencing technical difficulties. Please try again later.';
+            } else if (error.message && (error.message.includes('network') || error.name === 'TypeError' || error.message.includes('response was not ok'))) {
                 errorMessage = 'Network error. Please check your internet connection and try again.';
+                errorDetails = 'Your connection to the server was interrupted. Check your internet connection and make sure the server is running.';
+            } else if (error.message && error.message.includes('HTML')) {
+                errorMessage = 'The server encountered an internal error. Please try again later.';
+                errorDetails = 'The system might be experiencing technical difficulties.';
+            } else if (error.message && (error.message.includes('400') || error.message.includes('Bad Request'))) {
+                errorMessage = 'The server rejected your submission due to validation errors.';
+                errorDetails = 'Please check all required fields and ensure they contain valid data. Especially check the date, time, and fine amount fields.';
+            } else if (error.type === 'server_validation') {
+                // For server validation errors returned as JSON
+                errorMessage = error.message;
+                errorDetails = error.details || 'Please verify all the information and try again.';
+                
+                // Special handling for violator information errors
+                if (error.message.includes('violator')) {
+                    errorDetails = 'Check the license number format and ensure driver information is valid. If no license number is available, you can leave it blank.';
+                }
             }
             
             Swal.fire({
@@ -1131,16 +1258,17 @@ form.addEventListener('submit', function(event) {
                 title: 'Error',
                 text: errorMessage,
                 confirmButtonText: 'OK',
-                footer: '<span class="text-muted">If this issue persists, please contact support.</span>',
+                footer: errorDetails ? `<span class="text-danger">${errorDetails}</span>` : '<span class="text-muted">If this issue persists, please contact support.</span>',
                 didClose: () => {
                     // Provide an alternative form submission method if AJAX fails
-                    const shouldSubmitDirectly = confirm("Would you like to try submitting the form directly instead?");
+                    const shouldSubmitDirectly = confirm("Would you like to try submitting the form directly instead? This may work better for large images or slow connections.");
                     if (shouldSubmitDirectly) {
                         // Create a hidden form and submit it traditionally
                         const directForm = document.createElement('form');
                         directForm.method = 'POST';
                         directForm.action = form.action;
                         directForm.enctype = 'multipart/form-data';
+                        directForm.style.display = 'none';
                         
                         // Add CSRF token
                         const csrfToken = document.createElement('input');
@@ -1149,21 +1277,51 @@ form.addEventListener('submit', function(event) {
                         csrfToken.value = getCookie('csrftoken');
                         directForm.appendChild(csrfToken);
                         
-                        // Copy all form data
-                        for (let [key, value] of formData.entries()) {
-                            // Skip file inputs for now
-                            if (!(value instanceof File)) {
-                                const input = document.createElement('input');
-                                input.type = 'hidden';
-                                input.name = key;
-                                input.value = value;
-                                directForm.appendChild(input);
+                        // Show a loading message during the regular form submission
+                        Swal.fire({
+                            title: 'Submitting Form...',
+                            text: 'Using traditional form submission. This may take a moment...',
+                            allowOutsideClick: false,
+                            showConfirmButton: false,
+                            didOpen: () => {
+                                Swal.showLoading();
                             }
-                        }
+                        });
                         
-                        // Append to body and submit
+                        // Copy all input elements from the original form
+                        Array.from(form.elements).forEach(element => {
+                            if (element.name && element.name !== 'csrfmiddlewaretoken') {
+                                if (element.type === 'file' && element.files.length > 0) {
+                                    // File inputs can't be copied directly - we'll submit the original form instead
+                                    console.log(`Skipping file input: ${element.name} (will use original form)`);
+                                } else if (element.type === 'checkbox' || element.type === 'radio') {
+                                    if (element.checked) {
+                                        const input = document.createElement('input');
+                                        input.type = 'hidden';
+                                        input.name = element.name;
+                                        input.value = element.value;
+                                        directForm.appendChild(input);
+                                    }
+                                } else if (element.type !== 'button' && element.type !== 'submit') {
+                                    const input = document.createElement('input');
+                                    input.type = 'hidden';
+                                    input.name = element.name;
+                                    input.value = element.value;
+                                    directForm.appendChild(input);
+                                }
+                            }
+                        });
+                        
+                        // For regular form submission, we'll use the original form with file inputs
+                        // but disable AJAX handling
+                        
+                        // Disable our custom event handler
+                        const oldListener = form.onsubmit;
+                        form.onsubmit = null;
+                        
+                        // Submit the original form
                         document.body.appendChild(directForm);
-                        directForm.submit();
+                        form.submit();
                     }
                 }
             });
@@ -1574,18 +1732,27 @@ document.addEventListener('DOMContentLoaded', function() {
         items.forEach(item => item.classList.remove('item-selected'));
         operatorResults.style.display = 'none';
         
-        // ALWAYS populate the driver's name field if it exists
-        const driverNameField = document.getElementById('driver_name');
-        if (driverNameField) {
-            // Force update the field with the operator's name
-            const fullName = `${operator.first_name} ${operator.middle_initial ? operator.middle_initial + ' ' : ''}${operator.last_name}`;
-            driverNameField.value = fullName;
-            driverNameField.dispatchEvent(new Event('input', { bubbles: true }));
-            driverNameField.dispatchEvent(new Event('change', { bubbles: true }));
+        // Show auto-populated indicator
+        const autoPopulatedBadge = document.getElementById('operator_auto_populated');
+        if (autoPopulatedBadge) {
+            autoPopulatedBadge.style.display = 'inline-block';
         }
         
-        // Populate the form fields - FIXED: removed reference to undefined variables
-        // and handled fields differently to avoid errors
+        // Highlight the operator section
+        const operatorSection = document.getElementById('operator_details_section');
+        if (operatorSection) {
+            operatorSection.classList.add('border-success');
+            operatorSection.style.borderLeft = '4px solid #198754';
+            
+            // Remove the highlight after 3 seconds
+            setTimeout(() => {
+                operatorSection.classList.remove('border-success');
+                operatorSection.style.borderLeft = '';
+            }, 3000);
+        }
+        
+        // Populate only operator-related fields
+        // Do NOT populate driver fields
         
         // Always populate operator address field if it exists
         const operatorAddressField = document.getElementById('operator_address');
@@ -1593,16 +1760,35 @@ document.addEventListener('DOMContentLoaded', function() {
             operatorAddressField.value = operator.address || '';
             operatorAddressField.dispatchEvent(new Event('input', { bubbles: true }));
             operatorAddressField.dispatchEvent(new Event('change', { bubbles: true }));
+            operatorAddressField.classList.add('is-valid');
         }
         
-        // Do NOT populate the potpotNumberField, leave it empty
+        // Populate operator name field if it exists
+        const operatorNameField = document.getElementById('operator_name');
+        if (operatorNameField) {
+            const fullName = `${operator.first_name} ${operator.middle_initial ? operator.middle_initial + ' ' : ''}${operator.last_name}`;
+            operatorNameField.value = fullName;
+            operatorNameField.dispatchEvent(new Event('input', { bubbles: true }));
+            operatorNameField.dispatchEvent(new Event('change', { bubbles: true }));
+            operatorNameField.classList.add('is-valid');
+        }
         
-        // But DO set PD Number if it exists and is empty
-        const pdNumberField = document.getElementById('pd_number');
-        if (pdNumberField && !pdNumberField.value) {
-            pdNumberField.value = operator.new_pd_number || '';
-            pdNumberField.dispatchEvent(new Event('input', { bubbles: true }));
-            pdNumberField.dispatchEvent(new Event('change', { bubbles: true }));
+        // Populate potpot number field
+        const potpotNumberField = document.getElementById('potpot_number');
+        if (potpotNumberField) {
+            potpotNumberField.value = operator.potpot_number || '';
+            potpotNumberField.dispatchEvent(new Event('input', { bubbles: true }));
+            potpotNumberField.dispatchEvent(new Event('change', { bubbles: true }));
+            potpotNumberField.classList.add('is-valid');
+        }
+        
+        // Populate PD Number in the operator section if it exists
+        const operatorPdNumberField = document.getElementById('operator_pd_number');
+        if (operatorPdNumberField) {
+            operatorPdNumberField.value = operator.new_pd_number || '';
+            operatorPdNumberField.dispatchEvent(new Event('input', { bubbles: true }));
+            operatorPdNumberField.dispatchEvent(new Event('change', { bubbles: true }));
+            operatorPdNumberField.classList.add('is-valid');
         }
         
         // Show success notification with SweetAlert
@@ -1633,6 +1819,25 @@ document.addEventListener('DOMContentLoaded', function() {
         items.forEach(item => item.classList.remove('item-selected'));
         driverResults.style.display = 'none';
         
+        // Show auto-populated indicator
+        const autoPopulatedBadge = document.getElementById('driver_auto_populated');
+        if (autoPopulatedBadge) {
+            autoPopulatedBadge.style.display = 'inline-block';
+        }
+        
+        // Highlight the driver section
+        const driverSection = document.getElementById('driver_details_section');
+        if (driverSection) {
+            driverSection.classList.add('border-success');
+            driverSection.style.borderLeft = '4px solid #198754';
+            
+            // Remove the highlight after 3 seconds
+            setTimeout(() => {
+                driverSection.classList.remove('border-success');
+                driverSection.style.borderLeft = '';
+            }, 3000);
+        }
+        
         // ALWAYS populate the driver's name field
         const driverNameField = document.getElementById('driver_name');
         if (driverNameField) {
@@ -1641,25 +1846,7 @@ document.addEventListener('DOMContentLoaded', function() {
             driverNameField.value = fullName;
             driverNameField.dispatchEvent(new Event('input', { bubbles: true }));
             driverNameField.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-        
-        // Populate the form fields related to the driver
-        if (lastName) {
-            lastName.value = driver.last_name || '';
-        }
-        
-        if (firstName) {
-            firstName.value = driver.first_name || '';
-        }
-        
-        // If there's a middle initial field, populate it
-        const middleInitial = document.getElementById('middle_initial');
-        if (middleInitial && driver.middle_initial) {
-            middleInitial.value = driver.middle_initial;
-        }
-        
-        if (licenseNumber) {
-            licenseNumber.value = driver.license_number || '';
+            driverNameField.classList.add('is-valid');
         }
         
         // Populate PD number field if it exists
@@ -1668,6 +1855,16 @@ document.addEventListener('DOMContentLoaded', function() {
             pdNumberField.value = driver.new_pd_number || '';
             pdNumberField.dispatchEvent(new Event('input', { bubbles: true }));
             pdNumberField.dispatchEvent(new Event('change', { bubbles: true }));
+            pdNumberField.classList.add('is-valid');
+        }
+        
+        // Populate license number field if it exists
+        const licenseNumberField = document.getElementById('license_number');
+        if (licenseNumberField) {
+            licenseNumberField.value = driver.license_number || '';
+            licenseNumberField.dispatchEvent(new Event('input', { bubbles: true }));
+            licenseNumberField.dispatchEvent(new Event('change', { bubbles: true }));
+            licenseNumberField.classList.add('is-valid');
         }
         
         // Always populate driver address field if it exists
@@ -1676,20 +1873,7 @@ document.addEventListener('DOMContentLoaded', function() {
             driverAddressField.value = driver.address || '';
             driverAddressField.dispatchEvent(new Event('input', { bubbles: true }));
             driverAddressField.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-        
-        // If driver has operator info, populate that too but NOT the potpotNumberField
-        if (driver.operator) {
-            selectedOperatorId.value = driver.operator.id;
-            operatorSearch.value = `${driver.operator.new_pd_number} - ${driver.operator.last_name}, ${driver.operator.first_name}`;
-            
-            // Always populate operator address field if it exists
-            const operatorAddressField = document.getElementById('operator_address');
-            if (operatorAddressField) {
-                operatorAddressField.value = driver.operator.address || '';
-                operatorAddressField.dispatchEvent(new Event('input', { bubbles: true }));
-                operatorAddressField.dispatchEvent(new Event('change', { bubbles: true }));
-            }
+            driverAddressField.classList.add('is-valid');
         }
         
         // Show success notification with SweetAlert
@@ -1968,18 +2152,23 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Override the violation add/remove functions
     window.addViolation = function() {
+        console.log('[DEBUG] Adding violation');
+        // Get selected violation from the selector
         const violationSelector = document.getElementById('violation_selector');
-        if (!violationSelector) return;
+        const violationText = violationSelector.options[violationSelector.selectedIndex].text;
+        const violationTypeInput = document.getElementById('violation_type');
+        const violationPenaltiesInput = document.getElementById('violation_penalties');
+        const selectedViolationsBody = document.getElementById('selected_violations_body');
         
-        const selectedOption = violationSelector.options[violationSelector.selectedIndex];
-        const violationText = selectedOption.value;
+        console.log('[DEBUG] Selected violation text:', violationText);
         
-        if (!violationText) {
+        if (!violationText || violationSelector.selectedIndex === 0) {
+            // Show error if no violation type is selected
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
-                    icon: 'warning',
+                    icon: 'error',
                     title: 'No Violation Selected',
-                    text: 'Please select a violation to add.',
+                    text: 'Please select a violation type to add.',
                     toast: true,
                     position: 'top-end',
                     showConfirmButton: false,
@@ -1989,25 +2178,10 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Check if violation already exists
-        if (window.violationTracker.getViolations().some(v => v.text === violationText)) {
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Duplicate Violation',
-                    text: 'This violation has already been added.',
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000
-                });
-            }
-            return;
-        }
-        
-        // Get current rate based on vehicle type
-        let violationRate = 0;
-        if (vehicleTypeSelector && vehicleTypeSelector.value) {
+        // Get the penalty rate based on vehicle type
+        let violationRate = 300; // Default rate
+        const vehicleTypeSelector = document.getElementById('vehicle_penalty_type');
+        if (vehicleTypeSelector) {
             if (vehicleTypeSelector.value === 'potpot') {
                 violationRate = 50; // ₱50 for Pot-Pot vehicles
             } else if (vehicleTypeSelector.value === 'regular') {
@@ -2017,7 +2191,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Add to tracker
         const violationId = window.violationTracker.addViolation(violationText, violationRate);
-        console.log('[PENALTY] Added violation:', violationText, 'with rate:', violationRate);
+        console.log('[DEBUG] Added violation:', violationText, 'with rate:', violationRate, 'ID:', violationId);
         
         // Hide the "no violations" row if it's visible
         const noViolationsRow = document.getElementById('no_violations_row');
@@ -2054,11 +2228,16 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Update form values
         if (violationTypeInput) {
-            violationTypeInput.value = window.violationTracker.getViolations().map(v => v.text).join(', ');
+            const violationTexts = window.violationTracker.getViolations().map(v => v.text);
+            console.log('[DEBUG] All violation texts:', violationTexts);
+            violationTypeInput.value = violationTexts.join(', ');
+            console.log('[DEBUG] Set violation_type field to:', violationTypeInput.value);
         }
         
         if (violationPenaltiesInput) {
-            violationPenaltiesInput.value = JSON.stringify(window.violationTracker.getViolations());
+            const jsonData = JSON.stringify(window.violationTracker.getViolations());
+            console.log('[DEBUG] Violation penalties JSON:', jsonData);
+            violationPenaltiesInput.value = jsonData;
         }
         
         // Recalculate total
@@ -2171,13 +2350,35 @@ function updatePenaltyInfo(vehicleType, violationCount, totalAmount) {
     document.getElementById('penalty_info').innerHTML = penaltyInfoText;
 }
 
-// Add form submission handling with print option
+// Generate a unique ID for this form submission to prevent duplicate processing
+function generateUniqueId() {
+    // Simple UUID v4 generator
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
+// Consolidate all DOMContentLoaded event listeners into one to prevent duplicates
 document.addEventListener('DOMContentLoaded', function() {
-    const violationForm = document.getElementById('violationForm');
+    console.log('DOM fully loaded - initializing all functions');
     
-    if (violationForm) {
+    // Initialize request ID to prevent duplicate submissions
+    const requestIdField = document.getElementById('request_id');
+    if (requestIdField) {
+        requestIdField.value = generateUniqueId();
+        console.log('Form initialized with request ID:', requestIdField.value);
+    }
+    
+    // Initialize form submission handling - only attach once
+    const violationForm = document.getElementById('violationForm');
+    if (violationForm && !violationForm.hasAttribute('data-initialized')) {
+        // Mark the form as initialized to prevent duplicate event listeners
+        violationForm.setAttribute('data-initialized', 'true');
+        
         violationForm.addEventListener('submit', function(e) {
             e.preventDefault();
+            console.log('Form submission intercepted with request ID:', requestIdField.value);
             
             // Check if SweetAlert is available
             if (typeof Swal === 'undefined') {
@@ -2210,9 +2411,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
                 }
-                return response.json();
+                
+                // Check content type to determine how to parse the response
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return response.json();
+                } else {
+                    throw new Error('Expected JSON response but received: ' + contentType);
+                }
             })
             .then(data => {
+                // Check if this is a duplicate submission response
+                if (data.status === 'duplicate') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Duplicate Submission',
+                        text: data.message || 'This form has already been processed. Please refresh the page to continue.',
+                        confirmButtonText: 'OK'
+                    });
+                    return;
+                }
+                
                 // Save was successful here - data contains the saved violation information
                 console.log('Violation saved successfully with data:', data);
                 
@@ -2278,63 +2497,94 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             })
             .catch(error => {
+                console.error('Error:', error);
+                
+                // Determine the type of error and show appropriate message
+                let errorMessage = 'There was a problem submitting the form. Please try again.';
+                
+                if (error.message.includes('Network response was not ok')) {
+                    errorMessage = 'The server returned an error. Please check your form data and try again.';
+                } else if (error.message.includes('Expected JSON response')) {
+                    errorMessage = 'The server returned an unexpected response format. Please contact support.';
+                } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    errorMessage = 'Network connection issue. Please check your internet connection and try again.';
+                } else if (error.message.includes('timeout')) {
+                    errorMessage = 'The request timed out. Please try again or contact support if the issue persists.';
+                }
+                
                 // Show error message
                 Swal.fire({
                     icon: 'error',
                     title: 'Submission Error',
-                    text: 'There was a problem submitting the form. Please try again.',
+                    text: errorMessage,
                     confirmButtonText: 'OK'
                 });
-                console.error('Error:', error);
             });
         });
     }
     
-    // Function to handle printing
-    window.printViolationForm = function(violationId) {
-        if (!violationId) {
-            console.log('No violation ID provided to printViolationForm');
-            // Print current window instead
-            window.print();
-            return;
-        }
-        
-        // Open print page in a new window
-        const printUrl = `/violation/${violationId}/print/`;
-        console.log('Opening print URL:', printUrl);
-        
-        const printWindow = window.open(printUrl, '_blank');
-        
-        if (printWindow) {
-            // Window opened successfully
-            Swal.fire({
-                icon: 'success',
-                title: 'Print Window Opened',
-                text: 'The print dialog should open automatically in the new window.',
-                confirmButtonText: 'OK'
-            }).then(() => {
-                // Show success message after printing
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Print Successful',
-                    text: 'The NCAP violation form has been printed successfully!',
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000,
-                    timerProgressBar: true
-                });
-            });
-        } else {
-            // If popup is blocked, inform the user
-            Swal.fire({
-                icon: 'warning',
-                title: 'Print Window Blocked',
-                text: 'Your browser blocked the print window. Please allow popups for this site and try again.',
-                confirmButtonText: 'OK'
-            });
-        }
+    // Initialize other DOM-dependent functions here
+    // (Add any other initialization that was previously in separate DOMContentLoaded listeners)
+    
+    // Ensure vehicle type selectors are initialized only once
+    const vehicleTypeSelector = document.getElementById('vehicle_type');
+    if (vehicleTypeSelector && !vehicleTypeSelector.hasAttribute('data-initialized')) {
+        vehicleTypeSelector.setAttribute('data-initialized', 'true');
+        vehicleTypeSelector.addEventListener('change', function() {
+            updatePenaltyInfo();
+        });
+    }
+    
+    // Initialize the penalty info if needed
+    if (typeof updatePenaltyInfo === 'function') {
+        updatePenaltyInfo();
     }
 });
+
+// Function to handle printing
+window.printViolationForm = function(violationId) {
+    if (!violationId) {
+        console.log('No violation ID provided to printViolationForm');
+        // Print current window instead
+        window.print();
+        return;
+    }
+    
+    // Open print page in a new window
+    const printUrl = `/violation/${violationId}/print/`;
+    console.log('Opening print URL:', printUrl);
+    
+    const printWindow = window.open(printUrl, '_blank');
+    
+    if (printWindow) {
+        // Window opened successfully
+        Swal.fire({
+            icon: 'success',
+            title: 'Print Window Opened',
+            text: 'The print dialog should open automatically in the new window.',
+            confirmButtonText: 'OK'
+        }).then(() => {
+            // Show success message after printing
+            Swal.fire({
+                icon: 'success',
+                title: 'Print Successful',
+                text: 'The NCAP violation form has been printed successfully!',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true
+            });
+        });
+    } else {
+        // If popup is blocked, inform the user
+        Swal.fire({
+            icon: 'warning',
+            title: 'Print Window Blocked',
+            text: 'Your browser blocked the print window. Please allow popups for this site and try again.',
+            confirmButtonText: 'OK'
+        });
+    }
+}
 </script>
 {% endblock %}

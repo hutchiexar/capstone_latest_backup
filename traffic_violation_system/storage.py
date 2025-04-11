@@ -109,28 +109,4 @@ class SafeFileStorage(FileSystemStorage):
         
         # Create a new ContentFile
         from django.core.files.base import ContentFile
-        return ContentFile(img_io.getvalue())
-
-class RenderMediaStorage(FileSystemStorage):
-    """
-    Custom storage for handling media files on Render's ephemeral filesystem.
-    """
-    def __init__(self, *args, **kwargs):
-        location = settings.MEDIA_ROOT
-        # Ensure directory exists
-        os.makedirs(location, exist_ok=True)
-        # Set permissions
-        try:
-            os.chmod(location, 0o777)
-        except:
-            pass
-        super().__init__(location=location, *args, **kwargs)
-    
-    def get_available_name(self, name, max_length=None):
-        """
-        Returns a filename that's free on the target storage system.
-        """
-        # Make sure the directory exists
-        directory = os.path.dirname(os.path.join(self.location, name))
-        os.makedirs(directory, exist_ok=True)
-        return super().get_available_name(name, max_length) 
+        return ContentFile(img_io.getvalue()) 

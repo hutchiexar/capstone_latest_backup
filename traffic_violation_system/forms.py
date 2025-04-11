@@ -143,8 +143,8 @@ class OperatorForm(forms.ModelForm):
             'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First Name'}),
             'middle_initial': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'M.I.'}),
             'address': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Address', 'rows': 3}),
-            'old_pd_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Old P.D. No.'}),
-            'new_pd_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'New P.D. No.'}),
+            'old_pd_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Old P.O. No.'}),
+            'new_pd_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'New P.O. No.'}),
         }
 
 class ImportOperatorsForm(forms.Form):
@@ -283,6 +283,7 @@ class DriverForm(forms.ModelForm):
         model = Driver
         fields = [
             'last_name', 'first_name', 'middle_initial', 'address',
+            'old_pd_number', 'new_pd_number',
             'license_number', 'contact_number', 'emergency_contact',
             'emergency_contact_number', 'active'
         ]
@@ -291,6 +292,8 @@ class DriverForm(forms.ModelForm):
             'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First Name'}),
             'middle_initial': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'M.I.'}),
             'address': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Address', 'rows': 3}),
+            'old_pd_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Previous PD number if available'}),
+            'new_pd_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'D-XXXXX'}),
             'license_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Driver license number'}),
             'contact_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Contact number'}),
             'emergency_contact': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Emergency contact name'}),

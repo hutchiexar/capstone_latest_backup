@@ -7,24 +7,24 @@
 <script src="https://unpkg.com/micromodal/dist/micromodal.min.js" defer></script>
 
 {% block content %}
-<div class="container-fluid py-4">
+<div class="container-fluid py-4 px-3">
     <!-- Header Section -->
     <div class="card shadow-sm border-0 rounded-3 mb-4">
-        <div class="card-body p-4">
-            <div class="d-flex justify-content-between align-items-center">
+        <div class="card-body p-3 p-md-4">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
                 <div class="d-flex align-items-center">
                     <div class="icon-circle bg-primary text-white me-3">
                         <span class="material-icons">report_problem</span>
                     </div>
                     <div>
-                        <h4 class="mb-0">User Reports Management</h4>
+                        <h4 class="mb-0 fs-5 fs-md-4">User Reports Management</h4>
                         <p class="text-muted mb-0 small">Total Reports: {{ reports.paginator.count }}</p>
                     </div>
                 </div>
                 <div>
-                    <a href="{% url 'admin_report_export' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="btn btn-success d-inline-flex align-items-center">
-                        <span class="material-icons me-2">download</span>
-                        Export to Excel
+                    <a href="{% url 'admin_report_export' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="btn btn-success d-flex align-items-center justify-content-center px-3 py-2">
+                        <span class="material-icons me-1 me-md-2" style="font-size: 18px;">download</span>
+                        <span>Export to Excel</span>
                     </a>
                 </div>
             </div>
@@ -32,18 +32,18 @@
             <!-- Search Form -->
             <form method="get" class="mt-4">
                 <div class="row g-3">
-                    <div class="col-md-9">
+                    <div class="col-12 col-md-9">
                         <div class="search-input">
                             <span class="material-icons">search</span>
                             <input type="text" 
                                    name="q" 
-                                   class="form-control" 
+                                   class="form-control py-2 search-box" 
                                    placeholder="Search by subject, description or user..."
                                    value="{{ current_filters.q|default:'' }}">
                         </div>
                     </div>
-                    <div class="col-md-3">
-                        <button type="submit" class="btn btn-primary w-100 h-100 d-flex align-items-center justify-content-center">
+                    <div class="col-12 col-md-3">
+                        <button type="submit" class="btn btn-primary w-100 py-2 d-flex align-items-center justify-content-center">
                             <span class="material-icons me-2">search</span>
                             Search
                         </button>
@@ -62,13 +62,13 @@
             </div>
             <span class="material-icons" id="filterIcon">expand_more</span>
         </div>
-        <div class="card-body filter-body">
+        <div class="card-body filter-body p-3 p-md-4">
             <form id="filter-form" method="get">
                 <input type="hidden" name="q" value="{{ current_filters.q|default:'' }}">
                 <div class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-12 col-md-4 col-sm-6">
                         <label for="status-filter" class="form-label small text-muted">Status</label>
-                        <select class="form-select" name="status" id="status-filter">
+                        <select class="form-select py-2" name="status" id="status-filter">
                             <option value="">All Statuses</option>
                             {% for status_code, status_name in status_choices %}
                             <option value="{{ status_code }}" {% if current_filters.status == status_code %}selected{% endif %}>
@@ -77,9 +77,9 @@
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-12 col-md-4 col-sm-6">
                         <label for="type-filter" class="form-label small text-muted">Report Type</label>
-                        <select class="form-select" name="type" id="type-filter">
+                        <select class="form-select py-2" name="type" id="type-filter">
                             <option value="">All Report Types</option>
                             {% for type_code, type_name in report_types %}
                             <option value="{{ type_code }}" {% if current_filters.type == type_code %}selected{% endif %}>
@@ -88,22 +88,22 @@
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-12 col-md-4">
                         <label for="date-from" class="form-label small text-muted">Date Range</label>
-                        <div class="input-group">
+                        <div class="input-group flex-nowrap date-range-group">
                             <span class="input-group-text bg-light">From</span>
-                            <input type="date" class="form-control" id="date-from" name="date_from" 
+                            <input type="date" class="form-control py-2" id="date-from" name="date_from" 
                                    value="{{ current_filters.date_from|date:'Y-m-d' }}">
                             <span class="input-group-text bg-light">To</span>
-                            <input type="date" class="form-control" id="date-to" name="date_to"
+                            <input type="date" class="form-control py-2" id="date-to" name="date_to"
                                    value="{{ current_filters.date_to|date:'Y-m-d' }}">
                         </div>
                     </div>
-                    <div class="col-12 d-flex gap-2 mt-3">
-                        <button type="submit" class="btn btn-primary d-inline-flex align-items-center">
+                    <div class="col-12 d-flex flex-wrap gap-2 mt-3">
+                        <button type="submit" class="btn btn-primary d-inline-flex align-items-center px-3 py-2">
                             <span class="material-icons me-1">filter_alt</span> Apply Filters
                         </button>
-                        <a href="{% url 'admin_report_list' %}" class="btn btn-outline-secondary d-inline-flex align-items-center">
+                        <a href="{% url 'admin_report_list' %}" class="btn btn-outline-secondary d-inline-flex align-items-center px-3 py-2">
                             <span class="material-icons me-1">clear</span> Clear Filters
                         </a>
                     </div>
@@ -112,9 +112,10 @@
         </div>
     </div>
 
-    <!-- Reports Table -->
+    <!-- Reports Table and Mobile Cards -->
     <div class="card border-0 shadow-sm">
-        <div class="table-responsive">
+        <!-- Desktop Table View -->
+        <div class="table-responsive d-none d-md-block">
             <table class="table table-hover align-middle mb-0" id="reportsTable">
                 <thead class="table-light">
                     <tr>
@@ -133,55 +134,288 @@
             </table>
         </div>
         
+        <!-- Mobile Card View -->
+        <div class="d-md-none" id="reports-mobile-view">
+            {% for report in reports %}
+            <div class="report-card p-3 border-bottom mobile-card">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="badge bg-secondary">#{{ report.id }}</span>
+                    <span class="badge rounded-pill {% if report.type == 'COMPLAINT' %}text-bg-danger
+                            {% elif report.type == 'SUGGESTION' %}text-bg-info
+                            {% elif report.type == 'INQUIRY' %}text-bg-primary
+                            {% elif report.type == 'DISPUTE' %}text-bg-warning
+                            {% endif %} d-inline-flex align-items-center">
+                        <span class="material-icons me-1" style="font-size: 14px;">
+                            {% if report.type == 'COMPLAINT' %}report_problem
+                            {% elif report.type == 'SUGGESTION' %}lightbulb
+                            {% elif report.type == 'INQUIRY' %}help_outline
+                            {% elif report.type == 'DISPUTE' %}gavel
+                            {% endif %}
+                        </span>
+                        {{ report.get_type_display }}
+                    </span>
+                </div>
+                
+                <h5 class="fw-medium fs-6 mb-1">{{ report.subject }}</h5>
+                <p class="text-muted small mb-2">{{ report.description|truncatechars:60 }}</p>
+                
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <div class="d-flex flex-column">
+                            <span class="small text-muted">Submitted by</span>
+                            <span class="mobile-info-text">{{ report.user.get_full_name }}</span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="d-flex flex-column">
+                            <span class="small text-muted">Date</span>
+                            <span class="mobile-info-text">{{ report.created_at|date:"M d, Y" }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <span class="material-icons me-2 {% if report.status == 'PENDING' %}text-warning
+                                {% elif report.status == 'IN_PROGRESS' %}text-primary
+                                {% elif report.status == 'RESOLVED' %}text-success
+                                {% elif report.status == 'CLOSED' %}text-secondary
+                                {% endif %}">
+                            {% if report.status == 'PENDING' %}schedule
+                            {% elif report.status == 'IN_PROGRESS' %}sync
+                            {% elif report.status == 'RESOLVED' %}check_circle
+                            {% elif report.status == 'CLOSED' %}cancel
+                            {% endif %}
+                        </span>
+                        <span class="{% if report.status == 'PENDING' %}text-warning
+                                {% elif report.status == 'IN_PROGRESS' %}text-primary
+                                {% elif report.status == 'RESOLVED' %}text-success
+                                {% elif report.status == 'CLOSED' %}text-secondary
+                                {% endif %} mobile-info-text">
+                            {{ report.get_status_display }}
+                        </span>
+                    </div>
+                    
+                    <div class="action-buttons d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-primary mobile-btn" onclick="openViewModal('{{ report.id }}')" title="View Details">
+                            <span class="material-icons">visibility</span>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-info text-white mobile-btn" onclick="openStatusModal('{{ report.id }}')" title="Update Status">
+                            <span class="material-icons">update</span>
+                        </button>
+                        {% if report.status == 'PENDING' or report.status == 'IN_PROGRESS' %}
+                        <button type="button" class="btn btn-sm btn-warning text-white mobile-btn" onclick="openDisputeModal('{{ report.id }}')" title="Dispute Report">
+                            <span class="material-icons">gavel</span>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-5">
+                <span class="material-icons d-block mb-2" style="font-size: 3rem; opacity: 0.5;">search_off</span>
+                <p class="text-muted">No reports found matching your criteria</p>
+            </div>
+            {% endfor %}
+        </div>
+        
         <!-- Pagination -->
         {% if reports.paginator.num_pages > 1 %}
         <div class="card-footer bg-white py-3">
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="small text-muted">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
+                <div class="small text-muted mb-3 mb-md-0 text-center text-md-start">
                     Showing {{ reports.start_index }} to {{ reports.end_index }} of {{ reports.paginator.count }} entries
                 </div>
-                <ul class="pagination mb-0 pagination-sm">
-                    {% if reports.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page=1{% for key, value in current_filters.items %}{% if value and key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="First">
-                            <span class="material-icons" style="font-size: 1rem;">first_page</span>
-                        </a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ reports.previous_page_number }}{% for key, value in current_filters.items %}{% if value and key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Previous">
-                            <span class="material-icons" style="font-size: 1rem;">chevron_left</span>
-                        </a>
-                    </li>
-                    {% endif %}
-                    
-                    {% for i in reports.paginator.page_range %}
-                        {% if reports.number == i %}
-                            <li class="page-item active"><a class="page-link" href="#">{{ i }}</a></li>
-                        {% elif i > reports.number|add:'-3' and i < reports.number|add:'3' %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ i }}{% for key, value in current_filters.items %}{% if value and key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a>
-                            </li>
+                <nav aria-label="Report pagination">
+                    <ul class="pagination mb-0 pagination-sm flex-wrap justify-content-center justify-content-md-end mobile-pagination">
+                        {% if reports.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% for key, value in current_filters.items %}{% if value and key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="First">
+                                <span class="material-icons" style="font-size: 1rem;">first_page</span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ reports.previous_page_number }}{% for key, value in current_filters.items %}{% if value and key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Previous">
+                                <span class="material-icons" style="font-size: 1rem;">chevron_left</span>
+                            </a>
+                        </li>
                         {% endif %}
-                    {% endfor %}
-                    
-                    {% if reports.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ reports.next_page_number }}{% for key, value in current_filters.items %}{% if value and key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Next">
-                            <span class="material-icons" style="font-size: 1rem;">chevron_right</span>
-                        </a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ reports.paginator.num_pages }}{% for key, value in current_filters.items %}{% if value and key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Last">
-                            <span class="material-icons" style="font-size: 1rem;">last_page</span>
-                        </a>
-                    </li>
-                    {% endif %}
-                </ul>
+                        
+                        {% for i in reports.paginator.page_range %}
+                            {% if reports.number == i %}
+                                <li class="page-item active"><a class="page-link" href="#">{{ i }}</a></li>
+                            {% elif i > reports.number|add:'-3' and i < reports.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ i }}{% for key, value in current_filters.items %}{% if value and key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if reports.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ reports.next_page_number }}{% for key, value in current_filters.items %}{% if value and key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Next">
+                                <span class="material-icons" style="font-size: 1rem;">chevron_right</span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ reports.paginator.num_pages }}{% for key, value in current_filters.items %}{% if value and key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Last">
+                                <span class="material-icons" style="font-size: 1rem;">last_page</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
             </div>
         </div>
         {% endif %}
     </div>
 </div>
+
+<style>
+/* Enhanced mobile styling */
+@media (max-width: 767.98px) {
+    .mobile-card {
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        margin-bottom: 12px;
+        border: 1px solid rgba(0,0,0,0.1) !important;
+    }
+    
+    .mobile-btn {
+        width: 38px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        border-radius: 6px;
+    }
+    
+    .mobile-btn .material-icons {
+        font-size: 20px !important;
+    }
+    
+    .mobile-info-text {
+        font-size: 14px;
+        font-weight: 500;
+    }
+    
+    .mobile-pagination .page-link {
+        min-width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+    }
+    
+    .search-box {
+        height: 45px;
+    }
+    
+    /* Prevent zooming on iOS */
+    input[type="text"], 
+    input[type="date"],
+    select, 
+    textarea {
+        font-size: 16px !important;
+    }
+    
+    .date-range-group {
+        flex-direction: column;
+    }
+    
+    .date-range-group .input-group-text {
+        border-radius: 4px 4px 0 0;
+        width: 100%;
+        justify-content: start;
+    }
+    
+    .date-range-group input:first-of-type {
+        border-radius: 0;
+        margin-bottom: 8px;
+    }
+    
+    .date-range-group input:last-of-type {
+        border-radius: 0 0 4px 4px;
+    }
+    
+    /* Modal improvements */
+    .modal__container {
+        padding: 10px !important;
+        max-width: 95% !important;
+    }
+    
+    .modal__content {
+        padding: 15px !important;
+    }
+    
+    .modal__footer {
+        padding: 15px !important;
+    }
+    
+    .modal__header {
+        padding: 15px !important;
+    }
+}
+
+/* Modal improvements for all screen sizes */
+.modal__container {
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 8px;
+}
+
+.modal__btn-primary {
+    background-color: var(--bs-primary);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 38px;
+}
+
+.modal__btn-secondary {
+    background-color: var(--bs-light);
+    color: var(--bs-dark);
+    border: 1px solid var(--bs-gray-300);
+    border-radius: 4px;
+    padding: 8px 16px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 38px;
+}
+
+.filter-toggle {
+    cursor: pointer;
+}
+
+.filter-toggle:hover {
+    background-color: rgba(0,0,0,0.03);
+}
+
+/* Transitions for smooth experience */
+.filter-body {
+    transition: max-height 0.3s ease-in-out;
+}
+
+.report-card {
+    transition: transform 0.15s ease-in-out;
+}
+
+.report-card:active {
+    transform: scale(0.98);
+}
+
+</style>
 
 <!-- View Report Modal (MicroModal) -->
 <div class="modal micromodal-slide" id="modal-view-report" aria-hidden="true">
@@ -275,319 +509,6 @@
     </div>
 </div>
 
-<style>
-/* Icon Circle */
-.icon-circle {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.icon-circle .material-icons {
-    font-size: 24px;
-}
-
-/* Search Input */
-.search-input {
-    position: relative;
-    width: 100%;
-}
-
-.search-input .material-icons {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #6b7280;
-    font-size: 20px;
-    z-index: 1;
-}
-
-.search-input .form-control {
-    padding-left: 40px;
-    height: 42px;
-    border-color: #e5e7eb;
-    border-radius: 6px;
-}
-
-.search-input .form-control:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.1);
-}
-
-/* Filter Section */
-.filter-section {
-    transition: all 0.3s ease;
-}
-
-.filter-section.collapsed .filter-body {
-    display: none;
-}
-
-.filter-toggle {
-    cursor: pointer;
-}
-
-/* Table Styles */
-.table {
-    margin-bottom: 0;
-}
-
-.table th {
-    background-color: var(--bg-light);
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.8rem;
-    letter-spacing: 0.5px;
-    padding: 1rem;
-    white-space: nowrap;
-}
-
-.table td {
-    padding: 1rem;
-    vertical-align: middle;
-    white-space: nowrap;
-}
-
-.table tbody tr:hover {
-    background-color: var(--bg-light);
-}
-
-/* Badge Styles */
-.badge {
-    padding: 0.5rem 0.75rem;
-    font-weight: 500;
-}
-
-/* Action Buttons */
-.action-buttons {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: flex-end;
-}
-
-.action-btn {
-    width: 35px;
-    height: 35px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-}
-
-.action-btn:hover {
-    transform: translateY(-2px);
-}
-
-.action-btn .material-icons {
-    font-size: 18px;
-}
-
-/* Empty State */
-.text-muted .material-icons {
-    opacity: 0.5;
-}
-
-/* Table Container Styles */
-.table-responsive {
-    border-radius: 8px;
-    overflow: hidden;
-    max-height: calc(100vh - 280px);
-    overflow-y: auto;
-}
-
-/* Keep table header visible */
-.table thead th {
-    position: sticky;
-    top: 0;
-    background-color: #f8f9fa;
-    z-index: 1;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-/* Custom scrollbar styles */
-.table-responsive::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-.table-responsive::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
-}
-
-.table-responsive::-webkit-scrollbar-thumb {
-    background: #ccc;
-    border-radius: 4px;
-}
-
-.table-responsive::-webkit-scrollbar-thumb:hover {
-    background: #999;
-}
-
-/* MicroModal Styles */
-.modal__overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
-}
-
-.modal__container {
-  background-color: #fff;
-  padding: 0;
-  max-width: 90%;
-  width: 700px;
-  max-height: 90vh;
-  border-radius: 12px;
-  overflow-y: auto;
-  box-sizing: border-box;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2),
-    0 8px 20px rgba(0, 0, 0, 0.15);
-  /* Prevent modal container clicks from bubbling up to overlay */
-  z-index: 2001;
-}
-
-.modal-lg {
-  max-width: 90%;
-  width: 900px;
-}
-
-.modal__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.25rem 1.5rem;
-}
-
-.modal__title {
-  margin-top: 0;
-  margin-bottom: 0;
-  font-weight: 600;
-  font-size: 1.25rem;
-  line-height: 1.25;
-  color: #333;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-}
-
-.modal__close {
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  position: relative;
-  width: 32px;
-  height: 32px;
-  transition: all 0.2s ease;
-  border-radius: 50%;
-}
-
-.modal__close:hover {
-  background-color: rgba(0,0,0,0.1);
-}
-
-.modal__close:before,
-.modal__close:after {
-  content: '';
-  position: absolute;
-  width: 2px;
-  height: 18px;
-  background-color: #333;
-  top: 7px;
-  left: 15px;
-}
-
-.modal__close:before {
-  transform: rotate(45deg);
-}
-
-.modal__close:after {
-  transform: rotate(-45deg);
-}
-
-.modal__content {
-  padding: 0;
-  line-height: 1.5;
-  color: rgba(0, 0, 0, 0.8);
-  max-height: 70vh;
-  overflow-y: auto;
-  background-color: #fff;
-}
-
-.modal__footer {
-  display: flex;
-  justify-content: flex-end;
-  padding: 1.25rem 1.5rem;
-  border-top: 1px solid #eaeaea;
-  background-color: #f8f9fa;
-  gap: 0.5rem;
-}
-
-.micromodal-slide {
-  display: none;
-}
-
-.micromodal-slide.is-open {
-  display: block;
-}
-
-.micromodal-slide[aria-hidden="false"] .modal__overlay {
-  animation: mmfadeIn .35s cubic-bezier(0, 0, .2, 1);
-}
-
-.micromodal-slide[aria-hidden="false"] .modal__container {
-  animation: mmslideIn .35s cubic-bezier(0, 0, .2, 1);
-}
-
-.micromodal-slide[aria-hidden="true"] .modal__overlay {
-  animation: mmfadeOut .35s cubic-bezier(0, 0, .2, 1);
-}
-
-.micromodal-slide[aria-hidden="true"] .modal__container {
-  animation: mmslideOut .35s cubic-bezier(0, 0, .2, 1);
-}
-
-.micromodal-slide .modal__container,
-.micromodal-slide .modal__overlay {
-  will-change: transform;
-}
-
-@keyframes mmfadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes mmfadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-
-@keyframes mmslideIn {
-  from { transform: translateY(15%); }
-  to { transform: translateY(0); }
-}
-
-@keyframes mmslideOut {
-  from { transform: translateY(0); }
-  to { transform: translateY(-10%); }
-}
-</style>
-
-{% endblock %}
-
-{% block extra_js %}
 <script>
 // Initialize MicroModal when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {

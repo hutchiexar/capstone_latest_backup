@@ -37,7 +37,7 @@
     <!-- Header Section -->
     <div class="card shadow-sm border-0 rounded-3 mb-4">
         <div class="card-body p-4">
-            <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                 <div>
                     <div class="d-flex align-items-center">
                         <span class="material-icons me-2" style="color: var(--primary-color)">admin_panel_settings</span>
@@ -47,7 +47,9 @@
                 </div>
                 <div>
                     <a href="{% url 'operator_list' %}" class="btn btn-outline-secondary d-flex align-items-center px-4 py-2">
-                        <span class="material-icons fs-5 me-2">people</span> Operators List
+                        <span class="material-icons fs-5 me-2">people</span>
+                        <span class="d-none d-sm-inline">Operators List</span>
+                        <span class="d-inline d-sm-none">Operators</span>
                     </a>
                 </div>
             </div>
@@ -64,7 +66,7 @@
         </div>
 
         <div class="card-body p-0">
-            <div class="table-responsive">
+            <div class="table-responsive d-none d-md-block">
                 <table class="table table-hover mb-0">
                     <thead class="table-light">
                         <tr>
@@ -135,6 +137,79 @@
                     </tbody>
                 </table>
             </div>
+            
+            <!-- Mobile Card View for Pending Applications -->
+            <div class="application-cards d-block d-md-none">
+                {% for application in pending_applications %}
+                <div class="application-card" data-application-id="{{ application.id }}">
+                    <div class="card m-3">
+                        <div class="card-header d-flex justify-content-between align-items-center p-3">
+                            <div class="d-flex align-items-center">
+                                {% if application.user.userprofile.avatar %}
+                                <img src="{{ application.user.userprofile.avatar.url }}" alt="User Avatar" class="rounded-circle me-2" style="width: 40px; height: 40px;">
+                                {% else %}
+                                <span class="material-icons rounded-circle bg-light p-1 me-2">person</span>
+                                {% endif %}
+                                <div>
+                                    <h6 class="mb-0 fw-bold">{{ application.user.get_full_name }}</h6>
+                                    <small class="text-muted">{{ application.user.username }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="row mb-2">
+                                <div class="col-4">
+                                    <small class="text-muted">Contact:</small>
+                                </div>
+                                <div class="col-8">
+                                    <div><small><span class="material-icons fs-6 me-1">email</span> {{ application.user.email }}</small></div>
+                                    <div><small><span class="material-icons fs-6 me-1">phone</span> {{ application.user.userprofile.phone_number }}</small></div>
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-4">
+                                    <small class="text-muted">Submitted:</small>
+                                </div>
+                                <div class="col-8">
+                                    <small>{{ application.submitted_at|date:"M d, Y g:i A" }}</small>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <small class="text-muted d-block mb-2">Documents:</small>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <a href="{{ application.business_permit.url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <span class="material-icons fs-6">description</span> Business
+                                    </a>
+                                    {% if application.mayors_permit and application.mayors_permit.name %}
+                                    <a href="{{ application.mayors_permit.url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <span class="material-icons fs-6">description</span> Mayor's
+                                    </a>
+                                    {% endif %}
+                                    {% if application.other_documents %}
+                                    <a href="{{ application.other_documents.url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <span class="material-icons fs-6">description</span> Other
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer p-3">
+                            <button type="button" 
+                                   data-application-id="{{ application.id }}" 
+                                   class="btn btn-primary d-flex align-items-center justify-content-center px-3 py-2 w-100 review-application-btn">
+                                <span class="material-icons fs-5 me-2">rate_review</span> Review Application
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="empty-state p-4 text-center">
+                    <span class="material-icons" style="font-size: 64px; color: #c0c0c0;">check_circle</span>
+                    <p class="mt-3 mb-0 fs-5">No pending applications.</p>
+                    <p class="text-muted">All applications have been processed.</p>
+                </div>
+                {% endfor %}
+            </div>
         </div>
     </div>
 
@@ -148,7 +223,7 @@
         </div>
 
         <div class="card-body p-0">
-            <div class="table-responsive">
+            <div class="table-responsive d-none d-md-block">
                 <table class="table table-hover mb-0">
                     <thead class="table-light">
                         <tr>
@@ -198,6 +273,67 @@
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+            
+            <!-- Mobile Card View for Processed Applications -->
+            <div class="processed-application-cards d-block d-md-none">
+                {% for application in processed_applications %}
+                <div class="application-card">
+                    <div class="card m-3">
+                        <div class="card-header d-flex justify-content-between align-items-center p-3">
+                            <div class="d-flex align-items-center">
+                                {% if application.user.userprofile.avatar %}
+                                <img src="{{ application.user.userprofile.avatar.url }}" alt="User Avatar" class="rounded-circle me-2" style="width: 40px; height: 40px;">
+                                {% else %}
+                                <span class="material-icons rounded-circle bg-light p-1 me-2">person</span>
+                                {% endif %}
+                                <div>
+                                    <h6 class="mb-0 fw-bold">{{ application.user.get_full_name }}</h6>
+                                    <small class="text-muted">{{ application.user.username }}</small>
+                                </div>
+                            </div>
+                            <div>
+                                {% if application.status == 'APPROVED' %}
+                                <span class="badge bg-success p-2">Approved</span>
+                                {% elif application.status == 'REJECTED' %}
+                                <span class="badge bg-danger p-2">Rejected</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="row mb-2">
+                                <div class="col-5">
+                                    <small class="text-muted">Processed Date:</small>
+                                </div>
+                                <div class="col-7">
+                                    <small>{{ application.processed_at|date:"M d, Y" }}</small>
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-5">
+                                    <small class="text-muted">Processed By:</small>
+                                </div>
+                                <div class="col-7">
+                                    <small>{{ application.processed_by.get_full_name }}</small>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-5">
+                                    <small class="text-muted">Notes:</small>
+                                </div>
+                                <div class="col-7">
+                                    <small>{{ application.notes|truncatechars:100|default:"No notes provided" }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="empty-state p-4 text-center">
+                    <span class="material-icons" style="font-size: 64px; color: #c0c0c0;">history</span>
+                    <p class="mt-3 mb-0 fs-5">No processed applications yet.</p>
+                </div>
+                {% endfor %}
             </div>
         </div>
     </div>
@@ -977,6 +1113,107 @@
     @keyframes mmslideOut {
         from { transform: translateY(0); }
         to { transform: translateY(-10%); }
+    }
+    
+    /* Mobile Card View Styles */
+    .application-card {
+        margin-bottom: 15px;
+    }
+
+    .application-card .card {
+        border: none;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .application-card .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    }
+
+    .application-card .card-header {
+        background-color: #f8f9fa;
+        padding: 12px 15px;
+        border-bottom: 1px solid #eaecef;
+    }
+
+    .application-card .card-body {
+        padding: 15px;
+    }
+    
+    .application-card .card-footer {
+        background-color: #f8f9fa;
+        padding: 12px 15px;
+        border-top: 1px solid #eaecef;
+    }
+    
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem 1rem;
+        text-align: center;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .card-body {
+            padding: 0.75rem !important;
+        }
+        
+        .card-header h5 {
+            font-size: 1.1rem;
+        }
+        
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+        }
+        
+        .badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+        
+        .material-icons.fs-5 {
+            font-size: 18px !important;
+        }
+        
+        .material-icons.fs-6 {
+            font-size: 16px !important;
+        }
+        
+        /* More space between rows in card body */
+        .row.mb-2 {
+            margin-bottom: 0.5rem !important;
+        }
+        
+        /* Better padding for card components */
+        .card-header, .card-body, .card-footer {
+            padding: 0.75rem !important;
+        }
+    }
+    
+    /* For very small screens */
+    @media (max-width: 360px) {
+        .card-header h6 {
+            font-size: 0.9rem;
+        }
+        
+        .card-header .material-icons {
+            font-size: 18px !important;
+        }
+        
+        .text-muted {
+            font-size: 0.8rem;
+        }
+        
+        small {
+            font-size: 0.8rem;
+        }
     }
 </style>
 {% endblock %} 

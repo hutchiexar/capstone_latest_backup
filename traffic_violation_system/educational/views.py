@@ -300,9 +300,18 @@ def admin_topic_delete(request, topic_id):
     if request.method == 'POST':
         topic_title = topic.title
         topic.delete()
+        
+        # Check if request is AJAX/JSON
+        if request.headers.get('Content-Type') == 'application/json':
+            return JsonResponse({
+                'success': True,
+                'message': f'Topic "{topic_title}" deleted successfully'
+            })
+        
         messages.success(request, f'Topic "{topic_title}" deleted successfully')
         return redirect('educational:admin_topic_list')
     
+    # If this is a GET request, we're still supporting the old way for backward compatibility
     context = {
         'topic': topic
     }

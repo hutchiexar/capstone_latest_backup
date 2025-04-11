@@ -74,8 +74,8 @@
         <!-- Main Content Card -->
         <div class="card shadow-sm border-0 rounded-3">
             <div class="card-body p-0">
-                <!-- Table Container -->
-                <div class="table-responsive">
+                <!-- Table Container for Desktop -->
+                <div class="table-responsive d-none d-md-block">
                     <table class="table table-system table-hover align-middle mb-0" id="usersTable">
                         <thead class="bg-light">
                             <tr>
@@ -150,6 +150,15 @@
                                                 data-action="{{ user.user.is_active|yesno:'deactivate,activate' }}">
                                             <span class="material-icons">{{ user.user.is_active|yesno:'block,check_circle' }}</span>
                                         </button>
+                                        {% else %}
+                                        <!-- Disabled action button for current user -->
+                                        <button type="button"
+                                                class="btn btn-action btn-toggle-status"
+                                                data-user-id="{{ user.id }}"
+                                                data-action="{{ user.user.is_active|yesno:'deactivate,activate' }}"
+                                                title="Cannot modify your own account">
+                                            <span class="material-icons">{{ user.user.is_active|yesno:'block,check_circle' }}</span>
+                                        </button>
                                         {% endif %}
                                     </div>
                                 </td>
@@ -169,6 +178,111 @@
                         </tbody>
                     </table>
                 </div>
+                
+                <!-- Card View for Mobile Devices -->
+                <div class="user-cards d-block d-md-none">
+                    {% for user in user_profiles %}
+                    {% if user.role != 'USER' %}
+                    <div class="user-card" data-user-id="{{ user.id }}">
+                        <div class="card m-3">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-container me-2">
+                                        {% if user.avatar %}
+                                        <img src="{{ user.avatar.url }}" alt="{{ user.user.get_full_name }}" class="rounded-circle">
+                                        {% else %}
+                                        <div class="avatar-placeholder">
+                                            {{ user.user.get_full_name|make_list|first|upper }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">{{ user.user.get_full_name }}</h6>
+                                        <div class="small text-muted d-flex align-items-center">
+                                            <span class="material-icons me-1" style="font-size: 0.9rem;">badge</span>
+                                            {{ user.enforcer_id }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class="role-badge role-{{ user.role|lower }}">
+                                    {{ user.get_role_display }}
+                                </span>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-2">
+                                    <div class="col-4">
+                                        <small class="text-muted">Status:</small>
+                                    </div>
+                                    <div class="col-8">
+                                        <span class="status-badge status-{{ user.user.is_active|yesno:'active,inactive' }}">
+                                            <span class="status-dot"></span>
+                                            {{ user.user.is_active|yesno:'Active,Inactive' }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-4">
+                                        <small class="text-muted">Last Login:</small>
+                                    </div>
+                                    <div class="col-8">
+                                        <div class="small">
+                                            {% if user.user.last_login %}
+                                            {{ user.user.last_login|date:"M d, Y H:i" }}
+                                            {% else %}
+                                            Never logged in
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer p-2">
+                                <div class="mobile-actions">
+                                    <button type="button" 
+                                            class="btn mobile-action-btn btn-view"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#userDetailModal"
+                                            data-user-id="{{ user.id }}">
+                                        <span class="material-icons">visibility</span>
+                                        <span>View</span>
+                                    </button>
+                                    <a href="{% url 'edit_user' user.id %}" 
+                                        class="btn mobile-action-btn btn-edit">
+                                        <span class="material-icons">edit</span>
+                                        <span>Edit</span>
+                                    </a>
+                                    {% if user.user.username != request.user.username %}
+                                    <button type="button"
+                                            class="btn mobile-action-btn btn-toggle"
+                                            data-user-id="{{ user.id }}"
+                                            data-action="{{ user.user.is_active|yesno:'deactivate,activate' }}">
+                                        <span class="material-icons">{{ user.user.is_active|yesno:'block,check_circle' }}</span>
+                                        <span>{{ user.user.is_active|yesno:'Deactivate,Activate' }}</span>
+                                    </button>
+                                    {% else %}
+                                    <!-- Disabled action button for current user -->
+                                    <button type="button"
+                                            class="btn mobile-action-btn btn-toggle"
+                                            data-user-id="{{ user.id }}"
+                                            data-action="{{ user.user.is_active|yesno:'deactivate,activate' }}"
+                                            title="Cannot modify your own account">
+                                        <span class="material-icons">{{ user.user.is_active|yesno:'block,check_circle' }}</span>
+                                        <span>{{ user.user.is_active|yesno:'Deactivate,Activate' }}</span>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% empty %}
+                    <div class="empty-state p-4 text-center">
+                        <span class="material-icons d-block mb-3" style="font-size: 3rem; opacity: 0.5;">person_search</span>
+                        <h6 class="mb-1">No Users Found</h6>
+                        <p class="mb-0 small">Try adjusting your search criteria</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                
                 {% if user_profiles %}
                 <div class="pagination-container">
                     {% include 'includes/pagination.html' %}
@@ -568,10 +682,100 @@
         font-weight: 500;
     }
 
+    /* Mobile Card View Styles */
+    .user-card {
+        margin-bottom: 15px;
+    }
+
+    .user-card .card {
+        border: none;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .user-card .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    }
+
+    .user-card .card-header {
+        background-color: #f8f9fa;
+        padding: 12px 15px;
+        border-bottom: 1px solid #eaecef;
+    }
+
+    .user-card .card-body {
+        padding: 15px;
+    }
+
+    .user-card .card-footer {
+        background-color: #f8f9fa;
+        border-top: 1px solid #eaecef;
+        padding: 10px !important;
+    }
+
+    /* Mobile action buttons */
+    .mobile-actions {
+        display: flex;
+        width: 100%;
+        justify-content: space-between;
+        gap: 2%;
+    }
+
+    .mobile-action-btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 0;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        gap: 5px;
+        transition: all 0.2s;
+        border: none;
+        color: white;
+        text-align: center;
+    }
+
+    .mobile-action-btn.btn-view {
+        background-color: var(--primary-color, #2563eb);
+    }
+
+    .mobile-action-btn.btn-edit {
+        background-color: #f59e0b;
+    }
+
+    .mobile-action-btn.btn-toggle {
+        background-color: #6b7280;
+    }
+
+    .mobile-action-btn:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+    }
+
+    .mobile-action-btn:active {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .mobile-action-btn i,
+    .mobile-action-btn .material-icons {
+        font-size: 0.9rem;
+    }
+
+    .mobile-action-btn span {
+        font-weight: 500;
+        font-size: 0.85rem;
+        color: white;
+    }
+
     /* Responsive Styles */
     @media (max-width: 768px) {
         .card-body {
-            padding: 1rem;
+            padding: 1rem !important;
         }
         
         .table td {
@@ -586,69 +790,35 @@
         .btn-action .material-icons {
             font-size: 1rem;
         }
-    }
-
-    /* Ensure Table Style Consistency */
-    .table {
-        width: 100% !important;
-        margin-bottom: 0 !important;
-    }
-
-    .table td {
-        padding: 1rem 0.75rem !important;
-        vertical-align: middle !important;
-    }
-
-    /* Ensure consistent widths */
-    .table-responsive {
-        width: 100% !important;
-        margin: 0 !important;
-        overflow-x: auto !important;
-        overflow-y: hidden !important;
-        position: relative !important;
-    }
-
-    /* Profile Layout Fixes */
-    .d-flex {
-        display: flex !important;
-        align-items: center !important;
-    }
-
-    .avatar-container {
-        flex-shrink: 0 !important;
-        width: 40px !important;
-        height: 40px !important;
-        position: relative !important;
-        margin-right: 1rem !important;
-    }
-
-    /* Avatar Styling */
-    .avatar-placeholder {
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        background-color: var(--primary-color) !important;
-        color: white !important;
-        font-weight: 500 !important;
-        border-radius: 50% !important;
-    }
-
-    /* Button Transitions */
-    .btn-toggle-status {
-        transition: all 0.2s ease !important;
-    }
-
-    .btn-toggle-status:hover {
-        transform: scale(1.1) !important;
-    }
-
-    /* Status Colors */
-    .btn-toggle-status[title*="Activate"] {
-        color: var(--success) !important;
-    }
-
-    .btn-toggle-status[title*="Deactivate"] {
-        color: var(--danger) !important;
+        
+        .avatar-container img,
+        .avatar-placeholder {
+            width: 40px;
+            height: 40px;
+        }
+        
+        /* Role and status badges on mobile */
+        .role-badge,
+        .status-badge {
+            padding: 0.3rem 0.5rem;
+            font-size: 0.75rem;
+        }
+        
+        /* For very small screens */
+        @media (max-width: 360px) {
+            .mobile-action-btn {
+                padding: 6px 0;
+            }
+            
+            .mobile-action-btn i,
+            .mobile-action-btn .material-icons {
+                font-size: 0.8rem;
+            }
+            
+            .mobile-action-btn span {
+                font-size: 0.8rem;
+            }
+        }
     }
     </style>
 
@@ -722,6 +892,23 @@
 
     // Function to toggle user status with improved feedback
     function toggleUserStatus(userId, action) {
+        // Check if click is on current user's button
+        const currentUserId = '{{ request.user.userprofile.id|default:"0" }}';
+        const currentUsername = '{{ request.user.username }}';
+        const currentFullName = '{{ request.user.get_full_name }}';
+        
+        // Check if we're trying to modify the current user
+        if (userId === currentUserId || 
+            document.querySelector(`button[data-user-id="${userId}"]`)?.closest('tr')?.querySelector('.user-info-container h6')?.textContent.trim() === currentFullName) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Action Not Allowed',
+                text: 'You cannot modify your own account status.',
+                confirmButtonColor: '#3085d6'
+            });
+            return;
+        }
+
         Swal.fire({
             title: 'Confirm Action',
             text: `Are you sure you want to ${action} this user?`,
@@ -825,6 +1012,24 @@
                 e.preventDefault();
                 const userId = this.getAttribute('data-user-id');
                 const action = this.getAttribute('data-action');
+                
+                // Use the same variables we defined in toggleUserStatus
+                const currentUserId = '{{ request.user.userprofile.id|default:"0" }}';
+                const currentFullName = '{{ request.user.get_full_name }}';
+                
+                // Check if this is the current user's button
+                const isCurrentUser = (this.closest('tr')?.querySelector('.user-info-container h6')?.textContent.trim() === currentFullName);
+                
+                if (isCurrentUser || userId === currentUserId) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Action Not Allowed',
+                        text: 'You cannot modify your own account status.',
+                        confirmButtonColor: '#3085d6'
+                    });
+                    return;
+                }
+                
                 toggleUserStatus(userId, action);
             });
         });
@@ -842,6 +1047,56 @@
             userDetailModal.addEventListener('hidden.bs.modal', function() {
                 const contentContainer = document.getElementById('userDetailContent');
                 if (contentContainer) contentContainer.innerHTML = '';
+            });
+        }
+
+        // Add user detail modal trigger for mobile view
+        document.querySelectorAll('.user-card .btn-view').forEach(button => {
+            button.addEventListener('click', function() {
+                const userId = this.closest('.user-card').getAttribute('data-user-id');
+                showUserDetail(userId);
+            });
+        });
+        
+        // Add toggle status for mobile view
+        document.querySelectorAll('.user-card .btn-toggle').forEach(button => {
+            button.addEventListener('click', function() {
+                const userId = this.closest('.user-card').getAttribute('data-user-id');
+                const action = this.getAttribute('data-action');
+                
+                // Use the same variables we defined above
+                const currentUserId = '{{ request.user.userprofile.id|default:"0" }}';
+                const currentFullName = '{{ request.user.get_full_name }}';
+                
+                // Check if this is the current user's button
+                const isCurrentUser = (this.closest('.card')?.querySelector('h6')?.textContent.trim() === currentFullName);
+                
+                if (isCurrentUser || userId === currentUserId) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Action Not Allowed',
+                        text: 'You cannot modify your own account status.',
+                        confirmButtonColor: '#3085d6'
+                    });
+                    return;
+                }
+                
+                toggleUserStatus(userId, action);
+            });
+        });
+        
+        // Search functionality for mobile cards
+        const searchInput = document.getElementById('userSearch');
+        const userCards = document.querySelectorAll('.user-card');
+        
+        if (searchInput && userCards.length > 0) {
+            searchInput.addEventListener('keyup', function() {
+                const searchTerm = this.value.toLowerCase();
+                
+                userCards.forEach(card => {
+                    const text = card.textContent.toLowerCase();
+                    card.style.display = text.includes(searchTerm) ? '' : 'none';
+                });
             });
         }
     });

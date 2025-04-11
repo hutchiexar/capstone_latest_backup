@@ -83,7 +83,6 @@
                             <th>Case ID</th>
                             <th>Date Filed</th>
                             <th>Violator</th>
-                            <th>Violation Type</th>
                             <th>Fine Amount</th>
                             <th>Status</th>
                             <th class="text-end">Actions</th>
@@ -97,15 +96,12 @@
                             <td>
                                 <div class="d-flex flex-column">
                                     <span class="fw-medium">{{ violation.violator.first_name }} {{ violation.violator.last_name }}</span>
-                                    <small class="text-muted">{{ violation.violator.license_number }}</small>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="violation-types">
-                                    {% for type in violation.get_violation_types %}
-                                    <span class="violation-type">{{ type }}</span>
-                                    {% if not forloop.last %}<span class="separator">•</span>{% endif %}
-                                    {% endfor %}
+                                    <div class="d-flex align-items-center text-muted small">
+                                        <span class="me-2"><i class="fas fa-id-card me-1"></i>{{ violation.violator.license_number }}</span>
+                                        {% if violation.plate_number %}
+                                        <span><i class="fas fa-car me-1"></i>{{ violation.plate_number }}</span>
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </td>
                             <td>₱{{ violation.fine_amount }}</td>
@@ -118,7 +114,7 @@
                                            data-violation-id="{{ violation.id }}" 
                                            data-bs-toggle="tooltip" 
                                            data-bs-placement="top" 
-                                           title="View Details">
+                                           title="View Details and Violations">
                                         <i class="fas fa-eye"></i>
                                     </button>
                                     <a href="{% url 'adjudication_form' violation.id %}" 
@@ -156,15 +152,12 @@
                         </div>
                         <div class="violator-info">
                             <span class="fw-medium">{{ violation.violator.first_name }} {{ violation.violator.last_name }}</span>
-                            <span class="d-block text-muted small">{{ violation.violator.license_number }}</span>
-                        </div>
-                    </div>
-                    <div class="adjudication-card-content">
-                        <div class="violation-type-container">
-                            {% for type in violation.get_violation_types %}
-                            <span class="violation-type-mobile">{{ type }}</span>
-                            {% if not forloop.last %}<span class="separator">•</span>{% endif %}
-                            {% endfor %}
+                            <div class="d-flex align-items-center text-muted small mt-1">
+                                <span class="me-2"><i class="fas fa-id-card me-1"></i>{{ violation.violator.license_number }}</span>
+                                {% if violation.plate_number %}
+                                <span><i class="fas fa-car me-1"></i>{{ violation.plate_number }}</span>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                     <div class="adjudication-card-footer">
@@ -176,7 +169,7 @@
                         </div>
                         <div class="d-flex justify-content-between align-items-center mt-2">
                             <button type="button" class="btn btn-sm btn-primary view-violation-btn" data-violation-id="{{ violation.id }}">
-                                <i class="fas fa-eye me-1"></i> View
+                                <i class="fas fa-eye me-1"></i> View Details
                             </button>
                             <a href="{% url 'adjudication_form' violation.id %}" class="btn btn-sm btn-purple">
                                 <i class="fas fa-balance-scale me-1"></i> Adjudicate
@@ -220,23 +213,81 @@
 <style>
 /* Table Styles */
 .table-responsive {
-    max-height: 70vh;
-    overflow-y: auto;
-    border-radius: 8px;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    /* Prevent table from expanding when modal opens */
+    max-width: 100%;
+    margin-bottom: 0;
 }
 
+/* Fix table layout to prevent shifting */
 .table {
+    margin-bottom: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
     font-size: 0.95rem;
-    min-width: 800px; /* Ensure horizontal scroll on mobile */
+    min-width: 800px;
+    table-layout: fixed; /* Ensure fixed table layout */
 }
 
-.table th {
-    font-weight: 600;
-    background-color: #f8f9fa;
-    border-bottom: 2px solid #e9ecef;
-    position: sticky;
-    top: 0;
-    z-index: 1;
+/* Set column widths explicitly */
+.table th:nth-child(1), .table td:nth-child(1) { width: 8%; } /* ID */
+.table th:nth-child(2), .table td:nth-child(2) { width: 15%; } /* Date */
+.table th:nth-child(3), .table td:nth-child(3) { width: 35%; } /* Violator */
+.table th:nth-child(4), .table td:nth-child(4) { width: 15%; } /* Fine */
+.table th:nth-child(5), .table td:nth-child(5) { width: 12%; } /* Status */
+.table th:nth-child(6), .table td:nth-child(6) { width: 15%; } /* Actions */
+
+/* Styles for violation types display */
+.violation-types-wrapper {
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.violation-types {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    max-width: 100%;
+    width: 100%;
+    max-height: 80px; /* Limit height to prevent excessive vertical growth */
+    overflow-y: auto;
+}
+
+.violation-type {
+    font-size: 0.8rem;
+    color: var(--primary-color);
+    background-color: rgba(13, 110, 253, 0.08);
+    border-radius: 4px;
+    padding: 2px 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    display: inline-block;
+}
+
+/* Mobile styles */
+.violation-types-container.mobile {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-wrap: wrap;
+    padding-bottom: 5px;
+}
+
+.violation-type-mobile {
+    margin-bottom: 4px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    background-color: rgba(13, 110, 253, 0.08);
+    color: var(--primary-color);
+    border-radius: 4px;
+    padding: 2px 6px;
+    display: inline-block;
 }
 
 /* Custom Scrollbar */
@@ -480,7 +531,7 @@
     border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 
-.violation-type-container {
+.violation-types-container {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
@@ -697,7 +748,37 @@ document.addEventListener('DOMContentLoaded', function() {
         disableFocus: false,
         disableScroll: true,
         awaitOpenAnimation: true,
-        awaitCloseAnimation: true
+        awaitCloseAnimation: true,
+        onShow: function(modal) {
+            // Force proper layout calculation before displaying
+            setTimeout(function() {
+                const tables = modal.querySelectorAll('.table');
+                tables.forEach(table => {
+                    // Force reflow
+                    table.style.display = 'none';
+                    const reflow = table.offsetHeight; // Trigger reflow
+                    table.style.display = 'table';
+                    
+                    // Ensure fixed layout
+                    table.style.tableLayout = 'fixed';
+                });
+                
+                // Fix table-responsive width
+                const tableResponsive = modal.querySelectorAll('.table-responsive');
+                tableResponsive.forEach(container => {
+                    container.style.width = '100%';
+                    container.style.maxWidth = '100%';
+                });
+                
+                // Fix violation type containers
+                const typeContainers = modal.querySelectorAll('.violation-types-container, .violation-types');
+                typeContainers.forEach(container => {
+                    container.style.maxWidth = '100%';
+                    container.style.width = '100%';
+                    container.style.overflowX = 'hidden';
+                });
+            }, 10);
+        }
     });
 
     // Initialize tooltips
@@ -777,6 +858,34 @@ function showViolationDetail(violationId) {
         .then(html => {
             // Update modal content with fetched details
             modalContent.innerHTML = html;
+            
+            // Add some delay to ensure the content is rendered properly
+            setTimeout(() => {
+                const container = document.querySelector('.modal__container');
+                if (container) {
+                    // Force a reflow to prevent layout shifts
+                    container.style.display = 'none';
+                    container.offsetHeight; // Force reflow
+                    container.style.display = '';
+                    
+                    // Fix any tables within the modal
+                    const tables = container.querySelectorAll('.table');
+                    tables.forEach(table => {
+                        table.style.tableLayout = 'fixed';
+                        
+                        // Set fixed widths for all violation type cells
+                        const typeCells = table.querySelectorAll('td:nth-child(2)');
+                        typeCells.forEach(cell => {
+                            const container = cell.querySelector('.violation-types-container, .violation-types');
+                            if (container) {
+                                container.style.maxWidth = '100%';
+                                container.style.width = '100%';
+                                container.style.overflowX = 'hidden';
+                            }
+                        });
+                    });
+                }
+            }, 100);
         })
         .catch(error => {
             // Show error message in the modal

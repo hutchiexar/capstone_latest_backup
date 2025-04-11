@@ -36,7 +36,7 @@
     .elearning-container {
         background-color: white;
         border-radius: 8px;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
         max-width: 1100px;
         margin: 20px auto;
         padding: 0;
@@ -189,6 +189,14 @@
         background-color: #fff;
         border-radius: 8px;
         padding: 0.5rem 0;
+    }
+    
+    .topic-content .container {
+        max-width: 100%;
+        padding: 15px;
+        background-color: #fff;
+        border-radius: 0;
+        border: none;
     }
     
     .topic-content img {
@@ -1264,6 +1272,36 @@
             padding: 12px 10px;
         }
     }
+    
+    /* Add box-shadow to all cards */
+    .card {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Improve text visibility */
+    .list-group-item {
+        color: #333;
+    }
+    
+    .list-group-item span {
+        color: #333;
+    }
+    
+    .badge {
+        font-weight: 600;
+    }
+    
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+        font-weight: 600;
+    }
+    
+    /* Ensure topic information text is visible */
+    .topic-information {
+        color: #333;
+        font-weight: 500;
+    }
 </style>
 {% endblock %}
 
@@ -1341,165 +1379,169 @@
             
             <!-- Actual Content -->
             <div class="topic-content-container">
-                <div class="topic-header">
-                    <div class="breadcrumb-nav">
-                        <a href="{% url 'educational:landing_page' %}" class="breadcrumb-item">GETTING READY TO DRIVE</a>
-                        <span class="breadcrumb-separator">/</span>
-                        <a href="{% url 'educational:topic_list' %}?category={{ topic.category.id }}" class="breadcrumb-item">{{ topic.category.title|upper }}</a>
-                        <span class="breadcrumb-separator">/</span>
-                        <span class="breadcrumb-item">{{ topic.title|upper }}</span>
-                    </div>
-                    
-                    <h1 class="topic-title">{{ topic.title|upper }}</h1>
-                </div>
-                
-                <div class="topic-content">
-                    {% if is_pdf_content %}
-                    <!-- Enhanced PDF Controls -->
-                    <div class="pdf-controls">
-                        <div class="pdf-controls-left">
-                            <!-- Navigation Controls -->
-                            <div class="page-controls">
-                                <button class="page-nav-btn" id="prevPage" title="Previous Page">
-                                    <span class="material-icons">navigate_before</span>
-                                    <span class="btn-text">Previous</span>
-                                </button>
-                                <div class="page-indicator">
-                                    <input type="number" min="1" class="form-control pdf-page-input" id="pageNumber" value="1" aria-label="Page Number">
-                                    <span class="input-group-text" id="pageCount">/ 1</span>
-                                </div>
-                                <button class="page-nav-btn" id="nextPage" title="Next Page">
-                                    <span class="btn-text">Next</span>
-                                    <span class="material-icons">navigate_next</span>
-                                </button>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="topic-header">
+                            <div class="breadcrumb-nav">
+                                <a href="{% url 'educational:landing_page' %}" class="breadcrumb-item">GETTING READY TO DRIVE</a>
+                                <span class="breadcrumb-separator">/</span>
+                                <a href="{% url 'educational:topic_list' %}?category={{ topic.category.id }}" class="breadcrumb-item">{{ topic.category.title|upper }}</a>
+                                <span class="breadcrumb-separator">/</span>
+                                <span class="breadcrumb-item">{{ topic.title|upper }}</span>
                             </div>
                             
-                            <!-- Zoom Controls -->
-                            <div class="zoom-controls">
-                                <button class="zoom-btn" id="zoomOut" title="Zoom Out">
-                                    <span class="material-icons">zoom_out</span>
-                                </button>
-                                <select class="zoom-select" id="zoomSelect" aria-label="Zoom Level">
-                                    <option value="0.5">50%</option>
-                                    <option value="0.75">75%</option>
-                                    <option value="1" selected>100%</option>
-                                    <option value="1.25">125%</option>
-                                    <option value="1.5">150%</option>
-                                    <option value="1.75">175%</option>
-                                    <option value="2">200%</option>
-                                    <option value="2.5">250%</option>
-                                    <option value="3">300%</option>
-                                </select>
-                                <button class="zoom-btn" id="zoomIn" title="Zoom In">
-                                    <span class="material-icons">zoom_in</span>
-                                </button>
-                            </div>
+                            <h1 class="topic-title">{{ topic.title|upper }}</h1>
                         </div>
                         
-                        <div class="pdf-controls-right">
-                            <!-- Search Input -->
-                            <div class="pdf-search-container">
-                                <input type="text" class="pdf-search-input" id="searchInput" placeholder="Search in document...">
-                                <span class="pdf-search-clear" id="clearSearch">
-                                    <span class="material-icons" style="font-size: 16px;">close</span>
-                                </span>
+                        <div class="topic-content">
+                            {% if is_pdf_content %}
+                            <!-- Enhanced PDF Controls -->
+                            <div class="pdf-controls">
+                                <div class="pdf-controls-left">
+                                    <!-- Navigation Controls -->
+                                    <div class="page-controls">
+                                        <button class="page-nav-btn" id="prevPage" title="Previous Page">
+                                            <span class="material-icons">navigate_before</span>
+                                            <span class="btn-text">Previous</span>
+                                        </button>
+                                        <div class="page-indicator">
+                                            <input type="number" min="1" class="form-control pdf-page-input" id="pageNumber" value="1" aria-label="Page Number">
+                                            <span class="input-group-text" id="pageCount">/ 1</span>
+                                        </div>
+                                        <button class="page-nav-btn" id="nextPage" title="Next Page">
+                                            <span class="btn-text">Next</span>
+                                            <span class="material-icons">navigate_next</span>
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Zoom Controls -->
+                                    <div class="zoom-controls">
+                                        <button class="zoom-btn" id="zoomOut" title="Zoom Out">
+                                            <span class="material-icons">zoom_out</span>
+                                        </button>
+                                        <select class="zoom-select" id="zoomSelect" aria-label="Zoom Level">
+                                            <option value="0.5">50%</option>
+                                            <option value="0.75">75%</option>
+                                            <option value="1" selected>100%</option>
+                                            <option value="1.25">125%</option>
+                                            <option value="1.5">150%</option>
+                                            <option value="1.75">175%</option>
+                                            <option value="2">200%</option>
+                                            <option value="2.5">250%</option>
+                                            <option value="3">300%</option>
+                                        </select>
+                                        <button class="zoom-btn" id="zoomIn" title="Zoom In">
+                                            <span class="material-icons">zoom_in</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="pdf-controls-right">
+                                    <!-- Search Input -->
+                                    <div class="pdf-search-container">
+                                        <input type="text" class="pdf-search-input" id="searchInput" placeholder="Search in document...">
+                                        <span class="pdf-search-clear" id="clearSearch">
+                                            <span class="material-icons" style="font-size: 16px;">close</span>
+                                        </span>
+                                    </div>
+                                    
+                                    <!-- Fit Controls -->
+                                    <div class="fit-controls">
+                                        <button class="btn-fit" id="fitToWidth" title="Fit to Width">
+                                            <span class="material-icons">swap_horiz</span>
+                                            <span class="btn-text">Fit Width</span>
+                                        </button>
+                                        <button class="btn-fit" id="fitToPage" title="Fit to Page">
+                                            <span class="material-icons">fit_screen</span>
+                                            <span class="btn-text">Fit Page</span>
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Download Button -->
+                                    <button class="download-btn" id="downloadPdf" title="Download PDF">
+                                        <span class="material-icons">download</span>
+                                        <span class="btn-text">Download</span>
+                                    </button>
+                                </div>
                             </div>
                             
-                            <!-- Fit Controls -->
-                            <div class="fit-controls">
-                                <button class="btn-fit" id="fitToWidth" title="Fit to Width">
-                                    <span class="material-icons">swap_horiz</span>
-                                    <span class="btn-text">Fit Width</span>
-                                </button>
-                                <button class="btn-fit" id="fitToPage" title="Fit to Page">
-                                    <span class="material-icons">fit_screen</span>
-                                    <span class="btn-text">Fit Page</span>
-                                </button>
+                            <!-- PDF Viewer -->
+                            <div class="pdf-container">
+                                <div id="loadingIndicator" class="text-center py-5">
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                    <p class="mt-2">Loading PDF...</p>
+                                </div>
+                                <canvas id="pdfViewer"></canvas>
+                                
+                                <!-- Mobile Touch Controls -->
+                                <div class="pdf-touch-area">
+                                    <div class="touch-controls">
+                                        <button class="touch-btn prev-page">
+                                            <i class="material-icons">navigate_before</i>
+                                        </button>
+                                        <span class="touch-page-indicator text-white"></span>
+                                        <button class="touch-btn next-page">
+                                            <i class="material-icons">navigate_next</i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% else %}
+                            <!-- Regular Content Display with Pagination -->
+                            <div id="contentPages">
+                                <!-- This will be populated via JavaScript -->
                             </div>
                             
-                            <!-- Download Button -->
-                            <button class="download-btn" id="downloadPdf" title="Download PDF">
-                                <span class="material-icons">download</span>
-                                <span class="btn-text">Download</span>
+                            <!-- Pagination controls -->
+                            <div class="content-pagination">
+                                <button class="pagination-btn prev-page-btn" disabled>
+                                    <span class="material-icons me-1">arrow_back</span> Previous
+                                </button>
+                                <div class="pagination-indicator">Page <span id="currentPage">1</span> of <span id="totalPages">1</span></div>
+                                <button class="pagination-btn next-page-btn">
+                                    Next <span class="material-icons ms-1">arrow_forward</span>
+                                </button>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        {% if topic.attachments.exists %}
+                        <div class="attachments-section">
+                            <h3 class="attachments-title">
+                                <i class="material-icons">attachment</i>
+                                Attachments
+                            </h3>
+                            <div class="list-group">
+                                {% for attachment in topic.attachments.all %}
+                                <a href="{{ attachment.file.url }}" class="list-group-item list-group-item-action" target="_blank">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="material-icons small me-2">description</i>
+                                            <span>{{ attachment.title }}</span>
+                                        </div>
+                                        <span class="badge bg-primary">{{ attachment.get_file_type_display }}</span>
+                                    </div>
+                                    {% if attachment.description %}
+                                    <small class="text-muted">{{ attachment.description }}</small>
+                                    {% endif %}
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="topic-actions">
+                            <button class="action-btn bookmark-btn {% if is_bookmarked %}active{% endif %}" id="bookmarkBtn">
+                                <i class="material-icons">{% if is_bookmarked %}bookmark{% else %}bookmark_border{% endif %}</i>
+                                <span>{% if is_bookmarked %}Bookmarked{% else %}Bookmark{% endif %}</span>
+                            </button>
+                            
+                            <button class="action-btn complete-btn {% if is_completed %}completed{% endif %}" id="completeBtn">
+                                <i class="material-icons">{% if is_completed %}check_circle{% else %}check_circle_outline{% endif %}</i>
+                                <span>{% if is_completed %}Completed{% else %}Mark as Completed{% endif %}</span>
                             </button>
                         </div>
                     </div>
-                    
-                    <!-- PDF Viewer -->
-                    <div class="pdf-container">
-                        <div id="loadingIndicator" class="text-center py-5">
-                            <div class="spinner-border text-primary" role="status"></div>
-                            <p class="mt-2">Loading PDF...</p>
-                        </div>
-                        <canvas id="pdfViewer"></canvas>
-                        
-                        <!-- Mobile Touch Controls -->
-                        <div class="pdf-touch-area">
-                            <div class="touch-controls">
-                                <button class="touch-btn prev-page">
-                                    <i class="material-icons">navigate_before</i>
-                                </button>
-                                <span class="touch-page-indicator text-white"></span>
-                                <button class="touch-btn next-page">
-                                    <i class="material-icons">navigate_next</i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    {% else %}
-                    <!-- Regular Content Display with Pagination -->
-                    <div id="contentPages">
-                        <!-- This will be populated via JavaScript -->
-                    </div>
-                    
-                    <!-- Pagination controls -->
-                    <div class="content-pagination">
-                        <button class="pagination-btn prev-page-btn" disabled>
-                            <span class="material-icons me-1">arrow_back</span> Previous
-                        </button>
-                        <div class="pagination-indicator">Page <span id="currentPage">1</span> of <span id="totalPages">1</span></div>
-                        <button class="pagination-btn next-page-btn">
-                            Next <span class="material-icons ms-1">arrow_forward</span>
-                        </button>
-                    </div>
-                    {% endif %}
-                </div>
-                
-                {% if topic.attachments.exists %}
-                <div class="attachments-section">
-                    <h3 class="attachments-title">
-                        <i class="material-icons">attachment</i>
-                        Attachments
-                    </h3>
-                    <div class="list-group">
-                        {% for attachment in topic.attachments.all %}
-                        <a href="{{ attachment.file.url }}" class="list-group-item list-group-item-action" target="_blank">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <i class="material-icons small me-2">description</i>
-                                    <span>{{ attachment.title }}</span>
-                                </div>
-                                <span class="badge bg-primary">{{ attachment.get_file_type_display }}</span>
-                            </div>
-                            {% if attachment.description %}
-                            <small class="text-muted">{{ attachment.description }}</small>
-                            {% endif %}
-                        </a>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endif %}
-                
-                <div class="topic-actions">
-                    <button class="action-btn bookmark-btn {% if is_bookmarked %}active{% endif %}" id="bookmarkBtn">
-                        <i class="material-icons">{% if is_bookmarked %}bookmark{% else %}bookmark_border{% endif %}</i>
-                        <span>{% if is_bookmarked %}Bookmarked{% else %}Bookmark{% endif %}</span>
-                    </button>
-                    
-                    <button class="action-btn complete-btn {% if is_completed %}completed{% endif %}" id="completeBtn">
-                        <i class="material-icons">{% if is_completed %}check_circle{% else %}check_circle_outline{% endif %}</i>
-                        <span>{% if is_completed %}Completed{% else %}Mark as Completed{% endif %}</span>
-                    </button>
                 </div>
             </div>
         </div>
@@ -1648,26 +1690,28 @@
                 
                 // Create a clean container for PDF content
                 const pdfContainer = `
-                    <div class="drivers-manual-container">
-                        <div class="drivers-manual-header">
-                            <h2 class="drivers-manual-title">
-                                <span class="material-icons">menu_book</span>
-                                Drivers Manual
-                            </h2>
-                        </div>
-                        
-                        <!-- Simple approach: directly display the first PDF image -->
-                        <div class="pdf-content-preview">
-                            <img src="PDF extracted image 1" alt="PDF Page 1" class="img-fluid">
-                        </div>
-                        
-                        <div class="drivers-manual-footer">
-                            <p class="text-center text-muted">View the full PDF document for all pages</p>
-                            <div class="d-flex justify-content-center mt-3">
-                                <a href="{% if pdf_url %}{{ pdf_url }}{% endif %}" class="btn btn-primary d-flex align-items-center" target="_blank">
-                                    <span class="material-icons me-2">visibility</span>
-                                    View Full Document
-                                </a>
+                    <div class="container">
+                        <div class="drivers-manual-container">
+                            <div class="drivers-manual-header">
+                                <h2 class="drivers-manual-title">
+                                    <span class="material-icons">menu_book</span>
+                                    Drivers Manual
+                                </h2>
+                            </div>
+                            
+                            <!-- Simple approach: directly display the first PDF image -->
+                            <div class="pdf-content-preview">
+                                <img src="PDF extracted image 1" alt="PDF Page 1" class="img-fluid">
+                            </div>
+                            
+                            <div class="drivers-manual-footer">
+                                <p class="text-center text-muted">View the full PDF document for all pages</p>
+                                <div class="d-flex justify-content-center mt-3">
+                                    <a href="{% if pdf_url %}{{ pdf_url }}{% endif %}" class="btn btn-primary d-flex align-items-center" target="_blank">
+                                        <span class="material-icons me-2">visibility</span>
+                                        View Full Document
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1692,7 +1736,7 @@
                     
                     // If adding this paragraph would exceed the limit, start a new page
                     if (currentPage && (currentPage.length + paraWithClosing.length) > maxChars) {
-                        pages.push(currentPage);
+                        pages.push(`<div class="container">${currentPage}</div>`);
                         currentPage = paraWithClosing;
                     } else {
                         currentPage += paraWithClosing;
@@ -1701,7 +1745,7 @@
                 
                 // Add the last page if not empty
                 if (currentPage) {
-                    pages.push(currentPage);
+                    pages.push(`<div class="container">${currentPage}</div>`);
                 }
                 
                 return pages;

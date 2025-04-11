@@ -4,22 +4,29 @@
 {% block title %}Educational Categories{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
+<div class="container-fluid py-4 px-3">
     <!-- Header -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="d-flex align-items-center">
-                <div>
-                    <h1 class="fs-2 mb-1">Educational Categories</h1>
-                    <p class="text-muted mb-0">Manage all categories for educational materials.</p>
-                </div>
-                <div class="ms-auto">
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createCategoryModal">
-                        <i class="material-icons me-1">create_new_folder</i> Create Category
-                    </button>
-                    <a href="{% url 'educational:admin_dashboard' %}" class="btn btn-outline-secondary ms-2">
-                        <i class="material-icons me-1">dashboard</i> Back to Dashboard
-                    </a>
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-body p-4">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+                        <div>
+                            <h1 class="fs-2 mb-1 fw-bold">Educational Categories</h1>
+                            <p class="text-muted mb-0">Manage all categories for educational materials.</p>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-primary d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#createCategoryModal">
+                                <span class="material-icons me-2">create_new_folder</span> 
+                                <span>Create Category</span>
+                            </button>
+                            <a href="{% url 'educational:admin_dashboard' %}" class="btn btn-outline-secondary d-flex align-items-center justify-content-center">
+                                <span class="material-icons me-2">dashboard</span> 
+                                <span class="d-none d-sm-inline">Back to Dashboard</span>
+                                <span class="d-inline d-sm-none">Back</span>
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -28,19 +35,19 @@
     <!-- Filters and Search -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card shadow-sm border-0">
-                <div class="card-body">
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-body p-3 p-md-4">
                     <form method="get" class="row g-3 align-items-end">
-                        <div class="col-md-6">
-                            <label for="search" class="form-label">Search Categories</label>
+                        <div class="col-12 col-md-6 col-lg-5">
+                            <label for="search" class="form-label fw-medium">Search Categories</label>
                             <div class="input-group">
-                                <span class="input-group-text"><i class="material-icons">search</i></span>
-                                <input type="text" class="form-control" id="search" name="search" placeholder="Search by title..." 
+                                <span class="input-group-text"><span class="material-icons">search</span></span>
+                                <input type="text" class="form-control search-input" id="search" name="search" placeholder="Search by title..." 
                                        value="{{ request.GET.search|default:'' }}">
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <label for="sort" class="form-label">Sort By</label>
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <label for="sort" class="form-label fw-medium">Sort By</label>
                             <select class="form-select" id="sort" name="sort">
                                 <option value="title" {% if request.GET.sort == 'title' %}selected{% endif %}>Title (A-Z)</option>
                                 <option value="-title" {% if request.GET.sort == '-title' %}selected{% endif %}>Title (Z-A)</option>
@@ -48,12 +55,14 @@
                                 <option value="topics_count" {% if request.GET.sort == 'topics_count' %}selected{% endif %}>Least Topics</option>
                             </select>
                         </div>
-                        <div class="col-md-3 d-flex">
-                            <button type="submit" class="btn btn-primary flex-grow-1 me-2">
-                                <i class="material-icons align-middle">filter_list</i> Apply Filters
+                        <div class="col-12 col-lg-4 d-flex gap-2 mt-3 mt-lg-0">
+                            <button type="submit" class="btn btn-primary d-flex align-items-center justify-content-center flex-grow-1">
+                                <span class="material-icons me-2">filter_list</span> 
+                                <span>Apply Filters</span>
                             </button>
-                            <a href="{% url 'educational:admin_category_list' %}" class="btn btn-outline-secondary">
-                                <i class="material-icons align-middle">clear</i> Clear
+                            <a href="{% url 'educational:admin_category_list' %}" class="btn btn-outline-secondary d-flex align-items-center justify-content-center">
+                                <span class="material-icons me-2">clear</span>
+                                <span>Clear</span>
                             </a>
                         </div>
                     </form>
@@ -65,27 +74,28 @@
     <!-- Categories List -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white py-3 border-0">
-                    <h5 class="mb-0">All Categories</h5>
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-header bg-white py-3 px-4 border-0">
+                    <h5 class="mb-0 fw-bold">All Categories</h5>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-striped table-hover mb-0">
+                    <!-- Table for larger screens -->
+                    <div class="table-responsive d-none d-md-block">
+                        <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th width="5%" class="text-center">#</th>
+                                    <th width="5%" class="ps-4">#</th>
                                     <th width="25%">TITLE</th>
                                     <th width="45%">DESCRIPTION</th>
                                     <th width="10%" class="text-center">TOPICS</th>
-                                    <th width="15%" class="text-center">ACTIONS</th>
+                                    <th width="15%" class="text-end pe-4">ACTIONS</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for category in categories %}
                                 <tr>
-                                    <td class="text-center">{{ forloop.counter }}</td>
-                                    <td>{{ category.title }}</td>
+                                    <td class="ps-4">{{ forloop.counter }}</td>
+                                    <td class="fw-medium">{{ category.title }}</td>
                                     <td>
                                         {% if category.description %}
                                             {{ category.description|truncatechars:100 }}
@@ -93,17 +103,19 @@
                                             <span class="text-muted fst-italic">No description</span>
                                         {% endif %}
                                     </td>
-                                    <td class="text-center">{{ category.topics_count|default:"0" }}</td>
                                     <td class="text-center">
-                                        <div class="btn-group">
+                                        <span class="badge bg-primary rounded-pill">{{ category.topics_count|default:"0" }}</span>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <div class="d-flex justify-content-end gap-2">
                                             <a href="{% url 'educational:admin_topic_list' %}?category={{ category.id }}" class="btn btn-sm btn-outline-info" title="View Topics">
-                                                <i class="material-icons small">list</i>
+                                                <span class="material-icons">list</span>
                                             </a>
                                             <a href="{% url 'educational:admin_category_edit' category_id=category.id %}" class="btn btn-sm btn-outline-primary" title="Edit">
-                                                <i class="material-icons small">edit</i>
+                                                <span class="material-icons">edit</span>
                                             </a>
                                             <a href="{% url 'educational:admin_category_delete' category_id=category.id %}" class="btn btn-sm btn-outline-danger" title="Delete">
-                                                <i class="material-icons small">delete</i>
+                                                <span class="material-icons">delete</span>
                                             </a>
                                         </div>
                                     </td>
@@ -112,10 +124,10 @@
                                 <tr>
                                     <td colspan="5" class="text-center py-5">
                                         <div class="text-muted">
-                                            <i class="material-icons" style="font-size: 3rem;">category</i>
+                                            <span class="material-icons d-block mb-2" style="font-size: 3rem; opacity: 0.5;">category</span>
                                             <p class="mt-3">No categories found.</p>
                                             <button type="button" class="btn btn-primary btn-sm mt-2" data-bs-toggle="modal" data-bs-target="#createCategoryModal">
-                                                <i class="material-icons me-1 small">add</i> Create Your First Category
+                                                <span class="material-icons me-1">add</span> Create Your First Category
                                             </button>
                                         </div>
                                     </td>
@@ -124,68 +136,96 @@
                             </tbody>
                         </table>
                     </div>
+                    
+                    <!-- Card view for mobile screens -->
+                    <div class="d-md-none px-3 py-3">
+                        {% for category in categories %}
+                        <div class="mobile-card mb-3">
+                            <div class="mobile-card-header d-flex justify-content-between align-items-center mb-2">
+                                <div class="d-flex align-items-center">
+                                    <span class="badge bg-secondary rounded-pill me-2">#{{ forloop.counter }}</span>
+                                    <h6 class="mb-0 fw-bold card-title">{{ category.title }}</h6>
+                                </div>
+                                <span class="badge bg-primary rounded-pill">{{ category.topics_count|default:"0" }} topics</span>
+                            </div>
+                            <div class="mobile-card-body">
+                                <div class="mobile-card-text mb-3">
+                                    {% if category.description %}
+                                        {{ category.description|truncatechars:120 }}
+                                    {% else %}
+                                        <span class="text-muted fst-italic">No description provided</span>
+                                    {% endif %}
+                                </div>
+                                <div class="d-flex flex-wrap justify-content-end gap-2 mt-3">
+                                    <a href="{% url 'educational:admin_topic_list' %}?category={{ category.id }}" class="btn btn-sm btn-outline-info mobile-btn d-flex align-items-center" title="View Topics">
+                                        <span class="material-icons me-1">list</span> <span>Topics</span>
+                                    </a>
+                                    <a href="{% url 'educational:admin_category_edit' category_id=category.id %}" class="btn btn-sm btn-outline-primary mobile-btn d-flex align-items-center" title="Edit">
+                                        <span class="material-icons me-1">edit</span> <span>Edit</span>
+                                    </a>
+                                    <a href="{% url 'educational:admin_category_delete' category_id=category.id %}" class="btn btn-sm btn-outline-danger mobile-btn d-flex align-items-center" title="Delete">
+                                        <span class="material-icons me-1">delete</span> <span>Delete</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-5">
+                            <span class="material-icons d-block mb-2" style="font-size: 3rem; opacity: 0.5;">category</span>
+                            <p class="text-muted">No categories found matching your criteria</p>
+                            <button type="button" class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#createCategoryModal">
+                                <span class="material-icons me-1">add</span> Create Category
+                            </button>
+                        </div>
+                        {% endfor %}
+                    </div>
 
                     <!-- Pagination -->
                     {% if categories.has_other_pages %}
-                    <nav aria-label="Page navigation" class="mt-4">
-                        <ul class="pagination justify-content-center">
-                            {% if categories.has_previous %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}" aria-label="First">
-                                    <span aria-hidden="true">&laquo;&laquo;</span>
-                                </a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ categories.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}" aria-label="Previous">
-                                    <span aria-hidden="true">&laquo;</span>
-                                </a>
-                            </li>
-                            {% else %}
-                            <li class="page-item disabled">
-                                <a class="page-link" href="#" aria-label="First">
-                                    <span aria-hidden="true">&laquo;&laquo;</span>
-                                </a>
-                            </li>
-                            <li class="page-item disabled">
-                                <a class="page-link" href="#" aria-label="Previous">
-                                    <span aria-hidden="true">&laquo;</span>
-                                </a>
-                            </li>
-                            {% endif %}
+                    <div class="card-footer bg-white py-3">
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
+                            <div class="small text-muted mb-3 mb-md-0 text-center text-md-start">
+                                Showing {{ categories.start_index }} to {{ categories.end_index }} of {{ categories.paginator.count }} entries
+                            </div>
+                            <nav aria-label="Category pagination">
+                                <ul class="pagination mb-0 pagination-sm flex-wrap justify-content-center justify-content-md-end mobile-pagination">
+                                    {% if categories.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}" aria-label="First">
+                                            <span class="material-icons" style="font-size: 1rem;">first_page</span>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ categories.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}" aria-label="Previous">
+                                            <span class="material-icons" style="font-size: 1rem;">chevron_left</span>
+                                        </a>
+                                    </li>
+                                    {% endif %}
 
-                            {% for i in categories.paginator.page_range %}
-                                {% if i > categories.number|add:'-3' and i < categories.number|add:'3' %}
-                                <li class="page-item {% if i == categories.number %}active{% endif %}">
-                                    <a class="page-link" href="?page={{ i }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">{{ i }}</a>
-                                </li>
-                                {% endif %}
-                            {% endfor %}
+                                    {% for i in categories.paginator.page_range %}
+                                        {% if i > categories.number|add:'-3' and i < categories.number|add:'3' %}
+                                        <li class="page-item {% if i == categories.number %}active{% endif %}">
+                                            <a class="page-link" href="?page={{ i }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">{{ i }}</a>
+                                        </li>
+                                        {% endif %}
+                                    {% endfor %}
 
-                            {% if categories.has_next %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ categories.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}" aria-label="Next">
-                                    <span aria-hidden="true">&raquo;</span>
-                                </a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ categories.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}" aria-label="Last">
-                                    <span aria-hidden="true">&raquo;&raquo;</span>
-                                </a>
-                            </li>
-                            {% else %}
-                            <li class="page-item disabled">
-                                <a class="page-link" href="#" aria-label="Next">
-                                    <span aria-hidden="true">&raquo;</span>
-                                </a>
-                            </li>
-                            <li class="page-item disabled">
-                                <a class="page-link" href="#" aria-label="Last">
-                                    <span aria-hidden="true">&raquo;&raquo;</span>
-                                </a>
-                            </li>
-                            {% endif %}
-                        </ul>
-                    </nav>
+                                    {% if categories.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ categories.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}" aria-label="Next">
+                                            <span class="material-icons" style="font-size: 1rem;">chevron_right</span>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ categories.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}" aria-label="Last">
+                                            <span class="material-icons" style="font-size: 1rem;">last_page</span>
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
                     {% endif %}
                 </div>
             </div>
@@ -195,34 +235,38 @@
 
 <!-- Create Category Modal -->
 <div class="modal fade" id="createCategoryModal" tabindex="-1" aria-labelledby="createCategoryModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="createCategoryModalLabel">Create New Category</h5>
+                <h5 class="modal-title" id="createCategoryModalLabel">
+                    <span class="material-icons me-2 text-primary">create_new_folder</span>
+                    Create New Category
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="create-category-form" action="{% url 'educational:admin_category_create' %}" method="post">
                     {% csrf_token %}
-                    <div class="card">
-                        <div class="card-body">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body p-3 p-md-4">
                             <div class="mb-3">
-                                <label for="categoryTitle" class="form-label">Category Title <span class="text-danger">*</span></label>
+                                <label for="categoryTitle" class="form-label fw-medium">Category Title <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="categoryTitle" name="title" required placeholder="e.g., Traffic Safety">
+                                <div class="invalid-feedback">Please enter a category title.</div>
                             </div>
                             
                             <div class="mb-3">
-                                <label for="categoryDescription" class="form-label">Description</label>
-                                <textarea class="form-control" id="categoryDescription" name="description" rows="5" placeholder="Describe the purpose and content of this category..."></textarea>
-                                <small class="text-muted">A good description helps users understand what topics they'll find in this category.</small>
+                                <label for="categoryDescription" class="form-label fw-medium">Description</label>
+                                <textarea class="form-control" id="categoryDescription" name="description" rows="4" placeholder="Describe the purpose and content of this category..."></textarea>
+                                <div class="form-text">A good description helps users understand what topics they'll find in this category.</div>
                             </div>
                             
-                            <div class="d-flex justify-content-end mt-4">
-                                <button type="button" class="btn btn-outline-secondary me-2" data-bs-dismiss="modal">
-                                    <i class="material-icons align-middle">cancel</i> Cancel
+                            <div class="d-flex flex-wrap justify-content-end gap-2 mt-4">
+                                <button type="button" class="btn btn-outline-secondary d-flex align-items-center justify-content-center" data-bs-dismiss="modal">
+                                    <span class="material-icons me-2">cancel</span> Cancel
                                 </button>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="material-icons align-middle">save</i> Save Category
+                                <button type="submit" class="btn btn-primary d-flex align-items-center justify-content-center">
+                                    <span class="material-icons me-2">save</span> Save Category
                                 </button>
                             </div>
                         </div>
@@ -232,12 +276,219 @@
         </div>
     </div>
 </div>
+
+<!-- Mobile styles -->
+<style>
+    /* Cards and containers */
+    .card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04) !important;
+        overflow: hidden;
+    }
+    
+    .container-fluid {
+        max-width: 1600px;
+    }
+    
+    /* Mobile card styling */
+    .mobile-card {
+        background-color: white;
+        border-radius: 12px;
+        padding: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: transform 0.15s ease-in-out;
+        border: 1px solid rgba(0,0,0,0.08);
+    }
+    
+    .mobile-card:active {
+        transform: scale(0.98);
+    }
+    
+    .mobile-card-header {
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .mobile-card-body {
+        padding-top: 0.75rem;
+    }
+    
+    .mobile-card .card-title {
+        font-size: 1rem;
+        line-height: 1.4;
+        max-width: 70%;
+    }
+    
+    .mobile-card-text {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+    
+    .mobile-btn {
+        font-size: 0.875rem;
+        padding: 0.4rem 0.75rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .mobile-btn .material-icons {
+        font-size: 18px !important;
+    }
+    
+    /* Typography improvements */
+    h1, h2, h3, h4, h5, h6 {
+        font-weight: 600;
+    }
+    
+    .text-muted {
+        opacity: 0.8;
+    }
+    
+    /* Badge styling */
+    .badge {
+        padding: 0.4rem 0.7rem;
+        font-weight: 500;
+    }
+    
+    /* Pagination styling */
+    .pagination {
+        gap: 0.25rem;
+    }
+    
+    .page-link {
+        border-radius: 6px !important;
+        height: 32px;
+        min-width: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+    }
+    
+    /* Mobile optimization */
+    @media (max-width: 767.98px) {
+        /* Prevent iOS zoom on input focus */
+        input, select, textarea {
+            font-size: 16px !important;
+        }
+        
+        /* Search input */
+        .search-input {
+            height: 45px;
+        }
+        
+        /* Improved button sizing */
+        .btn {
+            padding: 0.5rem 0.75rem;
+        }
+        
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+        }
+        
+        /* Card styling */
+        .card-body {
+            padding: 1.25rem !important;
+        }
+        
+        .card-header {
+            padding: 1rem !important;
+        }
+        
+        /* Better spacing for icons */
+        .material-icons {
+            font-size: 20px !important;
+        }
+        
+        /* Adjust titles */
+        h1.fs-2 {
+            font-size: 1.5rem !important;
+        }
+        
+        h5 {
+            font-size: 1.1rem !important;
+        }
+        
+        /* Form controls */
+        .form-control, .form-select {
+            height: 42px;
+        }
+        
+        /* Mobile pagination */
+        .mobile-pagination .page-link {
+            min-width: 36px;
+            height: 36px;
+        }
+    }
+    
+    /* For very small screens */
+    @media (max-width: 360px) {
+        /* Even smaller buttons and text */
+        .btn {
+            padding: 0.4rem 0.6rem;
+            font-size: 0.85rem;
+        }
+        
+        .btn-sm {
+            padding: 0.2rem 0.4rem;
+            font-size: 0.7rem;
+        }
+        
+        h1.fs-2 {
+            font-size: 1.3rem !important;
+        }
+        
+        h5 {
+            font-size: 1rem !important;
+        }
+        
+        /* Card padding */
+        .card-body {
+            padding: 1rem !important;
+        }
+        
+        /* Even smaller icons */
+        .material-icons {
+            font-size: 18px !important;
+        }
+        
+        /* Actions in mobile cards */
+        .mobile-card .mobile-btn span:not(.material-icons) {
+            display: none;
+        }
+    }
+</style>
+
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // No charts needed anymore
+        // Form validation
+        const createForm = document.getElementById('create-category-form');
+        if (createForm) {
+            createForm.addEventListener('submit', function(event) {
+                if (!this.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                this.classList.add('was-validated');
+            });
+        }
+        
+        // Add mobile-specific card interaction
+        const mobileCards = document.querySelectorAll('.mobile-card');
+        mobileCards.forEach(card => {
+            // Add hover effect on mobile
+            card.addEventListener('touchstart', function() {
+                this.classList.add('touch-active');
+            });
+            card.addEventListener('touchend', function() {
+                this.classList.remove('touch-active');
+            });
+        });
     });
 </script>
 {% endblock %} 

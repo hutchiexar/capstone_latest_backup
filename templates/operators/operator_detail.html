@@ -8,7 +8,7 @@
     <!-- Header Section -->
     <div class="card shadow-sm border-0 rounded-3 mb-4">
         <div class="card-body p-4">
-            <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                 <div>
                     <div class="d-flex align-items-center">
                         <span class="material-icons me-2" style="color: var(--primary-color)">person</span>
@@ -16,13 +16,17 @@
                     </div>
                     <p class="text-muted mt-2 mb-0">View detailed information about the operator and associated P.O. numbers</p>
                 </div>
-                <div class="d-flex">
-                    <a href="{% url 'operator_list' %}" class="btn btn-outline-primary d-flex align-items-center px-3 py-2 me-2">
-                        <span class="material-icons fs-5 me-2">arrow_back</span> Back to List
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{% url 'operator_list' %}" class="btn btn-outline-primary d-flex align-items-center px-3 py-2">
+                        <span class="material-icons fs-5 me-2">arrow_back</span> 
+                        <span class="d-none d-sm-inline">Back to List</span>
+                        <span class="d-inline d-sm-none">Back</span>
                     </a>
                     {% if user.userprofile.role == 'ADMIN' or user.userprofile.role == 'SUPERVISOR' %}
                     <a href="{% url 'operator_update' operator.id %}" class="btn btn-primary d-flex align-items-center px-3 py-2">
-                        <span class="material-icons fs-5 me-2">edit</span> Edit Operator
+                        <span class="material-icons fs-5 me-2">edit</span> 
+                        <span class="d-none d-sm-inline">Edit Operator</span>
+                        <span class="d-inline d-sm-none">Edit</span>
                     </a>
                     {% endif %}
                 </div>
@@ -40,36 +44,36 @@
                 </div>
                 <div class="card-body p-4">
                     <div class="row mb-3">
-                        <div class="col-md-4 text-muted">Full Name:</div>
-                        <div class="col-md-8 fw-medium">{{ operator.full_name }}</div>
+                        <div class="col-5 col-md-4 text-muted">Full Name:</div>
+                        <div class="col-7 col-md-8 fw-medium">{{ operator.full_name }}</div>
                     </div>
                     <div class="row mb-3">
-                        <div class="col-md-4 text-muted">Last Name:</div>
-                        <div class="col-md-8">{{ operator.last_name }}</div>
+                        <div class="col-5 col-md-4 text-muted">Last Name:</div>
+                        <div class="col-7 col-md-8">{{ operator.last_name }}</div>
                     </div>
                     <div class="row mb-3">
-                        <div class="col-md-4 text-muted">First Name:</div>
-                        <div class="col-md-8">{{ operator.first_name }}</div>
+                        <div class="col-5 col-md-4 text-muted">First Name:</div>
+                        <div class="col-7 col-md-8">{{ operator.first_name }}</div>
                     </div>
                     <div class="row mb-3">
-                        <div class="col-md-4 text-muted">Middle Initial:</div>
-                        <div class="col-md-8">{{ operator.middle_initial|default:"None" }}</div>
+                        <div class="col-5 col-md-4 text-muted">Middle Initial:</div>
+                        <div class="col-7 col-md-8">{{ operator.middle_initial|default:"None" }}</div>
                     </div>
                     <div class="row mb-3">
-                        <div class="col-md-4 text-muted">Address:</div>
-                        <div class="col-md-8">{{ operator.address }}</div>
+                        <div class="col-5 col-md-4 text-muted">Address:</div>
+                        <div class="col-7 col-md-8">{{ operator.address }}</div>
                     </div>
                     <div class="row mb-3">
-                        <div class="col-md-4 text-muted">Old P.D. Number:</div>
-                        <div class="col-md-8">{{ operator.old_pd_number|default:"None" }}</div>
+                        <div class="col-5 col-md-4 text-muted">Old P.O. Number:</div>
+                        <div class="col-7 col-md-8">{{ operator.old_pd_number|default:"None" }}</div>
                     </div>
                     <div class="row mb-3">
-                        <div class="col-md-4 text-muted">New P.D. Number:</div>
-                        <div class="col-md-8">{{ operator.new_pd_number }}</div>
+                        <div class="col-5 col-md-4 text-muted">New P.O. Number:</div>
+                        <div class="col-7 col-md-8">{{ operator.new_pd_number }}</div>
                     </div>
                     <div class="row mb-3">
-                        <div class="col-md-4 text-muted">Permit Operator Number:</div>
-                        <div class="col-md-8">
+                        <div class="col-5 col-md-4 text-muted">Permit Operator Number:</div>
+                        <div class="col-7 col-md-8">
                             {% if operator.po_number %}
                             <span class="badge bg-primary px-3 py-2 fs-6 fw-medium">{{ operator.po_number }}</span>
                             {% else %}
@@ -78,8 +82,8 @@
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-md-4 text-muted">Registration Date:</div>
-                        <div class="col-md-8">{{ operator.created_at|date:"F j, Y" }}</div>
+                        <div class="col-5 col-md-4 text-muted">Registration Date:</div>
+                        <div class="col-7 col-md-8">{{ operator.created_at|date:"F j, Y" }}</div>
                     </div>
                 </div>
             </div>
@@ -93,12 +97,13 @@
                 </div>
                 <div class="card-body p-4">
                     {% if vehicles %}
-                    <div class="table-responsive">
+                    <!-- Desktop Table View -->
+                    <div class="table-responsive d-none d-md-block">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th class="border-top-0 px-4 py-3 fw-semibold">Old P.D. Number</th>
-                                    <th class="border-top-0 px-4 py-3 fw-semibold">New P.D. Number</th>
+                                    <th class="border-top-0 px-4 py-3 fw-semibold">Old P.O. Number</th>
+                                    <th class="border-top-0 px-4 py-3 fw-semibold">New P.O. Number</th>
                                     <th class="border-top-0 px-4 py-3 fw-semibold">Registration Date</th>
                                 </tr>
                             </thead>
@@ -113,6 +118,47 @@
                             </tbody>
                         </table>
                     </div>
+                    
+                    <!-- Mobile Card View -->
+                    <div class="vehicle-cards d-block d-md-none">
+                        {% for vehicle in vehicles %}
+                        <div class="vehicle-card" data-vehicle-id="{{ vehicle.id }}">
+                            <div class="card mb-3">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-0 fw-bold">P.O. Number</h6>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-2">
+                                        <div class="col-5">
+                                            <small class="text-muted">Old P.O.:</small>
+                                        </div>
+                                        <div class="col-7">
+                                            {{ vehicle.old_pd_number|default:"None" }}
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-5">
+                                            <small class="text-muted">New P.O.:</small>
+                                        </div>
+                                        <div class="col-7 fw-medium">
+                                            {{ vehicle.new_pd_number }}
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-5">
+                                            <small class="text-muted">Registered:</small>
+                                        </div>
+                                        <div class="col-7">
+                                            {{ vehicle.created_at|date:"M j, Y" }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
                     {% else %}
                     <div class="d-flex flex-column align-items-center py-5">
                         <span class="material-icons" style="font-size: 64px; color: #c0c0c0;">directions_car_off</span>
@@ -125,6 +171,73 @@
         </div>
     </div>
 </div>
+
+<style>
+/* Mobile Card View Styles */
+.vehicle-card {
+    margin-bottom: 15px;
+}
+
+.vehicle-card .card {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.vehicle-card .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.vehicle-card .card-header {
+    background-color: #f8f9fa;
+    padding: 12px 15px;
+    border-bottom: 1px solid #eaecef;
+}
+
+.vehicle-card .card-body {
+    padding: 15px;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 1rem !important;
+    }
+    
+    .fw-medium {
+        font-weight: 500;
+    }
+    
+    /* Improve spacing on mobile */
+    .row .mb-3:last-child {
+        margin-bottom: 0 !important;
+    }
+    
+    /* Make badges more readable on mobile */
+    .badge {
+        font-size: 0.9rem !important;
+        padding: 0.3rem 0.6rem !important;
+    }
+}
+
+/* For very small screens */
+@media (max-width: 360px) {
+    .card-header h5 {
+        font-size: 1rem;
+    }
+    
+    .card-header .material-icons {
+        font-size: 20px !important;
+    }
+    
+    .text-muted {
+        font-size: 0.875rem;
+    }
+}
+</style>
 {% endblock %}
 
 {% block scripts %}

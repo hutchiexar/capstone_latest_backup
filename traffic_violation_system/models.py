@@ -59,8 +59,8 @@ class Operator(models.Model):
     first_name = models.CharField(max_length=100, db_index=True)
     middle_initial = models.CharField(max_length=10, blank=True, null=True)
     address = models.TextField()
-    old_pd_number = models.CharField(max_length=50, blank=True, null=True)
-    new_pd_number = models.CharField(max_length=50, unique=True)
+    old_pd_number = models.CharField(max_length=50, blank=True, null=True, verbose_name="Old P.O. Number")
+    new_pd_number = models.CharField(max_length=50, unique=True, verbose_name="New P.O. Number")
     po_number = models.CharField(max_length=20, unique=True, blank=True, null=True, verbose_name="Permit Operator Number")
     # Foreign key to operator type (will be added later as requested)
     # operator_type = models.ForeignKey(OperatorType, on_delete=models.PROTECT, related_name='operators')
@@ -125,17 +125,24 @@ class Violation(models.Model):
         ('Commercial', 'Commercial')
     ]
 
+    # Add a submission tracking field
+    submission_id = models.CharField(max_length=36, blank=True, null=True, 
+                                   help_text="UUID to track violations submitted together")
+    
     # Driver's Details
     novr_number = models.CharField(max_length=50, blank=True, null=True)
     pin_number = models.CharField(max_length=50, blank=True, null=True)
     pd_number = models.CharField(max_length=50, blank=True, null=True)
     driver_photo = models.ImageField(upload_to='driver_photos/', blank=True, null=True)
     driver_address = models.TextField(blank=True, null=True)
+    driver_name = models.CharField(max_length=200, blank=True, null=True)
     
     # Operator's Details
     potpot_number = models.CharField(max_length=50, blank=True, null=True)
     operator = models.ForeignKey(Operator, on_delete=models.SET_NULL, null=True, blank=True, related_name='violations')
     operator_address = models.TextField(blank=True, null=True)
+    operator_name = models.CharField(max_length=200, blank=True, null=True)
+    operator_pd_number = models.CharField(max_length=50, blank=True, null=True)
     
     # Additional Violation Details
     street_name = models.CharField(max_length=200, blank=True, null=True)
@@ -152,7 +159,7 @@ class Violation(models.Model):
     enforcer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='issued_violations')
     violation_date = models.DateTimeField(default=timezone.now)
     location = models.CharField(max_length=200)
-    violation_type = models.CharField(max_length=100, choices=VIOLATION_CHOICES)
+    violation_type = models.TextField(help_text="Type of violation or comma-separated list of violations")
     fine_amount = models.DecimalField(max_digits=10, decimal_places=2)
     is_tdz_violation = models.BooleanField(default=False, help_text="Whether the violation occurred in a Traffic Discipline Zone, which doubles the fine")
     image = models.ImageField(upload_to=get_ncap_image_path, null=True, blank=True)
@@ -205,20 +212,34 @@ class Violation(models.Model):
         self.violation_types = json.dumps(types_list)
 
     def get_violation_types(self):
+        """Get a list of violation types for this violation."""
         try:
-            types = json.loads(self.violation_types)
-            if types and len(types) > 0:
-                return types
-            elif self.violation_type:
-                # Fallback to the single violation_type field if JSON field is empty
-                return [self.get_violation_type_display() or self.violation_type]
-            else:
-                return []
-        except (json.JSONDecodeError, TypeError):
-            # Fallback if the JSON is invalid
+            # First try to get from the violation_types JSON field
+            violation_types_json = self.violation_types
+            if violation_types_json and violation_types_json != '[]':
+                violation_types = json.loads(violation_types_json)
+                if isinstance(violation_types, list) and violation_types:
+                    return violation_types
+            
+            # If that's empty, use the violation_type field
             if self.violation_type:
-                return [self.get_violation_type_display() or self.violation_type]
+                # If it's a comma-separated list, split it
+                if ',' in self.violation_type:
+                    return [vt.strip() for vt in self.violation_type.split(',')]
+                return [self.violation_type]
+            
+            # Fallback
             return []
+        except (json.JSONDecodeError, Exception):
+            # Fallback to just using the violation_type field as a single item
+            return [self.violation_type] if self.violation_type else []
+    
+    def get_violation_type_display(self):
+        """
+        For backwards compatibility after changing violation_type to TextField.
+        Returns the violation type string directly.
+        """
+        return self.violation_type
 
 
 class Payment(models.Model):

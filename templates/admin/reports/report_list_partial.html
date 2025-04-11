@@ -1,87 +1,88 @@
-{% for report in reports %}
-<tr data-report-id="{{ report.id }}">
-    <td class="ps-4">
-        <span class="badge bg-secondary">#{{ report.id }}</span>
-    </td>
-    <td>
-        <div class="d-flex flex-column">
-            <span class="fw-medium">{{ report.user.get_full_name }}</span>
-            <small class="text-muted">{{ report.user.email }}</small>
-        </div>
-    </td>
-    <td>
-        <span class="badge rounded-pill {% if report.type == 'COMPLAINT' %}text-bg-danger
-                {% elif report.type == 'SUGGESTION' %}text-bg-info
-                {% elif report.type == 'INQUIRY' %}text-bg-primary
-                {% elif report.type == 'DISPUTE' %}text-bg-warning
-                {% endif %} d-inline-flex align-items-center">
-            <span class="material-icons me-1" style="font-size: 14px;">
-                {% if report.type == 'COMPLAINT' %}report_problem
-                {% elif report.type == 'SUGGESTION' %}lightbulb
-                {% elif report.type == 'INQUIRY' %}help_outline
-                {% elif report.type == 'DISPUTE' %}gavel
+{% if reports %}
+    {% for report in reports %}
+    <tr id="report-{{ report.id }}">
+        <td class="ps-4">#{{ report.id }}</td>
+        <td>
+            <div class="d-flex align-items-center">
+                {% if report.user.profile.profile_image %}
+                <img src="{{ report.user.profile.profile_image.url }}" alt="{{ report.user.get_full_name }}" class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;">
+                {% else %}
+                <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                    <span class="material-icons" style="font-size: 16px;">person</span>
+                </div>
                 {% endif %}
+                <div>
+                    <div class="fw-medium">{{ report.user.get_full_name }}</div>
+                    <div class="small text-muted">{{ report.user.email }}</div>
+                </div>
+            </div>
+        </td>
+        <td>
+            <span class="badge rounded-pill {% if report.type == 'COMPLAINT' %}text-bg-danger
+                    {% elif report.type == 'SUGGESTION' %}text-bg-info
+                    {% elif report.type == 'INQUIRY' %}text-bg-primary
+                    {% elif report.type == 'DISPUTE' %}text-bg-warning
+                    {% endif %} d-inline-flex align-items-center">
+                <span class="material-icons me-1" style="font-size: 14px;">
+                    {% if report.type == 'COMPLAINT' %}report_problem
+                    {% elif report.type == 'SUGGESTION' %}lightbulb
+                    {% elif report.type == 'INQUIRY' %}help_outline
+                    {% elif report.type == 'DISPUTE' %}gavel
+                    {% endif %}
+                </span>
+                {{ report.get_type_display }}
             </span>
-            {{ report.get_type_display }}
-        </span>
-    </td>
-    <td>
-        <div class="d-flex flex-column">
-            <span class="fw-medium text-truncate" style="max-width: 250px;">{{ report.subject }}</span>
-            <small class="text-muted text-truncate" style="max-width: 250px;">{{ report.description|truncatechars:50 }}</small>
-        </div>
-    </td>
-    <td>
-        <div class="d-flex align-items-center">
-            <span class="material-icons me-2 {% if report.status == 'PENDING' %}text-warning
-                       {% elif report.status == 'IN_PROGRESS' %}text-primary
-                       {% elif report.status == 'RESOLVED' %}text-success
-                       {% elif report.status == 'CLOSED' %}text-secondary
-                       {% endif %}">
-                {% if report.status == 'PENDING' %}schedule
-                {% elif report.status == 'IN_PROGRESS' %}sync
-                {% elif report.status == 'RESOLVED' %}check_circle
-                {% elif report.status == 'CLOSED' %}cancel
+        </td>
+        <td>
+            <div class="text-truncate" style="max-width: 200px;" title="{{ report.subject }}">
+                {{ report.subject }}
+            </div>
+        </td>
+        <td>
+            <div class="d-flex align-items-center">
+                <span class="material-icons me-2 {% if report.status == 'PENDING' %}text-warning
+                        {% elif report.status == 'IN_PROGRESS' %}text-primary
+                        {% elif report.status == 'RESOLVED' %}text-success
+                        {% elif report.status == 'CLOSED' %}text-secondary
+                        {% endif %}">
+                    {% if report.status == 'PENDING' %}schedule
+                    {% elif report.status == 'IN_PROGRESS' %}sync
+                    {% elif report.status == 'RESOLVED' %}check_circle
+                    {% elif report.status == 'CLOSED' %}cancel
+                    {% endif %}
+                </span>
+                <span class="{% if report.status == 'PENDING' %}text-warning
+                        {% elif report.status == 'IN_PROGRESS' %}text-primary
+                        {% elif report.status == 'RESOLVED' %}text-success
+                        {% elif report.status == 'CLOSED' %}text-secondary
+                        {% endif %}">
+                    {{ report.get_status_display }}
+                </span>
+            </div>
+        </td>
+        <td>{{ report.created_at|date:"M d, Y" }}</td>
+        <td class="text-end pe-4">
+            <div class="action-buttons d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-sm btn-primary" onclick="openViewModal('{{ report.id }}')" title="View Details">
+                    <span class="material-icons" style="font-size: 16px;">visibility</span>
+                </button>
+                <button type="button" class="btn btn-sm btn-info text-white" onclick="openStatusModal('{{ report.id }}')" title="Update Status">
+                    <span class="material-icons" style="font-size: 16px;">update</span>
+                </button>
+                {% if report.status == 'PENDING' or report.status == 'IN_PROGRESS' %}
+                <button type="button" class="btn btn-sm btn-warning text-white" onclick="openDisputeModal('{{ report.id }}')" title="Dispute Report">
+                    <span class="material-icons" style="font-size: 16px;">gavel</span>
+                </button>
                 {% endif %}
-            </span>
-            <span class="{% if report.status == 'PENDING' %}text-warning
-                       {% elif report.status == 'IN_PROGRESS' %}text-primary
-                       {% elif report.status == 'RESOLVED' %}text-success
-                       {% elif report.status == 'CLOSED' %}text-secondary
-                       {% endif %}">
-                {{ report.get_status_display }}
-            </span>
-        </div>
-    </td>
-    <td>
-        <div class="d-flex flex-column">
-            <span>{{ report.created_at|date:"M d, Y" }}</span>
-            <small class="text-muted">{{ report.created_at|time:"H:i" }}</small>
-        </div>
-    </td>
-    <td class="text-end pe-4">
-        <div class="action-buttons">
-            <button type="button" class="btn btn-action btn-view btn-view-report" data-report-id="{{ report.id }}" onclick="openViewModal('{{ report.id }}')" title="View Details">
-                <i class="fas fa-eye"></i>
-            </button>
-            <button type="button" class="btn btn-action btn-update-status" data-report-id="{{ report.id }}" onclick="openStatusModal('{{ report.id }}')" title="Update Status">
-                <i class="fas fa-sync-alt"></i>
-            </button>
-            {% if report.status == 'PENDING' or report.status == 'IN_PROGRESS' %}
-            <button type="button" class="btn btn-action btn-dispute-report" data-report-id="{{ report.id }}" onclick="openDisputeModal('{{ report.id }}')" title="Dispute Report">
-                <i class="fas fa-gavel"></i>
-            </button>
-            {% endif %}
-        </div>
-    </td>
-</tr>
-{% empty %}
-<tr>
-    <td colspan="7" class="text-center py-4">
-        <div class="text-muted">
-            <span class="material-icons d-block mb-2" style="font-size: 2.5rem; opacity: 0.5;">search_off</span>
-            <p class="mb-0">No reports found matching your criteria</p>
-        </div>
-    </td>
-</tr>
-{% endfor %} 
+            </div>
+        </td>
+    </tr>
+    {% endfor %}
+{% else %}
+    <tr>
+        <td colspan="7" class="text-center py-5">
+            <span class="material-icons d-block mb-2" style="font-size: 3rem; opacity: 0.5;">search_off</span>
+            <p class="text-muted">No reports found matching your criteria</p>
+        </td>
+    </tr>
+{% endif %} 

@@ -71,11 +71,11 @@ function loadOperatorDetails(operatorId) {
                                 <div class="col-md-8">${data.operator.address}</div>
                             </div>
                             <div class="row mb-3">
-                                <div class="col-md-4 text-muted">Old P.D. Number:</div>
+                                <div class="col-md-4 text-muted">Old P.O. Number:</div>
                                 <div class="col-md-8">${data.operator.old_pd_number || 'None'}</div>
                             </div>
                             <div class="row mb-3">
-                                <div class="col-md-4 text-muted">New P.D. Number:</div>
+                                <div class="col-md-4 text-muted">New P.O. Number:</div>
                                 <div class="col-md-8">${data.operator.new_pd_number}</div>
                             </div>
                             <div class="row">
@@ -101,8 +101,9 @@ function loadOperatorDetails(operatorId) {
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th class="border-top-0 px-4 py-3 fw-semibold">Old P.D. Number</th>
-                                    <th class="border-top-0 px-4 py-3 fw-semibold">New P.D. Number</th>
+                                    <th class="border-top-0 px-4 py-3 fw-semibold">Old P.O. Number</th>
+                                    <th class="border-top-0 px-4 py-3 fw-semibold">New P.O. Number</th>
+                                    <th class="border-top-0 px-4 py-3 fw-semibold">Registration Date</th>
                                 </tr>
                             </thead>
                             <tbody>`;
@@ -113,6 +114,7 @@ function loadOperatorDetails(operatorId) {
                         <tr>
                             <td class="px-4 py-3">${vehicle.old_pd_number || 'None'}</td>
                             <td class="fw-medium px-4 py-3">${vehicle.new_pd_number}</td>
+                            <td class="px-4 py-3">${vehicle.created_at}</td>
                         </tr>`;
                 });
                 

@@ -8,11 +8,11 @@
     <!-- Header Section -->
     <div class="card shadow-sm border-0 rounded-3 mb-4">
         <div class="card-body p-4">
-            <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                 <div>
                     <div class="d-flex align-items-center">
                         <span class="material-icons me-2" style="color: var(--primary-color)">
-                            {% if is_create %}add_circle{% else %}edit{% endif %}
+                            {% if is_create %}add_circle{% else %}edit_note{% endif %}
                         </span>
                         <h4 class="mb-0">{{ title }}</h4>
                     </div>
@@ -21,9 +21,10 @@
                     </p>
                 </div>
                 <div>
-                    <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-secondary d-flex align-items-center px-4 py-2">
-                        <span class="material-icons">arrow_back</span>
-                        Back to Dashboard
+                    <a href="{% url 'admin_driver_list' %}" class="btn btn-outline-primary d-flex align-items-center px-3 py-2">
+                        <span class="material-icons fs-5 me-2">arrow_back</span>
+                        <span class="d-none d-sm-inline">Back to Drivers</span>
+                        <span class="d-inline d-sm-none">Back</span>
                     </a>
                 </div>
             </div>
@@ -31,23 +32,25 @@
     </div>
 
     <!-- Form Card -->
-    <div class="card shadow-sm border-0 rounded-3">
-        <div class="card-header bg-transparent border-0 py-3">
-            <div class="d-flex align-items-center">
-                <span class="material-icons me-2" style="color: var(--primary-color)">person</span>
-                <h5 class="mb-0">Driver Information</h5>
-            </div>
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-header bg-transparent d-flex align-items-center px-4 py-3 border-bottom">
+            <span class="material-icons me-2" style="color: var(--primary-color); font-size: 24px;">person</span>
+            <h5 class="mb-0 fw-bold">Driver Information</h5>
         </div>
         <div class="card-body p-4">
-            <form method="post">
+            <form method="post" class="needs-validation" novalidate>
                 {% csrf_token %}
                 
-                <div class="row mb-4">
-                    <div class="col-md-4 mb-3">
+                <!-- Personal Information Section -->
+                <div class="row g-3">
+                    <div class="col-12 col-md-4">
                         <label for="{{ form.last_name.id_for_label }}" class="form-label">Last Name <span class="text-danger">*</span></label>
-                        {{ form.last_name }}
+                        <div class="input-group">
+                            <span class="input-group-text"><span class="material-icons fs-5">person</span></span>
+                            {{ form.last_name }}
+                        </div>
                         {% if form.last_name.errors %}
-                        <div class="text-danger mt-1">
+                        <div class="text-danger mt-1 small">
                             {% for error in form.last_name.errors %}
                             {{ error }}
                             {% endfor %}
@@ -55,11 +58,14 @@
                         {% endif %}
                     </div>
                     
-                    <div class="col-md-4 mb-3">
+                    <div class="col-12 col-md-4">
                         <label for="{{ form.first_name.id_for_label }}" class="form-label">First Name <span class="text-danger">*</span></label>
-                        {{ form.first_name }}
+                        <div class="input-group">
+                            <span class="input-group-text"><span class="material-icons fs-5">badge</span></span>
+                            {{ form.first_name }}
+                        </div>
                         {% if form.first_name.errors %}
-                        <div class="text-danger mt-1">
+                        <div class="text-danger mt-1 small">
                             {% for error in form.first_name.errors %}
                             {{ error }}
                             {% endfor %}
@@ -67,11 +73,14 @@
                         {% endif %}
                     </div>
                     
-                    <div class="col-md-4 mb-3">
+                    <div class="col-12 col-md-4">
                         <label for="{{ form.middle_initial.id_for_label }}" class="form-label">Middle Initial</label>
-                        {{ form.middle_initial }}
+                        <div class="input-group">
+                            <span class="input-group-text"><span class="material-icons fs-5">short_text</span></span>
+                            {{ form.middle_initial }}
+                        </div>
                         {% if form.middle_initial.errors %}
-                        <div class="text-danger mt-1">
+                        <div class="text-danger mt-1 small">
                             {% for error in form.middle_initial.errors %}
                             {{ error }}
                             {% endfor %}
@@ -80,26 +89,32 @@
                     </div>
                 </div>
                 
-                <div class="row mb-4">
-                    <div class="col-md-12 mb-3">
-                        <label for="{{ form.address.id_for_label }}" class="form-label">Address <span class="text-danger">*</span></label>
+                <!-- Address -->
+                <div class="mt-3">
+                    <label for="{{ form.address.id_for_label }}" class="form-label">Address <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text"><span class="material-icons fs-5">home</span></span>
                         {{ form.address }}
-                        {% if form.address.errors %}
-                        <div class="text-danger mt-1">
-                            {% for error in form.address.errors %}
-                            {{ error }}
-                            {% endfor %}
-                        </div>
-                        {% endif %}
                     </div>
+                    {% if form.address.errors %}
+                    <div class="text-danger mt-1 small">
+                        {% for error in form.address.errors %}
+                        {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                 </div>
                 
-                <div class="row mb-4">
-                    <div class="col-md-6 mb-3">
+                <!-- ID Information Section -->
+                <div class="row g-3 mt-3">
+                    <div class="col-12 col-md-6">
                         <label for="{{ form.old_pd_number.id_for_label }}" class="form-label">Old PD Number</label>
-                        {{ form.old_pd_number }}
+                        <div class="input-group">
+                            <span class="input-group-text"><span class="material-icons fs-5">history</span></span>
+                            {{ form.old_pd_number }}
+                        </div>
                         {% if form.old_pd_number.errors %}
-                        <div class="text-danger mt-1">
+                        <div class="text-danger mt-1 small">
                             {% for error in form.old_pd_number.errors %}
                             {{ error }}
                             {% endfor %}
@@ -108,11 +123,14 @@
                         <div class="form-text">Previous PD number if available (should start with D prefix)</div>
                     </div>
                     
-                    <div class="col-md-6 mb-3">
+                    <div class="col-12 col-md-6">
                         <label for="{{ form.new_pd_number.id_for_label }}" class="form-label">New PD Number <span class="text-danger">*</span></label>
-                        {{ form.new_pd_number }}
+                        <div class="input-group">
+                            <span class="input-group-text"><span class="material-icons fs-5">numbers</span></span>
+                            {{ form.new_pd_number }}
+                        </div>
                         {% if form.new_pd_number.errors %}
-                        <div class="text-danger mt-1">
+                        <div class="text-danger mt-1 small">
                             {% for error in form.new_pd_number.errors %}
                             {{ error }}
                             {% endfor %}
@@ -122,32 +140,142 @@
                     </div>
                 </div>
                 
-                <div class="row mb-4">
-                    <div class="col-md-12 mb-3">
-                        <label for="{{ form.operator.id_for_label }}" class="form-label">Associated Operator</label>
-                        {{ form.operator }}
-                        {% if form.operator.errors %}
-                        <div class="text-danger mt-1">
-                            {% for error in form.operator.errors %}
-                            {{ error }}
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-                        <div class="form-text">Link this driver to an operator if applicable</div>
-                    </div>
-                </div>
-                
-                <div class="d-flex justify-content-end">
-                    <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-secondary d-flex align-items-center px-4 py-2 me-2">
-                        <span class="material-icons">close</span>
-                        Cancel
+                <div class="mt-4 d-flex justify-content-end flex-wrap gap-2">
+                    <a href="{% url 'admin_driver_list' %}" class="btn btn-outline-secondary d-flex align-items-center px-3 py-2">
+                        <span class="material-icons fs-5 me-2">cancel</span> 
+                        <span>Cancel</span>
                     </a>
                     <button type="submit" class="btn btn-primary d-flex align-items-center px-4 py-2">
-                        <span class="material-icons fs-5 me-2">{% if is_create %}add{% else %}save{% endif %}</span> {{ submit_text }}
+                        <span class="material-icons fs-5 me-2">{% if is_create %}add_circle{% else %}save{% endif %}</span> 
+                        <span>{{ submit_text }}</span>
                     </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<style>
+/* Style the form controls */
+.form-control, .form-select {
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.95rem;
+    border: 1px solid #dee2e6;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.input-group-text {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    color: #6c757d;
+}
+
+.input-group-text .material-icons {
+    font-size: 18px;
+}
+
+/* Required asterisk */
+.text-danger {
+    color: #dc3545;
+}
+
+/* Form help text */
+.form-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 1rem !important;
+    }
+    
+    .form-control, .form-select {
+        font-size: 16px; /* Prevent iOS zoom on focus */
+    }
+    
+    .input-group-text .material-icons {
+        font-size: 16px;
+    }
+    
+    /* Stack buttons on mobile */
+    .d-flex.justify-content-end {
+        flex-direction: column-reverse;
+        width: 100%;
+    }
+    
+    .d-flex.justify-content-end .btn {
+        width: 100%;
+        justify-content: center;
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* For very small screens */
+@media (max-width: 360px) {
+    .card-header h5 {
+        font-size: 1rem;
+    }
+    
+    .card-header .material-icons {
+        font-size: 20px !important;
+    }
+    
+    .form-label {
+        font-size: 0.9rem;
+    }
+}
+
+/* Improve form validation feedback */
+.was-validated .form-control:invalid,
+.form-control.is-invalid {
+    border-color: #dc3545;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+</style>
+
+<!-- Form validation script -->
+<script>
+    $(document).ready(function() {
+        // Add Bootstrap form-control class to all form inputs
+        $('input, select, textarea').addClass('form-control');
+        
+        // Auto-focus first field
+        $('.form-control:first').focus();
+        
+        // Submit form on Enter key in the last field
+        $('.form-control:last').keypress(function(e) {
+            if (e.which == 13) { // Enter key
+                $('form').submit();
+            }
+        });
+    });
+    
+    // Form validation
+    document.addEventListener('DOMContentLoaded', function() {
+        const forms = document.querySelectorAll('.needs-validation');
+        
+        Array.prototype.slice.call(forms).forEach(function(form) {
+            form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                
+                form.classList.add('was-validated');
+            }, false);
+        });
+    });
+</script>
 {% endblock %} 

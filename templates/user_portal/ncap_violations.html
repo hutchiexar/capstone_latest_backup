@@ -1,7 +1,32 @@
-{% extends 'user_portal/base.html' %}
+{% extends 'user_portal/base_user.html' %}
 {% load static %}
 
-{% block title %}NCAP Violations{% endblock %}
+{% block title %}NCAP Violations - CTTMO User Portal{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Modern Color Palette */
+    :root {
+        --primary-color: #3563E9;
+        --primary-light: #EEF3FF;
+        --success-color: #0CAA1D;
+        --danger-color: #F53D3D;
+        --warning-color: #FFB800;
+        --info-color: #4DA7FF;
+        --dark-blue: #0F1C3F;
+        --neutral-gray: #737791;
+        --light-gray: #F6F7F9;
+        --white: #FFFFFF;
+    }
+
+    /* Common Utility Classes */
+    .shadow-lg { box-shadow: 0 10px 20px rgba(0,0,0,0.08); }
+    .shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .rounded-xl { border-radius: 1rem; }
+    .rounded-lg { border-radius: 0.75rem; }
+    .transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 300ms; }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container py-4">
@@ -32,7 +57,7 @@
                 </div>
                 <div class="col-md-4 text-end">
                     {% if search_query or status_filter %}
-                    <a href="{% url 'user_ncap_violations' %}" class="btn btn-secondary">Reset Filters</a>
+                    <a href="{% url 'user_portal:user_ncap_violations' %}" class="btn btn-secondary">Reset Filters</a>
                     {% endif %}
                 </div>
             </form>
@@ -45,7 +70,7 @@
 
             <!-- Violations Table -->
             {% if violations %}
-            <div class="table-responsive">
+            <div class="table-responsive d-none d-md-block">
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
                         <tr>
@@ -107,6 +132,60 @@
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+            
+            <!-- Mobile Card View for smaller screens -->
+            <div class="d-md-none mt-4">
+                {% for violation in violations %}
+                <div class="card mb-3 violation-card shadow-sm">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span class="small">ID: {{ violation.id }}</span>
+                        <span class="badge
+                                {% if violation.status == 'PENDING' %}bg-warning
+                                {% elif violation.status == 'APPROVED' %}bg-info
+                                {% elif violation.status == 'ADJUDICATED' %}bg-primary
+                                {% elif violation.status == 'PAID' %}bg-success
+                                {% elif violation.status == 'DISMISSED' %}bg-secondary
+                                {% else %}bg-secondary{% endif %}
+                            ">
+                            {{ violation.get_status_display }}
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="card-title">{{ violation.violation_type }}</h6>
+                        <p class="card-text small text-muted">{{ violation.violation_date }}</p>
+                        <p class="card-text">
+                            <span class="fw-bold">Fine:</span> ₱{{ violation.fine_amount|floatformat:2 }}
+                        </p>
+                        <div class="d-flex gap-2 mt-3">
+                            <button class="btn btn-sm btn-outline-primary view-images" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#imageModal"
+                                    data-violation-id="{{ violation.id }}">
+                                <i class="fas fa-images me-1"></i> Images
+                            </button>
+                            <button class="btn btn-sm btn-primary view-details" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#violationModal"
+                                    data-violation-id="{{ violation.id }}">
+                                <i class="fas fa-info-circle me-1"></i> Details
+                            </button>
+                        </div>
+                        <div class="d-flex gap-2 mt-2">
+                            {% if violation.status == 'PENDING' or violation.status == 'APPROVED' %}
+                            <a href="{% url 'contest_violation' violation.id %}" class="btn btn-sm btn-warning">
+                                <i class="fas fa-gavel me-1"></i> Contest
+                            </a>
+                            {% endif %}
+                            {% if violation.status == 'ADJUDICATED' or violation.status == 'APPROVED' %}
+                            <a href="{% url 'payment_options' violation.id %}" class="btn btn-sm btn-success">
+                                <i class="fas fa-money-bill-wave me-1"></i> Pay
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
             
             <!-- Pagination -->
@@ -205,92 +284,42 @@
 
 {% endblock %}
 
-{% block scripts %}
+{% block extra_js %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // View violation details
-        const viewDetailsButtons = document.querySelectorAll('.view-details');
-        viewDetailsButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const violationId = this.getAttribute('data-violation-id');
-                const detailsContent = document.getElementById('violation-details-content');
-                
-                // Show loading spinner
-                detailsContent.innerHTML = `
-                    <div class="text-center py-5">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="mt-2">Loading violation details...</p>
-                    </div>
-                `;
-                
-                // Fetch violation details
-                fetch(`/user/violation/${violationId}/details/`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            detailsContent.innerHTML = data.html;
-                        } else {
-                            detailsContent.innerHTML = `
-                                <div class="alert alert-danger">
-                                    Failed to load violation details: ${data.error}
-                                </div>
-                            `;
-                        }
-                    })
-                    .catch(error => {
-                        detailsContent.innerHTML = `
-                            <div class="alert alert-danger">
-                                An error occurred while loading the violation details. Please try again.
-                            </div>
-                        `;
-                        console.error('Error fetching violation details:', error);
-                    });
-            });
-        });
+$(document).ready(function() {
+    // Fetch violation details when modal is opened
+    $('.view-details').on('click', function() {
+        var violationId = $(this).data('violation-id');
+        $('#violation-details-content').html('<div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2">Loading violation details...</p></div>');
         
-        // View violation images
-        const viewImagesButtons = document.querySelectorAll('.view-images');
-        viewImagesButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const violationId = this.getAttribute('data-violation-id');
-                const imagesContent = document.getElementById('violation-images-content');
-                
-                // Show loading spinner
-                imagesContent.innerHTML = `
-                    <div class="text-center py-5">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="mt-2">Loading violation images...</p>
-                    </div>
-                `;
-                
-                // Fetch violation images
-                fetch(`/user/violation/${violationId}/images/`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            imagesContent.innerHTML = data.html;
-                        } else {
-                            imagesContent.innerHTML = `
-                                <div class="alert alert-danger">
-                                    Failed to load violation images: ${data.error}
-                                </div>
-                            `;
-                        }
-                    })
-                    .catch(error => {
-                        imagesContent.innerHTML = `
-                            <div class="alert alert-danger">
-                                An error occurred while loading the violation images. Please try again.
-                            </div>
-                        `;
-                        console.error('Error fetching violation images:', error);
-                    });
-            });
+        $.ajax({
+            url: '/violation-detail-modal/' + violationId + '/',
+            method: 'GET',
+            success: function(response) {
+                $('#violation-details-content').html(response);
+            },
+            error: function() {
+                $('#violation-details-content').html('<div class="alert alert-danger">Failed to load violation details. Please try again.</div>');
+            }
         });
     });
+    
+    // Fetch violation images when modal is opened
+    $('.view-images').on('click', function() {
+        var violationId = $(this).data('violation-id');
+        $('#violation-images-content').html('<div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2">Loading violation images...</p></div>');
+        
+        $.ajax({
+            url: '/violation-images-modal/' + violationId + '/',
+            method: 'GET',
+            success: function(response) {
+                $('#violation-images-content').html(response);
+            },
+            error: function() {
+                $('#violation-images-content').html('<div class="alert alert-danger">Failed to load violation images. Please try again.</div>');
+            }
+        });
+    });
+});
 </script>
 {% endblock %} 

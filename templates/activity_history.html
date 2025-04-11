@@ -1,16 +1,16 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container-fluid py-4">
+<div class="container-fluid py-4 px-3">
     <!-- Header Section -->
     <div class="card shadow-sm border-0 rounded-3 mb-4">
-        <div class="card-body p-4">
+        <div class="card-body p-3 p-md-4">
             <div class="row align-items-center">
                 <!-- Title -->
                 <div class="col-lg-3 mb-3 mb-lg-0">
                     <div class="d-flex align-items-center">
-                        <span class="material-icons me-2" style="color: var(--primary-color)">history</span>
-                        <h4 class="mb-0">Activity History</h4>
+                        <span class="material-icons me-2 text-primary">history</span>
+                        <h4 class="mb-0 fs-5 fs-md-4">Activity History</h4>
                     </div>
                 </div>
                 <!-- Search Form -->
@@ -22,7 +22,7 @@
                                 <span class="material-icons">search</span>
                                 <input type="text" 
                                        name="search" 
-                                       class="form-control" 
+                                       class="form-control search-box" 
                                        placeholder="Search activities..."
                                        value="{{ request.GET.search|default:'' }}">
                             </div>
@@ -43,8 +43,8 @@
                         </div>
                         <!-- Search Button -->
                         <div class="col-md-3">
-                            <button type="submit" class="btn btn-primary w-100">
-                                <span class="material-icons">search</span>
+                            <button type="submit" class="btn btn-primary w-100 d-flex align-items-center justify-content-center">
+                                <span class="material-icons me-2">search</span>
                                 Search
                             </button>
                         </div>
@@ -56,107 +56,195 @@
 
     <!-- Main Content Card -->
     <div class="card shadow-sm border-0 rounded-3">
-        <div class="card-body p-0">
-            <!-- Table Container -->
-            <div class="table-responsive">
-                <table class="table table-system table-hover align-middle mb-0" id="activityTable">
-                    <thead class="bg-light">
-                        <tr>
-                            <th class="border-0 ps-4">Date & Time</th>
-                            <th class="border-0">User</th>
-                            <th class="border-0">Action</th>
-                            <th class="border-0">Category</th>
-                            <th class="border-0 pe-4">Details</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for activity in activities %}
-                        <tr>
-                            <td class="ps-4">{{ activity.timestamp|date:"M d, Y H:i" }}</td>
-                            <td>
-                                <div class="table-profile">
-                                    <div class="avatar-container">
-                                        {% if activity.user.userprofile.avatar %}
-                                        <img src="{{ activity.user.userprofile.avatar.url }}" alt="{{ activity.user.get_full_name }}" class="rounded-circle">
-                                        {% else %}
-                                        <div class="avatar-placeholder">{{ activity.user.get_initials }}</div>
-                                        {% endif %}
-                                    </div>
-                                    <div class="user-info-container">
-                                        <h6 class="mb-0">{{ activity.user.get_full_name }}</h6>
-                                        <small class="text-muted">{{ activity.user.userprofile.get_role_display }}</small>
-                                    </div>
+        <!-- Desktop Table View -->
+        <div class="table-responsive d-none d-md-block">
+            <table class="table table-system table-hover align-middle mb-0" id="activityTable">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="border-0 ps-4">Date & Time</th>
+                        <th class="border-0">User</th>
+                        <th class="border-0">Action</th>
+                        <th class="border-0">Category</th>
+                        <th class="border-0 pe-4">Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for activity in activities %}
+                    <tr>
+                        <td class="ps-4">{{ activity.timestamp|date:"M d, Y H:i" }}</td>
+                        <td>
+                            <div class="table-profile">
+                                <div class="avatar-container">
+                                    {% if activity.user.userprofile.avatar %}
+                                    <img src="{{ activity.user.userprofile.avatar.url }}" alt="{{ activity.user.get_full_name }}" class="rounded-circle">
+                                    {% else %}
+                                    <div class="avatar-placeholder">{{ activity.user.get_initials }}</div>
+                                    {% endif %}
                                 </div>
-                            </td>
-                            <td>
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="material-icons text-{{ activity.get_category_color }}">{{ activity.get_category_icon }}</span>
-                                    <span>{{ activity.action }}</span>
+                                <div class="user-info-container">
+                                    <h6 class="mb-0">{{ activity.user.get_full_name }}</h6>
+                                    <small class="text-muted">{{ activity.user.userprofile.get_role_display }}</small>
                                 </div>
-                            </td>
-                            <td>
-                                <span class="category-badge category-{{ activity.category|lower }}">
-                                    {{ activity.category|title }}
-                                </span>
-                            </td>
-                            <td class="pe-4">{{ activity.details }}</td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="5" class="text-center py-5">
-                                <div class="text-muted">
-                                    <span class="material-icons d-block mb-2" style="font-size: 2.5rem; opacity: 0.5;">search_off</span>
-                                    <p class="mb-0">No activity records found</p>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="material-icons text-{{ activity.get_category_color }}">{{ activity.get_category_icon }}</span>
+                                <span>{{ activity.action }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="category-badge category-{{ activity.category|lower }}">
+                                {{ activity.category|title }}
+                            </span>
+                        </td>
+                        <td class="pe-4">{{ activity.details }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            <div class="text-muted">
+                                <span class="material-icons d-block mb-2" style="font-size: 2.5rem; opacity: 0.5;">search_off</span>
+                                <p class="mb-0">No activity records found</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Mobile Card View -->
+        <div class="d-md-none px-2 py-2">
+            {% for activity in activities %}
+            <div class="activity-card mb-3">
+                <div class="activity-card-header d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <span class="material-icons text-{{ activity.get_category_color }} me-2">{{ activity.get_category_icon }}</span>
+                        <span class="activity-action fw-medium">{{ activity.action }}</span>
+                    </div>
+                    <span class="category-badge category-{{ activity.category|lower }}">
+                        {{ activity.category|title }}
+                    </span>
+                </div>
+                
+                <div class="activity-card-body mt-2">
+                    <div class="row g-2 mb-2">
+                        <div class="col-12">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-container me-2">
+                                    {% if activity.user.userprofile.avatar %}
+                                    <img src="{{ activity.user.userprofile.avatar.url }}" alt="{{ activity.user.get_full_name }}" class="rounded-circle" style="width: 32px; height: 32px; object-fit: cover;">
+                                    {% else %}
+                                    <div class="avatar-placeholder" style="width: 32px; height: 32px; font-size: 14px;">{{ activity.user.get_initials }}</div>
+                                    {% endif %}
                                 </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                                <div>
+                                    <div class="fw-medium">{{ activity.user.get_full_name }}</div>
+                                    <div class="small text-muted">{{ activity.user.userprofile.get_role_display }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row g-2">
+                        <div class="col-12">
+                            <div class="activity-details">
+                                <div class="text-muted small mb-1">Details</div>
+                                <p class="mb-0">{{ activity.details }}</p>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="text-muted small mt-2 text-end">
+                                {{ activity.timestamp|date:"M d, Y H:i" }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            {% if activities %}
-            <div class="p-3 border-top">
+            {% empty %}
+            <div class="text-center py-5">
+                <span class="material-icons d-block mb-2" style="font-size: 3rem; opacity: 0.5;">search_off</span>
+                <p class="text-muted">No activity records found</p>
+            </div>
+            {% endfor %}
+        </div>
+            
+        {% if activities %}
+        <div class="card-footer bg-white py-3">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
+                <div class="small text-muted mb-3 mb-md-0 text-center text-md-start">
+                    Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} entries
+                </div>
                 {% include 'includes/pagination.html' %}
             </div>
-            {% endif %}
         </div>
+        {% endif %}
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const table = $('#activityTable').DataTable({
-        pageLength: 10,
-        order: [[0, "desc"]],
-        dom: 'rt<"bottom d-flex justify-content-between align-items-center pt-3"ip>',
-        responsive: true,
-        scrollY: false,
-        scrollX: false,
-        autoWidth: false
-    });
-
-    // Custom search functionality
-    $('#searchInput').on('keyup', function() {
-        table.search($(this).val()).draw();
-    });
-
-    // Ensure table layout remains consistent
-    const tableContainer = document.querySelector('.table-responsive');
-    if (tableContainer) {
-        const resizeObserver = new ResizeObserver(entries => {
-            for (let entry of entries) {
-                const table = entry.target.querySelector('.table');
-                if (table) {
-                    table.style.width = `${entry.contentRect.width}px`;
-                }
-            }
-        });
-        resizeObserver.observe(tableContainer);
-    }
-});
-</script>
-
 <style>
+/* Activity card styling for mobile */
+.activity-card {
+    background-color: white;
+    border-radius: 10px;
+    padding: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: transform 0.15s ease-in-out;
+    border: 1px solid rgba(0,0,0,0.08);
+}
+
+.activity-card:active {
+    transform: scale(0.98);
+}
+
+.activity-card-header {
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.activity-action {
+    font-size: 0.95rem;
+}
+
+.avatar-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #e9ecef;
+    color: #6c757d;
+    border-radius: 50%;
+    font-weight: 500;
+}
+
+.category-badge {
+    padding: 0.35rem 0.7rem;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: white;
+}
+
+.category-login {
+    background-color: #2563eb;
+}
+
+.category-user {
+    background-color: #0891b2;
+}
+
+.category-ticket {
+    background-color: #059669;
+}
+
+.category-violation {
+    background-color: #d97706;
+}
+
+.category-system {
+    background-color: #475569;
+}
+
 .search-input {
     position: relative;
     width: 100%;
@@ -177,20 +265,75 @@ document.addEventListener('DOMContentLoaded', function() {
     height: 42px;
 }
 
-.btn-primary .material-icons {
-    font-size: 20px;
-    margin-right: 5px;
-    vertical-align: text-bottom;
-}
-
-@media (max-width: 991.98px) {
-    .search-input {
-        margin-bottom: 1rem;
+/* Mobile optimization */
+@media (max-width: 767.98px) {
+    /* Prevent iOS zoom on input focus */
+    input, select, textarea {
+        font-size: 16px !important;
     }
     
-    .btn-primary {
-        width: 100%;
-        margin-top: 0.5rem;
+    /* Search input */
+    .search-box {
+        height: 45px;
+    }
+    
+    /* Improved button sizing */
+    .btn {
+        padding: 0.5rem 0.75rem;
+        height: 45px;
+    }
+    
+    /* Card styling */
+    .card-body {
+        padding: 1.25rem !important;
+    }
+    
+    /* Better spacing for icons */
+    .material-icons {
+        font-size: 20px !important;
+    }
+    
+    /* Adjust titles */
+    h4.fs-5 {
+        font-size: 1.2rem !important;
+    }
+    
+    /* Mobile pagination */
+    .pagination .page-link {
+        min-width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+    }
+}
+
+/* For very small screens */
+@media (max-width: 360px) {
+    /* Even smaller buttons and text */
+    .btn {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.85rem;
+    }
+    
+    h4.fs-5 {
+        font-size: 1.1rem !important;
+    }
+    
+    /* Card padding */
+    .card-body {
+        padding: 1rem !important;
+    }
+    
+    /* Activity cards */
+    .activity-card {
+        padding: 0.75rem;
+    }
+    
+    /* Even smaller icons */
+    .material-icons {
+        font-size: 18px !important;
     }
 }
 </style>

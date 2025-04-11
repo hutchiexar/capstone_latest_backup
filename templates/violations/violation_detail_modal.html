@@ -125,10 +125,34 @@
                         <div class="info-content">
                             <div class="info-group">
                                 <label>Violation Types</label>
-                                <div class="info-value violation-types">
-                                    {% for type in violation.get_violation_types %}
-                                    <span class="violation-type">{{ type }}</span>
-                                    {% endfor %}
+                                <div class="info-value">
+                                    <div class="violations-table-container">
+                                        <table class="table table-sm table-hover violations-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>VIOLATION TYPE</th>
+                                                    <th class="text-end">FINE</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for type in violation.get_violation_types %}
+                                                <tr>
+                                                    <td>
+                                                        <div class="violation-badge-item">{{ type }}</div>
+                                                    </td>
+                                                    <td class="text-end">₱{{ violation.fine_amount }}</td>
+                                                </tr>
+                                                {% empty %}
+                                                <tr>
+                                                    <td>
+                                                        <div class="violation-badge-item">{{ violation.violation_type }}</div>
+                                                    </td>
+                                                    <td class="text-end">₱{{ violation.fine_amount }}</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                             <div class="info-group">
@@ -317,8 +341,14 @@
                                             <tr>
                                                 <td>{{ prev_violation.violation_date|date:"M d, Y" }}</td>
                                                 <td>
-                                                    <div class="text-truncate" style="max-width: 150px;" data-bs-toggle="tooltip" title="{{ prev_violation.violation_type }}">
-                                                        {{ prev_violation.violation_type|truncatechars:25 }}
+                                                    <div class="violation-types-container">
+                                                        {% for vtype in prev_violation.get_violation_types %}
+                                                        <div class="violation-badge-item">{{ vtype }}</div>
+                                                        {% empty %}
+                                                        <div class="text-truncate" style="max-width: 150px;" data-bs-toggle="tooltip" title="{{ prev_violation.violation_type }}">
+                                                            {{ prev_violation.violation_type|truncatechars:25 }}
+                                                        </div>
+                                                        {% endfor %}
                                                     </div>
                                                 </td>
                                                 <td>
@@ -455,6 +485,60 @@
                     </div>
                 </div>
             </div>
+
+            <!-- All Violations in Submission Section -->
+            {% if submission_violations %}
+            <div class="info-card mb-3">
+                <div class="info-header">
+                    <span class="material-icons">list_alt</span>
+                    <h6>All Violations in Submission</h6>
+                    <span class="badge bg-info text-dark ms-2">
+                        {{ submission_violations|length }} violation{% if submission_violations|length != 1 %}s{% endif %}
+                    </span>
+                </div>
+                <div class="info-content">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Violation Type</th>
+                                    <th>Status</th>
+                                    <th>Fine</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Display all violations in the submission -->
+                                {% for sub_violation in submission_violations %}
+                                <tr {% if sub_violation.id == violation.id %}class="table-primary"{% endif %}>
+                                    <td>#{{ sub_violation.id }}</td>
+                                    <td>
+                                        <div class="violation-types-container">
+                                            {% for vtype in sub_violation.get_violation_types %}
+                                            <div class="violation-badge-item">{{ vtype }}</div>
+                                            {% empty %}
+                                            <div class="text-truncate" style="max-width: 150px;" data-bs-toggle="tooltip" title="{{ sub_violation.violation_type }}">
+                                                {{ sub_violation.violation_type|truncatechars:25 }}
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% include 'includes/status_badge.html' with status=sub_violation.status display_text=sub_violation.get_status_display %}
+                                    </td>
+                                    <td>₱{{ sub_violation.fine_amount }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center">No related violations found in this submission.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 
@@ -678,12 +762,14 @@
 
 .violation-type {
     display: inline-block;
-    padding: 0.25rem 0.75rem;
-    background: rgba(0,35,102,0.08);
-    color: var(--primary-color);
-    border-radius: 4px;
-    font-size: 0.8125rem;
+    padding: 6px 12px;
+    background-color: #f1f5ff;
+    color: #3563E9;
+    border-radius: 6px;
+    font-size: 0.85rem;
     font-weight: 500;
+    margin-right: 4px;
+    margin-bottom: 4px;
 }
 
 .amount {
@@ -844,6 +930,96 @@
 .row .col-md-6 .info-group {
     margin-bottom: 0.5rem;
 }
+
+/* Violation type badges and container */
+.violation-types-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    max-width: 100%;
+    width: 100%;
+    overflow: hidden;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,0,0,0.2) transparent;
+    max-height: 80px;
+    overflow-y: auto;
+}
+
+.violation-badge-item {
+    display: inline-block;
+    padding: 6px 12px;
+    background-color: #f1f5ff;
+    color: #3563E9;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-right: 4px;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* Fix table layout */
+.table {
+    width: 100%;
+    margin-bottom: 0;
+    table-layout: fixed;
+}
+
+/* Set fixed widths for table columns */
+.table th:nth-child(1), .table td:nth-child(1) { width: 15%; }
+.table th:nth-child(2), .table td:nth-child(2) { width: 45%; }
+.table th:nth-child(3), .table td:nth-child(3) { width: 20%; }
+.table th:nth-child(4), .table td:nth-child(4) { width: 20%; }
+
+/* Violations table styling */
+.violations-table-container {
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid rgba(0,0,0,0.05);
+    margin-top: 5px;
+}
+
+.violations-table {
+    margin-bottom: 0;
+}
+
+.violations-table thead th {
+    background-color: #f8f9fa;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.violations-table tbody td {
+    padding: 8px 12px;
+    vertical-align: middle;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.violations-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.violations-table .violation-badge-item {
+    display: inline-block;
+    margin: 0;
+    background-color: #f1f5ff;
+    color: #3563E9;
+}
+
+/* Highlight current violation */
+.table-primary {
+    background-color: #e7f5ff !important;
+}
 </style>
 
 <script>
@@ -854,6 +1030,41 @@ document.addEventListener('DOMContentLoaded', function() {
         modalBody.addEventListener('touchmove', function(e) {
             e.stopPropagation();
         }, { passive: true });
+    }
+    
+    // Handle table layout shifts
+    function fixTableLayouts() {
+        const tables = document.querySelectorAll('.table');
+        tables.forEach(table => {
+            // Ensure table has the fixed layout
+            table.style.tableLayout = 'fixed';
+            
+            // Set fixed widths for all violation type cells
+            const typeCells = table.querySelectorAll('td:nth-child(2)');
+            typeCells.forEach(cell => {
+                // Ensure the container inside doesn't overflow
+                const container = cell.querySelector('.violation-types-container');
+                if (container) {
+                    container.style.maxWidth = '100%';
+                    container.style.width = '100%';
+                    container.style.overflowX = 'hidden';
+                }
+            });
+        });
+    }
+    
+    // Fix layout after content is loaded
+    fixTableLayouts();
+    
+    // Also fix layout when window is resized
+    window.addEventListener('resize', fixTableLayouts);
+    
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
     }
     
     // Print Receipt button click handler

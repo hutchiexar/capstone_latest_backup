@@ -41,18 +41,18 @@
     <!-- Main Content Card -->
     <div class="card shadow-sm border-0 rounded-3">
         <div class="card-body p-4">
-            <!-- Table Container -->
-            <div class="table-responsive">
-                <table class="table table-hover align-middle" id="pendingApprovalsTable">
+            <!-- Table Container for desktop view -->
+            <div class="table-responsive d-none d-md-block">
+                <table class="table table-hover align-middle" id="pendingApprovalsTable" style="table-layout: fixed;">
                     <thead>
                         <tr>
-                            <th>Case ID</th>
-                            <th>Date Filed</th>
-                            <th>Violator</th>
-                            <th>Violation Type</th>
-                            <th>Fine Amount</th>
-                            <th>Adjudicated By</th>
-                            <th class="text-end">Actions</th>
+                            <th style="width: 8%;">Case ID</th>
+                            <th style="width: 12%;">Date Filed</th>
+                            <th style="width: 20%;">Violator</th>
+                            <th style="width: 35%;">Violation Type</th>
+                            <th style="width: 10%;">Fine Amount</th>
+                            <th style="width: 15%;">Adjudicated By</th>
+                            <th style="width: 10%;" class="text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -67,10 +67,9 @@
                                 </div>
                             </td>
                             <td>
-                                <div class="violation-types">
+                                <div class="violation-types-container">
                                     {% for type in violation.get_violation_types %}
-                                    <span class="violation-type">{{ type }}</span>
-                                    {% if not forloop.last %}<span class="separator">•</span>{% endif %}
+                                    <div class="violation-badge-item">{{ type }}</div>
                                     {% endfor %}
                                 </div>
                             </td>
@@ -117,6 +116,99 @@
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Card View for mobile devices -->
+            <div class="violation-cards d-block d-md-none">
+                {% for violation in violations %}
+                <div class="violation-card" data-violation-id="{{ violation.id }}">
+                    <div class="card mb-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="fw-bold">Case ID: {{ violation.id }}</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-2">
+                                <div class="col-4">
+                                    <small class="text-muted">Date Filed:</small>
+                                </div>
+                                <div class="col-8">
+                                    {{ violation.violation_date|date:"M d, Y" }}
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-4">
+                                    <small class="text-muted">Violator:</small>
+                                </div>
+                                <div class="col-8">
+                                    <div>
+                                        <span class="fw-medium">{{ violation.violator.first_name }} {{ violation.violator.last_name }}</span>
+                                    </div>
+                                    <small class="text-muted">{{ violation.violator.license_number }}</small>
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-4">
+                                    <small class="text-muted">Violation:</small>
+                                </div>
+                                <div class="col-8">
+                                    <div class="violation-types-container">
+                                        {% for type in violation.get_violation_types %}
+                                        <div class="violation-badge-item">{{ type }}</div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-4">
+                                    <small class="text-muted">Fine:</small>
+                                </div>
+                                <div class="col-8">
+                                    ₱{{ violation.fine_amount }}
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-4">
+                                    <small class="text-muted">Adjudicated By:</small>
+                                </div>
+                                <div class="col-8">
+                                    {{ violation.adjudicated_by.get_full_name }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer p-2">
+                            <div class="mobile-actions">
+                                <button type="button" 
+                                        class="btn mobile-action-btn btn-view" 
+                                        data-violation-id="{{ violation.id }}">
+                                    <i class="fas fa-eye"></i>
+                                    <span>View</span>
+                                </button>
+                                <button type="button" 
+                                        class="btn mobile-action-btn btn-approve" 
+                                        data-violation-id="{{ violation.id }}">
+                                    <i class="fas fa-check"></i>
+                                    <span>Approve</span>
+                                </button>
+                                <button type="button" 
+                                        class="btn mobile-action-btn btn-reject" 
+                                        data-violation-id="{{ violation.id }}">
+                                    <i class="fas fa-times"></i>
+                                    <span>Reject</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="empty-state">
+                    <div class="text-center py-4">
+                        <span class="material-icons d-block mb-2" style="font-size: 2.5rem; opacity: 0.5;">search_off</span>
+                        <p class="mb-0">No pending approvals found</p>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
         </div>
     </div>
@@ -275,21 +367,16 @@
 }
 
 /* Violation Types Styles */
-.violation-types {
+.violation-types-container {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
     align-items: center;
 }
 
-.violation-type {
+.violation-badge-item {
     font-size: 0.9rem;
     color: var(--text-dark);
-}
-
-.separator {
-    color: #9ca3af;
-    font-size: 0.8rem;
 }
 
 /* Pagination container */
@@ -467,6 +554,133 @@
   max-width: 90%;
   width: 800px;
 }
+
+/* Mobile Card View Styles */
+.violation-card {
+    margin-bottom: 15px;
+}
+
+.violation-card .card {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.violation-card .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.violation-card .card-header {
+    background-color: #f8f9fa;
+    padding: 12px 15px;
+    border-bottom: 1px solid #eaecef;
+}
+
+.violation-card .card-body {
+    padding: 15px;
+}
+
+.violation-card .card-footer {
+    background-color: #f8f9fa;
+    border-top: 1px solid #eaecef;
+    padding: 10px !important;
+}
+
+/* Mobile action buttons */
+.mobile-actions {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    gap: 2%;
+}
+
+.mobile-action-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 0;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    gap: 5px;
+    transition: all 0.2s;
+    border: none;
+    color: white;
+    text-align: center;
+}
+
+.mobile-action-btn.btn-view {
+    background-color: var(--primary-color, #2563eb);
+}
+
+.mobile-action-btn.btn-approve {
+    background-color: #0bb783;
+}
+
+.mobile-action-btn.btn-reject {
+    background-color: #f64e60;
+}
+
+.mobile-action-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.mobile-action-btn:active {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.mobile-action-btn i {
+    font-size: 0.9rem;
+}
+
+.mobile-action-btn span {
+    font-weight: 500;
+    font-size: 0.85rem;
+    color: white;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 0.75rem !important;
+    }
+    
+    .search-container {
+        width: 100%;
+        max-width: 100%;
+        margin-top: 0.75rem;
+    }
+    
+    /* Remove swipe hint since we're using cards now */
+    .table-responsive::after {
+        display: none;
+    }
+    
+    /* Make violations wrap better */
+    .violation-card .violation-types {
+        flex-wrap: wrap;
+    }
+
+    /* For very small screens */
+    @media (max-width: 360px) {
+        .mobile-action-btn {
+            padding: 6px 0;
+        }
+        
+        .mobile-action-btn i {
+            font-size: 0.8rem;
+        }
+        
+        .mobile-action-btn span {
+            font-size: 0.8rem;
+        }
+    }
+}
 </style>
 
 <script>
@@ -491,6 +705,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
         const tableRows = document.querySelectorAll('#pendingApprovalsTable tbody tr');
+        const violationCards = document.querySelectorAll('.violation-card');
 
         searchInput.addEventListener('keyup', function() {
             const searchTerm = this.value.toLowerCase();
@@ -498,6 +713,11 @@ document.addEventListener('DOMContentLoaded', function() {
             tableRows.forEach(row => {
                 const text = row.textContent.toLowerCase();
                 row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+            
+            violationCards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                card.style.display = text.includes(searchTerm) ? '' : 'none';
             });
         });
     }

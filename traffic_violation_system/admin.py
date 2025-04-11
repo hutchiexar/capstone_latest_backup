@@ -58,6 +58,18 @@ class OperatorAdmin(admin.ModelAdmin):
     list_filter = ('created_at', 'updated_at')
     search_fields = ('last_name', 'first_name', 'new_pd_number', 'old_pd_number', 'address')
     date_hierarchy = 'created_at'
+    
+    fieldsets = (
+        ('Personal Information', {
+            'fields': ('last_name', 'first_name', 'middle_initial', 'address')
+        }),
+        ('Operator Numbers', {
+            'fields': ('old_pd_number', 'new_pd_number', 'po_number')
+        }),
+        ('User Account', {
+            'fields': ('user',)
+        }),
+    )
 
 # Register OperatorApplication
 class OperatorApplicationAdmin(admin.ModelAdmin):

@@ -8,7 +8,7 @@
     <!-- Header Section -->
     <div class="card shadow-sm border-0 rounded-3 mb-4">
         <div class="card-body p-4">
-            <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                 <div>
                     <div class="d-flex align-items-center">
                         <span class="material-icons me-2" style="color: var(--primary-color)">upload_file</span>
@@ -17,8 +17,10 @@
                     <p class="text-muted mt-2 mb-0">Upload operators data from Excel or CSV file</p>
                 </div>
                 <div>
-                    <a href="{% url 'operator_list' %}" class="btn btn-outline-secondary d-flex align-items-center px-4 py-2">
-                        <span class="material-icons fs-5 me-2">arrow_back</span> Back to List
+                    <a href="{% url 'operator_list' %}" class="btn btn-outline-secondary d-flex align-items-center px-md-4 py-2">
+                        <span class="material-icons fs-5 me-1 me-md-2">arrow_back</span>
+                        <span class="d-none d-sm-inline">Back to List</span>
+                        <span class="d-inline d-sm-none">Back</span>
                     </a>
                 </div>
             </div>
@@ -34,25 +36,25 @@
             </div>
         </div>
 
-        <div class="card-body p-4">
-            <div class="alert alert-info d-flex mb-4">
-                <span class="material-icons me-2 mt-1">info</span>
+        <div class="card-body p-3 p-md-4">
+            <div class="alert alert-info d-flex flex-column flex-md-row mb-4">
+                <span class="material-icons me-0 me-md-2 mb-2 mb-md-0 align-self-start">info</span>
                 <div>
                     <strong>Note:</strong>
-                    <ul class="mb-0 mt-2">
-                        <li>Your Excel file should have two worksheets: <strong>Operators</strong> and <strong>Drivers</strong></li>
-                        <li><strong>Operators Worksheet:</strong> Columns must include Last Name, First Name, M.I., Address, Old P.D. No. (O prefix), New P.D. No. (O prefix)</li>
-                        <li><strong>Drivers Worksheet:</strong> Columns must include Last Name, First Name, M.I., Address, Old P.D. No. (D prefix), New P.D. No. (D prefix)</li>
-                        <li>An operator can appear multiple times with different PD numbers (one row per vehicle)</li>
-                        <li>The system will consolidate multiple entries for the same operator (based on name and address)</li>
-                        <li>Drivers can be operators (matched by name and address) or can lease from operators</li>
-                        <li>The New P.D. No. fields are required and must be unique across their respective types</li>
+                    <ul class="mb-0 mt-2 ps-3 ps-md-4">
+                        <li class="mb-2">Your Excel file should have two worksheets: <strong>Operators</strong> and <strong>Drivers</strong></li>
+                        <li class="mb-2"><strong>Operators Worksheet:</strong> Columns must include Last Name, First Name, M.I., Address, Old P.D. No. (O prefix), New P.D. No. (O prefix)</li>
+                        <li class="mb-2"><strong>Drivers Worksheet:</strong> Columns must include Last Name, First Name, M.I., Address, Old P.D. No. (D prefix), New P.D. No. (D prefix)</li>
+                        <li class="mb-2">An operator can appear multiple times with different PD numbers (one row per vehicle)</li>
+                        <li class="mb-2">The system will consolidate multiple entries for the same operator (based on name and address)</li>
+                        <li class="mb-2">Drivers can be operators (matched by name and address) or can lease from operators</li>
+                        <li class="mb-2">The New P.D. No. fields are required and must be unique across their respective types</li>
                         <li>You will be able to preview and confirm the data before importing</li>
                     </ul>
                 </div>
             </div>
             
-            <form method="post" enctype="multipart/form-data">
+            <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
                 {% csrf_token %}
                 
                 <div class="mb-4">
@@ -62,7 +64,7 @@
                     <div class="input-group">
                         {{ form.file }}
                     </div>
-                    <div class="form-text">{{ form.file.help_text }}</div>
+                    <div class="form-text mt-2">{{ form.file.help_text }}</div>
                     {% if form.file.errors %}
                     <div class="text-danger mt-1">
                         {% for error in form.file.errors %}
@@ -74,22 +76,112 @@
                 
                 <!-- Sample File Download -->
                 <div class="mb-4">
-                    <div class="form-text d-flex align-items-center">
+                    <div class="form-text d-flex align-items-center mb-3">
                         <span class="material-icons me-2">download</span>
-                        <a href="{% url 'operator_export_excel' %}" target="_blank">Download sample template</a> to see the expected format.
+                        <a href="{% url 'operator_export_excel' %}" target="_blank" class="text-decoration-none d-flex align-items-center">
+                            Download sample template 
+                            <span class="material-icons ms-1 fs-6">open_in_new</span>
+                        </a>
                     </div>
+                    <div class="form-text">Use the template to ensure your data is in the correct format for import.</div>
                 </div>
                 
-                <div class="d-flex justify-content-end">
-                    <a href="{% url 'operator_list' %}" class="btn btn-outline-secondary d-flex align-items-center px-4 py-2 me-2">
-                        <span class="material-icons fs-5 me-2">close</span> Cancel
+                <div class="d-flex flex-column flex-sm-row justify-content-end gap-2 mt-4">
+                    <a href="{% url 'operator_list' %}" class="btn btn-outline-secondary d-flex align-items-center justify-content-center px-4 py-2 w-100 w-sm-auto">
+                        <span class="material-icons fs-5 me-2">close</span>
+                        <span>Cancel</span>
                     </a>
-                    <button type="submit" class="btn btn-primary d-flex align-items-center px-4 py-2">
-                        <span class="material-icons fs-5 me-2">cloud_upload</span> Upload and Preview
+                    <button type="submit" class="btn btn-primary d-flex align-items-center justify-content-center px-4 py-2 w-100 w-sm-auto">
+                        <span class="material-icons fs-5 me-2">cloud_upload</span>
+                        <span>Upload and Preview</span>
                     </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<!-- Mobile-specific styling -->
+<style>
+    @media (max-width: 768px) {
+        /* Prevent iOS zoom on input focus */
+        input, select, textarea {
+            font-size: 16px !important;
+        }
+        
+        /* Increase tap target sizes */
+        .form-control, .form-select, .btn, .input-group {
+            min-height: 45px;
+        }
+        
+        /* Improve mobile spacing */
+        .card-body {
+            padding: 1rem !important;
+        }
+        
+        .alert {
+            padding: 1rem !important;
+        }
+        
+        /* Make list items more readable on mobile */
+        .alert ul {
+            padding-left: 1.25rem !important;
+        }
+        
+        /* Form text enhancement */
+        .form-text {
+            font-size: 0.85rem;
+        }
+        
+        /* Improve button spacing */
+        .btn .material-icons {
+            font-size: 18px !important;
+        }
+        
+        /* Better margins for small screens */
+        .alert .material-icons {
+            align-self: start;
+            margin-top: 3px;
+        }
+    }
+    
+    /* Custom file input styling for better mobile experience */
+    .form-control[type="file"] {
+        padding: 0.375rem 0.75rem;
+    }
+    
+    /* For very small screens */
+    @media (max-width: 360px) {
+        .card-header h5 {
+            font-size: 1rem;
+        }
+        
+        .form-label {
+            font-size: 0.9rem;
+        }
+        
+        .alert {
+            font-size: 0.9rem;
+        }
+    }
+</style>
+
+<!-- Form validation script -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Form validation
+        const forms = document.querySelectorAll('.needs-validation');
+        
+        Array.prototype.slice.call(forms).forEach(function(form) {
+            form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                
+                form.classList.add('was-validated');
+            }, false);
+        });
+    });
+</script>
 {% endblock %} 

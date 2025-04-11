@@ -9,11 +9,12 @@ def topic_attachment_path(instance, filename):
 class EducationalCategory(models.Model):
     title = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
+    order = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name_plural = "Educational Categories"
-        ordering = ['title']
+        ordering = ['order', 'title']
 
     def __str__(self):
         return self.title

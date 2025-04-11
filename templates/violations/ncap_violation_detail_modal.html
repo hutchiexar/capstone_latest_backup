@@ -117,7 +117,13 @@
                                     </div>
                                     <div class="detail-item">
                                         <span class="detail-label">Violation Type:</span>
-                                        <span class="detail-value">{{ violation.violation_type }}</span>
+                                        <span class="detail-value">
+                                            {% for violation_type in violation.get_violation_types %}
+                                            <div class="violation-badge-item mb-1">{{ violation_type }}</div>
+                                            {% empty %}
+                                            {{ violation.violation_type }}
+                                            {% endfor %}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -337,6 +343,60 @@
                 </div>
             </div>
             
+            <!-- Submission Violations -->
+            {% if submission_violations %}
+            <div class="info-card">
+                <div class="info-header">
+                    <span class="material-icons">list_alt</span>
+                    <h6>All Violations in Submission</h6>
+                    <span class="badge bg-info text-dark ms-2">
+                        {{ submission_violations|length }} violation{% if submission_violations|length != 1 %}s{% endif %}
+                    </span>
+                </div>
+                <div class="info-content">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Violation Type</th>
+                                    <th>Status</th>
+                                    <th>Fine</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Display all violations in the submission -->
+                                {% for sub_violation in submission_violations %}
+                                <tr {% if sub_violation.id == violation.id %}class="table-primary"{% endif %}>
+                                    <td>#{{ sub_violation.id }}</td>
+                                    <td>
+                                        <div class="violation-types-container">
+                                            {% for vtype in sub_violation.get_violation_types %}
+                                            <div class="violation-badge-item">{{ vtype }}</div>
+                                            {% empty %}
+                                            <div class="text-truncate" style="max-width: 150px;" data-bs-toggle="tooltip" title="{{ sub_violation.violation_type }}">
+                                                {{ sub_violation.violation_type|truncatechars:25 }}
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% include 'includes/status_badge.html' with status=sub_violation.status display_text=sub_violation.get_status_display %}
+                                    </td>
+                                    <td>₱{{ sub_violation.fine_amount }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center">No related violations found in this submission.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
             <!-- Violation History -->
             {% if previous_violations %}
             <div class="info-card">
@@ -363,8 +423,14 @@
                                 <tr>
                                     <td>{{ prev_violation.violation_date|date:"M d, Y" }}</td>
                                     <td>
-                                        <div class="text-truncate" style="max-width: 150px;" data-bs-toggle="tooltip" title="{{ prev_violation.violation_type }}">
-                                            {{ prev_violation.violation_type|truncatechars:25 }}
+                                        <div class="violation-types-container">
+                                            {% for vtype in prev_violation.get_violation_types %}
+                                            <div class="violation-badge-item">{{ vtype }}</div>
+                                            {% empty %}
+                                            <div class="text-truncate" style="max-width: 150px;" data-bs-toggle="tooltip" title="{{ prev_violation.violation_type }}">
+                                                {{ prev_violation.violation_type|truncatechars:25 }}
+                                            </div>
+                                            {% endfor %}
                                         </div>
                                     </td>
                                     <td>
@@ -863,6 +929,46 @@
     font-weight: 500;
 }
 
+/* Violation type badge styling */
+.violation-badge-item {
+    display: inline-block;
+    padding: 6px 12px;
+    background-color: #f1f5ff;
+    color: #3563E9;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-right: 4px;
+    margin-bottom: 4px;
+    /* Prevent text wrapping to avoid layout shifts */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.violation-types-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    max-width: 100%;
+    width: 100%;
+    /* Prevent container from expanding beyond its bounds */
+    overflow: hidden;
+    /* Add subtle horizontal scrolling for mobile */
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    /* Make scrollbar minimal */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,0,0,0.2) transparent;
+}
+
+/* Container within tables needs special handling */
+table .violation-types-container {
+    max-height: none;
+    overflow-y: visible;
+}
+
 .simple-view .info-header {
     padding: 10px 15px;
     background-color: #f8f9fa;
@@ -963,6 +1069,40 @@
         min-width: 75px;
     }
 }
+
+.violation-types-container .violation-badge-item {
+    margin-bottom: 4px;
+    font-size: 0.75rem;
+    padding: 4px 8px;
+}
+
+@media (max-width: 576px) {
+    .labeled-field {
+        margin-bottom: 5px;
+    }
+}
+
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    /* Prevent table from expanding when modal opens */
+    max-width: 100%;
+    margin-bottom: 0;
+}
+
+/* Fix table layout to prevent shifting */
+.table {
+    width: 100%;
+    margin-bottom: 0;
+    table-layout: fixed;
+}
+
+/* Set specific widths for table columns to prevent shifting */
+.table th:nth-child(1), .table td:nth-child(1) { width: 15%; }
+.table th:nth-child(2), .table td:nth-child(2) { width: 45%; }
+.table th:nth-child(3), .table td:nth-child(3) { width: 20%; }
+.table th:nth-child(4), .table td:nth-child(4) { width: 20%; }
 </style>
 
 <script>
@@ -973,6 +1113,43 @@ document.addEventListener('DOMContentLoaded', function() {
         modalBody.addEventListener('touchmove', function(e) {
             e.stopPropagation();
         }, { passive: true });
+    }
+    
+    // Handle table layout shifts
+    function fixTableLayouts() {
+        const tables = document.querySelectorAll('.table');
+        tables.forEach(table => {
+            // Ensure table has the fixed layout
+            table.style.tableLayout = 'fixed';
+            
+            // Set fixed widths for all violation type cells
+            const typeCells = table.querySelectorAll('td:nth-child(2)');
+            typeCells.forEach(cell => {
+                cell.style.width = '45%';
+                cell.style.maxWidth = '45%';
+                
+                // Ensure the container inside doesn't overflow
+                const container = cell.querySelector('.violation-types-container');
+                if (container) {
+                    container.style.maxWidth = '100%';
+                    container.style.width = '100%';
+                    container.style.overflowX = 'hidden';
+                }
+            });
+        });
+    }
+    
+    // Fix layout after content is loaded
+    fixTableLayouts();
+    
+    // Also fix layout when window is resized
+    window.addEventListener('resize', fixTableLayouts);
+    
+    // Add a MutationObserver to watch for content changes and fix layouts
+    const modalContainer = document.querySelector('.modal__container');
+    if (modalContainer) {
+        const observer = new MutationObserver(fixTableLayouts);
+        observer.observe(modalContainer, { childList: true, subtree: true });
     }
     
     // Print Receipt button click handler

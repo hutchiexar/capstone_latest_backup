@@ -4,37 +4,50 @@
 {% block title %}{% if operator %}Update Operator{% else %}Create Operator{% endif %}{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="page-header">
-        <div class="row align-items-center">
-            <div class="col">
-                <h1 class="page-header-title">{% if operator %}Update Operator{% else %}Create Operator{% endif %}</h1>
-                <p class="page-header-text">{% if operator %}Update the information for {{ operator.last_name }}, {{ operator.first_name }}{% else %}Add a new operator to the system{% endif %}</p>
-            </div>
-            <div class="col-auto">
-                <a href="{% url 'operator_list' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> Back to List
-                </a>
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div>
+                    <div class="d-flex align-items-center">
+                        <span class="material-icons me-2" style="color: var(--primary-color)">{% if operator %}edit_note{% else %}add_circle{% endif %}</span>
+                        <h4 class="mb-0">{% if operator %}Update Operator{% else %}Create Operator{% endif %}</h4>
+                    </div>
+                    <p class="text-muted mt-2 mb-0">{% if operator %}Update the information for {{ operator.last_name }}, {{ operator.first_name }}{% else %}Add a new operator to the system{% endif %}</p>
+                </div>
+                <div>
+                    <a href="{% url 'operator_list' %}" class="btn btn-outline-primary d-flex align-items-center px-3 py-2">
+                        <span class="material-icons fs-5 me-2">arrow_back</span> 
+                        <span class="d-none d-sm-inline">Back to List</span>
+                        <span class="d-inline d-sm-none">Back</span>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="card mb-4">
-        <div class="card-header">
-            <h4 class="card-header-title">Operator Information</h4>
+    <!-- Form Card -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-header bg-transparent d-flex align-items-center px-4 py-3 border-bottom">
+            <span class="material-icons me-2" style="color: var(--primary-color); font-size: 24px;">person</span>
+            <h5 class="mb-0 fw-bold">Operator Information</h5>
         </div>
 
-        <div class="card-body">
+        <div class="card-body p-4">
             <form method="post">
                 {% csrf_token %}
                 
-                <div class="row">
+                <div class="row g-3">
                     <!-- Last Name -->
-                    <div class="col-md-4 mb-3">
+                    <div class="col-12 col-md-4">
                         <label for="{{ form.last_name.id_for_label }}" class="form-label">Last Name <span class="text-danger">*</span></label>
-                        {{ form.last_name }}
+                        <div class="input-group">
+                            <span class="input-group-text"><span class="material-icons fs-5">person</span></span>
+                            {{ form.last_name }}
+                        </div>
                         {% if form.last_name.errors %}
-                        <div class="text-danger mt-1">
+                        <div class="text-danger mt-1 small">
                             {% for error in form.last_name.errors %}
                             {{ error }}
                             {% endfor %}
@@ -43,11 +56,14 @@
                     </div>
                     
                     <!-- First Name -->
-                    <div class="col-md-4 mb-3">
+                    <div class="col-12 col-md-4">
                         <label for="{{ form.first_name.id_for_label }}" class="form-label">First Name <span class="text-danger">*</span></label>
-                        {{ form.first_name }}
+                        <div class="input-group">
+                            <span class="input-group-text"><span class="material-icons fs-5">badge</span></span>
+                            {{ form.first_name }}
+                        </div>
                         {% if form.first_name.errors %}
-                        <div class="text-danger mt-1">
+                        <div class="text-danger mt-1 small">
                             {% for error in form.first_name.errors %}
                             {{ error }}
                             {% endfor %}
@@ -56,11 +72,14 @@
                     </div>
                     
                     <!-- Middle Initial -->
-                    <div class="col-md-4 mb-3">
+                    <div class="col-12 col-md-4">
                         <label for="{{ form.middle_initial.id_for_label }}" class="form-label">Middle Initial</label>
-                        {{ form.middle_initial }}
+                        <div class="input-group">
+                            <span class="input-group-text"><span class="material-icons fs-5">short_text</span></span>
+                            {{ form.middle_initial }}
+                        </div>
                         {% if form.middle_initial.errors %}
-                        <div class="text-danger mt-1">
+                        <div class="text-danger mt-1 small">
                             {% for error in form.middle_initial.errors %}
                             {{ error }}
                             {% endfor %}
@@ -70,11 +89,14 @@
                 </div>
                 
                 <!-- Address -->
-                <div class="mb-3">
+                <div class="mt-3">
                     <label for="{{ form.address.id_for_label }}" class="form-label">Address <span class="text-danger">*</span></label>
-                    {{ form.address }}
+                    <div class="input-group">
+                        <span class="input-group-text"><span class="material-icons fs-5">home</span></span>
+                        {{ form.address }}
+                    </div>
                     {% if form.address.errors %}
-                    <div class="text-danger mt-1">
+                    <div class="text-danger mt-1 small">
                         {% for error in form.address.errors %}
                         {{ error }}
                         {% endfor %}
@@ -82,13 +104,16 @@
                     {% endif %}
                 </div>
                 
-                <div class="row">
+                <div class="row g-3 mt-2">
                     <!-- Old P.D. Number -->
-                    <div class="col-md-6 mb-3">
+                    <div class="col-12 col-md-6">
                         <label for="{{ form.old_pd_number.id_for_label }}" class="form-label">Old P.D. Number</label>
-                        {{ form.old_pd_number }}
+                        <div class="input-group">
+                            <span class="input-group-text"><span class="material-icons fs-5">history</span></span>
+                            {{ form.old_pd_number }}
+                        </div>
                         {% if form.old_pd_number.errors %}
-                        <div class="text-danger mt-1">
+                        <div class="text-danger mt-1 small">
                             {% for error in form.old_pd_number.errors %}
                             {{ error }}
                             {% endfor %}
@@ -97,11 +122,14 @@
                     </div>
                     
                     <!-- New P.D. Number -->
-                    <div class="col-md-6 mb-3">
+                    <div class="col-12 col-md-6">
                         <label for="{{ form.new_pd_number.id_for_label }}" class="form-label">New P.D. Number <span class="text-danger">*</span></label>
-                        {{ form.new_pd_number }}
+                        <div class="input-group">
+                            <span class="input-group-text"><span class="material-icons fs-5">numbers</span></span>
+                            {{ form.new_pd_number }}
+                        </div>
                         {% if form.new_pd_number.errors %}
-                        <div class="text-danger mt-1">
+                        <div class="text-danger mt-1 small">
                             {% for error in form.new_pd_number.errors %}
                             {{ error }}
                             {% endfor %}
@@ -110,12 +138,109 @@
                     </div>
                 </div>
                 
-                <div class="mt-4 d-flex justify-content-end">
-                    <a href="{% url 'operator_list' %}" class="btn btn-outline-secondary me-2">Cancel</a>
-                    <button type="submit" class="btn btn-primary">{% if operator %}Update{% else %}Create{% endif %} Operator</button>
+                <div class="mt-4 d-flex justify-content-end flex-wrap gap-2">
+                    <a href="{% url 'operator_list' %}" class="btn btn-outline-secondary d-flex align-items-center px-3 py-2">
+                        <span class="material-icons fs-5 me-2">cancel</span>
+                        <span>Cancel</span>
+                    </a>
+                    <button type="submit" class="btn btn-primary d-flex align-items-center px-4 py-2">
+                        <span class="material-icons fs-5 me-2">{% if operator %}save{% else %}add_circle{% endif %}</span>
+                        <span>{% if operator %}Update{% else %}Create{% endif %} Operator</span>
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<style>
+/* Style the form controls */
+.form-control, .form-select {
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.95rem;
+    border: 1px solid #dee2e6;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.input-group-text {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    color: #6c757d;
+}
+
+.input-group-text .material-icons {
+    font-size: 18px;
+}
+
+/* Required asterisk */
+.text-danger {
+    color: #dc3545;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 1rem !important;
+    }
+    
+    .form-control, .form-select {
+        font-size: 16px; /* Prevent iOS zoom on focus */
+    }
+    
+    .input-group-text .material-icons {
+        font-size: 16px;
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Stack buttons on mobile */
+    .d-flex.justify-content-end {
+        flex-direction: column-reverse;
+    }
+    
+    .d-flex.justify-content-end .btn {
+        width: 100%;
+    }
+}
+
+/* For very small screens */
+@media (max-width: 360px) {
+    .card-header h5 {
+        font-size: 1rem;
+    }
+    
+    .card-header .material-icons {
+        font-size: 20px !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Add Bootstrap form-control class to all form inputs
+        $('input, select, textarea').addClass('form-control');
+        
+        // Auto-focus first field
+        $('.form-control:first').focus();
+        
+        // Submit form on Enter key in the last field
+        $('.form-control:last').keypress(function(e) {
+            if (e.which == 13) { // Enter key
+                $('form').submit();
+            }
+        });
+    });
+</script>
 {% endblock %} 

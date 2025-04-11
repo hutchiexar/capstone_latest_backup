@@ -52,25 +52,54 @@
         text-overflow: ellipsis;
         white-space: nowrap;
     }
+    /* Add box-shadow to all cards */
+    .card {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+    }
+    /* Card header styling */
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+        font-weight: 600;
+    }
+    .card-header.bg-primary {
+        color: white;
+        border-bottom: none;
+    }
+    /* Form control focus */
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.25rem rgba(var(--primary-rgb), 0.25);
+    }
+    /* Badge styling */
+    .badge {
+        font-weight: 600;
+        padding: 0.5rem 0.75rem;
+    }
 </style>
 {{ block.super }}
 {% endblock %}
 
 {% block admin_content %}
 <div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="admin-section-title mb-0">
-                {% if is_edit %}Edit Topic{% else %}Create New Topic{% endif %}
-            </h2>
-            <p class="text-muted">
-                {% if is_edit %}Update educational topic content{% else %}Add new educational material{% endif %}
-            </p>
-        </div>
-        <div>
-            <a href="{% url 'educational:admin_topic_list' %}" class="btn btn-outline-secondary d-flex align-items-center">
-                <span class="material-icons me-2">arrow_back</span> Back to Topics
-            </a>
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="admin-section-title mb-0">
+                        {% if is_edit %}Edit Topic{% else %}Create New Topic{% endif %}
+                    </h2>
+                    <p class="text-muted">
+                        {% if is_edit %}Update educational topic content{% else %}Add new educational material{% endif %}
+                    </p>
+                </div>
+                <div>
+                    <a href="{% url 'educational:admin_topic_list' %}" class="btn btn-outline-secondary d-flex align-items-center">
+                        <span class="material-icons me-2">arrow_back</span> Back to Topics
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -80,14 +109,15 @@
         <div class="row">
             <div class="col-lg-8">
                 <!-- Topic Details Card -->
-                <div class="card mb-4">
-                    <div class="card-header">
+                <div class="card">
+                    <div class="card-header bg-primary text-white d-flex align-items-center">
+                        <span class="material-icons me-2">description</span>
                         <h5 class="mb-0">Topic Details</h5>
                     </div>
                     <div class="card-body">
                         <!-- Title -->
                         <div class="mb-3">
-                            <label for="title" class="form-label">Topic Title <span class="text-danger">*</span></label>
+                            <label for="title" class="form-label fw-bold">Topic Title <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="title" name="title" 
                                 placeholder="e.g., Traffic Rules and Regulations" 
                                 value="{% if is_edit %}{{ topic.title }}{% endif %}" 
@@ -96,7 +126,7 @@
                         
                         <!-- Category -->
                         <div class="mb-3">
-                            <label for="category" class="form-label">Category <span class="text-danger">*</span></label>
+                            <label for="category" class="form-label fw-bold">Category <span class="text-danger">*</span></label>
                             <select class="form-select" id="category" name="category" required>
                                 <option value="" disabled {% if not is_edit %}selected{% endif %}>Select a category</option>
                                 {% for category in categories %}
@@ -115,13 +145,34 @@
                         
                         <!-- Content with regular textarea -->
                         <div class="mb-3">
-                            <label for="content" class="form-label">Content <span class="text-danger">*</span></label>
+                            <label for="content" class="form-label fw-bold">Content <span class="text-danger">*</span></label>
                             <div class="input-group">
-                            <textarea class="form-control content-textarea" id="content" name="content" placeholder="Write your educational content here..." required>{% if is_edit %}{{ topic.content|safe }}{% endif %}</textarea>
+                                <textarea class="form-control content-textarea" id="content" name="content" placeholder="Write your educational content here..." required>{% if is_edit %}{{ topic.content|safe }}{% endif %}</textarea>
                             </div>
-                            <div class="form-text">
-                                <span class="material-icons align-middle me-1 fs-5">info</span>
-                                <span>You can use basic HTML tags for formatting (<strong>&lt;h1&gt;</strong>, <strong>&lt;p&gt;</strong>, <strong>&lt;ul&gt;</strong>, <strong>&lt;strong&gt;</strong>, etc.)</span>
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <div class="form-text">
+                                    <div class="d-flex align-items-center">
+                                        <span class="material-icons text-primary me-2">info</span>
+                                        <span>You can use basic HTML tags for formatting (<strong>&lt;h1&gt;</strong>, <strong>&lt;p&gt;</strong>, <strong>&lt;ul&gt;</strong>, <strong>&lt;strong&gt;</strong>, etc.)</span>
+                                    </div>
+                                </div>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="formatBold">
+                                        <strong>B</strong>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="formatItalic">
+                                        <em>I</em>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="formatH1">
+                                        H1
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="formatH2">
+                                        H2
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="formatList">
+                                        <span class="material-icons" style="font-size: 14px;">format_list_bulleted</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -129,27 +180,34 @@
                 
                 <!-- Attachments Card -->
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header bg-primary text-white d-flex align-items-center">
+                        <span class="material-icons me-2">attachment</span>
                         <h5 class="mb-0">Attachments</h5>
                     </div>
                     <div class="card-body">
                         <!-- File Upload -->
                         <div class="mb-3">
-                            <label for="attachments" class="form-label">Add Attachments</label>
+                            <label for="attachments" class="form-label fw-bold">Add Attachments</label>
                             <div class="input-group">
                                 <input type="file" class="form-control" id="attachments" name="attachments" multiple>
                                 <button type="button" class="btn btn-outline-primary" id="previewBtn" disabled>
+                                    <span class="material-icons me-1" style="font-size: 18px;">visibility</span>
                                     Preview
                                 </button>
                             </div>
-                            <div class="form-text">Upload PDFs, images, videos or other files. Max 10MB per file. PDFs will be viewable in the user portal.</div>
+                            <div class="form-text mt-2">
+                                <div class="d-flex align-items-center">
+                                    <span class="material-icons text-primary me-2">info</span>
+                                    <span>Upload PDFs, images, videos or other files. Max 10MB per file. PDFs will be viewable in the user portal.</span>
+                                </div>
+                            </div>
                             <div id="attachmentPreview" class="mt-2"></div>
                         </div>
 
                         <!-- Existing Attachments (if editing) -->
                         {% if is_edit and attachments %}
                         <div class="mt-4">
-                            <h6>Existing Attachments</h6>
+                            <h6 class="fw-bold mb-3">Existing Attachments</h6>
                             <div class="attachment-list">
                                 {% for attachment in attachments %}
                                 <div class="card attachment-item mb-2">
@@ -166,7 +224,7 @@
                                                 </div>
                                                 <div>
                                                     <p class="mb-0 fw-medium">{{ attachment.title|default:attachment.file.name }}</p>
-                                                    <small class="text-muted">{{ attachment.file_type }} • Added {{ attachment.uploaded_at|date:"M d, Y" }}</small>
+                                                    <small class="text-muted">{{ attachment.file_type }} • {{ attachment.file.size|filesizeformat }}</small>
                                                 </div>
                                             </div>
                                             <div class="form-check">
@@ -188,9 +246,10 @@
             
             <div class="col-lg-4">
                 <!-- Publishing Options -->
-                <div class="card mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><span class="material-icons align-middle me-2">public</span> Publishing Options</h5>
+                <div class="card">
+                    <div class="card-header bg-primary text-white d-flex align-items-center">
+                        <span class="material-icons me-2">publish</span>
+                        <h5 class="mb-0">Publishing Options</h5>
                     </div>
                     <div class="card-body">
                         <div class="form-check form-switch mb-3">
@@ -200,28 +259,34 @@
                                 Publish Immediately
                             </label>
                         </div>
-                        <div class="form-text">
-                            <span class="material-icons align-middle me-1 fs-5">info</span>
-                            <span>
-                                {% if is_edit and topic.is_published %}
-                                    This topic is currently live and visible to users.
-                                {% elif is_edit %}
-                                    This topic is currently saved as a draft.
-                                {% else %}
-                                    If unchecked, this topic will be saved as a draft and not visible to users.
-                                {% endif %}
-                            </span>
+                        
+                        <div class="mb-3">
+                            {% if is_edit and topic.is_published %}
+                                <div class="d-flex align-items-center text-dark">
+                                    <span class="material-icons text-success me-2">check_circle</span>
+                                    <span>This topic is currently live and visible to users.</span>
+                                </div>
+                            {% elif is_edit %}
+                                <div class="d-flex align-items-center text-dark">
+                                    <span class="material-icons text-warning me-2">inventory</span>
+                                    <span>This topic is currently saved as a draft.</span>
+                                </div>
+                            {% endif %}
                         </div>
-                        <div class="alert alert-info mt-3">
-                            <span class="material-icons align-middle me-1">lightbulb</span>
-                            <span>Published topics appear immediately on the user portal. Make sure your content is ready before publishing.</span>
+                        
+                        <div class="bg-primary bg-opacity-10 p-3 rounded border-start border-primary border-3">
+                            <div class="d-flex align-items-start">
+                                <span class="material-icons text-primary me-2">lightbulb</span>
+                                <p class="mb-0 text-dark">Published topics appear immediately on the user portal. Make sure your content is ready before publishing.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
                 
                 <!-- Actions Card -->
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header bg-primary text-white d-flex align-items-center">
+                        <span class="material-icons me-2">settings</span>
                         <h5 class="mb-0">Actions</h5>
                     </div>
                     <div class="card-body">
@@ -285,13 +350,65 @@
     document.addEventListener('DOMContentLoaded', function() {
         console.log('DOM Content Loaded');
         
+        // Format buttons functionality
+        const contentTextarea = document.getElementById('content');
+        
+        // Bold formatting
+        document.getElementById('formatBold')?.addEventListener('click', function() {
+            insertFormatting(contentTextarea, '<strong>', '</strong>');
+        });
+        
+        // Italic formatting
+        document.getElementById('formatItalic')?.addEventListener('click', function() {
+            insertFormatting(contentTextarea, '<em>', '</em>');
+        });
+        
+        // H1 formatting
+        document.getElementById('formatH1')?.addEventListener('click', function() {
+            insertFormatting(contentTextarea, '<h1>', '</h1>');
+        });
+        
+        // H2 formatting
+        document.getElementById('formatH2')?.addEventListener('click', function() {
+            insertFormatting(contentTextarea, '<h2>', '</h2>');
+        });
+        
+        // List formatting
+        document.getElementById('formatList')?.addEventListener('click', function() {
+            insertFormatting(contentTextarea, '<ul>\n<li>', '</li>\n</ul>', '\n<li></li>');
+        });
+        
+        // Function to insert formatting tags in textarea
+        function insertFormatting(textarea, openTag, closeTag, middleContent = '') {
+            if (!textarea) return;
+            
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const selectedText = textarea.value.substring(start, end);
+            const beforeText = textarea.value.substring(0, start);
+            const afterText = textarea.value.substring(end);
+            
+            // If text is selected, wrap it with tags
+            if (selectedText) {
+                textarea.value = beforeText + openTag + selectedText + closeTag + afterText;
+            } else {
+                // If no text is selected, insert tags with cursor between them
+                textarea.value = beforeText + openTag + middleContent + closeTag + afterText;
+                // Position cursor
+                const cursorPos = start + openTag.length + middleContent.length;
+                textarea.setSelectionRange(cursorPos, cursorPos);
+            }
+            
+            textarea.focus();
+        }
+        
         // File preview functionality
         const attachmentsInput = document.getElementById('attachments');
         const previewBtn = document.getElementById('previewBtn');
         const previewContainer = document.getElementById('attachmentPreview');
 
         // Enable/disable preview button based on file selection
-        attachmentsInput.addEventListener('change', function() {
+        attachmentsInput?.addEventListener('change', function() {
             const hasFiles = this.files.length > 0;
             previewBtn.disabled = !hasFiles;
             
@@ -306,19 +423,27 @@
                     // For PDFs show simple info and auto-extract content
                     previewContainer.innerHTML = `
                         <div class="alert alert-info">
-                            <span class="material-icons me-2">picture_as_pdf</span>
-                            PDF File: ${file.name} (${Math.round(file.size / 1024)} KB) - Extracting content...
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="material-icons me-2">picture_as_pdf</span>
+                                <span>PDF File: ${file.name} (${Math.round(file.size / 1024)} KB)</span>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-primary extract-pdf-btn">
+                                <span class="material-icons me-2" style="font-size: 16px;">auto_stories</span> 
+                                Extract Content from PDF
+                            </button>
                         </div>`;
                     previewContainer.style.display = 'block';
                     
-                    // Auto extract PDF content
-                    extractPdfContent(file);
+                    // Add click handler for extract button
+                    previewContainer.querySelector('.extract-pdf-btn').addEventListener('click', function() {
+                        extractPdfContent(file);
+                    });
                 }
             }
         });
 
         // Preview button functionality
-        previewBtn.addEventListener('click', function() {
+        previewBtn?.addEventListener('click', function() {
             const file = attachmentsInput.files[0];
             if (!file) return;
             
@@ -332,7 +457,7 @@
             
             if (file.type.startsWith('image/')) {
                 const img = document.createElement('img');
-                img.classList.add('img-fluid');
+                img.classList.add('img-fluid', 'rounded');
                 img.file = file;
 
                 const reader = new FileReader();
@@ -347,9 +472,20 @@
             } else if (file.type === 'application/pdf') {
                 previewContainer.innerHTML = `
                     <div class="alert alert-info">
-                        <span class="material-icons me-2">picture_as_pdf</span>
-                        PDF File: ${file.name} (${Math.round(file.size / 1024)} KB) - Will be available in the user portal
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="material-icons me-2">picture_as_pdf</span>
+                            <span>PDF File: ${file.name} (${Math.round(file.size / 1024)} KB)</span>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-primary extract-pdf-btn">
+                            <span class="material-icons me-2" style="font-size: 16px;">auto_stories</span> 
+                            Extract Content from PDF
+                        </button>
                     </div>`;
+                
+                // Add click handler for extract button
+                previewContainer.querySelector('.extract-pdf-btn').addEventListener('click', function() {
+                    extractPdfContent(file);
+                });
             } else if (file.type.startsWith('video/')) {
                 previewContainer.innerHTML = `
                     <div class="alert alert-info">
@@ -371,6 +507,11 @@
             const categorySelect = document.getElementById('category');
             const categoryText = categorySelect.options[categorySelect.selectedIndex]?.text || 'Uncategorized';
             const content = document.getElementById('content').value;
+            
+            if (!content.trim()) {
+                alert('Please enter some content to preview.');
+                return;
+            }
 
             document.getElementById('previewTitle').textContent = title;
             document.getElementById('previewCategory').textContent = categoryText;
@@ -461,6 +602,19 @@
                         Error extracting text from PDF: ${error.message}
                     </div>`;
             }
+        }
+
+        // Auto-resize textarea based on content
+        contentTextarea?.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+        
+        // Trigger initial resize
+        if (contentTextarea) {
+            setTimeout(function() {
+                contentTextarea.dispatchEvent(new Event('input'));
+            }, 100);
         }
     });
 </script>

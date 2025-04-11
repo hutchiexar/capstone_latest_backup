@@ -417,7 +417,7 @@
                                             All Status
                                         </a>
                                     </li>
-                                    {% for status_code, status_label in status_choices %}
+                                    {% for status_code, status_label in status_choices.items %}
                                     <li>
                                         <a class="dropdown-item {% if current_status == status_code %}active{% endif %}" 
                                            href="{% url 'user_portal:user_violations' %}?status={{ status_code }}">
@@ -449,57 +449,52 @@
     <!-- Violations List -->
     <div class="row">
         <div class="col-12">
-                <div class="card violations-card shadow-lg rounded-xl">
+            <div class="card violations-card shadow-lg rounded-xl">
                 <div class="card-body p-0">
-                        <div class="table-responsive table-container">
-                            <table class="table violations-table">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                    <th>Violation Type</th>
-                                    <th>Location</th>
-                                    <th>Amount</th>
-                                    <th>Due Date</th>
-                                    <th>Status</th>
-                                        <th class="text-end">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for violation in violations %}
+                    <div class="table-responsive table-container d-none d-md-block">
+                        <table class="table violations-table">
+                            <thead>
                                 <tr>
-                                        <td>{{ violation.violation_date|date:"M d, Y" }}</td>
-                                    <td>
-                                        {% if violation.get_violation_types %}
-                                            {% for type in violation.get_violation_types %}
-                                                {{ type }}{% if not forloop.last %}, {% endif %}
-                                            {% endfor %}
-                                        {% elif violation.violation_type %}
-                                            {{ violation.get_violation_type_display|default:violation.violation_type }}
-                                        {% else %}
-                                            <span class="text-muted">No type specified</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>{{ violation.location }}</td>
-                                    <td>₱{{ violation.fine_amount }}</td>
-                                    <td>{{ violation.payment_due_date|date:"M d, Y" }}</td>
-                                    <td>
-                                            <span class="status-badge status-badge-{{ violation.status|lower }}">
-                                            {{ violation.get_status_display }}
-                                        </span>
-                                    </td>
-                                        <td class="text-end">
-                                            <div class="action-buttons">
-                                        <a href="{% url 'user_portal:violation_detail' violation.id %}" 
-                                                class="btn btn-sm btn-outline-primary btn-view-details">
-                                            View Details
-                                        </a>
-                                        {% if violation.status == 'APPROVED' %}
-                                        <a href="{% url 'process_payment' violation.id %}" 
-                                                class="btn btn-sm btn-success btn-pay-now ms-2">
-                                            Pay Now
-                                        </a>
-                                        {% endif %}
-                                            </div>
+                                    <th>Date</th>
+                                <th>Violation Type</th>
+                                <th>Location</th>
+                                <th>Amount</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                    <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for violation in violations %}
+                            <tr>
+                                    <td>{{ violation.violation_date|date:"M d, Y" }}</td>
+                                <td class="violation-details-cell">
+                                    <div class="d-flex flex-column">
+                                        <div class="violation-number">Case #{{ violation.id }}</div>
+                                        <div class="violation-type">{{ violation.violation_type }}</div>
+                                    </div>
+                                </td>
+                                <td>{{ violation.location }}</td>
+                                <td>₱{{ violation.fine_amount }}</td>
+                                <td>{{ violation.payment_due_date|date:"M d, Y" }}</td>
+                                <td>
+                                        <span class="status-badge status-badge-{{ violation.status|lower }}">
+                                        {{ violation.get_status_display }}
+                                    </span>
+                                </td>
+                                    <td class="text-end">
+                                        <div class="action-buttons">
+                                    <a href="{% url 'user_portal:violation_detail' violation.id %}" 
+                                            class="btn btn-sm btn-outline-primary btn-view-details">
+                                        View Details
+                                    </a>
+                                    {% if violation.status == 'APPROVED' %}
+                                    <a href="{% url 'process_payment' violation.id %}" 
+                                            class="btn btn-sm btn-success btn-pay-now ms-2">
+                                        Pay Now
+                                    </a>
+                                    {% endif %}
+                                        </div>
                                     </td>
                                 </tr>
                                 {% empty %}
@@ -521,6 +516,55 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Mobile Card View for smaller screens -->
+    <div class="d-md-none mt-4">
+        {% for violation in violations %}
+        <div class="card mb-3 violation-card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="small">{{ violation.violation_date|date:"M d, Y" }}</span>
+                <span class="status-badge status-badge-{{ violation.status|lower }}">
+                    {{ violation.get_status_display }}
+                </span>
+            </div>
+            <div class="card-body">
+                <h6 class="card-title">
+                    <div class="d-flex flex-column">
+                        <div class="violation-number">Case #{{ violation.id }}</div>
+                        <div class="violation-type">{{ violation.violation_type }}</div>
+                    </div>
+                </h6>
+                <p class="card-text small text-muted">{{ violation.location }}</p>
+                <p class="card-text">
+                    <span class="fw-bold">Amount:</span> ₱{{ violation.fine_amount }}
+                </p>
+                <p class="card-text">
+                    <span class="fw-bold">Due Date:</span> {{ violation.payment_due_date|date:"M d, Y" }}
+                </p>
+                <div class="d-flex gap-2 mt-3">
+                    <a href="{% url 'user_portal:violation_detail' violation.id %}" 
+                       class="btn btn-sm btn-outline-primary btn-view-details">
+                        View Details
+                    </a>
+                    {% if violation.status == 'APPROVED' %}
+                    <a href="{% url 'process_payment' violation.id %}" 
+                       class="btn btn-sm btn-success btn-pay-now">
+                        Pay Now
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-4">
+            <div class="empty-state-icon mx-auto mb-3">
+                <span class="material-icons" style="font-size: 32px; color: var(--primary-color);">check_circle</span>
+            </div>
+            <h6 class="mb-1 fw-bold" style="font-size: 1.1rem;">No Violations Found</h6>
+            <p class="text-muted mb-0">You don't have any recorded traffic violations</p>
+        </div>
+        {% endfor %}
     </div>
 
     <!-- Pagination -->
