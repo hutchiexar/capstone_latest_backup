@@ -6051,6 +6051,7 @@ def debug_media(request):
                     'path': profile.avatar.path if hasattr(profile.avatar, 'path') else None,
                     'exists': os.path.exists(profile.avatar.path) if hasattr(profile.avatar, 'path') else False,
                     'size': os.path.getsize(profile.avatar.path) if hasattr(profile.avatar, 'path') and os.path.exists(profile.avatar.path) else None,
+                    'obj': profile.avatar  # Add the actual avatar object for our template tag
                 }
                 profile_images.append(image_info)
             except Exception as e:

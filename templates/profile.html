@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load image_tags %}
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -17,7 +18,14 @@
                     <div class="profile-card">
                         <div class="profile-image-container mb-4">
                             {% if user.userprofile.avatar %}
-                                <img src="https://traffic-violation-system.onrender.com/media/{{ user.userprofile.avatar }}?t={{ user.userprofile.id }}" class="profile-image" alt="Profile Picture">
+                                {% get_image_as_base64 user.userprofile.avatar as avatar_data %}
+                                {% if avatar_data %}
+                                    <img src="{{ avatar_data }}" class="profile-image" alt="Profile Picture">
+                                {% else %}
+                                    <div class="default-avatar">
+                                        <span class="material-icons">account_circle</span>
+                                    </div>
+                                {% endif %}
                             {% else %}
                                 <div class="default-avatar">
                                     <span class="material-icons">account_circle</span>
