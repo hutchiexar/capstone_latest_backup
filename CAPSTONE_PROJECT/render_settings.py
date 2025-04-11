@@ -22,8 +22,16 @@ DATABASES = {
 # Static and Media files
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# On Render, we need to use a persistent directory for media files
+# This is because the dyno filesystem is ephemeral
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# Use a persistent directory on Render
+if os.environ.get('RENDER', False):
+    # Render provides a persistent disk at /opt/render/project/src/
+    MEDIA_ROOT = os.path.join('/opt/render/project/src/', 'media')
+else:
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Configure WhiteNoise for static files
 MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
