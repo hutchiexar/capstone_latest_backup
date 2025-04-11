@@ -22,14 +22,21 @@ class SafeFileStorage(FileSystemStorage):
     def get_valid_name(self, name):
         """
         Return a filename that's safe for the underlying file system.
+        - Prevents multiple extensions
+        - Removes special characters
+        - Uses UUID for uniqueness if needed
         """
-        # Get the extension
-        ext = os.path.splitext(name)[1].lower()
-        if not ext:
+        # Get the extension - only use the last one if multiple exist
+        name_parts = name.split('.')
+        if len(name_parts) > 1:
+            basename = '.'.join(name_parts[:-1])  # Join all parts except the last
+            ext = '.' + name_parts[-1].lower()    # Get only the last extension
+        else:
+            basename = name
             ext = '.jpg'  # Default extension
             
         # Remove special characters and limit filename length
-        s = re.sub(r'[^\w\s.-]', '', name).strip()
+        s = re.sub(r'[^\w\s.-]', '', basename).strip()
         s = re.sub(r'\s+', '_', s)
         
         # If filename is still too long, use UUID

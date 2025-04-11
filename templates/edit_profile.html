@@ -21,7 +21,7 @@
                         <div class="profile-card">
                             <div class="profile-image-container mb-4">
                                 {% if user.userprofile.avatar %}
-                                    <img src="{{ user.userprofile.avatar.url }}" id="avatarPreview" alt="Profile Picture">
+                                    <img src="/media/{{ user.userprofile.avatar }}" id="avatarPreview" alt="Profile Picture">
                                 {% else %}
                                     <div class="default-avatar">
                                         <span class="material-icons">account_circle</span>
@@ -382,24 +382,41 @@
 </style>
 
 <script>
-// Preview uploaded image
-document.getElementById('avatar').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const preview = document.getElementById('avatarPreview');
-            if (preview) {
-                preview.src = e.target.result;
-            } else {
-                const newPreview = document.createElement('img');
-                newPreview.id = 'avatarPreview';
-                newPreview.src = e.target.result;
-                document.querySelector('.profile-image-container').innerHTML = '';
-                document.querySelector('.profile-image-container').appendChild(newPreview);
+// JavaScript to handle avatar upload and preview
+document.addEventListener('DOMContentLoaded', function() {
+    const avatarInput = document.getElementById('avatar');
+    const avatarPreview = document.getElementById('avatarPreview');
+    const defaultAvatar = document.querySelector('.default-avatar');
+    
+    if (avatarInput && (avatarPreview || defaultAvatar)) {
+        avatarInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    // Create image preview if it doesn't exist
+                    if (!avatarPreview) {
+                        const img = document.createElement('img');
+                        img.id = 'avatarPreview';
+                        img.alt = 'Profile Picture';
+                        img.classList.add('profile-image');
+                        defaultAvatar.parentNode.replaceChild(img, defaultAvatar);
+                        avatarPreview = img;
+                    }
+                    
+                    // Set the preview src
+                    avatarPreview.src = e.target.result;
+                    
+                    // Make sure the preview is visible
+                    avatarPreview.style.display = 'block';
+                    if (defaultAvatar) {
+                        defaultAvatar.style.display = 'none';
+                    }
+                };
+                
+                reader.readAsDataURL(this.files[0]);
             }
-        }
-        reader.readAsDataURL(file);
+        });
     }
 });
 
