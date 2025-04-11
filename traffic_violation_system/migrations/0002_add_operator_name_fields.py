@@ -10,14 +10,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='violation',
-            name='operator_name',
-            field=models.CharField(blank=True, max_length=200, null=True),
-        ),
-        migrations.AddField(
-            model_name='violation',
-            name='operator_pd_number',
-            field=models.CharField(blank=True, max_length=50, null=True),
-        ),
-    ]
+        # Removed duplicate field additions as these fields already exist
+    ] 

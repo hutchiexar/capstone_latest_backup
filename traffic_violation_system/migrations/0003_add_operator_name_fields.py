@@ -10,4 +10,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-    ]
+        # No operations needed as fields already exist
+    ] 
