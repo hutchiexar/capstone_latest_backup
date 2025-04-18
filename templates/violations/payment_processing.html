@@ -46,13 +46,13 @@
                 <table class="table table-hover align-middle" id="paymentProcessingTable" style="table-layout: fixed;">
                     <thead>
                         <tr>
-                            <th style="width: 8%;">Case ID</th>
-                            <th style="width: 12%;">Date Filed</th>
-                            <th style="width: 20%;">Violator</th>
-                            <th style="width: 35%;">Violation Type</th>
-                            <th style="width: 10%;">Fine Amount</th>
-                            <th style="width: 10%;">Status</th>
-                            <th style="width: 10%;" class="text-end">Actions</th>
+                            <th style="width: 8%;" class="text-center">CASE ID</th>
+                            <th style="width: 12%;" class="text-center">DATE FILED</th>
+                            <th style="width: 20%;" class="text-center">VIOLATOR</th>
+                            <th style="width: 35%;" class="text-center">VIOLATION TYPE</th>
+                            <th style="width: 10%;" class="text-center">FINE AMOUNT</th>
+                            <th style="width: 10%;" class="text-center">STATUS</th>
+                            <th style="width: 10%;" class="text-center">ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -77,23 +77,23 @@
                             <td>
                                 {% include 'includes/status_badge.html' with status=violation.status display_text=violation.get_status_display %}
                             </td>
-                            <td class="text-end">
+                            <td class="text-center" style="width: 140px;">
                                 <div class="action-buttons">
                                     <button type="button" 
-                                            class="btn btn-action btn-view view-violation-btn" 
+                                            class="btn btn-primary action-btn view-violation-btn" 
                                             data-bs-toggle="tooltip" 
                                             data-bs-placement="top" 
                                             title="View Details"
                                             data-violation-id="{{ violation.id }}">
-                                        <i class="fas fa-eye"></i>
+                                        <span class="material-icons">visibility</span>
                                     </button>
                                     <button type="button" 
-                                           class="btn btn-action btn-payment record-payment-btn"
+                                           class="btn btn-success action-btn record-payment-btn"
                                        data-bs-toggle="tooltip"
                                        data-bs-placement="top"
                                            data-violation-id="{{ violation.id }}"
                                        title="Record Payment">
-                                        <i class="fas fa-money-bill-wave"></i>
+                                        <span class="material-icons">payments</span>
                                     </button>
                                 </div>
                             </td>
@@ -167,19 +167,19 @@
                             </div>
                         </div>
                         <div class="card-footer p-2">
-                            <div class="mobile-actions">
-                                <button type="button" 
-                                        class="btn mobile-action-btn btn-view view-violation-btn" 
-                                        data-violation-id="{{ violation.id }}">
-                                    <i class="fas fa-eye"></i>
-                                    <span>View</span>
-                                </button>
-                                <button type="button" 
-                                        class="btn mobile-action-btn btn-payment record-payment-btn"
-                                        data-violation-id="{{ violation.id }}">
-                                    <i class="fas fa-money-bill-wave"></i>
-                                    <span>Pay</span>
-                                </button>
+                            <div class="d-flex justify-content-center align-items-center">
+                                <div class="action-buttons">
+                                    <button type="button" 
+                                            class="btn btn-primary action-btn view-violation-btn" 
+                                            data-violation-id="{{ violation.id }}">
+                                        <span class="material-icons">visibility</span>
+                                    </button>
+                                    <button type="button" 
+                                            class="btn btn-success action-btn record-payment-btn"
+                                            data-violation-id="{{ violation.id }}">
+                                        <span class="material-icons">payments</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -273,6 +273,31 @@
     </div>
 </div>
 
+<!-- Add a new Micromodal template for batch details -->
+<div class="modal micromodal-slide" id="modal-batch-details" aria-hidden="true">
+    <div class="modal__overlay" tabindex="-1" data-micromodal-close>
+        <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="modal-batch-details-title" style="max-width: 90%; width: 900px;">
+            <header class="modal__header">
+                <h2 class="modal__title" id="modal-batch-details-title">
+                    Batch Payment Details
+                </h2>
+                <button class="modal__close" aria-label="Close modal" data-micromodal-close></button>
+            </header>
+            <main class="modal__content" id="modal-batch-details-content">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3">Loading batch details...</p>
+                </div>
+            </main>
+            <footer class="modal__footer">
+                <!-- Footer intentionally left empty -->
+            </footer>
+        </div>
+    </div>
+</div>
+
 <style>
 /* Table Styles */
 .table-responsive {
@@ -339,52 +364,63 @@
 }
 
 /* Action Buttons */
-.btn-action {
-    width: 35px;
-    height: 35px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    transition: all 0.2s ease;
+.action-btn {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    padding: 0 !important;
+    border-radius: 4px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 40px !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    transition: all 0.2s !important;
 }
 
-.btn-action i {
-    font-size: 1.1rem;
+.action-btn:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
 }
 
-/* View Button */
-.btn-view {
-    color: var(--primary-color);
-    border-color: #e9ecef;
-    background-color: #fff;
-}
-
-.btn-view:hover {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-    color: white;
-}
-
-/* Payment Button */
-.btn-payment {
-    color: #0bb783;
-    border-color: #e9ecef;
-    background-color: #fff;
-}
-
-.btn-payment:hover {
-    background-color: #0bb783;
-    border-color: #0bb783;
-    color: white;
+/* Icon sizing */
+.action-btn .material-icons {
+    color: white !important;
+    font-size: 18px !important;
+    margin: 0 !important;
+    line-height: 1 !important;
 }
 
 /* Action buttons container */
 .action-buttons {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 4px !important;
+    width: 100% !important;
+    max-width: 140px !important;
+    margin: 0 auto !important;
+}
+
+/* Add view-text class for hiding text labels */
+.view-text {
+    display: none;
+}
+
+/* Center align all table content */
+.table th, .table td {
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* Mobile card footer styles */
+.violation-card .card-footer {
+    background-color: #f8f9fa;
+    border-top: 1px solid #eaecef;
+    padding: 15px !important;
     display: flex;
-    gap: 0.5rem;
-    justify-content: flex-end;
+    justify-content: center;
 }
 
 /* Violation Types Styles */
@@ -712,6 +748,9 @@ table .violation-types-container {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Group batch adjudicated violations
+    groupBatchAdjudications();
+
     // Initialize Micromodal with improved callback handling
     MicroModal.init({
         openTrigger: 'data-micromodal-trigger',
@@ -728,6 +767,316 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // Function to group batch adjudicated violations for display
+    function groupBatchAdjudications() {
+        // Get all violations in the table
+        const tableRows = document.querySelectorAll('#paymentProcessingTable tbody tr');
+        const batchGroups = {};
+        
+        // First pass: identify batch groups by violator and date
+        tableRows.forEach(row => {
+            const violatorElement = row.querySelector('td:nth-child(3)');
+            const violatorName = violatorElement ? violatorElement.querySelector('.fw-medium').textContent.trim() : '';
+            const licenseNumber = violatorElement ? violatorElement.querySelector('.text-muted').textContent.trim() : '';
+            const violationDate = row.querySelector('td:nth-child(2)').textContent.trim();
+            const violationId = row.querySelector('td:nth-child(1)').textContent.trim();
+            
+            // Skip if no violator element or missing required data
+            if (!violatorElement || !violatorName) return;
+            
+            // Create a unique key for this batch group - combine violator name, license and date
+            const batchKey = `${violatorName}-${licenseNumber}-${violationDate}`;
+            
+            if (!batchGroups[batchKey]) {
+                batchGroups[batchKey] = {
+                    rows: [],
+                    violator: violatorName,
+                    license: licenseNumber,
+                    date: violationDate,
+                    totalFineAmount: 0,
+                    violationTypes: new Set(),
+                    violationIds: [],
+                    firstRow: null
+                };
+            }
+            
+            // Add this row to the group
+            batchGroups[batchKey].rows.push(row);
+            
+            // Track the first row for later use
+            if (!batchGroups[batchKey].firstRow) {
+                batchGroups[batchKey].firstRow = row;
+            }
+            
+            // Extract fine amount from the row
+            const fineText = row.querySelector('td:nth-child(5)').textContent.trim();
+            const fineAmount = parseFloat(fineText.replace('₱', '').replace(',', '')) || 0;
+            batchGroups[batchKey].totalFineAmount += fineAmount;
+            
+            // Add violation ID to the list
+            batchGroups[batchKey].violationIds.push(violationId);
+            
+            // Collect all violation types
+            const violationTypesContainer = row.querySelector('.violation-types-container');
+            if (violationTypesContainer) {
+                const types = violationTypesContainer.querySelectorAll('.violation-badge-item');
+                types.forEach(type => {
+                    batchGroups[batchKey].violationTypes.add(type.textContent.trim());
+                });
+            }
+        });
+        
+        // Also handle mobile card view
+        const mobileCards = document.querySelectorAll('.violation-card');
+        const mobileBatchGroups = {};
+        
+        mobileCards.forEach(card => {
+            const violationId = card.getAttribute('data-violation-id');
+            const violatorElement = card.querySelector('.card-body .row:nth-child(2) .col-8');
+            
+            if (!violatorElement) return;
+            
+            const violatorName = violatorElement.querySelector('.fw-medium') ? 
+                violatorElement.querySelector('.fw-medium').textContent.trim() : '';
+            const licenseNumber = violatorElement.querySelector('.text-muted') ? 
+                violatorElement.querySelector('.text-muted').textContent.trim() : '';
+            const violationDate = card.querySelector('.card-body .row:nth-child(1) .col-8').textContent.trim();
+            
+            // Skip if missing required data
+            if (!violatorName) return;
+            
+            // Create a unique key for this batch group
+            const batchKey = `${violatorName}-${licenseNumber}-${violationDate}`;
+            
+            if (!mobileBatchGroups[batchKey]) {
+                mobileBatchGroups[batchKey] = {
+                    cards: [],
+                    violator: violatorName,
+                    license: licenseNumber,
+                    date: violationDate,
+                    totalFineAmount: 0,
+                    violationTypes: new Set(),
+                    violationIds: [],
+                    firstCard: null
+                };
+            }
+            
+            // Add this card to the group
+            mobileBatchGroups[batchKey].cards.push(card);
+            
+            // Track the first card for later use
+            if (!mobileBatchGroups[batchKey].firstCard) {
+                mobileBatchGroups[batchKey].firstCard = card;
+            }
+            
+            // Add violation ID to the list
+            mobileBatchGroups[batchKey].violationIds.push(violationId);
+            
+            // Extract fine amount from the card
+            const fineRows = card.querySelectorAll('.card-body .row');
+            fineRows.forEach(row => {
+                const label = row.querySelector('.col-4 small');
+                if (label && label.textContent.includes('Fine:')) {
+                    const fineText = row.querySelector('.col-8').textContent.trim();
+                    const fineAmount = parseFloat(fineText.replace('₱', '').replace(',', '')) || 0;
+                    mobileBatchGroups[batchKey].totalFineAmount += fineAmount;
+                }
+            });
+            
+            // Collect all violation types
+            const violationTypesContainer = card.querySelector('.violation-types-container');
+            if (violationTypesContainer) {
+                const types = violationTypesContainer.querySelectorAll('.violation-badge-item');
+                types.forEach(type => {
+                    mobileBatchGroups[batchKey].violationTypes.add(type.textContent.trim());
+                });
+            }
+        });
+        
+        // Second pass for desktop view: only process groups with 2+ violations (actual batches)
+        for (const batchKey in batchGroups) {
+            const group = batchGroups[batchKey];
+            
+            // Only transform groups with 2+ violations
+            if (group.rows.length >= 2) {
+                // Modify the first row to represent the entire batch
+                const batchRow = group.firstRow;
+                
+                // Update the cell contents for the batch representation
+                if (batchRow) {
+                    // Update case ID cell to show it's a batch
+                    const caseIdCell = batchRow.querySelector('td:nth-child(1)');
+                    const batchCount = group.rows.length;
+                    caseIdCell.innerHTML = `
+                        <div class="d-flex flex-column align-items-center">
+                            <span class="badge bg-info mb-1">Batch (${batchCount})</span>
+                            <small>${group.violationIds.join(', ')}</small>
+                        </div>
+                    `;
+                    
+                    // Update violator cell to indicate batch processing
+                    const violatorCell = batchRow.querySelector('td:nth-child(3)');
+                    const existingViolator = violatorCell.innerHTML;
+                    violatorCell.innerHTML = `
+                        ${existingViolator}
+                        <div class="mt-2">
+                            <span class="badge bg-primary">Batch Payment</span>
+                        </div>
+                    `;
+                    
+                    // Combine all violation types
+                    const violationTypesCell = batchRow.querySelector('td:nth-child(4)');
+                    if (violationTypesCell) {
+                        const uniqueTypes = Array.from(group.violationTypes);
+                        violationTypesCell.innerHTML = `
+                            <div class="violation-types-container">
+                                ${uniqueTypes.map(type => `
+                                    <div class="violation-badge-item">${type}</div>
+                                `).join('')}
+                            </div>
+                        `;
+                    }
+                    
+                    // Update the fine amount to show total
+                    const fineCell = batchRow.querySelector('td:nth-child(5)');
+                    fineCell.innerHTML = `
+                        <div class="d-flex flex-column align-items-center">
+                            <span class="fw-bold">₱${group.totalFineAmount.toFixed(2)}</span>
+                            <small class="text-muted">Total for batch</small>
+                        </div>
+                    `;
+                    
+                    // Update the action buttons to process the entire batch
+                    const actionCell = batchRow.querySelector('td:nth-child(7)');
+                    actionCell.innerHTML = `
+                        <div class="action-buttons">
+                            <button type="button" 
+                                    class="btn btn-primary action-btn batch-view-btn" 
+                                    data-bs-toggle="tooltip" 
+                                    data-bs-placement="top" 
+                                    title="View Batch"
+                                    data-batch-ids="${group.violationIds.join(',')}">
+                                <span class="material-icons">visibility</span>
+                            </button>
+                            <button type="button" 
+                                   class="btn btn-success action-btn batch-payment-btn"
+                               data-bs-toggle="tooltip"
+                               data-bs-placement="top"
+                                   data-batch-ids="${group.violationIds.join(',')}"
+                               title="Record Batch Payment">
+                                <span class="material-icons">payments</span>
+                            </button>
+                        </div>
+                    `;
+                    
+                    // Hide all other rows in this batch group
+                    for (let i = 1; i < group.rows.length; i++) {
+                        group.rows[i].style.display = 'none';
+                    }
+                }
+            }
+        }
+        
+        // Second pass for mobile view: only process groups with 2+ violations
+        for (const batchKey in mobileBatchGroups) {
+            const group = mobileBatchGroups[batchKey];
+            
+            // Only transform groups with 2+ violations
+            if (group.cards.length >= 2) {
+                // Modify the first card to represent the entire batch
+                const batchCard = group.firstCard;
+                
+                if (batchCard) {
+                    // Update card header to show it's a batch
+                    const cardHeader = batchCard.querySelector('.card-header');
+                    const batchCount = group.cards.length;
+                    const caseIdSpan = cardHeader.querySelector('.fw-bold');
+                    
+                    if (caseIdSpan) {
+                        caseIdSpan.innerHTML = `
+                            <span class="badge bg-info me-1">Batch (${batchCount})</span>
+                            ${group.violationIds.join(', ')}
+                        `;
+                    }
+                    
+                    // Update the violator info to indicate batch
+                    const violatorRow = batchCard.querySelector('.card-body .row:nth-child(2)');
+                    if (violatorRow) {
+                        const violatorCell = violatorRow.querySelector('.col-8');
+                        violatorCell.innerHTML += `
+                            <div class="mt-2">
+                                <span class="badge bg-primary">Batch Payment</span>
+                            </div>
+                        `;
+                    }
+                    
+                    // Combine all violation types
+                    const violationRow = batchCard.querySelector('.card-body .row:nth-child(3)');
+                    if (violationRow) {
+                        const violationCell = violationRow.querySelector('.col-8');
+                        const uniqueTypes = Array.from(group.violationTypes);
+                        violationCell.innerHTML = `
+                            <div class="violation-types-container">
+                                ${uniqueTypes.map(type => `
+                                    <div class="violation-badge-item">${type}</div>
+                                `).join('')}
+                            </div>
+                        `;
+                    }
+                    
+                    // Update fine amount to show total
+                    const fineRow = batchCard.querySelector('.card-body .row:nth-child(4)');
+                    if (fineRow) {
+                        const fineCell = fineRow.querySelector('.col-8');
+                        fineCell.innerHTML = `
+                            <div>
+                                <span class="fw-medium">₱${group.totalFineAmount.toFixed(2)}</span>
+                                <small class="text-muted d-block">Total for batch</small>
+                            </div>
+                        `;
+                    }
+                    
+                    // Update the action buttons to process the entire batch
+                    const cardFooter = batchCard.querySelector('.card-footer .action-buttons');
+                    if (cardFooter) {
+                        cardFooter.innerHTML = `
+                            <button type="button" 
+                                    class="btn btn-primary action-btn batch-view-btn" 
+                                    data-batch-ids="${group.violationIds.join(',')}">
+                                <span class="material-icons">visibility</span>
+                            </button>
+                            <button type="button" 
+                                    class="btn btn-success action-btn batch-payment-btn"
+                                    data-batch-ids="${group.violationIds.join(',')}">
+                                <span class="material-icons">payments</span>
+                            </button>
+                        `;
+                    }
+                    
+                    // Hide all other cards in this batch group
+                    for (let i = 1; i < group.cards.length; i++) {
+                        group.cards[i].style.display = 'none';
+                    }
+                }
+            }
+        }
+        
+        // Add event listeners for batch action buttons
+        document.querySelectorAll('.batch-view-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const batchIds = this.getAttribute('data-batch-ids').split(',');
+                showBatchDetails(batchIds);
+            });
+        });
+        
+        document.querySelectorAll('.batch-payment-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const batchIds = this.getAttribute('data-batch-ids').split(',');
+                showBatchPaymentModal(batchIds);
+            });
+        });
+    }
+
     // Initialize tooltips
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.map(function (tooltipTriggerEl) {
@@ -735,7 +1084,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Add event listeners for violation detail views
-    const viewButtons = document.querySelectorAll('.view-violation-btn');
+    const viewButtons = document.querySelectorAll('.view-violation-btn:not(.batch-view-btn)');
     viewButtons.forEach(button => {
         button.addEventListener('click', function() {
             const violationId = this.getAttribute('data-violation-id');
@@ -746,7 +1095,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Add event listeners for payment recording
-    const recordPaymentButtons = document.querySelectorAll('.record-payment-btn');
+    const recordPaymentButtons = document.querySelectorAll('.record-payment-btn:not(.batch-payment-btn)');
     recordPaymentButtons.forEach(button => {
         button.addEventListener('click', function() {
             const violationId = this.getAttribute('data-violation-id');
@@ -852,18 +1201,509 @@ document.addEventListener('DOMContentLoaded', function() {
             remarks: remarks
         };
         
-        // Show loading state
-        Swal.fire({
-            title: 'Processing...',
-            text: 'Recording payment information',
-            allowOutsideClick: false,
-            showConfirmButton: false,
-            didOpen: () => {
-                Swal.showLoading();
+        // Check if this is a batch payment or a single violation payment
+        if (currentBatchIds && currentBatchIds.length > 0) {
+            processBatchPayment(data);
+        } else {
+            processSinglePayment(data);
+        }
+    });
+});
+
+// Show batch violation details in a modal
+function showBatchDetails(batchIds) {
+    if (!batchIds || !batchIds.length) return;
+    
+    // Get modal content element
+    const modalContent = document.getElementById('modal-batch-details-content');
+    
+    // Update title
+    document.getElementById('modal-batch-details-title').textContent = 'Batch Payment Summary';
+    
+    // Show loading spinner in the modal
+    modalContent.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3">Loading batch details...</p>
+        </div>
+    `;
+    
+    // Show the modal using Micromodal
+    MicroModal.show('modal-batch-details');
+    
+    // First, get the first violation's full details to ensure we have adjudicator info
+    fetch(`/violation/${batchIds[0]}/modal/`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Error fetching violation details`);
             }
+            return response.text();
+        })
+        .then(detailHtml => {
+            // Extract adjudicator and date information from the HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = detailHtml;
+            
+            // Common patterns in the violation detail to find adjudicator info
+            let adjudicator = 'N/A';
+            let adjudicationDate = 'N/A';
+            
+            // Look for adjudicator in the HTML using text content search
+            const allElements = tempDiv.querySelectorAll('*');
+            let adjudicatorLabel = null;
+            let dateLabel = null;
+            
+            // Find label elements containing our search text
+            allElements.forEach(el => {
+                const text = el.textContent.trim();
+                if (text.includes('Adjudicated By')) {
+                    adjudicatorLabel = el;
+                }
+                if (text.includes('Adjudication Date')) {
+                    dateLabel = el;
+                }
+            });
+            
+            // Find values for adjudicator
+            if (adjudicatorLabel) {
+                // Try finding next sibling or parent's next sibling with text content
+                let valueElement = adjudicatorLabel.nextElementSibling;
+                if (valueElement && valueElement.textContent.trim()) {
+                    adjudicator = valueElement.textContent.trim();
+                } else if (adjudicatorLabel.parentElement && adjudicatorLabel.parentElement.nextElementSibling) {
+                    valueElement = adjudicatorLabel.parentElement.nextElementSibling;
+                    if (valueElement && valueElement.textContent.trim()) {
+                        adjudicator = valueElement.textContent.trim();
+                    }
+                }
+                
+                // If still not found, look nearby for a dt/dd pair or table cell
+                if (adjudicator === 'N/A' && adjudicatorLabel.tagName === 'DT') {
+                    const ddElement = adjudicatorLabel.nextElementSibling;
+                    if (ddElement && ddElement.tagName === 'DD') {
+                        adjudicator = ddElement.textContent.trim();
+                    }
+                } else if (adjudicator === 'N/A' && adjudicatorLabel.tagName === 'TH') {
+                    const tdElement = adjudicatorLabel.nextElementSibling;
+                    if (tdElement && tdElement.tagName === 'TD') {
+                        adjudicator = tdElement.textContent.trim();
+                    }
+                }
+            }
+            
+            // Find values for adjudication date
+            if (dateLabel) {
+                // Try finding next sibling or parent's next sibling with text content
+                let valueElement = dateLabel.nextElementSibling;
+                if (valueElement && valueElement.textContent.trim()) {
+                    adjudicationDate = valueElement.textContent.trim();
+                } else if (dateLabel.parentElement && dateLabel.parentElement.nextElementSibling) {
+                    valueElement = dateLabel.parentElement.nextElementSibling;
+                    if (valueElement && valueElement.textContent.trim()) {
+                        adjudicationDate = valueElement.textContent.trim();
+                    }
+                }
+                
+                // If still not found, look nearby for a dt/dd pair or table cell
+                if (adjudicationDate === 'N/A' && dateLabel.tagName === 'DT') {
+                    const ddElement = dateLabel.nextElementSibling;
+                    if (ddElement && ddElement.tagName === 'DD') {
+                        adjudicationDate = ddElement.textContent.trim();
+                    }
+                } else if (adjudicationDate === 'N/A' && dateLabel.tagName === 'TH') {
+                    const tdElement = dateLabel.nextElementSibling;
+                    if (tdElement && tdElement.tagName === 'TD') {
+                        adjudicationDate = tdElement.textContent.trim();
+                    }
+                }
+            }
+            
+            // Now continue with fetching all violations' basic info
+            // Fetch all violations in parallel for better performance
+            const fetchPromises = batchIds.map(id => 
+                fetch(`/violation/${id}/payment-info/`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Error fetching violation #${id}`);
+                        }
+                        return response.json();
+                    })
+                    .catch(error => {
+                        console.error(error);
+                        return { id: id, error: true, message: error.message };
+                    })
+            );
+            
+            return Promise.all([Promise.resolve({adjudicator, adjudicationDate}), Promise.all(fetchPromises)]);
+        })
+        .then(([adjudicatorInfo, violations]) => {
+            // Calculate batch summary information
+            const totalFineAmount = violations
+                .filter(v => !v.error && v.fine_amount)
+                .reduce((sum, v) => sum + parseFloat(v.fine_amount || 0), 0);
+                
+            const uniqueViolationTypes = new Set();
+            violations.forEach(v => {
+                if (!v.error && v.violation_types) {
+                    v.violation_types.forEach(type => uniqueViolationTypes.add(type));
+                } else if (!v.error && v.violation_type) {
+                    uniqueViolationTypes.add(v.violation_type);
+                }
+            });
+            
+            // Create HTML content
+            let batchHtml = `
+                <div class="batch-summary mb-4">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>Batch Summary</h5>
+                                    <p><strong>Total Violations:</strong> ${violations.length}</p>
+                                    <p><strong>Total Fine Amount:</strong> ₱${totalFineAmount.toFixed(2)}</p>
+                                    <p><strong>Adjudicated By:</strong> ${adjudicatorInfo.adjudicator}</p>
+                                    <p><strong>Adjudication Date:</strong> ${adjudicatorInfo.adjudicationDate}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5>Violation Types</h5>
+                                    <div class="violation-types-container">
+                                        ${Array.from(uniqueViolationTypes).map(type => 
+                                            `<div class="violation-badge-item">${type}</div>`
+                                        ).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <h5 class="mb-3">Violations in this Batch (${violations.length})</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>CASE ID</th>
+                                <th>VIOLATOR</th>
+                                <th>VIOLATION TYPE</th>
+                                <th>FINE</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            // Add rows for each violation
+            violations.forEach(v => {
+                if (v.error) {
+                    batchHtml += `
+                        <tr class="table-danger">
+                            <td>${v.id}</td>
+                            <td colspan="3">Error: ${v.message}</td>
+                        </tr>
+                    `;
+                } else {
+                    const violationTypes = Array.isArray(v.violation_types) && v.violation_types.length > 0 
+                        ? v.violation_types.join(', ') 
+                        : v.violation_type || 'N/A';
+                        
+                    batchHtml += `
+                        <tr>
+                            <td>${v.id}</td>
+                            <td>${v.violator_name || 'N/A'}</td>
+                            <td>${violationTypes}</td>
+                            <td>₱${parseFloat(v.fine_amount || 0).toFixed(2)}</td>
+                        </tr>
+                    `;
+                }
+            });
+            
+            batchHtml += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            // Update the modal content
+            modalContent.innerHTML = batchHtml;
+        })
+        .catch(error => {
+            console.error('Error processing batch details:', error);
+            modalContent.innerHTML = `
+                <div class="alert alert-danger">
+                    <p>Error loading batch details: ${error.message}</p>
+                </div>
+            `;
+        });
+}
+
+// Show batch payment modal for recording payment for multiple violations
+let currentBatchIds = null;
+let batchTotalAmount = 0;
+
+function showBatchPaymentModal(batchIds) {
+    if (!batchIds || !batchIds.length) return;
+    
+    currentBatchIds = batchIds;
+    
+    // Reset form fields
+    document.getElementById('receiptNumber').value = '';
+    
+    // Set receipt date to today by default
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('receiptDate').value = today;
+    
+    // Set modal title to indicate batch payment
+    document.getElementById('modal-payment-form-title').textContent = `Record Batch Payment (${batchIds.length} violations)`;
+    
+    // Show the modal
+    MicroModal.show('modal-payment-form');
+    
+    // Get violation details
+    const violationDetailsElement = document.getElementById('violation-payment-details');
+    
+    // Show loading spinner
+    violationDetailsElement.innerHTML = `
+        <div class="text-center py-3">
+            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2 small">Loading batch details...</p>
+        </div>
+    `;
+    
+    // Start with empty batch details and total amount
+    let batchDetails = '';
+    batchTotalAmount = 0;
+    
+    // Process violations sequentially
+    function processNextViolation(index) {
+        if (index >= batchIds.length) {
+            // All done, update form
+            violationDetailsElement.innerHTML = `
+                <div class="batch-summary">
+                    <div class="alert alert-info mb-3">
+                        <div class="d-flex align-items-center">
+                            <span class="material-icons me-2">info</span>
+                            <span>Processing batch payment for ${batchIds.length} violations</span>
+                        </div>
+                    </div>
+                    <div class="violation-list mb-3">
+                        <h6 class="mb-2">Violations in this batch:</h6>
+                        ${batchDetails}
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-3">
+                        <h6 class="mb-0">Total Amount:</h6>
+                        <h5 class="mb-0 text-primary">₱${batchTotalAmount.toFixed(2)}</h5>
+                    </div>
+                </div>
+            `;
+            
+            // Set the payment amount field
+            document.getElementById('paymentAmount').value = batchTotalAmount.toFixed(2);
+            
+            return;
+        }
+        
+        const violationId = batchIds[index];
+        
+        // Fetch payment info for this violation
+        fetch(`/violation/${violationId}/payment-info/`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status} ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Format amount and add to total
+                let violationAmount = data.fine_amount ? parseFloat(data.fine_amount) : 0;
+                if (isNaN(violationAmount)) violationAmount = 0;
+                batchTotalAmount += violationAmount;
+                
+                // Get violation types
+                const violationTypes = Array.isArray(data.violation_types) && data.violation_types.length > 0 
+                    ? data.violation_types.join(', ') 
+                    : data.violation_type || 'N/A';
+                
+                // Add this violation to the batch details
+                batchDetails += `
+                    <div class="batch-violation-item border rounded p-2 mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span><strong>Case #${data.id || violationId}</strong></span>
+                            <span>₱${violationAmount.toFixed(2)}</span>
+                        </div>
+                        <div class="small text-muted">
+                            <div>${data.violator_name || 'N/A'}</div>
+                            <div>${violationTypes}</div>
+                        </div>
+                    </div>
+                `;
+                
+                // Process next violation
+                processNextViolation(index + 1);
+            })
+            .catch(error => {
+                console.error(`Error loading payment info for violation #${violationId}:`, error);
+                
+                // Add error information to batch details
+                batchDetails += `
+                    <div class="batch-violation-item border border-danger rounded p-2 mb-2">
+                        <div class="d-flex justify-content-between text-danger">
+                            <span><strong>Case #${violationId}</strong></span>
+                            <span>Error loading details</span>
+                        </div>
+                    </div>
+                `;
+                
+                // Continue with next violation
+                processNextViolation(index + 1);
+            });
+    }
+    
+    // Start processing the first violation
+    processNextViolation(0);
+}
+
+// Process payment for a single violation
+function processSinglePayment(data) {
+    // Show loading state
+    Swal.fire({
+        title: 'Processing...',
+        text: 'Recording payment information',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
+    fetch(`/violation/${currentViolationId}/record-payment/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => {
+                throw new Error(err.message || `Server returned ${response.status} ${response.statusText}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Close modals and show success message
+            MicroModal.close('modal-payment-form');
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Payment Recorded',
+                text: data.message || 'The payment has been successfully recorded.',
+                showConfirmButton: true
+            }).then(() => {
+                location.reload();
+            });
+        } else {
+            // Show error message
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.message || 'An error occurred while recording the payment.'
+            });
+        }
+    })
+    .catch(error => {
+        // Show error message
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: error.message || 'An error occurred while recording the payment.'
+        });
+    });
+}
+
+// Process payment for a batch of violations
+function processBatchPayment(data) {
+    if (!currentBatchIds || currentBatchIds.length === 0) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No violations selected for batch payment.'
+        });
+        return;
+    }
+    
+    // Show processing state
+    Swal.fire({
+        title: 'Processing Batch Payment...',
+        html: `
+            <div class="text-center">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2">Recording payment for ${currentBatchIds.length} violations...</p>
+                <div class="progress mt-3">
+                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                </div>
+            </div>
+        `,
+        showConfirmButton: false,
+        allowOutsideClick: false
+    });
+    
+    // Process each violation payment in sequence
+    let successCount = 0;
+    let errorCount = 0;
+    let currentIndex = 0;
+    
+    function processNextPayment() {
+        if (currentIndex >= currentBatchIds.length) {
+            // All done, show results
+            MicroModal.close('modal-payment-form');
+            
+            if (errorCount === 0) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Batch Payment Recorded',
+                    text: `Successfully recorded payment for all ${currentBatchIds.length} violations.`,
+                    confirmButtonColor: '#2563eb'
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Batch Payment Partially Recorded',
+                    text: `Successfully recorded payment for ${successCount} out of ${currentBatchIds.length} violations. There were ${errorCount} errors.`,
+                    confirmButtonColor: '#2563eb'
+                }).then(() => {
+                    location.reload();
+                });
+            }
+            return;
+        }
+        
+        const violationId = currentBatchIds[currentIndex];
+        
+        // Update progress bar
+        const progressPercent = Math.round((currentIndex / currentBatchIds.length) * 100);
+        Swal.update({
+            html: `
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2">Recording payment for violation #${violationId}...</p>
+                    <p class="small text-muted">${currentIndex + 1} of ${currentBatchIds.length}</p>
+                    <div class="progress mt-3">
+                        <div class="progress-bar" role="progressbar" style="width: ${progressPercent}%"></div>
+                    </div>
+                </div>
+            `
         });
         
-        fetch(`/violation/${currentViolationId}/record-payment/`, {
+        // Record payment for this violation
+        fetch(`/violation/${violationId}/record-payment/`, {
             method: 'POST',
             headers: {
                 'X-CSRFToken': getCookie('csrftoken'),
@@ -879,38 +1719,31 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             return response.json();
         })
-        .then(data => {
-            if (data.success) {
-                // Close modals and show success message
-                MicroModal.close('modal-payment-form');
-                
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Payment Recorded',
-                    text: data.message || 'The payment has been successfully recorded.',
-                    showConfirmButton: true
-                }).then(() => {
-                    location.reload();
-                });
+        .then(responseData => {
+            if (responseData.success) {
+                successCount++;
             } else {
-                // Show error message
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: data.message || 'An error occurred while recording the payment.'
-                });
+                errorCount++;
+                console.error(`Error recording payment for violation #${violationId}:`, responseData.message);
             }
+            
+            // Process the next violation
+            currentIndex++;
+            processNextPayment();
         })
         .catch(error => {
-            // Show error message
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: error.message || 'An error occurred while recording the payment.'
-            });
+            errorCount++;
+            console.error(`Error recording payment for violation #${violationId}:`, error);
+            
+            // Process the next violation
+            currentIndex++;
+            processNextPayment();
         });
-    });
-});
+    }
+    
+    // Start processing the first payment
+    processNextPayment();
+}
 
 /**
  * Show violation details in a modal
@@ -951,9 +1784,16 @@ function showViolationDetail(violationId) {
             // Show error message in the modal
             modalContent.innerHTML = `
                 <div class="alert alert-danger">
-                    <p>Error loading violation details: ${error.message}</p>
+                    <p><strong>Error loading violation details:</strong> ${error.message || 'Unknown error occurred'}</p>
+                    <div class="mt-2">
+                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                onclick="showViolationDetail(${violationId})">
+                            <span class="material-icons" style="font-size: 16px; vertical-align: text-bottom;">refresh</span> Retry
+                        </button>
+                    </div>
                 </div>
             `;
+            console.error('Violation detail modal error:', error);
         });
 }
 
@@ -991,290 +1831,71 @@ function showPaymentModal(violationId) {
         </div>
     `;
     
-    // Fetch violation details using the modal endpoint
-    fetch(`/violation/${violationId}/modal/`)
+    // Use a JSON endpoint for reliable data extraction instead of parsing HTML
+    fetch(`/violation/${violationId}/payment-info/`)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`Server returned ${response.status} ${response.statusText}`);
             }
-            return response.text();
+            return response.json();
         })
-        .then(html => {
-            // Create a temporary element to parse the HTML
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = html;
-            
-            // Extract data from the HTML
-            const extractText = (selector, defaultValue = 'N/A') => {
-                const element = tempDiv.querySelector(selector);
-                return element ? element.textContent.trim() : defaultValue;
-            };
-            
-            // Extract violation information
-            const caseId = violationId;
-            const violationDate = extractText('.violation-date', 'N/A');
-            
-            // Extract violator information - look for the card with "Violator Information"
-            let firstName = 'N/A';
-            let licenseNumber = 'N/A';
-            const infoCards = tempDiv.querySelectorAll('.info-card');
-            infoCards.forEach(card => {
-                const header = card.querySelector('.info-header h6');
-                if (header && header.textContent.includes('Violator Information')) {
-                    const infoGroups = card.querySelectorAll('.info-group');
-                    infoGroups.forEach((group, index) => {
-                        const label = group.querySelector('label');
-                        if (label && label.textContent.includes('Full Name')) {
-                            firstName = group.querySelector('.info-value').textContent.trim();
-                        }
-                        if (label && label.textContent.includes('License Number')) {
-                            licenseNumber = group.querySelector('.info-value').textContent.trim();
-                        }
-                    });
-                }
-            });
-            
-            // Extract violation types and fine amount
-            let violationType = 'N/A';
-            let fineAmount = '0.00';
-            let dueDate = 'N/A';
-            let isOverdue = false;
-            
-            console.log("Processing violation #" + violationId);
-            
-            // Is this an NCAP violation?
-            const isNcap = tempDiv.querySelector('.ncap-header') !== null || 
-                          (tempDiv.querySelector('h5') && tempDiv.querySelector('h5').textContent.includes('NCAP'));
-            console.log("Is NCAP violation:", isNcap);
-            
-            // Get the violation fine amount - try multiple methods
-            
-            // Method 1: Regular violation details section
-            infoCards.forEach(card => {
-                const header = card.querySelector('.info-header h6');
-                if (header && header.textContent.includes('Violation Details')) {
-                    const infoGroups = card.querySelectorAll('.info-group');
-                    infoGroups.forEach(group => {
-                        const label = group.querySelector('label');
-                        if (label && label.textContent.includes('Violation Types')) {
-                            violationType = group.querySelector('.violation-types').textContent.trim();
-                        }
-                        if (label && label.textContent.includes('Fine Amount')) {
-                            const amountText = group.querySelector('.info-value').textContent.trim();
-                            fineAmount = amountText.replace(/[^0-9.]/g, '');
-                            console.log("Method 1 - Fine amount found:", fineAmount);
-                        }
-                        if (label && label.textContent.includes('Due Date')) {
-                            const dueDateElement = group.querySelector('.info-value');
-                            dueDate = dueDateElement ? dueDateElement.textContent.trim() : 'N/A';
-                            // Check if the element has a class indicating it's overdue
-                            isOverdue = dueDateElement && dueDateElement.classList.contains('text-danger');
-                        }
-                    });
-                }
-            });
-
-            // Method 2: Look for specific NCAP fine amount if this is an NCAP violation
-            if (isNcap) {
-                // Try to locate amount in a table or in specific NCAP layout
-                const ncapAmountElement = tempDiv.querySelector('.ncap-amount') || 
-                                         tempDiv.querySelector('.fine-amount');
-                                         
-                if (ncapAmountElement) {
-                    const amountText = ncapAmountElement.textContent.trim();
-                    const extractedAmount = amountText.replace(/[^0-9.]/g, '');
-                    if (extractedAmount && parseFloat(extractedAmount) > 0) {
-                        fineAmount = extractedAmount;
-                        console.log("Method 2 - NCAP specific amount found:", fineAmount);
-                    }
-                }
-                
-                // Look specifically for NCAP table with amount column
-                const tables = tempDiv.querySelectorAll('table');
-                tables.forEach(table => {
-                    const headerCells = table.querySelectorAll('th');
-                    headerCells.forEach((th, index) => {
-                        if (th.textContent.includes('Amount') || th.textContent.includes('Fine')) {
-                            // Get the value from the first row in this column
-                            const firstRow = table.querySelector('tbody tr');
-                            if (firstRow) {
-                                const cell = firstRow.querySelectorAll('td')[index];
-                                if (cell) {
-                                    const amountText = cell.textContent.trim();
-                                    const extractedAmount = amountText.replace(/[^0-9.]/g, '');
-                                    if (extractedAmount && parseFloat(extractedAmount) > 0) {
-                                        fineAmount = extractedAmount;
-                                        console.log("Method 2 - NCAP table amount found:", fineAmount);
-                                    }
-                                }
-                            }
-                        }
-                    });
-                });
-                
-                // Look for specific PHP amount format (₱50)
-                const phpAmountPattern = /₱\s*(\d+(?:,\d+)*(?:\.\d+)?)/g;
-                const htmlContent = tempDiv.innerHTML;
-                let match;
-                while ((match = phpAmountPattern.exec(htmlContent)) !== null) {
-                    const extractedAmount = match[1].replace(/,/g, '');
-                    if (extractedAmount && parseFloat(extractedAmount) > 0) {
-                        fineAmount = extractedAmount;
-                        console.log("Method 2 - PHP currency pattern found:", fineAmount);
-                        break;
-                    }
-                }
-            }
-
-            // Method 3: Look for any element containing "Fine Amount" or "Amount" text
-            if (fineAmount === '0.00' || parseFloat(fineAmount) === 0) {
-                console.log("Method 3 - Looking for amount in labels");
-                const allLabels = tempDiv.querySelectorAll('label, strong, dt, th, h6');
-                for (const label of allLabels) {
-                    if (label.textContent.includes('Fine Amount') || 
-                        label.textContent.includes('Amount') || 
-                        label.textContent.includes('PHP') ||
-                        label.textContent.includes('₱')) {
-                        
-                        console.log("Found potential amount label:", label.textContent);
-                        
-                        // Get the next element or sibling that might contain the value
-                        let valueElement = label.nextElementSibling;
-                        if (!valueElement) {
-                            // If there's no next element, try the parent's next child or a sibling td/dd
-                            const parent = label.parentElement;
-                            if (parent) {
-                                if (parent.nextElementSibling) {
-                                    valueElement = parent.nextElementSibling;
-                                } else if (parent.tagName === 'TH') {
-                                    // Find the matching column in the rows
-                                    const table = parent.closest('table');
-                                    if (table) {
-                                        const index = Array.from(parent.parentElement.children).indexOf(parent);
-                                        const firstRow = table.querySelector('tbody tr');
-                                        if (firstRow && index >= 0) {
-                                            valueElement = firstRow.children[index];
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        
-                        if (valueElement) {
-                            const amountText = valueElement.textContent.trim();
-                            console.log("Found value element text:", amountText);
-                            
-                            // Extract numbers - handle currency and thousand separators
-                            let extractedAmount = amountText.replace(/[^\d.,]/g, '');
-                            
-                            // Handle comma as thousand separator (e.g., 1,000.00)
-                            if (extractedAmount.includes(',') && extractedAmount.includes('.')) {
-                                extractedAmount = extractedAmount.replace(/,/g, '');
-                            } 
-                            // Handle comma as decimal separator (e.g., 1.000,00)
-                            else if (extractedAmount.includes(',') && !extractedAmount.includes('.')) {
-                                extractedAmount = extractedAmount.replace(/,/g, '.');
-                            }
-                            
-                            console.log("Extracted amount:", extractedAmount);
-                            
-                            if (extractedAmount && parseFloat(extractedAmount) > 0) {
-                                fineAmount = extractedAmount;
-                                console.log("Method 3 - Amount found:", fineAmount);
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Method 4: Final fallback - search for any currency symbol followed by numbers
-            if (fineAmount === '0.00' || parseFloat(fineAmount) === 0) {
-                console.log("Method 4 - Currency pattern fallback");
-                
-                // Check for hardcoded known NCAP values
-                if (isNcap) {
-                    // NCAP violations often have standard amounts
-                    fineAmount = '50.00';  // Default to 50 for NCAP citations
-                    console.log("Method 4 - Using default NCAP amount:", fineAmount);
-                } else {
-                    // Try to extract from any text
-                    const currencyPattern = /[₱$€£]?\s*(\d+(?:,\d+)*(?:\.\d+)?)/;
-                    const allText = tempDiv.textContent;
-                    const matches = allText.match(currencyPattern);
-                    if (matches && matches[1]) {
-                        fineAmount = matches[1].replace(/,/g, '');
-                        console.log("Method 4 - Pattern match found:", fineAmount);
-                    }
-                }
-            }
-            
-            console.log("Final fine amount:", fineAmount);
-            
-            // Look for payment details if they exist
-            let paymentInfo = '';
-            const paymentTab = tempDiv.querySelector('#payment');
-            if (paymentTab) {
-                // Try to extract existing payment information
-                paymentInfo = `
-                <div class="alert alert-info mt-3">
-                    <h6 class="mb-2"><i class="fas fa-info-circle"></i> Previous Payment Information</h6>
-                    <div class="payment-history">
-                        ${paymentTab.innerHTML}
-                    </div>
-                </div>`;
-            }
-            
-            // Auto-fill payment amount - ensure we use a valid number
-            let displayAmount = fineAmount;
+        .then(data => {
+            // Format amount for display
+            let displayAmount = data.fine_amount || '0.00';
             try {
-                displayAmount = parseFloat(fineAmount).toFixed(2);
+                displayAmount = parseFloat(displayAmount).toFixed(2);
+                if (displayAmount === "NaN") {
+                    displayAmount = "0.00";
+                }
             } catch (e) {
-                console.error("Error formatting amount:", e);
+                displayAmount = "0.00";
             }
             
-            if (displayAmount && displayAmount !== "NaN") {
-                document.getElementById('paymentAmount').value = displayAmount;
-            } else if (isNcap) {
-                // Fallback for NCAP
-                document.getElementById('paymentAmount').value = '50.00';
-            }
+            // Auto-fill payment amount
+            document.getElementById('paymentAmount').value = displayAmount;
             
-            // Get status badge
-            const statusBadgeContainer = tempDiv.querySelector('.violation-status');
-            const statusBadge = statusBadgeContainer ? statusBadgeContainer.querySelector('.status-badge') : null;
-            const status = statusBadge ? statusBadge.textContent.trim() : 'Pending';
-            const statusClass = statusBadge ? statusBadge.className.split(' ').find(cls => cls.startsWith('bg-')) || 'bg-warning' : 'bg-warning';
+            // Get formatted violation types
+            const violationTypes = Array.isArray(data.violation_types) && data.violation_types.length > 0 
+                ? data.violation_types.join(', ') 
+                : data.violation_type || 'N/A';
             
             // Create HTML for violation details
             violationDetailsElement.innerHTML = `
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <p class="mb-1"><strong>Case ID:</strong> ${caseId}</p>
-                        <p class="mb-1"><strong>Date Filed:</strong> ${violationDate}</p>
-                        <p class="mb-1"><strong>Status:</strong> <span class="badge ${statusClass}">${status}</span></p>
+                        <p class="mb-1"><strong>Case ID:</strong> ${data.id || violationId}</p>
+                        <p class="mb-1"><strong>Date Filed:</strong> ${data.formatted_date || 'N/A'}</p>
+                        <p class="mb-1"><strong>Status:</strong> <span class="badge ${data.status_class || 'bg-warning'}">${data.status_display || 'Pending'}</span></p>
+                        <p class="mb-1"><strong>Violation Type:</strong> ${violationTypes}</p>
+                        <p class="mb-1"><strong>Payment Due Date:</strong> ${data.formatted_due_date || 'N/A'}</p>
                     </div>
                     <div class="col-md-6">
-                        <p class="mb-1"><strong>Violator:</strong> ${firstName}</p>
-                        <p class="mb-1"><strong>License No:</strong> ${licenseNumber}</p>
+                        <p class="mb-1"><strong>Violator:</strong> ${data.violator_name || (data.is_ncap ? 'NCAP Case #' + violationId : 'N/A')}</p>
+                        <p class="mb-1"><strong>License No:</strong> ${data.license_number || (data.is_ncap ? 'NCAP' : 'N/A')}</p>
                         <p class="mb-1"><strong>Fine Amount:</strong> ₱${displayAmount}</p>
+                        ${data.plate_number ? `<p class="mb-1"><strong>Plate Number:</strong> ${data.plate_number}</p>` : ''}
                     </div>
                 </div>
-                <div class="mt-2">
-                    <p class="mb-1"><strong>Violation Type:</strong> ${violationType}</p>
-                    <p class="mb-1"><strong>Payment Due Date:</strong> <span class="${isOverdue ? 'text-danger fw-bold' : ''}">${dueDate}</span></p>
-                    ${isOverdue ? '<p class="text-danger mb-1"><i class="fas fa-exclamation-triangle"></i> <strong>This violation is overdue!</strong></p>' : ''}
-                </div>
-                ${paymentInfo}
+                ${data.is_ncap ? '<div class="mt-2"><p class="text-info mb-1"><span class="material-icons" style="font-size: 16px; vertical-align: text-bottom;">info</span> <strong>This is an NCAP violation with limited violator details.</strong></p></div>' : ''}
             `;
         })
         .catch(error => {
             // Show error message
             violationDetailsElement.innerHTML = `
                 <div class="alert alert-danger">
-                    <p>Error loading violation details: ${error.message}</p>
+                    <p><strong>Error loading violation details:</strong> ${error.message || 'Unknown error occurred'}</p>
+                    <div class="mt-2">
+                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                onclick="showPaymentModal(${violationId})">
+                            <span class="material-icons" style="font-size: 16px; vertical-align: text-bottom;">refresh</span> Retry
+                        </button>
+                    </div>
                 </div>
             `;
+            
+            // Enable form submission anyway with default values
+            document.getElementById('paymentAmount').value = '0.00';
+            console.error('Payment modal error:', error);
         });
 }
 

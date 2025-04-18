@@ -46,60 +46,70 @@
                 <table class="table table-hover align-middle" id="pendingApprovalsTable" style="table-layout: fixed;">
                     <thead>
                         <tr>
-                            <th style="width: 8%;">Case ID</th>
-                            <th style="width: 12%;">Date Filed</th>
-                            <th style="width: 20%;">Violator</th>
-                            <th style="width: 35%;">Violation Type</th>
-                            <th style="width: 10%;">Fine Amount</th>
-                            <th style="width: 15%;">Adjudicated By</th>
-                            <th style="width: 10%;" class="text-end">Actions</th>
+                            <th style="width: 8%;" class="text-center">CASE ID</th>
+                            <th style="width: 12%;" class="text-center">DATE FILED</th>
+                            <th style="width: 20%;" class="text-center">VIOLATOR</th>
+                            <th style="width: 35%;" class="text-center">VIOLATION TYPE</th>
+                            <th style="width: 10%;" class="text-center">FINE AMOUNT</th>
+                            <th style="width: 15%;" class="text-center">ADJUDICATED BY</th>
+                            <th style="width: 15%;" class="text-center">ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for violation in violations %}
                         <tr>
-                            <td>{{ violation.id }}</td>
-                            <td>{{ violation.violation_date|date:"M d, Y" }}</td>
-                            <td>
-                                <div class="d-flex flex-column">
+                            <td class="text-center">{{ violation.id }}</td>
+                            <td class="text-center">{{ violation.violation_date|date:"M d, Y" }}</td>
+                            <td class="text-center">
+                                <div class="d-flex flex-column justify-content-center align-items-center">
                                     <span class="fw-medium">{{ violation.violator.first_name }} {{ violation.violator.last_name }}</span>
-                                    <small class="text-muted">{{ violation.violator.license_number }}</small>
+                                    <div class="text-muted small mt-1">
+                                        <i class="fas fa-id-card"></i> {{ violation.violator.license_number }}
+                                    </div>
                                 </div>
                             </td>
-                            <td>
+                            <td class="text-center">
                                 <div class="violation-types-container">
                                     {% for type in violation.get_violation_types %}
                                     <div class="violation-badge-item">{{ type }}</div>
                                     {% endfor %}
                                 </div>
                             </td>
-                            <td>₱{{ violation.fine_amount }}</td>
-                            <td>{{ violation.adjudicated_by.get_full_name }}</td>
-                            <td class="text-end">
+                            <td class="text-center">₱{{ violation.fine_amount|floatformat:2 }}</td>
+                            <td class="text-center">{{ violation.adjudicated_by.get_full_name }}</td>
+                            <td class="text-center" style="width: 180px;">
                                 <div class="action-buttons">
                                     <button type="button" 
-                                            class="btn btn-action btn-view" 
+                                            class="btn btn-primary action-btn" 
                                             data-bs-toggle="tooltip" 
                                             data-bs-placement="top" 
                                             title="View Details"
                                             data-violation-id="{{ violation.id }}">
-                                        <i class="fas fa-eye"></i>
+                                        <span class="material-icons">visibility</span>
                                     </button>
                                     <button type="button" 
-                                            class="btn btn-action btn-approve" 
+                                            class="btn btn-info action-btn" 
+                                            data-bs-toggle="tooltip" 
+                                            data-bs-placement="top" 
+                                            title="View Notes"
+                                            data-violation-id="{{ violation.id }}">
+                                        <span class="material-icons">description</span>
+                                    </button>
+                                    <button type="button" 
+                                            class="btn btn-success action-btn" 
                                             data-bs-toggle="tooltip" 
                                             data-bs-placement="top" 
                                             title="Approve"
                                             data-violation-id="{{ violation.id }}">
-                                        <i class="fas fa-check"></i>
+                                        <span class="material-icons">check_circle</span>
                                     </button>
                                     <button type="button" 
-                                            class="btn btn-action btn-reject" 
+                                            class="btn btn-danger action-btn" 
                                             data-bs-toggle="tooltip" 
                                             data-bs-placement="top" 
                                             title="Reject"
                                             data-violation-id="{{ violation.id }}">
-                                        <i class="fas fa-times"></i>
+                                        <span class="material-icons">cancel</span>
                                     </button>
                                 </div>
                             </td>
@@ -165,7 +175,7 @@
                                     <small class="text-muted">Fine:</small>
                                 </div>
                                 <div class="col-8">
-                                    ₱{{ violation.fine_amount }}
+                                    ₱{{ violation.fine_amount|floatformat:2 }}
                                 </div>
                             </div>
                             <div class="row mb-2">
@@ -178,25 +188,29 @@
                             </div>
                         </div>
                         <div class="card-footer p-2">
-                            <div class="mobile-actions">
-                                <button type="button" 
-                                        class="btn mobile-action-btn btn-view" 
-                                        data-violation-id="{{ violation.id }}">
-                                    <i class="fas fa-eye"></i>
-                                    <span>View</span>
-                                </button>
-                                <button type="button" 
-                                        class="btn mobile-action-btn btn-approve" 
-                                        data-violation-id="{{ violation.id }}">
-                                    <i class="fas fa-check"></i>
-                                    <span>Approve</span>
-                                </button>
-                                <button type="button" 
-                                        class="btn mobile-action-btn btn-reject" 
-                                        data-violation-id="{{ violation.id }}">
-                                    <i class="fas fa-times"></i>
-                                    <span>Reject</span>
-                                </button>
+                            <div class="d-flex justify-content-center align-items-center">
+                                <div class="action-buttons">
+                                    <button type="button" 
+                                            class="btn btn-primary action-btn" 
+                                            data-violation-id="{{ violation.id }}">
+                                        <span class="material-icons">visibility</span>
+                                    </button>
+                                    <button type="button" 
+                                            class="btn btn-info action-btn" 
+                                            data-violation-id="{{ violation.id }}">
+                                        <span class="material-icons">description</span>
+                                    </button>
+                                    <button type="button" 
+                                            class="btn btn-success action-btn" 
+                                            data-violation-id="{{ violation.id }}">
+                                        <span class="material-icons">check_circle</span>
+                                    </button>
+                                    <button type="button" 
+                                            class="btn btn-danger action-btn" 
+                                            data-violation-id="{{ violation.id }}">
+                                        <span class="material-icons">cancel</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -235,6 +249,210 @@
             <footer class="modal__footer">
                 <button class="modal__btn" data-micromodal-close aria-label="Close this dialog window">Close</button>
             </footer>
+        </div>
+    </div>
+</div>
+
+<!-- Adjudicator Notes Modal using Micromodal.js -->
+<div class="modal micromodal-slide" id="modal-adjudicator-notes" aria-hidden="true">
+    <div class="modal__overlay" tabindex="-1" data-micromodal-close>
+        <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="modal-adjudicator-notes-title">
+            <header class="modal__header">
+                <h2 class="modal__title" id="modal-adjudicator-notes-title">
+                    Adjudicator Notes
+                </h2>
+                <button class="modal__close" aria-label="Close modal" data-micromodal-close></button>
+            </header>
+            <main class="modal__content" id="modal-adjudicator-notes-content">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3">Loading adjudicator notes...</p>
+                </div>
+            </main>
+            <footer class="modal__footer">
+                <button class="modal__btn" data-micromodal-close aria-label="Close this dialog window">Close</button>
+            </footer>
+        </div>
+    </div>
+</div>
+
+<!-- Add a new Micromodal template for batch details -->
+<div class="modal micromodal-slide" id="modal-batch-details" aria-hidden="true">
+    <div class="modal__overlay" tabindex="-1" data-micromodal-close>
+        <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="modal-batch-details-title" style="max-width: 90%; width: 900px;">
+            <header class="modal__header">
+                <h2 class="modal__title" id="modal-batch-details-title">
+                    Batch Adjudication Summary
+                </h2>
+                <button class="modal__close" aria-label="Close modal" data-micromodal-close></button>
+            </header>
+            <main class="modal__content" id="modal-batch-details-content">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3">Loading batch details...</p>
+                </div>
+            </main>
+            <footer class="modal__footer">
+                <button class="modal__btn" data-micromodal-close aria-label="Close this dialog window">Close</button>
+            </footer>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Batch Adjudication Details Modal -->
+<div class="modal fade" id="batchAdjudicationModal" tabindex="-1" aria-labelledby="batchAdjudicationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="batchAdjudicationModalLabel">
+                    <span class="material-icons align-middle me-2">fact_check</span>
+                    Batch Adjudication Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <!-- Batch Summary Card -->
+                <div class="card border-0 mb-0">
+                    <div class="card-header bg-light py-3">
+                        <h6 class="mb-0">Batch Summary</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <!-- Violator Info -->
+                                <div class="d-flex mb-3">
+                                    <div class="flex-shrink-0">
+                                        <span class="material-icons text-primary p-2 bg-light rounded-circle">person</span>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-1">Violator</h6>
+                                        <p class="mb-0" id="batchViolatorName">Loading...</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Adjudicator Info -->
+                                <div class="d-flex mb-3">
+                                    <div class="flex-shrink-0">
+                                        <span class="material-icons text-primary p-2 bg-light rounded-circle">gavel</span>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-1">Adjudicated By</h6>
+                                        <p class="mb-0" id="batchAdjudicatorName">Loading...</p>
+                                        <small class="text-muted" id="batchAdjudicationDate">Loading...</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <!-- Violation Count -->
+                                <div class="d-flex mb-3">
+                                    <div class="flex-shrink-0">
+                                        <span class="material-icons text-primary p-2 bg-light rounded-circle">format_list_numbered</span>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-1">Violations</h6>
+                                        <div class="d-flex align-items-center">
+                                            <span class="badge bg-primary rounded-pill me-2" id="batchViolationCount">0</span>
+                                            <span id="batchViolationTypes">Loading...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Penalty Information -->
+                                <div class="d-flex">
+                                    <div class="flex-shrink-0">
+                                        <span class="material-icons text-primary p-2 bg-light rounded-circle">payments</span>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-1">Penalty Details</h6>
+                                        <div id="penaltyDetails">
+                                            <div class="penalty-original">
+                                                <span class="fw-bold">Original Total:</span> 
+                                                <span id="batchOriginalTotal">₱0.00</span>
+                                            </div>
+                                            
+                                            <!-- Adjusted total (only visible if different) -->
+                                            <div class="penalty-adjusted" id="adjustedPenaltyContainer" style="display:none">
+                                                <span class="fw-bold">Adjusted Total:</span> 
+                                                <span id="batchAdjustedTotal">₱0.00</span>
+                                                <span class="badge bg-warning text-dark ms-2">Manually Adjusted</span>
+                                                <br>
+                                                <small class="text-muted" id="adjustmentDescription"></small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Violations Table -->
+                <div class="card border-0 rounded-0">
+                    <div class="card-header bg-light py-3 border-top">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">Individual Violations</h6>
+                            <span class="badge bg-info rounded-pill" id="batchDetailCount">0</span>
+                        </div>
+                    </div>
+                    <div class="card-body px-0 py-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th scope="col" class="ps-4">Citation #</th>
+                                        <th scope="col">Violation Type</th>
+                                        <th scope="col">Location</th>
+                                        <th scope="col" class="text-end">Penalty</th>
+                                        <th scope="col" class="text-center pe-4">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="batchViolationsTableBody">
+                                    <tr>
+                                        <td colspan="5" class="text-center py-4">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                            <p class="mt-2">Loading violations...</p>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Notes & Remarks -->
+                <div class="card border-0 rounded-0 mb-0">
+                    <div class="card-header bg-light py-3 border-top">
+                        <h6 class="mb-0">Adjudication Remarks</h6>
+                    </div>
+                    <div class="card-body" id="batchRemarksContainer">
+                        <div class="bg-light p-3 rounded">
+                            <p class="mb-0" id="batchRemarks">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                
+                <!-- Action buttons only visible if status is pending approval -->
+                <div id="batchApprovalActions">
+                    <button type="button" class="btn btn-success" id="approveBatchBtn">
+                        <span class="material-icons align-middle me-1">check_circle</span>
+                        Approve Batch
+                    </button>
+                    <button type="button" class="btn btn-danger" id="rejectBatchBtn">
+                        <span class="material-icons align-middle me-1">cancel</span>
+                        Reject Batch
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -586,7 +804,9 @@
 .violation-card .card-footer {
     background-color: #f8f9fa;
     border-top: 1px solid #eaecef;
-    padding: 10px !important;
+    padding: 15px !important;
+    display: flex;
+    justify-content: center;
 }
 
 /* Mobile action buttons */
@@ -681,10 +901,137 @@
         }
     }
 }
+
+/* Action Buttons */
+.action-btn {
+    width: 35px !important;
+    height: 35px !important;
+    min-width: 35px !important;
+    max-width: 35px !important;
+    padding: 0 !important;
+    border-radius: 4px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 35px !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    transition: all 0.2s !important;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+}
+
+/* Icon sizing */
+.action-btn .material-icons {
+    color: white !important;
+    font-size: 16px !important;
+    margin: 0 !important;
+    line-height: 1 !important;
+}
+
+/* Action buttons container */
+.action-buttons {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 4px !important;
+    width: 100% !important;
+    max-width: 180px !important;
+    margin: 0 auto !important;
+}
+
+/* Add view-text class for hiding text labels */
+.view-text {
+    display: none;
+}
+
+/* Center align all table content */
+.table th, .table td {
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* Notes modal styles */
+#modal-adjudicator-notes .modal__container {
+  max-width: 600px;
+}
+
+#modal-adjudicator-notes .notes-content {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  border-left: 4px solid var(--primary-color);
+}
+
+/* Batch Adjudication Modal Styles */
+#batchAdjudicationModal .modal-dialog {
+    max-width: 900px;
+}
+
+#batchAdjudicationModal .modal-header {
+    background-color: #2563eb;
+    color: white;
+}
+
+#batchAdjudicationModal .card {
+    box-shadow: none;
+}
+
+#batchAdjudicationModal .card-header {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+#batchAdjudicationModal .material-icons {
+    font-size: 20px;
+}
+
+#batchAdjudicationModal .badge {
+    font-weight: 500;
+}
+
+#batchAdjudicationModal .table th {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #6c757d;
+    background-color: #f8f9fa;
+}
+
+#batchAdjudicationModal .table td {
+    vertical-align: middle;
+    padding: 0.75rem;
+}
+
+#batchAdjudicationModal .penalty-original {
+    margin-bottom: 0.5rem;
+}
+
+#batchAdjudicationModal .penalty-adjusted {
+    padding: 0.5rem;
+    background-color: #fff8e1;
+    border-radius: 6px;
+    border-left: 3px solid #f59e0b;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #batchAdjudicationModal .table {
+        white-space: nowrap;
+    }
+    
+    #batchAdjudicationModal .card-body {
+        padding: 1rem;
+    }
+}
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Group batch adjudicated violations
+    groupBatchAdjudications();
+    
     // Initialize Micromodal
     MicroModal.init({
         openTrigger: 'data-micromodal-trigger',
@@ -700,6 +1047,201 @@ document.addEventListener('DOMContentLoaded', function() {
     tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
+
+    // Function to group batch adjudicated violations for display
+    function groupBatchAdjudications() {
+        // Get all violations in the table
+        const tableRows = document.querySelectorAll('#pendingApprovalsTable tbody tr');
+        const batchGroups = {};
+        
+        // First pass: identify batch groups by violator name
+        tableRows.forEach(row => {
+            // Extract violator name from the row
+            const violatorCell = row.querySelector('td:nth-child(3)');
+            const violatorNameEl = violatorCell.querySelector('.fw-medium');
+            if (!violatorNameEl) return;
+            
+            const violatorName = violatorNameEl.textContent.trim();
+            const adjudicator = row.querySelector('td:nth-child(6)').textContent.trim();
+            const violationDate = row.querySelector('td:nth-child(2)').textContent.trim();
+            const violationId = row.querySelector('td:nth-child(1)').textContent.trim();
+            
+            // Create a unique key for this batch group based on violator name
+            const batchKey = `${violatorName}`;
+            
+            if (!batchGroups[batchKey]) {
+                batchGroups[batchKey] = {
+                    rows: [],
+                    violatorName: violatorName,
+                    adjudicator: adjudicator,
+                    date: violationDate,
+                    totalFineAmount: 0,
+                    violationTypes: new Set(),
+                    violationIds: [],
+                    firstRow: null,
+                    hasNcap: false
+                };
+            }
+            
+            // Add this row to the group
+            batchGroups[batchKey].rows.push(row);
+            
+            // Track the first row for later use
+            if (!batchGroups[batchKey].firstRow) {
+                batchGroups[batchKey].firstRow = row;
+            }
+            
+            // Extract fine amount from the row
+            const fineText = row.querySelector('td:nth-child(5)').textContent.trim();
+            const fineAmount = parseFloat(fineText.replace('₱', '').replace(',', '')) || 0;
+            batchGroups[batchKey].totalFineAmount += fineAmount;
+            
+            // Add violation ID to the list
+            batchGroups[batchKey].violationIds.push(violationId);
+            
+            // Collect all violation types
+            const violationTypesContainer = row.querySelector('.violation-types-container');
+            if (violationTypesContainer) {
+                const types = violationTypesContainer.querySelectorAll('.violation-badge-item');
+                types.forEach(type => {
+                    const typeText = type.textContent.trim();
+                    batchGroups[batchKey].violationTypes.add(typeText);
+                    
+                    // Check if this is an NCAP violation (look for NCAP marker in violation type)
+                    if (typeText.toLowerCase().includes('ncap') || typeText.toLowerCase().includes('non-contact')) {
+                        batchGroups[batchKey].hasNcap = true;
+                    }
+                });
+            }
+        });
+        
+        // Second pass: only process groups with 2+ violations (actual batches)
+        for (const batchKey in batchGroups) {
+            const group = batchGroups[batchKey];
+            
+            // Only transform groups with 2+ violations
+            if (group.rows.length >= 2) {
+                // Modify the first row to represent the entire batch
+                const batchRow = group.firstRow;
+                
+                // Update the cell contents for the batch representation
+                if (batchRow) {
+                    // Update case ID cell to show it's a batch
+                    const caseIdCell = batchRow.querySelector('td:nth-child(1)');
+                    const batchCount = group.rows.length;
+                    caseIdCell.innerHTML = `
+                        <div class="d-flex flex-column align-items-center">
+                            <span class="badge bg-info mb-1">Batch (${batchCount})</span>
+                            <small>${group.violationIds.join(', ')}</small>
+                        </div>
+                    `;
+                    
+                    // Update violator cell to indicate batch processing
+                    const violatorCell = batchRow.querySelector('td:nth-child(3)');
+                    const existingViolator = violatorCell.innerHTML;
+                    
+                    const batchLabel = group.hasNcap ? 
+                        '<span class="badge bg-primary me-1">Batch</span><span class="badge bg-warning text-dark">NCAP</span>' : 
+                        '<span class="badge bg-primary">Batch Adjudication</span>';
+                    
+                    violatorCell.innerHTML = `
+                        ${existingViolator}
+                        <div class="mt-2">
+                            ${batchLabel}
+                        </div>
+                    `;
+                    
+                    // Combine all violation types
+                    const violationTypesCell = batchRow.querySelector('td:nth-child(4)');
+                    if (violationTypesCell) {
+                        const uniqueTypes = Array.from(group.violationTypes);
+                        violationTypesCell.innerHTML = `
+                            <div class="violation-types-container">
+                                ${uniqueTypes.map(type => `
+                                    <div class="violation-badge-item">${type}</div>
+                                `).join('')}
+                            </div>
+                        `;
+                    }
+                    
+                    // Update the fine amount to show total
+                    const fineCell = batchRow.querySelector('td:nth-child(5)');
+                    fineCell.innerHTML = `
+                        <div class="d-flex flex-column align-items-center">
+                            <span class="fw-bold">₱${group.totalFineAmount.toFixed(2)}</span>
+                            <small class="text-muted">Total for batch</small>
+                        </div>
+                    `;
+                    
+                    // Update the action buttons to process the entire batch
+                    const actionCell = batchRow.querySelector('td:nth-child(7)');
+                    actionCell.innerHTML = `
+                        <div class="action-buttons">
+                            <button type="button" 
+                                    class="btn btn-primary action-btn batch-view-btn" 
+                                    data-bs-toggle="tooltip" 
+                                    data-bs-placement="top" 
+                                    title="View Batch"
+                                    data-batch-ids="${group.violationIds.join(',')}">
+                                <span class="material-icons">visibility</span>
+                            </button>
+                            <button type="button" 
+                                    class="btn btn-info action-btn" 
+                                    data-bs-toggle="tooltip" 
+                                    data-bs-placement="top" 
+                                    title="View Notes"
+                                    data-violation-id="${group.violationIds[0]}">
+                                <span class="material-icons">description</span>
+                            </button>
+                            <button type="button" 
+                                    class="btn btn-success action-btn batch-approve-btn" 
+                                    data-bs-toggle="tooltip" 
+                                    data-bs-placement="top" 
+                                    title="Approve Batch"
+                                    data-batch-ids="${group.violationIds.join(',')}">
+                                <span class="material-icons">check_circle</span>
+                            </button>
+                            <button type="button" 
+                                    class="btn btn-danger action-btn batch-reject-btn" 
+                                    data-bs-toggle="tooltip" 
+                                    data-bs-placement="top" 
+                                    title="Reject Batch"
+                                    data-batch-ids="${group.violationIds.join(',')}">
+                                <span class="material-icons">cancel</span>
+                            </button>
+                        </div>
+                    `;
+                    
+                    // Hide all other rows in this batch group
+                    for (let i = 1; i < group.rows.length; i++) {
+                        group.rows[i].style.display = 'none';
+                    }
+                }
+            }
+        }
+        
+        // Add event listeners for batch action buttons
+        document.querySelectorAll('.batch-view-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const batchIds = this.getAttribute('data-batch-ids').split(',');
+                showBatchDetails(batchIds);
+            });
+        });
+        
+        document.querySelectorAll('.batch-approve-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const batchIds = this.getAttribute('data-batch-ids').split(',');
+                approveBatch(batchIds);
+            });
+        });
+        
+        document.querySelectorAll('.batch-reject-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const batchIds = this.getAttribute('data-batch-ids').split(',');
+                rejectBatch(batchIds);
+            });
+        });
+    }
 
     // Custom search functionality
     const searchInput = document.getElementById('searchInput');
@@ -723,33 +1265,467 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Add event listeners to action buttons
-    document.querySelectorAll('.btn-view').forEach(button => {
+    document.querySelectorAll('.action-btn:not(.batch-view-btn):not(.batch-approve-btn):not(.batch-reject-btn)').forEach(button => {
         button.addEventListener('click', function() {
             const violationId = this.getAttribute('data-violation-id');
-            if (violationId) {
+            if (!violationId) return;
+            
+            // Determine which action to perform based on button content
+            if (this.querySelector('.material-icons').textContent === 'visibility') {
                 showViolationDetail(violationId);
-            }
-        });
-    });
-    
-    document.querySelectorAll('.btn-approve').forEach(button => {
-        button.addEventListener('click', function() {
-            const violationId = this.getAttribute('data-violation-id');
-            if (violationId) {
+            } else if (this.querySelector('.material-icons').textContent === 'description') {
+                showAdjudicatorNotes(violationId);
+            } else if (this.querySelector('.material-icons').textContent === 'check_circle') {
                 approveAdjudication(violationId);
-            }
-        });
-    });
-    
-    document.querySelectorAll('.btn-reject').forEach(button => {
-        button.addEventListener('click', function() {
-            const violationId = this.getAttribute('data-violation-id');
-            if (violationId) {
+            } else if (this.querySelector('.material-icons').textContent === 'cancel') {
                 rejectAdjudication(violationId);
             }
         });
+        });
     });
-});
+    
+// Replace the existing showBatchDetails function with this updated version
+function showBatchDetails(batchIds) {
+    if (!batchIds || !batchIds.length) return;
+    
+    // Show the modal
+    const batchModal = new bootstrap.Modal(document.getElementById('batchAdjudicationModal'));
+    batchModal.show();
+    
+    // Reset the modal content to loading state
+    document.getElementById('batchViolatorName').textContent = 'Loading...';
+    document.getElementById('batchAdjudicatorName').textContent = 'Loading...';
+    document.getElementById('batchAdjudicationDate').textContent = 'Loading...';
+    document.getElementById('batchViolationCount').textContent = '0';
+    document.getElementById('batchViolationTypes').textContent = 'Loading...';
+    document.getElementById('batchOriginalTotal').textContent = '₱0.00';
+    document.getElementById('batchRemarks').textContent = 'Loading...';
+    
+    // Hide the adjusted penalty section by default
+    document.getElementById('adjustedPenaltyContainer').style.display = 'none';
+    
+    // Reset the table body to loading state
+    document.getElementById('batchViolationsTableBody').innerHTML = `
+        <tr>
+            <td colspan="5" class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+                <p class="mt-2">Loading violations...</p>
+            </td>
+        </tr>
+    `;
+    
+    // Get the first violation to get general batch information
+    fetch(`/violation/${batchIds[0]}/payment-info/`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Error fetching violation details`);
+            }
+            return response.json();
+        })
+        .then(firstViolation => {
+            // Now fetch all violations in the batch
+            const fetchPromises = batchIds.map(id => 
+                fetch(`/violation/${id}/payment-info/`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Error fetching violation #${id}`);
+                        }
+                        return response.json();
+                    })
+                    .catch(error => {
+                        console.error(error);
+                        return { id: id, error: true, message: error.message };
+                    })
+            );
+            
+            return Promise.all([Promise.resolve(firstViolation), Promise.all(fetchPromises)]);
+        })
+        .then(([firstViolation, violations]) => {
+            // Update violator information
+            document.getElementById('batchViolatorName').textContent = firstViolation.violator_name || 'N/A';
+            
+            // Update adjudicator information
+            document.getElementById('batchAdjudicatorName').textContent = firstViolation.adjudicator_name || 'N/A';
+            document.getElementById('batchAdjudicationDate').textContent = firstViolation.adjudication_date || 'N/A';
+            
+            // Count violations
+            document.getElementById('batchViolationCount').textContent = violations.length;
+            document.getElementById('batchDetailCount').textContent = violations.length;
+            
+            // Find unique violation types
+            const uniqueTypes = new Set();
+            violations.forEach(v => {
+                if (!v.error && v.violation_types) {
+                    v.violation_types.forEach(type => uniqueTypes.add(type));
+                } else if (!v.error && v.violation_type) {
+                    uniqueTypes.add(v.violation_type);
+                }
+            });
+            
+            // Display violation types summary
+            if (uniqueTypes.size > 0) {
+                document.getElementById('batchViolationTypes').textContent = 
+                    Array.from(uniqueTypes).slice(0, 2).join(', ') + 
+                    (uniqueTypes.size > 2 ? ` and ${uniqueTypes.size - 2} more` : '');
+            } else {
+                document.getElementById('batchViolationTypes').textContent = 'No types available';
+                }
+                
+            // Calculate the total fine amount (sum of individual penalties)
+            const originalTotal = violations
+                .filter(v => !v.error && v.fine_amount)
+                .reduce((sum, v) => sum + parseFloat(v.fine_amount || 0), 0);
+            
+            document.getElementById('batchOriginalTotal').textContent = `₱${originalTotal.toFixed(2)}`;
+            
+            // Check if there's an adjusted total
+            let adjustedTotal = null;
+            
+            // Check for adjusted_batch_total in the first violation
+            if (firstViolation.adjusted_batch_total) {
+                adjustedTotal = parseFloat(firstViolation.adjusted_batch_total);
+            }
+            
+            // If no explicit adjusted field, look for batch_total
+            if (adjustedTotal === null && firstViolation.batch_total) {
+                adjustedTotal = parseFloat(firstViolation.batch_total);
+            }
+            
+            // Get adjudication remarks
+            document.getElementById('batchRemarks').textContent = firstViolation.adjudication_remarks || 'No remarks provided';
+            
+            // If we have an adjusted total that's different from the original, show it
+            if (adjustedTotal !== null && Math.abs(adjustedTotal - originalTotal) > 0.01) {
+                document.getElementById('adjustedPenaltyContainer').style.display = 'block';
+                document.getElementById('batchAdjustedTotal').textContent = `₱${adjustedTotal.toFixed(2)}`;
+                
+                // Show the difference
+                const difference = Math.abs(adjustedTotal - originalTotal).toFixed(2);
+                const direction = adjustedTotal < originalTotal ? "reduced" : "increased";
+                document.getElementById('adjustmentDescription').textContent = 
+                    `Total was ${direction} by ₱${difference} during adjudication`;
+            }
+            
+            // Populate the violations table
+            let tableHtml = '';
+            
+            violations.forEach(v => {
+                if (v.error) {
+                    tableHtml += `
+                        <tr>
+                            <td colspan="5" class="text-center text-danger">
+                                Error loading violation #${v.id}: ${v.message}
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    // Get violation types
+                    let violationTypeDisplay = '';
+                    if (v.violation_types && v.violation_types.length > 0) {
+                        violationTypeDisplay = v.violation_types.join(', ');
+                    } else if (v.violation_type) {
+                        violationTypeDisplay = v.violation_type;
+                    } else {
+                        violationTypeDisplay = 'N/A';
+                    }
+                    
+                    tableHtml += `
+                        <tr>
+                            <td class="ps-4">${v.id}</td>
+                            <td>${violationTypeDisplay}</td>
+                            <td>${v.location || 'N/A'}</td>
+                            <td class="text-end">₱${parseFloat(v.fine_amount || 0).toFixed(2)}</td>
+                            <td class="text-center pe-4">
+                                <button type="button" class="btn btn-sm btn-primary" 
+                                        onclick="showViolationDetail(${v.id})">
+                                    <span class="material-icons" style="font-size: 16px;">visibility</span>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }
+            });
+            
+            document.getElementById('batchViolationsTableBody').innerHTML = tableHtml;
+            
+            // Set up action buttons
+            document.getElementById('approveBatchBtn').onclick = () => approveBatch(batchIds);
+            document.getElementById('rejectBatchBtn').onclick = () => rejectBatch(batchIds);
+        })
+        .catch(error => {
+            console.error('Error loading batch details:', error);
+            
+            // Show error message
+            document.getElementById('batchViolationsTableBody').innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-danger">
+                        <span class="material-icons mb-2">error</span>
+                    <p>Error loading batch details: ${error.message}</p>
+                    </td>
+                </tr>
+            `;
+        });
+}
+
+// Approve all violations in a batch with one action
+function approveBatch(batchIds) {
+    if (!batchIds || !batchIds.length) return;
+    
+    Swal.fire({
+        title: 'Approve Batch Adjudication',
+        text: `Are you sure you want to approve all ${batchIds.length} violations in this batch?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#0bb783',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, Approve All',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Show processing state
+            Swal.fire({
+                title: 'Processing Batch...',
+                html: `
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-2">Approving ${batchIds.length} violations...</p>
+                        <div class="progress mt-3">
+                            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                `,
+                showConfirmButton: false,
+                allowOutsideClick: false
+            });
+            
+            // Process each violation in sequence
+            let successCount = 0;
+            let errorCount = 0;
+            let currentIndex = 0;
+            
+            function processNextViolation() {
+                if (currentIndex >= batchIds.length) {
+                    // All done, show results
+                    if (errorCount === 0) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Batch Approved',
+                            text: `Successfully approved all ${batchIds.length} violations in the batch.`,
+                            confirmButtonColor: '#2563eb'
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Batch Partially Approved',
+                            text: `Successfully approved ${successCount} out of ${batchIds.length} violations. There were ${errorCount} errors.`,
+                            confirmButtonColor: '#2563eb'
+                        }).then(() => {
+                            location.reload();
+                        });
+                    }
+                    return;
+                }
+                
+                const violationId = batchIds[currentIndex];
+                
+                // Update progress bar
+                const progressPercent = Math.round((currentIndex / batchIds.length) * 100);
+                Swal.update({
+                    html: `
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status"></div>
+                            <p class="mt-2">Approving violation #${violationId}...</p>
+                            <p class="small text-muted">${currentIndex + 1} of ${batchIds.length}</p>
+                            <div class="progress mt-3">
+                                <div class="progress-bar" role="progressbar" style="width: ${progressPercent}%"></div>
+                            </div>
+                        </div>
+                    `
+                });
+                
+                // Process this violation
+                fetch(`/violation/${violationId}/approve-adjudication/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Server returned ${response.status} ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        successCount++;
+                    } else {
+                        errorCount++;
+                        console.error(`Error approving violation #${violationId}:`, data.message);
+                    }
+                    
+                    // Process the next violation
+                    currentIndex++;
+                    processNextViolation();
+                })
+                .catch(error => {
+                    errorCount++;
+                    console.error(`Error approving violation #${violationId}:`, error);
+                    
+                    // Process the next violation
+                    currentIndex++;
+                    processNextViolation();
+                });
+            }
+            
+            // Start processing the first violation
+            processNextViolation();
+        }
+    });
+}
+
+// Reject all violations in a batch with one action
+function rejectBatch(batchIds) {
+    if (!batchIds || !batchIds.length) return;
+    
+    // Use SweetAlert input field for rejection reason
+    Swal.fire({
+        title: 'Reject Batch Adjudication',
+        html: `
+            <div class="text-start mb-3">
+                <p>You are about to reject all ${batchIds.length} violations in this batch.</p>
+                <label for="swal-rejection-reason" class="form-label">Reason for Rejection</label>
+                <textarea id="swal-rejection-reason" class="form-control" rows="3" placeholder="Please provide a detailed reason for rejecting this batch adjudication..."></textarea>
+            </div>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#f64e60',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Reject All',
+        cancelButtonText: 'Cancel',
+        preConfirm: () => {
+            const reason = document.getElementById('swal-rejection-reason').value;
+            if (!reason || !reason.trim()) {
+                Swal.showValidationMessage('Please provide a reason for rejection');
+                return false;
+            }
+            return reason;
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const reason = result.value;
+            
+            // Show processing state
+            Swal.fire({
+                title: 'Processing Batch...',
+                html: `
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-2">Rejecting ${batchIds.length} violations...</p>
+                        <div class="progress mt-3">
+                            <div class="progress-bar bg-danger" role="progressbar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                `,
+                showConfirmButton: false,
+                allowOutsideClick: false
+            });
+            
+            // Process each violation in sequence
+            let successCount = 0;
+            let errorCount = 0;
+            let currentIndex = 0;
+            
+            function processNextViolation() {
+                if (currentIndex >= batchIds.length) {
+                    // All done, show results
+                    if (errorCount === 0) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Batch Rejected',
+                            text: `Successfully rejected all ${batchIds.length} violations in the batch.`,
+                            confirmButtonColor: '#2563eb'
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Batch Partially Rejected',
+                            text: `Successfully rejected ${successCount} out of ${batchIds.length} violations. There were ${errorCount} errors.`,
+                            confirmButtonColor: '#2563eb'
+                        }).then(() => {
+                            location.reload();
+                        });
+                    }
+                    return;
+                }
+                
+                const violationId = batchIds[currentIndex];
+                
+                // Update progress bar
+                const progressPercent = Math.round((currentIndex / batchIds.length) * 100);
+                Swal.update({
+                    html: `
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status"></div>
+                            <p class="mt-2">Rejecting violation #${violationId}...</p>
+                            <p class="small text-muted">${currentIndex + 1} of ${batchIds.length}</p>
+                            <div class="progress mt-3">
+                                <div class="progress-bar bg-danger" role="progressbar" style="width: ${progressPercent}%"></div>
+                            </div>
+                        </div>
+                    `
+                });
+                
+                // Process this violation
+                fetch(`/violation/${violationId}/reject-adjudication/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ reason: reason })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Server returned ${response.status} ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        successCount++;
+                    } else {
+                        errorCount++;
+                        console.error(`Error rejecting violation #${violationId}:`, data.message);
+                    }
+                    
+                    // Process the next violation
+                    currentIndex++;
+                    processNextViolation();
+                })
+                .catch(error => {
+                    errorCount++;
+                    console.error(`Error rejecting violation #${violationId}:`, error);
+                    
+                    // Process the next violation
+                    currentIndex++;
+                    processNextViolation();
+                });
+            }
+            
+            // Start processing the first violation
+            processNextViolation();
+        }
+    });
+}
 
 function showViolationDetail(violationId) {
     if (!violationId) return;
@@ -954,6 +1930,69 @@ function rejectAdjudication(violationId) {
     });
 }
 
+function showAdjudicatorNotes(violationId) {
+    if (!violationId) return;
+    
+    // Get modal content element
+    const modalContent = document.getElementById('modal-adjudicator-notes-content');
+    
+    // Update title
+    document.getElementById('modal-adjudicator-notes-title').textContent = `Adjudicator Notes - Violation #${violationId}`;
+    
+    // Show loading spinner in the modal
+    modalContent.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3">Loading adjudicator notes...</p>
+        </div>
+    `;
+    
+    // Show the modal using Micromodal
+    MicroModal.show('modal-adjudicator-notes');
+    
+    // Fetch adjudicator notes
+    fetch(`/violation/${violationId}/adjudicator-notes/`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status} ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.notes) {
+                // Update modal content with fetched notes
+                modalContent.innerHTML = `
+                    <div class="notes-content">
+                        <p class="mb-0">${data.notes}</p>
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-muted">Adjudicated by: ${data.adjudicator_name}</small>
+                        <br>
+                        <small class="text-muted">Date: ${data.adjudication_date}</small>
+                    </div>
+                `;
+            } else {
+                // No notes found
+                modalContent.innerHTML = `
+                    <div class="alert alert-info">
+                        <p class="mb-0">No adjudicator notes available for this violation.</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            // Show error message in the modal
+            modalContent.innerHTML = `
+                <div class="alert alert-danger">
+                    <p>Error loading adjudicator notes:</p>
+                    <p>${error.message}</p>
+                </div>
+            `;
+        });
+}
+
 // Helper function to get CSRF token
 function getCookie(name) {
     let cookieValue = null;
@@ -969,6 +2008,26 @@ function getCookie(name) {
     }
     return cookieValue;
 }
+
+// Add a helper function to find text in elements
+document.querySelectorAll = document.querySelectorAll || function(selector) {
+    return document.querySelectorAll(selector);
+};
+
+// Add contains selector for finding text in elements
+if (!Element.prototype.matches) {
+    Element.prototype.matches = Element.prototype.msMatchesSelector || Element.prototype.webkitMatchesSelector;
+}
+
+if (window.NodeList && !NodeList.prototype.forEach) {
+    NodeList.prototype.forEach = Array.prototype.forEach;
+}
+
+// Add selector for finding elements containing text
+jQuery.expr[':'].contains = function(a, i, m) {
+    return jQuery(a).text().toUpperCase()
+        .indexOf(m[3].toUpperCase()) >= 0;
+};
 </script>
 
 {% include 'includes/pagination.html' %}

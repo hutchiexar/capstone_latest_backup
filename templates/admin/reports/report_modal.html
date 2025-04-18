@@ -1,6 +1,6 @@
-<div class="p-4 bg-white">
+<div class="p-4 bg-white report-modal-content">
     <!-- Report Header -->
-    <div class="mb-4">
+    <div class="mb-3">
         <div class="d-flex justify-content-between align-items-center">
             <h5 class="fw-bold mb-1">{{ report.subject }}</h5>
             <span class="badge rounded-pill d-inline-flex align-items-center {% if report.type == 'COMPLAINT' %}text-bg-danger
@@ -18,7 +18,7 @@
                 {{ report.get_type_display }}
             </span>
         </div>
-        <div class="d-flex align-items-center text-muted small mb-3">
+        <div class="d-flex align-items-center text-muted small mb-2">
             <div class="d-flex align-items-center me-3">
                 <span class="material-icons me-1" style="font-size: 1rem;">person</span>
                 {{ report.user.get_full_name }}
@@ -30,151 +30,169 @@
         </div>
     </div>
 
-    <!-- Report Details -->
-    <div class="card shadow-sm border-0 rounded-3 mb-4">
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label class="text-muted small">Status</label>
-                        <div class="d-flex align-items-center">
-                            <span class="material-icons me-2 {% if report.status == 'PENDING' %}text-warning
-                                   {% elif report.status == 'IN_PROGRESS' %}text-primary
-                                   {% elif report.status == 'RESOLVED' %}text-success
-                                   {% elif report.status == 'CLOSED' %}text-secondary
-                                   {% endif %}">
-                                {% if report.status == 'PENDING' %}schedule
-                                {% elif report.status == 'IN_PROGRESS' %}sync
-                                {% elif report.status == 'RESOLVED' %}check_circle
-                                {% elif report.status == 'CLOSED' %}cancel
-                                {% endif %}
-                            </span>
-                            <span class="{% if report.status == 'PENDING' %}text-warning
-                                   {% elif report.status == 'IN_PROGRESS' %}text-primary
-                                   {% elif report.status == 'RESOLVED' %}text-success
-                                   {% elif report.status == 'CLOSED' %}text-secondary
-                                   {% endif %} fw-medium">
-                                {{ report.get_status_display }}
-                            </span>
+    <!-- Main content organized in a grid -->
+    <div class="row g-3">
+        <!-- First row - equal height and width cards -->
+        <div class="col-md-6">
+            <!-- Report Details Card -->
+            <div class="card shadow-sm border-0 rounded-3 h-100">
+                <div class="card-header bg-light py-2">
+                    <div class="d-flex align-items-center">
+                        <span class="material-icons text-muted me-2">info</span>
+                        <h6 class="m-0 fw-bold">Report Details</h6>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <label class="text-muted small">Status</label>
+                                <div class="d-flex align-items-center">
+                                    <span class="material-icons me-2 {% if report.status == 'PENDING' %}text-warning
+                                           {% elif report.status == 'IN_PROGRESS' %}text-primary
+                                           {% elif report.status == 'RESOLVED' %}text-success
+                                           {% elif report.status == 'CLOSED' %}text-secondary
+                                           {% endif %}">
+                                        {% if report.status == 'PENDING' %}schedule
+                                        {% elif report.status == 'IN_PROGRESS' %}sync
+                                        {% elif report.status == 'RESOLVED' %}check_circle
+                                        {% elif report.status == 'CLOSED' %}cancel
+                                        {% endif %}
+                                    </span>
+                                    <span class="{% if report.status == 'PENDING' %}text-warning
+                                           {% elif report.status == 'IN_PROGRESS' %}text-primary
+                                           {% elif report.status == 'RESOLVED' %}text-success
+                                           {% elif report.status == 'CLOSED' %}text-secondary
+                                           {% endif %} fw-medium">
+                                        {{ report.get_status_display }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if report.incident_date %}
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <label class="text-muted small">Incident Date</label>
+                                <p class="mb-0 d-flex align-items-center">
+                                    <span class="material-icons me-2 text-muted" style="font-size: 1rem;">event</span>
+                                    {{ report.incident_date|date:"M d, Y H:i" }}
+                                </p>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if report.location %}
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <label class="text-muted small">Location</label>
+                                <p class="mb-0 d-flex align-items-center">
+                                    <span class="material-icons me-2 text-muted" style="font-size: 1rem;">location_on</span>
+                                    {{ report.location }}
+                                </p>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if report.assigned_to %}
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <label class="text-muted small">Assigned To</label>
+                                <p class="mb-0 d-flex align-items-center">
+                                    <span class="material-icons me-2 text-muted" style="font-size: 1rem;">assignment_ind</span>
+                                    {{ report.assigned_to.get_full_name }}
+                                </p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <!-- Description Card -->
+            <div class="card shadow-sm border-0 rounded-3 h-100">
+                <div class="card-header bg-light py-2">
+                    <div class="d-flex align-items-center">
+                        <span class="material-icons text-muted me-2">description</span>
+                        <h6 class="m-0 fw-bold">Description</h6>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ report.description|linebreaks }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Second row - conditional cards -->
+        {% if report.resolved_at %}
+        <div class="col-md-{% if report.attachment %}6{% else %}12{% endif %}">
+            <div class="card shadow-sm border-0 rounded-3 h-100">
+                <div class="card-header bg-light py-2">
+                    <div class="d-flex align-items-center">
+                        <span class="material-icons text-success me-2">check_circle</span>
+                        <h6 class="m-0 fw-bold">Resolution Details</h6>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <label class="text-muted small">Resolved Date</label>
+                        <p class="mb-0 d-flex align-items-center">
+                            <span class="material-icons me-2 text-muted" style="font-size: 1rem;">event_available</span>
+                            {{ report.resolved_at|date:"M d, Y H:i" }}
+                        </p>
+                    </div>
+                    
+                    {% if report.resolution_notes %}
+                    <div>
+                        <label class="text-muted small">Resolution Notes</label>
+                        <div class="p-2 bg-light rounded-3">
+                            {{ report.resolution_notes|linebreaks }}
                         </div>
                     </div>
+                    {% endif %}
                 </div>
-                
-                {% if report.location %}
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label class="text-muted small">Location</label>
-                        <p class="mb-0 d-flex align-items-center">
-                            <span class="material-icons me-2 text-muted" style="font-size: 1rem;">location_on</span>
-                            {{ report.location }}
-                        </p>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Attachment section (if any) -->
+        {% if report.attachment %}
+        <div class="col-md-{% if report.resolved_at %}6{% else %}12{% endif %}">
+            <div class="card shadow-sm border-0 rounded-3 h-100">
+                <div class="card-header bg-light py-2">
+                    <div class="d-flex align-items-center">
+                        <span class="material-icons text-muted me-2">attach_file</span>
+                        <h6 class="m-0 fw-bold">Attachment</h6>
                     </div>
                 </div>
-                {% endif %}
-                
-                {% if report.incident_date %}
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label class="text-muted small">Incident Date</label>
-                        <p class="mb-0 d-flex align-items-center">
-                            <span class="material-icons me-2 text-muted" style="font-size: 1rem;">event</span>
-                            {{ report.incident_date|date:"M d, Y H:i" }}
-                        </p>
-                    </div>
-                </div>
-                {% endif %}
-                
-                {% if report.assigned_to %}
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label class="text-muted small">Assigned To</label>
-                        <p class="mb-0 d-flex align-items-center">
-                            <span class="material-icons me-2 text-muted" style="font-size: 1rem;">assignment_ind</span>
-                            {{ report.assigned_to.get_full_name }}
-                        </p>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <!-- Report Description -->
-    <div class="card shadow-sm border-0 rounded-3 mb-4">
-        <div class="card-header bg-light py-3">
-            <div class="d-flex align-items-center">
-                <span class="material-icons text-muted me-2">description</span>
-                <h6 class="m-0 fw-bold">Description</h6>
-            </div>
-        </div>
-        <div class="card-body">
-            <p class="mb-0">{{ report.description|linebreaks }}</p>
-        </div>
-    </div>
-
-    <!-- Attachment (if any) -->
-    {% if report.attachment %}
-    <div class="card shadow-sm border-0 rounded-3 mb-4">
-        <div class="card-header bg-light py-3">
-            <div class="d-flex align-items-center">
-                <span class="material-icons text-muted me-2">attach_file</span>
-                <h6 class="m-0 fw-bold">Attachment</h6>
-            </div>
-        </div>
-        <div class="card-body">
-            <a href="{{ report.attachment.url }}" target="_blank" download class="d-flex align-items-center text-decoration-none">
-                <span class="material-icons me-2 text-primary">file_download</span>
-                <div>
-                    <span class="fw-medium">Download Attachment</span>
-                    <small class="text-muted d-block">{{ report.attachment.name|slice:"-20:" }}</small>
-                </div>
-            </a>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Resolution Details (if resolved) -->
-    {% if report.resolved_at %}
-    <div class="card shadow-sm border-0 rounded-3 mb-4">
-        <div class="card-header bg-light py-3">
-            <div class="d-flex align-items-center">
-                <span class="material-icons text-success me-2">check_circle</span>
-                <h6 class="m-0 fw-bold">Resolution Details</h6>
-            </div>
-        </div>
-        <div class="card-body">
-            <div class="mb-3">
-                <label class="text-muted small">Resolved Date</label>
-                <p class="mb-0 d-flex align-items-center">
-                    <span class="material-icons me-2 text-muted" style="font-size: 1rem;">event_available</span>
-                    {{ report.resolved_at|date:"M d, Y H:i" }}
-                </p>
-            </div>
-            
-            {% if report.resolution_notes %}
-            <div>
-                <label class="text-muted small">Resolution Notes</label>
-                <div class="p-3 bg-light rounded-3">
-                    {{ report.resolution_notes|linebreaks }}
+                <div class="card-body">
+                    <a href="{{ report.attachment.url }}" target="_blank" download class="d-flex align-items-center text-decoration-none">
+                        <span class="material-icons me-2 text-primary">file_download</span>
+                        <div>
+                            <span class="fw-medium">Download Attachment</span>
+                            <small class="text-muted d-block">{{ report.attachment.name|slice:"-20:" }}</small>
+                        </div>
+                    </a>
                 </div>
             </div>
-            {% endif %}
         </div>
+        {% endif %}
     </div>
-    {% endif %}
 
     <!-- Action Buttons -->
-    <div class="d-flex gap-2 mt-4">
-        <button type="button" class="btn btn-primary d-flex align-items-center btn-update-status" data-report-id="{{ report.id }}" data-micromodal-close>
-            <span class="material-icons me-2">update</span> Update Status
+    <div class="report-detail-actions">
+        <button type="button" class="btn btn-primary d-flex align-items-center btn-update-status btn-update-report" data-report-id="{{ report.id }}" data-micromodal-close>
+            <span class="material-icons me-2" style="font-size: 18px;">update</span> Update Status
         </button>
         {% if report.status == 'PENDING' or report.status == 'IN_PROGRESS' %}
         <button type="button" class="btn btn-outline-danger d-flex align-items-center btn-dispute-report" data-report-id="{{ report.id }}" data-micromodal-close>
-            <span class="material-icons me-2">gavel</span> Dispute Report
+            <span class="material-icons me-2" style="font-size: 18px;">gavel</span> Dispute Report
         </button>
         {% endif %}
-        <button type="button" class="btn btn-outline-secondary d-flex align-items-center" data-micromodal-close>
-            <span class="material-icons me-2">close</span> Close
+        <button type="button" class="btn btn-outline-secondary d-flex align-items-center btn-close-report" data-micromodal-close>
+            <span class="material-icons me-2" style="font-size: 18px;">close</span> Close
         </button>
     </div>
 </div> 

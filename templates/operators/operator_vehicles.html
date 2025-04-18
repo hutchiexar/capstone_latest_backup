@@ -42,8 +42,8 @@
                             <th class="border-top-0 px-4 py-3">#</th>
                             <th class="border-top-0 px-4 py-3">Type</th>
                             <th class="border-top-0 px-4 py-3">Plate Number</th>
-                            <th class="border-top-0 px-4 py-3">Old P.O. Number</th>
-                            <th class="border-top-0 px-4 py-3">New P.O. Number</th>
+                            <th class="border-top-0 px-4 py-3">Old PD Number</th>
+                            <th class="border-top-0 px-4 py-3">New PD Number</th>
                             <th class="border-top-0 px-4 py-3">Status</th>
                             <th class="border-top-0 px-4 py-3 text-end">Actions</th>
                         </tr>
@@ -52,10 +52,15 @@
                         {% for vehicle in vehicles %}
                         <tr>
                             <td class="px-4 py-3">{{ forloop.counter }}</td>
+                            <td class="px-4 py-3">{{ vehicle.vehicle_type }}</td>
+                            <td class="px-4 py-3">{{ vehicle.plate_number }}</td>
                             <td class="px-4 py-3">{{ vehicle.old_pd_number|default:"-" }}</td>
                             <td class="px-4 py-3 fw-medium">{{ vehicle.new_pd_number }}</td>
-                            <td class="px-4 py-3">{{ vehicle.created_at|date:"F d, Y" }}</td>
-                            <td class="px-4 py-3">{{ vehicle.updated_at|date:"F d, Y" }}</td>
+                            <td class="px-4 py-3">
+                                <span class="badge {% if vehicle.active %}bg-success{% else %}bg-danger{% endif %} rounded-pill">
+                                    {% if vehicle.active %}Active{% else %}Inactive{% endif %}
+                                </span>
+                            </td>
                             <td class="px-4 py-3 text-end">
                                 <div class="btn-group">
                                     {% if user.userprofile.role == 'ADMIN' or user.userprofile.role == 'SUPERVISOR' %}

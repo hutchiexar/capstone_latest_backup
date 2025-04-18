@@ -408,10 +408,38 @@
 
     <script>
         window.onload = function() {
-            window.print();
+            // Variable to track if printing started
+            let printDialogOpened = false;
+            
+            // Add event listener for beforeprint
+            window.addEventListener('beforeprint', function() {
+                printDialogOpened = true;
+            });
+            
+            // Give the browser a moment to fully render before printing
             setTimeout(function() {
-                window.close();
-            }, 1000);
+                // Call the print dialog
+                window.print();
+                
+                // Set up redirect after print attempt
+                setTimeout(function() {
+                    let redirectUrl;
+                    
+                    // Check if we're in a user portal or admin context
+                    if (window.location.pathname.includes('user_portal')) {
+                        redirectUrl = "{% url 'user_portal:user_ncap_violations' %}";
+                    } else {
+                        redirectUrl = "{% url 'ncap_violations_list' %}";
+                    }
+                    
+                    // Add appropriate parameter based on whether print was started
+                    if (printDialogOpened) {
+                        window.location.href = redirectUrl + "?printed=true";
+                    } else {
+                        window.location.href = redirectUrl + "?sent_to_printer=true";
+                    }
+                }, 1000);
+            }, 300);
         };
     </script>
 </body>

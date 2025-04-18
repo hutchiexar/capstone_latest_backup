@@ -59,6 +59,7 @@
         <input type="hidden" id="originalPenalty" name="original_penalty" value="{{ violation.fine_amount }}">
         <input type="hidden" id="originalViolations" name="original_violations" value="{{ violation.get_violation_types|join:',' }}">
         <input type="hidden" id="settledStatus" name="settled_status" value="false">
+        <input type="hidden" id="adjustedBatchTotal" name="adjusted_batch_total" value="">
         <input type="hidden" id="adjudicationStatus" name="adjudication_status" value="adjudicated">
         <input type="hidden" id="requiresApproval" name="requires_approval" value="true">
         
@@ -135,113 +136,148 @@
                 </div>
                 
                 <!-- Other Violations Card (Batch Adjudication) -->
-                {% if previous_violations %}
                 <div class="content-card mb-4">
-                    <div class="content-card-header d-flex justify-content-between align-items-center">
+                    <div class="content-card-header d-flex justify-content-between align-items-center" style="background-color: #fff4de;">
                         <div class="d-flex align-items-center gap-2">
                             <span class="material-icons icon-primary">fact_check</span>
-                            <h5 class="m-0">Batch Adjudication</h5>
+                            <h5 class="m-0">Batch Adjudication <span class="badge bg-info ms-2" style="font-size: 0.7rem; vertical-align: middle;">Individual Penalties</span></h5>
                         </div>
-                        {% if previous_violations|length > 2 %}
-                        <span class="badge bg-warning text-dark">Repeat Violator</span>
-                        {% endif %}
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshViolations()">
+                                <span class="material-icons" style="font-size: 16px;">refresh</span>
+                                Refresh
+                            </button>
+                        </div>
                     </div>
                     <div class="content-card-body">
-                        <div class="alert alert-info d-flex align-items-start">
-                            <span class="material-icons me-2 mt-1">info</span>
-                            <div>
-                                <strong>This violator has {{ previous_violations|length }} other pending violation(s).</strong>
-                                <p class="mb-0 small">You can apply the same adjudication decision to other violations by selecting them below.</p>
+                        <!-- In-page search form for violators -->
+                        <div class="search-container mb-4">
+                            <h6 class="mb-3">Search for Similar Violators</h6>
+                            <div class="row g-3">
+                                <div class="col-md-5">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="searchFirstName" placeholder="First Name" value="{{ violation.violator.first_name }}">
+                                        <label for="searchFirstName">First Name</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="searchLastName" placeholder="Last Name" value="{{ violation.violator.last_name }}">
+                                        <label for="searchLastName">Last Name</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 d-flex align-items-center">
+                                    <button type="button" id="searchViolatorsBtn" class="btn btn-primary w-100 py-3">
+                                        <span class="material-icons me-2">search</span>
+                                        Search
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                        
-                        <div class="form-check form-switch mb-3">
-                            <input class="form-check-input" type="checkbox" id="enableBatchAdjudication">
-                            <label class="form-check-label" for="enableBatchAdjudication">
-                                <strong>Enable Batch Adjudication</strong>
-                            </label>
-                        </div>
-                        
-                        <div id="batchViolationsContainer" style="display: none;">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th width="5%">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" id="selectAllViolations">
-                                            </div>
-                                        </th>
-                                        <th width="10%">Citation #</th>
-                                        <th width="15%">Date</th>
-                                        <th width="40%">Violation</th>
-                                        <th width="15%">Fine</th>
-                                        <th width="15%">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for prev_violation in previous_violations %}
-                                    <tr>
-                                        <td>
-                                            <div class="form-check">
-                                                <input class="form-check-input batch-violation-checkbox" 
-                                                       type="checkbox" 
-                                                       name="batch_violations[]" 
-                                                       value="{{ prev_violation.id }}"
-                                                       data-fine="{{ prev_violation.fine_amount }}"
-                                                       data-original-fine="{{ prev_violation.fine_amount }}">
-                                            </div>
-                                        </td>
-                                        <td>{{ prev_violation.id }}</td>
-                                        <td>{{ prev_violation.violation_date|date:"M d, Y" }}</td>
-                                        <td>
-                                            <div title="{{ prev_violation.violation_type }}">
-                                                {{ prev_violation.violation_type }}
-                                            </div>
-                                            <button type="button" class="btn btn-sm btn-link p-0 mt-1 toggle-violations" 
-                                                data-violation-id="{{ prev_violation.id }}">
-                                                <small>
-                                                    <span class="show-text">Show violations</span>
-                                                    <span class="hide-text d-none">Hide violations</span>
-                                                    <span class="material-icons" style="font-size: 14px; vertical-align: middle;">expand_more</span>
-                                                </small>
-                                            </button>
-                                            <div id="violation-details-{{ prev_violation.id }}" class="violation-details mt-2 d-none">
-                                                {% for type in prev_violation.get_violation_types %}
-                                                <div class="violation-detail-item d-flex align-items-center mb-1">
-                                                    <div class="form-check">
-                                                        <input class="form-check-input individual-violation-checkbox" 
-                                                               type="checkbox" 
-                                                               data-violation-id="{{ prev_violation.id }}"
-                                                               data-violation-type="{{ type }}"
-                                                               checked>
-                                                        <label class="form-check-label small">{{ type }}</label>
-                                                    </div>
+
+                        <div id="batchViolationsContainer">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="mb-0">Found Violations</h6>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="selectAllViolations">
+                                    <label class="form-check-label" for="selectAllViolations">
+                                        <strong>Select All</strong>
+                                    </label>
+                                </div>
+                            </div>
+                            <div id="searchResultsContainer">
+                                <div id="searchResultsLoading" class="text-center py-4" style="display: none;">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-2">Searching for violations...</p>
+                                </div>
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th width="5%">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="headerSelectAll">
                                                 </div>
-                                                {% endfor %}
-                                                <input type="hidden" class="removed-violation-types" 
-                                                       name="removed_violation_types_{{ prev_violation.id }}" value="">
-                                            </div>
-                                        </td>
-                                        <td data-violation-id="{{ prev_violation.id }}">
-                                            <span class="violation-fine">₱{{ prev_violation.fine_amount }}</span>
-                                        </td>
-                                        <td>
-                                            <button type="button" class="btn btn-sm btn-outline-primary view-details-btn" 
-                                                    onclick="showViolationDetail({{ prev_violation.id }})">
-                                                <span class="material-icons" style="font-size: 16px;">visibility</span>
-                                                View
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                                <tfoot>
-                                    <tr class="bg-light">
-                                        <td colspan="4" class="text-end fw-bold">Total Selected:</td>
-                                        <td colspan="2" class="fw-bold text-primary" id="batchTotalAmount">₱0.00</td>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                                            </th>
+                                            <th width="10%">Citation #</th>
+                                            <th width="15%">Date</th>
+                                            <th width="35%">Violation</th>
+                                            <th width="15%">Status</th>
+                                            <th width="10%">Fine</th>
+                                            <th width="10%">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="searchResultsBody">
+                                        {% for prev_violation in previous_violations %}
+                                        <tr {% if prev_violation.status != 'PENDING' %}class="text-muted"{% endif %}>
+                                            <td>
+                                                <div class="form-check">
+                                                    <input class="form-check-input batch-violation-checkbox" 
+                                                           type="checkbox" 
+                                                           name="batch_violations[]" 
+                                                           value="{{ prev_violation.id }}"
+                                                           data-fine="{{ prev_violation.fine_amount }}"
+                                                           data-original-fine="{{ prev_violation.fine_amount }}"
+                                                           data-status="{{ prev_violation.status }}"
+                                                           {% if prev_violation.status != 'PENDING' and prev_violation.status != 'REJECTED' %}disabled{% endif %}>
+                                                </div>
+                                            </td>
+                                            <td>{{ prev_violation.id }}</td>
+                                            <td>{{ prev_violation.violation_date|date:"M d, Y" }}</td>
+                                            <td>
+                                                <div title="{{ prev_violation.violation_type }}">
+                                                    {{ prev_violation.violation_type }}
+                                                </div>
+                                                <button type="button" class="btn btn-sm btn-link p-0 mt-1 toggle-violations" 
+                                                    data-violation-id="{{ prev_violation.id }}">
+                                                    <small>
+                                                        <span class="show-text">Show violations</span>
+                                                        <span class="hide-text d-none">Hide violations</span>
+                                                        <span class="material-icons" style="font-size: 14px; vertical-align: middle;">expand_more</span>
+                                                    </small>
+                                                </button>
+                                                <div id="violation-details-{{ prev_violation.id }}" class="violation-details mt-2 d-none">
+                                                    {% for type in prev_violation.get_violation_types %}
+                                                    <div class="violation-detail-item d-flex align-items-center mb-1">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input individual-violation-checkbox" 
+                                                                   type="checkbox" 
+                                                                   data-violation-id="{{ prev_violation.id }}"
+                                                                   data-violation-type="{{ type }}"
+                                                                   checked>
+                                                            <label class="form-check-label small">{{ type }}</label>
+                                                        </div>
+                                                    </div>
+                                                    {% endfor %}
+                                                    <input type="hidden" class="removed-violation-types" 
+                                                           name="removed_violation_types_{{ prev_violation.id }}" value="">
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge status-{{ prev_violation.status|lower }}">{{ prev_violation.get_status_display }}</span>
+                                            </td>
+                                            <td data-violation-id="{{ prev_violation.id }}">
+                                                <span class="violation-fine">₱{{ prev_violation.fine_amount }}</span>
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-sm btn-outline-primary view-details-btn" 
+                                                        onclick="showViolationDetail('{{ prev_violation.id }}')">
+                                                    <span class="material-icons" style="font-size: 16px;">visibility</span>
+                                                    View
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr class="bg-light">
+                                            <td colspan="5" class="text-end fw-bold">Total Pending Selected:</td>
+                                            <td colspan="2" class="fw-bold text-primary" id="batchTotalAmount">₱0.00</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
                             
                             <input type="hidden" id="batchViolationIds" name="batch_violation_ids" value="">
                             
@@ -259,10 +295,19 @@
                                     </div>
                                 </div>
                             </div>
+                            
+                            <div class="alert alert-secondary mt-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="material-icons">help_outline</span>
+                                    <div>
+                                        <strong>Note about Non-Pending Violations</strong>
+                                        <p class="mb-0">Both PENDING and REJECTED violations can be selected for batch adjudication. Other statuses (like PAID or SETTLED) can't be selected as they have already been processed.</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                {% endif %}
                 
                 <!-- Settlement Option Card -->
                 <div class="content-card mb-4">
@@ -343,6 +388,43 @@
                     </div>
                 </div>
 
+                <!-- No Previous Violations Card -->
+                {% if not previous_violations %}
+                <div class="content-card mb-4">
+                    <div class="content-card-header">
+                        <span class="material-icons icon-primary">find_in_page</span>
+                        <h5>Find Related Violations</h5>
+                    </div>
+                    <div class="content-card-body">
+                        <div class="alert alert-info d-flex align-items-center">
+                            <span class="material-icons me-2">info</span>
+                            <div>
+                                <p class="mb-0">No previous violations were automatically found for this violator.</p>
+                            </div>
+                        </div>
+                        <p class="text-muted mb-3">You can manually search for possibly related violations using the buttons below:</p>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-outline-primary" onclick="openViolatorSearch('{{ violation.violator.first_name }} {{ violation.violator.last_name }}')">
+                                <span class="material-icons">person_search</span>
+                                Search by Name
+                            </button>
+                            {% if violation.violator.license_number %}
+                            <button type="button" class="btn btn-outline-primary" onclick="openViolatorSearch('{{ violation.violator.license_number }}')">
+                                <span class="material-icons">badge</span>
+                                Search by License
+                            </button>
+                            {% endif %}
+                            {% if violation.plate_number %}
+                            <button type="button" class="btn btn-outline-primary" onclick="openViolatorSearch('{{ violation.plate_number }}')">
+                                <span class="material-icons">directions_car</span>
+                                Search by Plate Number
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
                 <!-- Adjudication Decision Card -->
                 <div class="content-card" id="adjudicationDecisionCard">
                     <div class="skeleton-loader" style="display: none;">
@@ -372,7 +454,7 @@
                         <div class="row mb-4">
                             <div class="col-md-6">
                                 <div class="form-field">
-                                    <label for="totalPenalty">Total Penalty</label>
+                                    <label for="totalPenalty">Total Penalty <small class="text-muted">(Current Violation Only)</small></label>
                                     <div class="input-group">
                                         <span class="input-group-text">₱</span>
                                         <input type="number" class="form-control" id="totalPenalty" 
@@ -574,6 +656,11 @@
 .status-disputed { 
     background-color: #e7f5ff; 
     color: #3699ff; 
+}
+
+.status-rejected { 
+    background-color: #fff5f8; 
+    color: #f64e60; 
 }
 
 .status-settled { 
@@ -976,6 +1063,23 @@
         background-position: -200% 0;
     }
 }
+
+.search-container {
+    background-color: #f8fafc;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    margin-bottom: 1.5rem;
+}
+
+.form-floating > .form-control {
+    padding-top: 1.625rem;
+    padding-bottom: 0.625rem;
+}
+
+.form-floating > label {
+    padding: 1rem 0.75rem;
+}
 </style>
 
 <script>
@@ -992,6 +1096,34 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize violation penalties
     initializeViolations();
+    
+    // Add help text about individual penalties
+    const batchHeader = document.querySelector('.content-card-header[style*="background-color: #fff4de"]');
+    if (batchHeader) {
+        const existingTitle = batchHeader.querySelector('h5');
+        if (existingTitle) {
+            existingTitle.innerHTML = 'Batch Adjudication <span class="badge bg-info ms-2" style="font-size: 0.7rem; vertical-align: middle;">Individual Penalties</span>';
+        }
+        
+        // Add an info alert to explain the individual penalties approach
+        const batchBody = batchHeader.nextElementSibling;
+        if (batchBody && batchBody.classList.contains('content-card-body')) {
+            const infoAlert = document.createElement('div');
+            infoAlert.className = 'alert alert-info mb-4';
+            infoAlert.innerHTML = `
+                <div class="d-flex align-items-start gap-2">
+                    <span class="material-icons mt-1">info</span>
+                    <div>
+                        <strong>About Individual Penalties</strong>
+                        <p class="mb-0">When processing multiple violations together, each violation will maintain its own individual penalty amount. The batch total is shown for reference only.</p>
+                    </div>
+                </div>
+            `;
+            
+            // Insert the info alert at the beginning of the card body
+            batchBody.insertBefore(infoAlert, batchBody.firstChild);
+        }
+    }
     
     // Store original fine amounts for all batch violations
     document.querySelectorAll('.batch-violation-checkbox').forEach(checkbox => {
@@ -1212,13 +1344,22 @@ violationCheckboxes.forEach(checkbox => {
     });
 });
 
-// Form validation
+// Replace the existing document.getElementById('adjudicationForm').addEventListener block with this
+// improved version that correctly integrates with the existing validation code
+
 document.getElementById('adjudicationForm').addEventListener('submit', function(e) {
     // Prevent default form submission - we'll handle it after validations
     e.preventDefault();
     
-    // Get form elements with null checks
+    // Update the adjusted batch total field with the current total penalty value
     const totalPenaltyEl = document.getElementById('totalPenalty');
+    const adjustedBatchTotalField = document.getElementById('adjustedBatchTotal');
+    
+    if (totalPenaltyEl && adjustedBatchTotalField) {
+        adjustedBatchTotalField.value = totalPenaltyEl.value;
+    }
+    
+    // Get form elements with null checks
     const remarksEl = document.getElementById('remarks');
     const paymentDueEl = document.getElementById('paymentDue');
     const markAsSettledEl = document.getElementById('markAsSettled');
@@ -1281,17 +1422,30 @@ document.getElementById('adjudicationForm').addEventListener('submit', function(
     if (adjudicationStatusEl) adjudicationStatusEl.value = "adjudicated";
     if (requiresApprovalEl) requiresApprovalEl.value = "true";
     
-    // Set batch violations data if batch mode is enabled
-    const enableBatchAdjudicationEl = document.getElementById('enableBatchAdjudication');
-    const batchViolationIdsEl = document.getElementById('batchViolationIds');
+    // Make sure we have the batch violation details with individual penalties
+    const batchViolationDetailsEl = document.getElementById('batchViolationDetails');
+    if (!batchViolationDetailsEl || !batchViolationDetailsEl.value) {
+        // If not set, create it now
+        updateBatchTotal();
+    }
     
-    if (enableBatchAdjudicationEl && enableBatchAdjudicationEl.checked && batchViolationIdsEl) {
-        const selectedViolations = [];
-        document.querySelectorAll('.batch-violation-checkbox:checked').forEach(checkbox => {
-            selectedViolations.push(checkbox.value);
-        });
+    // Ensure we have the correct adjusted batch total again (redundant check for safety)
+    if (totalPenaltyEl && adjustedBatchTotalField) {
+        adjustedBatchTotalField.value = totalPenaltyEl.value;
         
-        batchViolationIdsEl.value = JSON.stringify(selectedViolations);
+        // Also add the adjusted total to the batch violation details if available
+        if (batchViolationDetailsEl && batchViolationDetailsEl.value) {
+            try {
+                const batchDetails = JSON.parse(batchViolationDetailsEl.value);
+                // Add the adjusted total to each violation in the batch
+                batchDetails.forEach(detail => {
+                    detail.adjustedBatchTotal = totalPenaltyEl.value;
+                });
+                batchViolationDetailsEl.value = JSON.stringify(batchDetails);
+            } catch (e) {
+                console.error('Error updating batch details with adjusted total:', e);
+            }
+        }
     }
     
     // Confirmation message based on action
@@ -1311,15 +1465,33 @@ document.getElementById('adjudicationForm').addEventListener('submit', function(
     
     // Specific confirmation for batch processing
     let batchIdsValue = '[]';
-    if (batchViolationIdsEl && batchViolationIdsEl.value) {
-        batchIdsValue = batchViolationIdsEl.value;
+    if (document.getElementById('batchViolationIds') && document.getElementById('batchViolationIds').value) {
+        batchIdsValue = document.getElementById('batchViolationIds').value;
     }
     
     if (batchIdsValue && batchIdsValue !== '[]') {
         try {
             const batchCount = JSON.parse(batchIdsValue).length;
             confirmTitle = 'Confirm Batch Adjudication';
-            confirmMessage = `You are about to apply the same decision to ${batchCount} additional violation(s). All decisions will be sent for approval.`;
+            
+            // Check if the total has been adjusted from the sum of individual penalties
+            const batchTotalEl = document.getElementById('batchTotalAmount');
+            const batchTotal = batchTotalEl ? parseFloat(batchTotalEl.textContent.replace('₱', '')) : 0;
+            const enteredTotal = parseFloat(totalPenaltyEl.value) || 0;
+            
+            if (Math.abs(batchTotal - enteredTotal) > 0.01) {
+                // The total has been manually adjusted
+                const adjustment = enteredTotal < batchTotal 
+                    ? `reduced by ₱${(batchTotal - enteredTotal).toFixed(2)}`
+                    : `increased by ₱${(enteredTotal - batchTotal).toFixed(2)}`;
+                    
+                confirmMessage = `You are about to apply the same decision to ${batchCount} additional violation(s). 
+                    You have manually ${adjustment} from the original total.
+                    Each violation will retain its own individual penalty. All decisions will be sent for approval.`;
+            } else {
+                confirmMessage = `You are about to apply the same decision to ${batchCount} additional violation(s). 
+                    Each violation will retain its own individual penalty. All decisions will be sent for approval.`;
+            }
         } catch (e) {
             console.error('Error parsing batch IDs', e);
         }
@@ -1407,7 +1579,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     checkbox.checked = false;
                 });
                 // Clear batch warnings
-                batchWarning.style.display = 'none';
+                searchBatchWarning.style.display = 'none';
                 // Update hidden input
                 document.getElementById('batchViolationIds').value = '[]';
             }
@@ -1416,7 +1588,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (selectAllViolations) {
         selectAllViolations.addEventListener('change', function() {
-            document.querySelectorAll('.batch-violation-checkbox').forEach(checkbox => {
+            document.querySelectorAll('.batch-violation-checkbox:not(:disabled)').forEach(checkbox => {
                 checkbox.checked = this.checked;
             });
             updateBatchWarning();
@@ -1443,20 +1615,22 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Function to update batch warning display
     function updateBatchWarning() {
-        const checkedViolations = document.querySelectorAll('.batch-violation-checkbox:checked');
+        const checkedViolations = document.querySelectorAll('.batch-violation-checkbox:checked:not(:disabled)');
         const count = checkedViolations.length;
         
         if (count > 0) {
-            batchWarning.style.display = 'flex';
-            batchWarningText.textContent = `You have selected ${count} additional violation(s) for batch processing. The same adjudication decision will be applied to all selected violations.`;
+            searchBatchWarning.style.display = 'flex';
+            searchBatchWarningText.textContent = `You have selected ${count} pending violation(s) for batch processing. The same adjudication decision will be applied to all selected violations.`;
         } else {
-            batchWarning.style.display = 'none';
+            searchBatchWarning.style.display = 'none';
         }
     }
     
     // Function to update the total amount for selected batch violations
     function updateBatchTotal() {
-        const checkedViolations = document.querySelectorAll('.batch-violation-checkbox:checked');
+        const checkedViolations = document.querySelectorAll('.batch-violation-checkbox:checked:not(:disabled)');
+        const selectableViolations = document.querySelectorAll('.batch-violation-checkbox:not(:disabled)');
+        const allSelected = (checkedViolations.length === selectableViolations.length) && (selectableViolations.length > 0);
         let totalAmount = 0;
         
         checkedViolations.forEach(checkbox => {
@@ -1465,46 +1639,83 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Update the batch total display
-        document.getElementById('batchTotalAmount').textContent = `₱${totalAmount.toFixed(2)}`;
-        
-        // Also update the main penalty field if batch adjudication is enabled
-        const enableBatchAdjudication = document.getElementById('enableBatchAdjudication');
-        if (enableBatchAdjudication && enableBatchAdjudication.checked) {
-            // Get the original penalty from the current violation
-            const originalPenalty = parseFloat(document.getElementById('originalPenalty').value) || 0;
-            
-            // Calculate new total (original penalty + batch total)
-            const newTotal = originalPenalty + totalAmount;
-            
-            // Update the main penalty field
-            const totalPenaltyField = document.getElementById('totalPenalty');
-            if (!document.getElementById('markAsSettled').checked) {
-                totalPenaltyField.value = newTotal.toFixed(2);
-            }
-            
-            // Update the penalty note
-            const penaltyNote = document.getElementById('penaltyNote');
-            if (totalAmount > 0) {
-                penaltyNote.innerHTML = `Original fine: ₱${originalPenalty.toFixed(2)} <span class="text-primary">+ Batch total: ₱${totalAmount.toFixed(2)}</span>`;
-            } else {
-                penaltyNote.innerHTML = `Original fine: ₱${originalPenalty.toFixed(2)}`;
-            }
+        const batchTotalAmountElement = document.getElementById('batchTotalAmount');
+        if (batchTotalAmountElement) {
+            batchTotalAmountElement.textContent = `₱${totalAmount.toFixed(2)}`;
         }
         
-        // Update the batch violation IDs hidden input with only the checked ones
+        // Get the original penalty from the current violation
+        const originalPenalty = parseFloat(document.getElementById('originalPenalty').value) || 0;
+        
+        // Update the penalty note to show the batch total for reference
+        const penaltyNote = document.getElementById('penaltyNote');
+        if (penaltyNote && totalAmount > 0) {
+            penaltyNote.innerHTML = `
+                Original fine: ₱${originalPenalty.toFixed(2)}
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <span><strong>Batch total:</strong> ₱${totalAmount.toFixed(2)}</span>
+                    <span class="badge bg-info">For reference only</span>
+                </div>
+                <small class="text-muted">Each violation will retain its own individual penalty.</small>
+            `;
+        } else if (penaltyNote) {
+            penaltyNote.innerHTML = `Original fine: ₱${originalPenalty.toFixed(2)}`;
+        }
+        
+        // Store selected violation IDs with their individual penalties
         const selectedViolations = [];
-        document.querySelectorAll('.batch-violation-checkbox:checked').forEach(checkbox => {
+        const selectedViolationDetails = [];
+        
+        document.querySelectorAll('.batch-violation-checkbox:checked:not(:disabled)').forEach(checkbox => {
             selectedViolations.push(checkbox.value);
+            
+            // Store each violation with its own individual penalty
+            selectedViolationDetails.push({
+                id: checkbox.value,
+                fine: parseFloat(checkbox.dataset.fine || 0),
+                originalFine: parseFloat(checkbox.dataset.originalFine || 0),
+                removedTypes: document.querySelector(`input[name="removed_violation_types_${checkbox.value}"]`)?.value || "[]"
+            });
         });
-        document.getElementById('batchViolationIds').value = JSON.stringify(selectedViolations);
+        
+        const batchViolationIdsElement = document.getElementById('batchViolationIds');
+        if (batchViolationIdsElement) {
+            batchViolationIdsElement.value = JSON.stringify(selectedViolations);
+        }
+        
+        // Store detailed information about each violation's penalties
+        const batchViolationDetailsElement = document.getElementById('batchViolationDetails');
+        if (!batchViolationDetailsElement) {
+            // Create the element if it doesn't exist
+            const detailsInput = document.createElement('input');
+            detailsInput.type = 'hidden';
+            detailsInput.id = 'batchViolationDetails';
+            detailsInput.name = 'batch_violation_details';
+            detailsInput.value = JSON.stringify(selectedViolationDetails);
+            document.querySelector('form').appendChild(detailsInput);
+        } else {
+            batchViolationDetailsElement.value = JSON.stringify(selectedViolationDetails);
+        }
         
         // Show/hide batch warning
         const batchWarning = document.querySelector('.batch-warning');
         const batchWarningText = document.getElementById('batchWarningText');
-        if (selectedViolations.length > 0) {
+        
+        if (selectedViolations.length > 0 && batchWarning && batchWarningText) {
             batchWarning.style.display = 'flex';
-            batchWarningText.textContent = `You have selected ${selectedViolations.length} additional violation(s) for batch processing. The same adjudication decision will be applied to all selected violations.`;
-        } else {
+            if (allSelected) {
+                batchWarningText.innerHTML = `
+                    <strong>All available violations selected!</strong> 
+                    <div class="mt-1">The same adjudication decision will be applied to all selected violations.</div>
+                    <div class="mt-2 text-success">Each violation will keep its original individual fine amount.</div>
+                `;
+            } else {
+                batchWarningText.innerHTML = `
+                    You have selected ${selectedViolations.length} violation(s) for batch processing.
+                    <div class="mt-1 text-success">Each violation will keep its own individual fine amount.</div>
+                `;
+            }
+        } else if (batchWarning) {
             batchWarning.style.display = 'none';
         }
     }
@@ -1571,6 +1782,266 @@ document.addEventListener('DOMContentLoaded', function() {
             updateBatchTotal();
         });
     });
+
+    // Batch Adjudication Search Functionality
+    const searchFirstName = document.getElementById('searchFirstName');
+    const searchLastName = document.getElementById('searchLastName');
+    const searchBtn = document.getElementById('searchViolatorsBtn');
+    const resultsBody = document.getElementById('searchResultsBody');
+    const headerSelectAll = document.getElementById('headerSelectAll');
+    const searchSelectAllViolations = document.getElementById('selectAllViolations');
+    const batchTotalAmount = document.getElementById('batchTotalAmount');
+    const searchBatchWarning = document.querySelector('.batch-warning');
+    const searchBatchWarningText = document.getElementById('batchWarningText');
+    const batchViolationIds = document.getElementById('batchViolationIds');
+    
+    // Handle the search button click
+    if (searchBtn) {
+        searchBtn.addEventListener('click', function() {
+            const firstName = searchFirstName.value.trim();
+            const lastName = searchLastName.value.trim();
+            
+            if (!firstName && !lastName) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Search Fields Empty',
+                    text: 'Please enter at least a first or last name to search.',
+                    confirmButtonColor: '#2563eb'
+                });
+                return;
+            }
+            
+            // Show loading indicator
+            if (resultsBody) {
+                resultsBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Searching for violators...</p>
+                        </td>
+                    </tr>
+                `;
+            }
+            
+            // AJAX implementation to search for violators with same name
+            fetch(`/violations/search-violators/?first_name=${encodeURIComponent(firstName)}&last_name=${encodeURIComponent(lastName)}&current_violation={{ violation.id }}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (resultsBody) {
+                        if (data.violations.length === 0) {
+                            resultsBody.innerHTML = `
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <span class="material-icons text-muted mb-2" style="font-size: 32px;">search_off</span>
+                                            <p class="mb-0">No matching violations found.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+                        } else {
+                            let html = '';
+                            data.violations.forEach(violation => {
+                                const canAdjudicate = violation.status === 'PENDING' || violation.status === 'REJECTED';
+                                const statusClass = `status-${violation.status.toLowerCase()}`;
+                                const rowClass = !canAdjudicate ? 'text-muted' : '';
+                                
+                                // Add special class for rejected violations to highlight them
+                                const rejectedClass = violation.status === 'REJECTED' ? 'bg-light' : '';
+                                
+                                html += `
+                                    <tr class="${rowClass} ${rejectedClass}">
+                                        <td>
+                                            <div class="form-check">
+                                                <input class="form-check-input batch-violation-checkbox" 
+                                                       type="checkbox" 
+                                                       name="batch_violations[]" 
+                                                       value="${violation.id}"
+                                                       data-fine="${violation.fine_amount}"
+                                                       data-original-fine="${violation.fine_amount}"
+                                                       data-status="${violation.status}"
+                                                       ${!canAdjudicate ? 'disabled' : ''}>
+                                            </div>
+                                        </td>
+                                        <td>${violation.id}</td>
+                                        <td>${violation.violation_date}</td>
+                                        <td>
+                                            <div title="${violation.violation_type}">
+                                                ${violation.violation_type}
+                                                ${violation.status === 'REJECTED' ? 
+                                                  '<span class="badge bg-warning text-dark ms-1">Previously Rejected</span>' : ''}
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-link p-0 mt-1 toggle-violations" 
+                                                data-violation-id="${violation.id}">
+                                                <small>
+                                                    <span class="show-text">Show violations</span>
+                                                    <span class="hide-text d-none">Hide violations</span>
+                                                    <span class="material-icons" style="font-size: 14px; vertical-align: middle;">expand_more</span>
+                                                </small>
+                                            </button>
+                                            <div id="violation-details-${violation.id}" class="violation-details mt-2 d-none">
+                                                ${violation.violation_types.map(type => `
+                                                    <div class="violation-detail-item d-flex align-items-center mb-1">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input individual-violation-checkbox" 
+                                                                   type="checkbox" 
+                                                                   data-violation-id="${violation.id}"
+                                                                   data-violation-type="${type}"
+                                                                   checked>
+                                                            <label class="form-check-label small">${type}</label>
+                                                        </div>
+                                                    </div>
+                                                `).join('')}
+                                                <input type="hidden" class="removed-violation-types" 
+                                                       name="removed_violation_types_${violation.id}" value="">
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge ${statusClass}">${violation.status_display}</span>
+                                        </td>
+                                        <td data-violation-id="${violation.id}">
+                                            <span class="violation-fine">₱${violation.fine_amount}</span>
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-outline-primary view-details-btn" 
+                                                    onclick="showViolationDetail(${violation.id})">
+                                                <span class="material-icons" style="font-size: 16px;">visibility</span>
+                                                View
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `;
+                            });
+                            
+                            resultsBody.innerHTML = html;
+                            
+                            // Reinitialize event handlers for checkboxes and toggles
+                            document.querySelectorAll('.batch-violation-checkbox').forEach(checkbox => {
+                                checkbox.addEventListener('change', function() {
+                                    updateBatchWarning();
+                                    updateBatchTotal();
+                                    
+                                    // Update select all checkboxes
+                                    const allCheckboxes = document.querySelectorAll('.batch-violation-checkbox:not(:disabled)');
+                                    const checkedCheckboxes = document.querySelectorAll('.batch-violation-checkbox:checked');
+                                    
+                                    if (headerSelectAll) {
+                                        headerSelectAll.checked = allCheckboxes.length === checkedCheckboxes.length && allCheckboxes.length > 0;
+                                    }
+                                    
+                                    if (searchSelectAllViolations) {
+                                        searchSelectAllViolations.checked = allCheckboxes.length === checkedCheckboxes.length && allCheckboxes.length > 0;
+                                    }
+                                });
+                            });
+                            
+                            // Reinitialize toggle buttons
+                            document.querySelectorAll('.toggle-violations').forEach(toggleBtn => {
+                                toggleBtn.addEventListener('click', function() {
+                                    const violationId = this.dataset.violationId;
+                                    const detailsContainer = document.getElementById(`violation-details-${violationId}`);
+                                    
+                                    if (detailsContainer) {
+                                        detailsContainer.classList.toggle('d-none');
+                                        
+                                        const showText = this.querySelector('.show-text');
+                                        const hideText = this.querySelector('.hide-text');
+                                        const icon = this.querySelector('.material-icons');
+                                        
+                                        if (detailsContainer.classList.contains('d-none')) {
+                                            showText.classList.remove('d-none');
+                                            hideText.classList.add('d-none');
+                                            icon.textContent = 'expand_more';
+                                        } else {
+                                            showText.classList.add('d-none');
+                                            hideText.classList.remove('d-none');
+                                            icon.textContent = 'expand_less';
+                                        }
+                                    }
+                                });
+                            });
+                            
+                            // Reinitialize individual violation type checkboxes
+                            document.querySelectorAll('.individual-violation-checkbox').forEach(checkbox => {
+                                checkbox.addEventListener('change', function() {
+                                    const violationId = this.dataset.violationId;
+                                    recalculateViolationFine(violationId);
+                                    
+                                    // Update batch total if the parent batch checkbox is checked
+                                    const batchCheckbox = document.querySelector(`.batch-violation-checkbox[value="${violationId}"]`);
+                                    if (batchCheckbox && batchCheckbox.checked) {
+                                        updateBatchTotal();
+                                    }
+                                });
+                            });
+                            
+                            // Update totals after populating results
+                            updateBatchTotal();
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error searching for violators:', error);
+                    if (resultsBody) {
+                        resultsBody.innerHTML = `
+                            <tr>
+                                <td colspan="7" class="text-center py-4">
+                                    <div class="alert alert-danger">
+                                        <p class="mb-0"><strong>Error:</strong> Failed to search for violations. Please try again.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    }
+                    
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Search Failed',
+                        text: 'There was an error searching for violations: ' + error.message,
+                        confirmButtonText: 'OK'
+                    });
+                });
+        });
+    }
+    
+    // Select all checkboxes handlers
+    if (headerSelectAll) {
+        headerSelectAll.addEventListener('change', function() {
+            document.querySelectorAll('.batch-violation-checkbox:not(:disabled)').forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            
+            // Also update the other select all checkbox
+            if (searchSelectAllViolations) searchSelectAllViolations.checked = this.checked;
+            
+            updateBatchWarning();
+            updateBatchTotal();
+        });
+    }
+    
+    if (searchSelectAllViolations) {
+        searchSelectAllViolations.addEventListener('change', function() {
+            document.querySelectorAll('.batch-violation-checkbox:not(:disabled)').forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            
+            // Also update the header select all checkbox
+            if (headerSelectAll) headerSelectAll.checked = this.checked;
+            
+            updateBatchWarning();
+            updateBatchTotal();
+        });
+    }
+    
+    // Make sure the form is ready by initializing the batch total
+    updateBatchTotal();
 });
 
 // Function to recalculate fine for a specific violation based on removed types
@@ -1681,5 +2152,92 @@ function showViolationDetail(violationId) {
         }
     });
 }
+
+// Function to open search for related violations
+function openViolatorSearch(searchTerm) {
+    // Encode the search term for URL
+    const encodedSearch = encodeURIComponent(searchTerm);
+    
+    // Open the violations list page with the search term in a new tab/window
+    window.open(`/violations/?search=${encodedSearch}`, '_blank');
+    
+    // Show a notification to the user
+    Swal.fire({
+        title: 'Search Opened',
+        text: `Searching for "${searchTerm}" in a new tab. If you find related violations, you can return to this form and refresh to include them in batch adjudication.`,
+        icon: 'info',
+        confirmButtonColor: '#2563eb'
+    });
+}
+
+// Function to refresh the page to look for new related violations
+function refreshViolations() {
+    Swal.fire({
+        title: 'Refreshing Violations',
+        text: 'Looking for related violations...',
+        icon: 'info',
+        showConfirmButton: false,
+        allowOutsideClick: false,
+        willOpen: () => {
+            Swal.showLoading();
+            
+            // Refresh the page
+            window.location.reload();
+        }
+    });
+}
+
+// Add event listener for total penalty field to track manual adjustments
+const totalPenaltyField = document.getElementById('totalPenalty');
+const adjustedBatchTotalField = document.getElementById('adjustedBatchTotal');
+
+if (totalPenaltyField && adjustedBatchTotalField) {
+    // Initialize with the current value
+    adjustedBatchTotalField.value = totalPenaltyField.value;
+    
+    // Update whenever the value changes
+    totalPenaltyField.addEventListener('input', function() {
+        adjustedBatchTotalField.value = this.value;
+        
+        // Update the display to show this is manually adjusted
+        const penaltyNote = document.getElementById('penaltyNote');
+        if (penaltyNote) {
+            const originalPenalty = parseFloat(document.getElementById('originalPenalty').value) || 0;
+            const batchTotal = document.getElementById('batchTotalAmount') ? 
+                parseFloat(document.getElementById('batchTotalAmount').textContent.replace('₱', '')) : 0;
+            
+            if (batchTotal > 0) {
+                penaltyNote.innerHTML = `
+                    Original fine: ₱${originalPenalty.toFixed(2)}
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <span><strong>Batch total:</strong> ₱${batchTotal.toFixed(2)}</span>
+                        <span class="badge bg-warning text-dark">Manually adjusted to ₱${this.value}</span>
+                    </div>
+                    <small class="text-muted">Each violation will retain its own individual penalty.</small>
+                `;
+            } else {
+                penaltyNote.innerHTML = `
+                    Original fine: ₱${originalPenalty.toFixed(2)}
+                    <div class="mt-1">
+                        <span class="badge bg-warning text-dark">Manually adjusted to ₱${this.value}</span>
+                    </div>
+                `;
+            }
+        }
+    });
+}
+
+// Also update the form submission handler to ensure the adjusted batch total is included
+document.getElementById('adjudicationForm').addEventListener('submit', function(e) {
+    // Make sure the adjusted batch total is up to date with the current penalty value
+    const totalPenaltyField = document.getElementById('totalPenalty');
+    const adjustedBatchTotalField = document.getElementById('adjustedBatchTotal');
+    
+    if (totalPenaltyField && adjustedBatchTotalField) {
+        adjustedBatchTotalField.value = totalPenaltyField.value;
+    }
+    
+    // Rest of the form submission code...
+});
 </script>
 {% endblock %} 

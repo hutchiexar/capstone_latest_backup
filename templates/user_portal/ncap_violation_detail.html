@@ -1,0 +1,137 @@
+{% extends 'user_portal/base_user.html' %}
+{% load static %}
+
+{% block title %}NCAP Violation Details - CTTMO User Portal{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card shadow-sm rounded-lg">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">NCAP Violation Details</h5>
+        </div>
+        <div class="card-body">
+            <!-- Violation details here -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h6 class="fw-bold">Violation Information</h6>
+                    <div class="mb-3">
+                        <p class="mb-2"><strong>Violation ID:</strong> {{ violation.id }}</p>
+                        <p class="mb-2"><strong>Date:</strong> {{ violation.violation_date|date:"F d, Y H:i" }}</p>
+                        <p class="mb-2"><strong>Location:</strong> {{ violation.location }}</p>
+                        <p class="mb-2"><strong>Type:</strong> {{ violation.violation_type }}</p>
+                        <p class="mb-2"><strong>Fine Amount:</strong> ₱{{ violation.fine_amount }}</p>
+                        <p class="mb-2"><strong>Status:</strong> 
+                            <span class="badge {% if violation.status == 'PAID' %}bg-success{% elif violation.status == 'PENDING' %}bg-warning{% elif violation.status == 'APPROVED' %}bg-info{% elif violation.status == 'ADJUDICATED' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                {{ violation.get_status_display }}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="fw-bold">Violator Information</h6>
+                    <div class="mb-3">
+                        <p class="mb-2"><strong>License Number:</strong> {{ violation.violator.license_number }}</p>
+                        <p class="mb-2"><strong>Name:</strong> {{ violation.violator.first_name }} {{ violation.violator.last_name }}</p>
+                        <p class="mb-2"><strong>Due Date:</strong> {{ violation.payment_due_date|date:"F d, Y" }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Enforcer Information -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h6 class="fw-bold">Enforcer Information</h6>
+                    <div class="mb-3">
+                        <p class="mb-2"><strong>Enforcer Name:</strong> {{ violation.enforcer.get_full_name }}</p>
+                        <p class="mb-2"><strong>Enforcer ID:</strong> {{ violation.enforcer.userprofile.enforcer_id }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- NCAP Images Section -->
+            <div class="mt-4 mb-4">
+                <h6 class="fw-bold">NCAP Evidence</h6>
+                <div class="row">
+                    {% if violation.image %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-header">Primary Evidence</div>
+                            <div class="card-body p-0">
+                                <img src="{{ violation.image.url }}" class="img-fluid" alt="Primary Evidence">
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if violation.driver_photo %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-header">Driver Photo</div>
+                            <div class="card-body p-0">
+                                <img src="{{ violation.driver_photo.url }}" class="img-fluid" alt="Driver Photo">
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if violation.vehicle_photo %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-header">Vehicle Photo</div>
+                            <div class="card-body p-0">
+                                <img src="{{ violation.vehicle_photo.url }}" class="img-fluid" alt="Vehicle Photo">
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if violation.secondary_photo %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-header">Additional Evidence</div>
+                            <div class="card-body p-0">
+                                <img src="{{ violation.secondary_photo.url }}" class="img-fluid" alt="Additional Evidence">
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Action options section -->
+            <div class="mt-4">
+                <div class="d-flex flex-wrap gap-2 justify-content-center">
+                    <a href="{% url 'user_portal:print_ncap_violation_form' violation.id %}" class="btn btn-secondary" target="_blank">
+                        <i class="fas fa-print me-2"></i>Print Form
+                    </a>
+                    
+                    <a href="{% url 'user_portal:user_violations' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Violations
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Enable image lightbox/zoom
+    const evidenceImages = document.querySelectorAll('.card-body img');
+    evidenceImages.forEach(img => {
+        img.style.cursor = 'pointer';
+        img.addEventListener('click', function() {
+            Swal.fire({
+                imageUrl: img.src,
+                imageAlt: img.alt,
+                width: '80%',
+                confirmButtonText: 'Close',
+                confirmButtonColor: '#3563E9'
+            });
+        });
+    });
+});
+</script>
+{% endblock %} 

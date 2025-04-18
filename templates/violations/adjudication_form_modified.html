@@ -1,0 +1,444 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- Add SweetAlert2 library -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+
+<!-- Batch Adjudication Card with In-Page Search -->
+<div class="content-card mb-4">
+    <div class="content-card-header d-flex justify-content-between align-items-center" style="background-color: #fff4de;">
+        <div class="d-flex align-items-center gap-2">
+            <span class="material-icons icon-primary">fact_check</span>
+            <h5 class="m-0">Batch Adjudication</h5>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="refreshSearchBtn">
+                <span class="material-icons" style="font-size: 16px;">refresh</span>
+                Refresh
+            </button>
+        </div>
+    </div>
+    <div class="content-card-body">
+        <!-- In-page search form -->
+        <div class="search-container mb-4">
+            <h6 class="mb-3">Search for Violators</h6>
+            <div class="row g-3">
+                <div class="col-md-5">
+                    <div class="form-floating">
+                        <input type="text" class="form-control" id="searchFirstName" placeholder="First Name">
+                        <label for="searchFirstName">First Name</label>
+                    </div>
+                </div>
+                <div class="col-md-5">
+                    <div class="form-floating">
+                        <input type="text" class="form-control" id="searchLastName" placeholder="Last Name">
+                        <label for="searchLastName">Last Name</label>
+                    </div>
+                </div>
+                <div class="col-md-2 d-flex align-items-center">
+                    <button type="button" id="searchViolatorsBtn" class="btn btn-primary w-100 py-3">
+                        <span class="material-icons me-2">search</span>
+                        Search
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Search Results Table -->
+        <div id="searchResultsContainer">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0">Search Results</h6>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="selectAllViolations">
+                    <label class="form-check-label" for="selectAllViolations">
+                        <strong>Select All</strong>
+                    </label>
+                </div>
+            </div>
+            
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th width="5%">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="headerSelectAll">
+                            </div>
+                        </th>
+                        <th width="10%">Citation #</th>
+                        <th width="15%">Date</th>
+                        <th width="20%">Violator</th>
+                        <th width="20%">Violation</th>
+                        <th width="10%">Status</th>
+                        <th width="10%">Fine</th>
+                        <th width="10%">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="searchResultsBody">
+                    <!-- Results will be dynamically populated here -->
+                </tbody>
+                <tfoot>
+                    <tr class="bg-light">
+                        <td colspan="6" class="text-end fw-bold">Total Pending Selected:</td>
+                        <td colspan="2" class="fw-bold text-primary" id="batchTotalAmount">₱0.00</td>
+                    </tr>
+                </tfoot>
+            </table>
+            
+            <input type="hidden" id="batchViolationIds" name="batch_violation_ids" value="">
+            
+            <div class="alert alert-warning batch-warning mt-3" style="display: none;">
+                <span class="material-icons me-2">warning</span>
+                <span id="batchWarningText">You have selected multiple violations for batch processing.</span>
+            </div>
+            
+            <div class="alert alert-info mt-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="material-icons">info</span>
+                    <div>
+                        <strong>Penalty Calculation</strong>
+                        <p class="mb-0">The total fine amount for selected violations will be automatically added to the main penalty in the Adjudication Decision section.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// JavaScript to handle in-page search and select all functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Variables
+    const searchFirstName = document.getElementById('searchFirstName');
+    const searchLastName = document.getElementById('searchLastName');
+    const searchBtn = document.getElementById('searchViolatorsBtn');
+    const refreshBtn = document.getElementById('refreshSearchBtn');
+    const resultsContainer = document.getElementById('searchResultsContainer');
+    const resultsBody = document.getElementById('searchResultsBody');
+    const headerSelectAll = document.getElementById('headerSelectAll');
+    const selectAllViolations = document.getElementById('selectAllViolations');
+    const batchTotalAmount = document.getElementById('batchTotalAmount');
+    const batchWarning = document.querySelector('.batch-warning');
+    const batchWarningText = document.getElementById('batchWarningText');
+    const batchViolationIds = document.getElementById('batchViolationIds');
+    
+    // Initial setup
+    updateBatchTotal();
+    
+    // Search button click handler
+    searchBtn.addEventListener('click', function() {
+        const firstName = searchFirstName.value.trim();
+        const lastName = searchLastName.value.trim();
+        
+        if (!firstName && !lastName) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Search Fields Empty',
+                text: 'Please enter at least a first or last name to search.',
+                confirmButtonColor: '#2563eb'
+            });
+            return;
+        }
+        
+        // Show loading indicator
+        resultsBody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Searching for violators...</p>
+                </td>
+            </tr>
+        `;
+        
+        // In a real implementation, this would be an AJAX call to the server
+        // For this demo, we'll simulate a search response after a delay
+        setTimeout(function() {
+            // Mock search results (in a real implementation, this would come from the server)
+            const mockResults = [
+                {
+                    id: 12345,
+                    date: '2023-10-15',
+                    violator: 'John Smith',
+                    violation_type: 'Speeding',
+                    status: 'PENDING',
+                    fine_amount: 1500.00
+                },
+                {
+                    id: 12346,
+                    date: '2023-09-22',
+                    violator: 'John Smith',
+                    violation_type: 'Illegal Parking',
+                    status: 'PENDING',
+                    fine_amount: 1000.00
+                },
+                {
+                    id: 12347,
+                    date: '2023-08-05',
+                    violator: 'John Smith',
+                    violation_type: 'Driving Without License',
+                    status: 'PAID',
+                    fine_amount: 2500.00
+                }
+            ];
+            
+            // Render search results
+            renderSearchResults(mockResults);
+            
+            // Show message if no results
+            if (mockResults.length === 0) {
+                resultsBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center py-4">
+                            <div class="alert alert-info mb-0">
+                                <span class="material-icons me-2">info</span>
+                                No violations found for this violator.
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }, 1000);
+    });
+    
+    // Refresh button handler
+    refreshBtn.addEventListener('click', function() {
+        searchFirstName.value = '';
+        searchLastName.value = '';
+        resultsBody.innerHTML = '';
+        updateBatchTotal();
+        headerSelectAll.checked = false;
+        selectAllViolations.checked = false;
+        batchViolationIds.value = '[]';
+        batchWarning.style.display = 'none';
+    });
+    
+    // Select all checkboxes handler
+    headerSelectAll.addEventListener('change', function() {
+        document.querySelectorAll('.batch-violation-checkbox:not(:disabled)').forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        
+        // Also update the other select all checkbox
+        selectAllViolations.checked = this.checked;
+        
+        updateBatchWarning();
+        updateBatchTotal();
+    });
+    
+    // Select all violations handler
+    selectAllViolations.addEventListener('change', function() {
+        document.querySelectorAll('.batch-violation-checkbox:not(:disabled)').forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        
+        // Also update the header select all checkbox
+        headerSelectAll.checked = this.checked;
+        
+        updateBatchWarning();
+        updateBatchTotal();
+    });
+    
+    // Function to render search results
+    function renderSearchResults(results) {
+        resultsBody.innerHTML = '';
+        
+        results.forEach(result => {
+            const row = document.createElement('tr');
+            if (result.status !== 'PENDING') {
+                row.classList.add('text-muted');
+            }
+            
+            row.innerHTML = `
+                <td>
+                    <div class="form-check">
+                        <input class="form-check-input batch-violation-checkbox" 
+                               type="checkbox" 
+                               name="batch_violations[]" 
+                               value="${result.id}"
+                               data-fine="${result.fine_amount}"
+                               data-original-fine="${result.fine_amount}"
+                               ${result.status !== 'PENDING' ? 'disabled' : ''}>
+                    </div>
+                </td>
+                <td>${result.id}</td>
+                <td>${new Date(result.date).toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric'})}</td>
+                <td>${result.violator}</td>
+                <td>${result.violation_type}</td>
+                <td>
+                    <span class="badge status-${result.status.toLowerCase()}">${result.status}</span>
+                </td>
+                <td data-violation-id="${result.id}">
+                    <span class="violation-fine">₱${result.fine_amount.toFixed(2)}</span>
+                </td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-outline-primary view-details-btn" 
+                            onclick="showViolationDetail(${result.id})">
+                        <span class="material-icons" style="font-size: 16px;">visibility</span>
+                        View
+                    </button>
+                </td>
+            `;
+            
+            resultsBody.appendChild(row);
+        });
+        
+        // Add event listeners to newly created checkboxes
+        document.querySelectorAll('.batch-violation-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                updateBatchWarning();
+                updateBatchTotal();
+                
+                // Update "select all" checkbox state
+                const allCheckboxes = document.querySelectorAll('.batch-violation-checkbox:not(:disabled)');
+                const checkedCheckboxes = document.querySelectorAll('.batch-violation-checkbox:not(:disabled):checked');
+                
+                headerSelectAll.checked = allCheckboxes.length === checkedCheckboxes.length;
+                headerSelectAll.indeterminate = checkedCheckboxes.length > 0 && checkedCheckboxes.length < allCheckboxes.length;
+                
+                selectAllViolations.checked = allCheckboxes.length === checkedCheckboxes.length;
+                selectAllViolations.indeterminate = checkedCheckboxes.length > 0 && checkedCheckboxes.length < allCheckboxes.length;
+            });
+        });
+    }
+    
+    // Function to update batch warning display
+    function updateBatchWarning() {
+        const checkedViolations = document.querySelectorAll('.batch-violation-checkbox:checked:not(:disabled)');
+        const count = checkedViolations.length;
+        
+        if (count > 0) {
+            batchWarning.style.display = 'flex';
+            batchWarningText.textContent = `You have selected ${count} pending violation(s) for batch processing. The same adjudication decision will be applied to all selected violations.`;
+        } else {
+            batchWarning.style.display = 'none';
+        }
+    }
+    
+    // Function to update the total amount for selected batch violations
+    function updateBatchTotal() {
+        const checkedViolations = document.querySelectorAll('.batch-violation-checkbox:checked:not(:disabled)');
+        let totalAmount = 0;
+        
+        checkedViolations.forEach(checkbox => {
+            const fine = parseFloat(checkbox.dataset.fine) || 0;
+            totalAmount += fine;
+        });
+        
+        // Update the batch total display
+        batchTotalAmount.textContent = `₱${totalAmount.toFixed(2)}`;
+        
+        // Update the batch violation IDs hidden input with only the checked ones
+        const selectedViolations = [];
+        document.querySelectorAll('.batch-violation-checkbox:checked:not(:disabled)').forEach(checkbox => {
+            selectedViolations.push(checkbox.value);
+        });
+        batchViolationIds.value = JSON.stringify(selectedViolations);
+    }
+});
+
+// Function to show violation details in a modal (mock implementation)
+function showViolationDetail(violationId) {
+    Swal.fire({
+        title: 'Violation Details',
+        html: `<div class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading violation #${violationId} details...</p>
+               </div>`,
+        showConfirmButton: false,
+        willOpen: () => {
+            setTimeout(() => {
+                Swal.update({
+                    title: 'Violation #' + violationId,
+                    html: `<div class="text-start">
+                            <p>Details for this violation are not available in the preview.</p>
+                            <p>In the actual implementation, this would show complete violation details.</p>
+                           </div>`,
+                    showConfirmButton: true,
+                    confirmButtonText: 'Close',
+                    confirmButtonColor: '#2563eb'
+                });
+            }, 1000);
+        }
+    });
+}
+</script>
+
+<style>
+/* Styling for the search form and results */
+.search-container {
+    background-color: #f8fafc;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.form-floating > .form-control {
+    padding-top: 1.625rem;
+    padding-bottom: 0.625rem;
+}
+
+.form-floating > label {
+    padding: 1rem 0.75rem;
+}
+
+.status-pending { 
+    background-color: #fff4de; 
+    color: #ffa800; 
+}
+
+.status-paid { 
+    background-color: #e8fff3; 
+    color: #0bb783; 
+}
+
+.table {
+    width: 100%;
+    margin-bottom: 1rem;
+    color: var(--text-dark);
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table thead th {
+    vertical-align: bottom;
+    border-bottom: 2px solid var(--border-light);
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(37, 99, 235, 0.05);
+}
+
+.table td {
+    padding: 0.75rem;
+    vertical-align: middle;
+    border-top: 1px solid var(--border-light);
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.35em 0.65em;
+    font-size: 0.75em;
+    font-weight: 600;
+    line-height: 1;
+    color: #fff;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 50px;
+}
+</style>
+{% endblock %} 

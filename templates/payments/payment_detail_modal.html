@@ -1,0 +1,82 @@
+<!-- Payment Detail Template -->
+<div class="payment-detail-container">
+    <!-- Payment Information Section -->
+    <div class="card mb-4 border-0 shadow-sm">
+        <div class="card-header bg-white">
+            <h6 class="mb-0 d-flex align-items-center">
+                <span class="material-icons me-2 text-secondary">payments</span>
+                Payment Information
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-2"><strong>Receipt Number:</strong> {{ violation.receipt_number }}</p>
+                    <p class="mb-2"><strong>Payment Date:</strong> {{ violation.receipt_date|date:"F d, Y" }}</p>
+                    <p class="mb-2"><strong>Amount Paid:</strong> ₱{{ violation.payment_amount|default:violation.fine_amount|floatformat:2 }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p class="mb-2"><strong>Status:</strong> 
+                        <span class="badge bg-success">Paid</span>
+                    </p>
+                    <p class="mb-2"><strong>Processed by:</strong> {{ violation.processed_by.get_full_name|default:"System" }}</p>
+                    {% if violation.payment_remarks %}
+                    <p class="mb-2"><strong>Remarks:</strong> {{ violation.payment_remarks }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Violation Information Section -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+            <h6 class="mb-0 d-flex align-items-center">
+                <span class="material-icons me-2 text-secondary">gavel</span>
+                Violation Details
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-2"><strong>Case ID:</strong> #{{ violation.id }}</p>
+                    <p class="mb-2"><strong>Date Filed:</strong> {{ violation.violation_date|date:"F d, Y" }}</p>
+                    <p class="mb-2"><strong>Violation Type:</strong></p>
+                    <div class="mb-3">
+                        {% for type in violation.get_violation_types %}
+                        <div class="badge bg-light text-dark me-1 mb-1">{{ type }}</div>
+                        {% empty %}
+                        <div class="badge bg-light text-dark">{{ violation.violation_type }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <p class="mb-2"><strong>Violator:</strong> {{ violation.violator.first_name }} {{ violation.violator.last_name }}</p>
+                    <p class="mb-2"><strong>License Number:</strong> {{ violation.violator.license_number|default:"N/A" }}</p>
+                    <p class="mb-2"><strong>Location:</strong> {{ violation.location }}</p>
+                    {% if violation.is_ncap %}
+                    <div class="alert alert-info mt-2 p-2">
+                        <small><strong>Note:</strong> This is an NCAP violation captured through non-contact apprehension</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.payment-detail-container {
+    padding: 1rem;
+}
+.card-header {
+    padding: 0.75rem 1rem;
+}
+.card-body {
+    padding: 1.25rem;
+}
+.badge {
+    padding: 0.5rem 0.75rem;
+    font-weight: 500;
+}
+</style> 

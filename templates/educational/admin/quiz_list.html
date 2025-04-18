@@ -1,0 +1,637 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Manage Quizzes{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.12/dist/sweetalert2.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 px-3">
+    <!-- Hidden form for CSRF token -->
+    <form id="csrf-form" style="display: none;">
+        {% csrf_token %}
+    </form>
+    
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-md border-0 rounded-3" style="box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;">
+                <div class="card-body p-4">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+                        <div>
+                            <h1 class="fs-2 mb-1 fw-bold">Manage Quizzes</h1>
+                            <p class="text-muted mb-0">Create and manage educational quizzes for users.</p>
+                        </div>
+                        <div>
+                            <a href="{% url 'educational:admin_create_quiz' %}" class="btn btn-primary d-flex align-items-center justify-content-center">
+                                <span class="material-icons me-2">add</span> 
+                                <span>Create New Quiz</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-md border-0 rounded-3" style="box-shadow: 0 4px 15px rgba(0,0,0,0.06) !important;">
+                <div class="card-body p-3 p-md-4">
+                    <form method="get" class="row g-3 align-items-end">
+                        <div class="col-12 col-md-4 col-lg-4">
+                            <label for="search" class="form-label fw-medium">Search Quizzes</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><span class="material-icons">search</span></span>
+                                <input type="text" class="form-control search-input" id="search" name="q" placeholder="Search by title..." 
+                                       value="{{ query|default:'' }}">
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-3 col-lg-3">
+                            <label for="topic" class="form-label fw-medium">Topic</label>
+                            <select class="form-select" id="topic" name="topic">
+                                <option value="">All Topics</option>
+                                {% for topic in topics %}
+                                    <option value="{{ topic.id }}" {% if selected_topic == topic.id|stringformat:"i" %}selected{% endif %}>
+                                        {{ topic.title }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-2 col-lg-2">
+                            <label for="status" class="form-label fw-medium">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="">All</option>
+                                <option value="published" {% if selected_status == 'published' %}selected{% endif %}>Published</option>
+                                <option value="draft" {% if selected_status == 'draft' %}selected{% endif %}>Draft</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-3 col-lg-3 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary d-flex align-items-center justify-content-center flex-grow-1">
+                                <span class="material-icons me-2">filter_list</span> 
+                                <span>Apply Filters</span>
+                            </button>
+                            <a href="{% url 'educational:admin_quiz_list' %}" class="btn btn-outline-secondary d-flex align-items-center justify-content-center">
+                                <span class="material-icons me-2">clear</span>
+                                <span>Clear</span>
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-md border-0 rounded-3" style="box-shadow: 0 4px 20px rgba(0,0,0,0.1) !important;">
+                <div class="card-header bg-white py-3 px-4 border-0">
+                    <h5 class="mb-0 fw-bold">All Quizzes <span class="badge bg-primary rounded-pill ms-2">{{ total_count }}</span></h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="quiz-table">
+                            <thead>
+                                <tr>
+                                    <th>TITLE</th>
+                                    <th>TOPIC</th>
+                                    <th>QUESTIONS</th>
+                                    <th>PASSING SCORE</th>
+                                    <th>STATUS</th>
+                                    <th>CREATED</th>
+                                    <th class="text-center">ACTIONS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for quiz in page_obj %}
+                                <tr>
+                                    <td class="fw-medium">
+                                        <a href="{% url 'educational:admin_quiz_detail' quiz.id %}" class="text-decoration-none">{{ quiz.title }}</a>
+                                    </td>
+                                    <td>
+                                        {% if quiz.topic %}
+                                            <a href="{% url 'educational:topic_detail' quiz.topic.id %}" class="text-decoration-none">{{ quiz.topic.title }}</a>
+                                        {% else %}
+                                            <span class="text-muted fst-italic">None</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary rounded-pill">{{ quiz.questions.count }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info rounded-pill">{{ quiz.passing_score }}%</span>
+                                    </td>
+                                    <td>
+                                        {% if quiz.is_published %}
+                                        <span class="status-pill status-active">Published</span>
+                                        {% else %}
+                                        <span class="status-pill status-inactive">Draft</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ quiz.created_at|date:"M d, Y" }}</td>
+                                    <td>
+                                        <div class="quiz-actions">
+                                            <a href="{% url 'educational:admin_quiz_detail' quiz.id %}" class="btn btn-action btn-view" 
+                                               data-bs-toggle="tooltip" 
+                                               data-bs-placement="top" 
+                                               title="View Quiz">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{% url 'educational:admin_edit_quiz' quiz.id %}" class="btn btn-action btn-edit" 
+                                               data-bs-toggle="tooltip"
+                                               data-bs-placement="top"
+                                               title="Edit Quiz">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-action btn-delete" 
+                                                    data-quiz-id="{{ quiz.id }}"
+                                                    data-quiz-title="{{ quiz.title }}"
+                                                    data-bs-placement="top"
+                                                    title="Delete Quiz">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        <div class="text-muted">
+                                            <span class="material-icons d-block mb-2" style="font-size: 2.5rem; opacity: 0.5;">quiz</span>
+                                            <p class="mb-0">No quizzes found</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer bg-white py-3">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
+            <div class="small text-muted mb-3 mb-md-0 text-center text-md-start">
+                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} entries
+            </div>
+            <nav aria-label="Quiz pagination">
+                <ul class="pagination mb-0 pagination-sm flex-wrap justify-content-center justify-content-md-end mobile-pagination">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if query %}&q={{ query }}{% endif %}{% if selected_topic %}&topic={{ selected_topic }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}" aria-label="First">
+                                <span class="material-icons" style="font-size: 1rem;">first_page</span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if selected_topic %}&topic={{ selected_topic }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}" aria-label="Previous">
+                                <span class="material-icons" style="font-size: 1rem;">chevron_left</span>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" aria-label="First">
+                                <span class="material-icons" style="font-size: 1rem;">first_page</span>
+                            </a>
+                        </li>
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" aria-label="Previous">
+                                <span class="material-icons" style="font-size: 1rem;">chevron_left</span>
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for i in page_obj.paginator.page_range %}
+                        {% if page_obj.number == i %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ i }}</span>
+                            </li>
+                        {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ i }}{% if query %}&q={{ query }}{% endif %}{% if selected_topic %}&topic={{ selected_topic }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">{{ i }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if selected_topic %}&topic={{ selected_topic }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}" aria-label="Next">
+                            <span class="material-icons" style="font-size: 1rem;">chevron_right</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}{% if selected_topic %}&topic={{ selected_topic }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}" aria-label="Last">
+                            <span class="material-icons" style="font-size: 1rem;">last_page</span>
+                        </a>
+                    </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" aria-label="Next">
+                                <span class="material-icons" style="font-size: 1rem;">chevron_right</span>
+                            </a>
+                        </li>
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" aria-label="Last">
+                                <span class="material-icons" style="font-size: 1rem;">last_page</span>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+:root {
+    --primary-color: #2563eb;
+    --primary-light: #3b82f6;
+    --primary-dark: #1d4ed8;
+    --primary-rgb: 37, 99, 235;
+    --text-dark: #1e293b;
+    --text-muted: #64748b;
+    --border-light: #e2e8f0;
+    --bg-light: #f8fafc;
+}
+
+/* Content Card Styling */
+.content-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.content-card-header {
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.content-card-header h5 {
+    margin: 0;
+    font-weight: 600;
+    color: var(--text-dark);
+    font-size: 1.1rem;
+}
+
+.icon-primary {
+    color: var(--primary-color);
+}
+
+/* Action Buttons */
+.btn-action {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    color: #fff;
+}
+
+.btn-action i {
+    font-size: 1.1rem;
+}
+
+/* View Button */
+.btn-view {
+    background-color: #3498db;
+}
+
+.btn-view:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Edit Button */
+.btn-edit {
+    background-color: #f39c12;
+}
+
+.btn-edit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Delete Button */
+.btn-delete {
+    background-color: #e74c3c;
+}
+
+.btn-delete:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Action buttons container */
+.quiz-actions {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* Pagination styling */
+.pagination {
+    gap: 0.25rem;
+}
+
+.page-link {
+    border-radius: 6px !important;
+    height: 32px;
+    min-width: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+/* Mobile pagination */
+.mobile-pagination .page-link {
+    min-width: 36px;
+    height: 36px;
+}
+
+/* Cards and containers */
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04) !important;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.container-fluid {
+    max-width: 1600px;
+}
+
+/* Mobile optimization */
+@media (max-width: 767.98px) {
+    /* Prevent iOS zoom on input focus */
+    input, select, textarea {
+        font-size: 16px !important;
+    }
+    
+    /* Search input */
+    .search-input {
+        height: 45px;
+    }
+    
+    /* Improved button sizing */
+    .btn {
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+    
+    /* Card styling */
+    .card-body {
+        padding: 1.25rem !important;
+    }
+    
+    .card-header {
+        padding: 1rem !important;
+    }
+    
+    /* Better spacing for icons */
+    .material-icons {
+        font-size: 20px !important;
+    }
+    
+    /* Adjust titles */
+    h1.fs-2 {
+        font-size: 1.5rem !important;
+    }
+    
+    h5 {
+        font-size: 1.1rem !important;
+    }
+}
+
+/* Enhanced Quiz Table */
+.quiz-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
+    background-color: #fff;
+}
+
+.quiz-table th {
+    background-color: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+    padding: 15px 20px;
+    border-bottom: 2px solid #eff2f7;
+    white-space: nowrap;
+}
+
+.quiz-table td {
+    padding: 18px 20px;
+    vertical-align: middle;
+    border-bottom: 1px solid #eff2f7;
+    color: #495057;
+    height: 72px;
+    line-height: 1.5;
+}
+
+.quiz-table tr:last-child td {
+    border-bottom: none;
+}
+
+.quiz-table tr {
+    transition: background-color 0.2s ease;
+}
+
+.quiz-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+.quiz-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.status-pill {
+    padding: 6px 14px;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-block;
+    min-width: 90px;
+    text-align: center;
+}
+
+.status-active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-inactive {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.badge {
+    padding: 6px 10px;
+    font-weight: 500;
+    min-width: 38px;
+    text-align: center;
+}
+
+.quiz-table a {
+    color: var(--primary-color);
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.quiz-table a:hover {
+    color: var(--primary-dark);
+    text-decoration: underline !important;
+}
+
+/* Mobile optimizations for table */
+@media (max-width: 767.98px) {
+    .quiz-table {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+    }
+    
+    .quiz-table td, 
+    .quiz-table th {
+        padding: 16px 16px;
+        white-space: nowrap;
+    }
+}
+
+/* SweetAlert custom styles */
+.swal2-icon.swal2-warning {
+    border-color: #ffecd6 !important;
+    color: #f8bb86 !important;
+}
+
+.swal2-icon-warning {
+    color: #f8bb86 !important;
+}
+
+.swal2-title {
+    color: #555 !important;
+    font-size: 1.75rem !important;
+    font-weight: 600 !important;
+}
+
+.swal2-html-container {
+    color: #666 !important;
+    font-size: 1rem !important;
+    margin-top: 0.75rem !important;
+    text-align: center !important;
+}
+
+.swal2-confirm-button {
+    font-weight: 600 !important;
+    border-radius: 4px !important;
+}
+
+.swal2-cancel-button {
+    font-weight: 600 !important;
+    border-radius: 4px !important;
+}
+
+.swal2-actions {
+    margin-top: 1.5rem !important;
+}
+</style>
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.12/dist/sweetalert2.all.min.js"></script>
+<script>
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+        
+        // SweetAlert for delete confirmation
+        document.querySelectorAll('.btn-delete').forEach(button => {
+            button.addEventListener('click', function() {
+                const quizId = this.getAttribute('data-quiz-id');
+                const quizTitle = this.getAttribute('data-quiz-title');
+                
+                Swal.fire({
+                    title: 'Delete Quiz?',
+                    html: `Are you sure you want to delete the quiz:<br><strong>${quizTitle}</strong>?<br><br>This action cannot be undone.`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Yes, delete it!',
+                    cancelButtonText: 'Cancel',
+                    reverseButtons: false,
+                    customClass: {
+                        icon: 'swal2-icon-warning',
+                        confirmButton: 'swal2-confirm-button',
+                        cancelButton: 'swal2-cancel-button'
+                    },
+                    buttonsStyling: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Create and submit form for deletion
+                        const form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = `{% url 'educational:admin_delete_quiz' 0 %}`.replace('0', quizId);
+                        
+                        const csrfToken = document.createElement('input');
+                        csrfToken.type = 'hidden';
+                        csrfToken.name = 'csrfmiddlewaretoken';
+                        csrfToken.value = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                        
+                        form.appendChild(csrfToken);
+                        document.body.appendChild(form);
+                        form.submit();
+                        
+                        // Show a loading message while the form is being submitted
+                        Swal.fire({
+                            title: 'Deleting...',
+                            text: 'Please wait while we delete the quiz.',
+                            icon: 'info',
+                            showConfirmButton: false,
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %} 

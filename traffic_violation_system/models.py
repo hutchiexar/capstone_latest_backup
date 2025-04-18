@@ -25,6 +25,10 @@ class Violator(models.Model):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} - {self.license_number or 'No License'}"
+        
+    def get_full_name(self):
+        """Return the first_name plus the last_name, with a space in between."""
+        return f"{self.first_name} {self.last_name}"
 
     class Meta:
         indexes = [
@@ -169,7 +173,12 @@ class Violation(models.Model):
     enforcer_signature_date = models.DateTimeField(null=True, blank=True)
     violator_signature = models.ImageField(upload_to='signatures/', null=True, blank=True)
     violator_signature_date = models.DateTimeField(null=True, blank=True)
-    vehicle_type = models.CharField(max_length=100, blank=True, null=True, verbose_name='Type/Make of Vehicle')
+    vehicle_type = models.CharField(max_length=100, choices=[
+        ('Jeepney', 'Jeepney'),
+        ('Tricycle', 'Tricycle'),
+        ('Potpot', 'Potpot'),
+        ('Other', 'Other')
+    ], default='Tricycle')
     classification = models.CharField(max_length=20, choices=VEHICLE_CLASSIFICATIONS, blank=True, null=True)
     plate_number = models.CharField(max_length=20, blank=True, null=True)
     color = models.CharField(max_length=50, blank=True, null=True)
@@ -531,19 +540,18 @@ class Vehicle(models.Model):
     """Model to store vehicle information linked to an operator"""
     operator = models.ForeignKey(Operator, on_delete=models.CASCADE)
     old_pd_number = models.CharField(max_length=50, blank=True, null=True)
-    new_pd_number = models.CharField(max_length=50, unique=True)
+    new_pd_number = models.CharField(max_length=50, unique=True, blank=True, null=True)
+    potpot_number = models.CharField(max_length=50, blank=True, null=True, help_text="Potpot identification number")
     vehicle_type = models.CharField(max_length=100, choices=[
         ('Jeepney', 'Jeepney'),
         ('Tricycle', 'Tricycle'),
-        ('Taxi', 'Taxi'),
-        ('Bus', 'Bus'),
-        ('Van', 'Van'),
+        ('Potpot', 'Potpot'),
         ('Other', 'Other')
     ], default='Tricycle')
     plate_number = models.CharField(max_length=20, blank=True, null=True)
     engine_number = models.CharField(max_length=50, blank=True, null=True)
     chassis_number = models.CharField(max_length=50, blank=True, null=True)
-    capacity = models.PositiveIntegerField(default=4)
+    capacity = models.PositiveIntegerField(default=4, blank=True, null=True)
     year_model = models.CharField(max_length=4, blank=True, null=True)
     color = models.CharField(max_length=50, blank=True, null=True)
     active = models.BooleanField(default=True)
@@ -557,22 +565,21 @@ class Vehicle(models.Model):
         ordering = ['operator__last_name', 'operator__first_name', 'new_pd_number']
         
     def __str__(self):
-        return f"{self.new_pd_number} - {self.operator.full_name()}"
+        return f"{self.new_pd_number or 'No PD Number'} - {self.operator.full_name()}"
 
     def generate_pd_number(self):
         """Generate a unique PD number for this vehicle"""
-        # Format: PD-{operator_id}-{random_6_digits}
+        # Format: PD-{random_1_to_3_digits}
         import random
         while True:
-            random_suffix = ''.join(random.choices('0123456789', k=6))
-            new_pd = f"PD-{self.operator.id}-{random_suffix}"
-            if not Vehicle.objects.filter(new_pd_number=new_pd).exists():
+            random_suffix = str(random.randint(1, 999))
+            new_pd = f"PD-{random_suffix}"
+            # Check if this PD number exists in either Vehicles or Drivers
+            if not Vehicle.objects.filter(new_pd_number=new_pd).exists() and not Driver.objects.filter(new_pd_number=new_pd).exists():
                 return new_pd
 
     def save(self, *args, **kwargs):
-        # Generate PD number if not provided
-        if not self.new_pd_number:
-            self.new_pd_number = self.generate_pd_number()
+        # No longer auto-generating PD number
         super().save(*args, **kwargs)
 
 
@@ -607,12 +614,13 @@ class Driver(models.Model):
 
     def generate_pd_number(self):
         """Generate a unique PD number for this driver"""
-        # Format: DRV-{operator_id}-{random_6_digits}
+        # Format: PD-{random_1_to_3_digits}
         import random
         while True:
-            random_suffix = ''.join(random.choices('0123456789', k=6))
-            new_pd = f"DRV-{self.operator.id if self.operator else '0'}-{random_suffix}"
-            if not Driver.objects.filter(new_pd_number=new_pd).exists():
+            random_suffix = str(random.randint(1, 999))
+            new_pd = f"PD-{random_suffix}"
+            # Check if this PD number exists in either Drivers or Vehicles
+            if not Driver.objects.filter(new_pd_number=new_pd).exists() and not Vehicle.objects.filter(new_pd_number=new_pd).exists():
                 return new_pd
 
     def save(self, *args, **kwargs):

@@ -106,9 +106,11 @@
                                                         <!-- Improved status messages -->
                                                         <div id="cameraPermissionMsg" class="camera-message text-center py-5">
                                                             <div class="d-flex flex-column align-items-center">
-                                                                <span class="material-icons mb-3" style="font-size: 48px; color: var(--primary-color);">camera_alt</span>
-                                                                <p class="mb-1 fw-bold">Camera Access Required</p>
-                                                                <p class="text-muted mb-0">Please allow camera access to scan the document</p>
+                                                                <div class="spinner-border text-primary mb-3" role="status">
+                                                                    <span class="visually-hidden">Loading camera...</span>
+                                                                </div>
+                                                                <p class="mb-1 fw-bold">Accessing Camera...</p>
+                                                                <p class="text-muted mb-0">Please allow camera access if prompted</p>
                                                             </div>
                                                         </div>
                                                         
@@ -240,8 +242,8 @@
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-floating">
-                                            <input type="text" class="form-control" id="plate_number" name="plate_number" required>
-                                            <label for="plate_number">Plate Number</label>
+                                            <input type="text" class="form-control" id="plate_number" name="plate_number">
+                                            <label for="plate_number">Plate Number (Optional)</label>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -252,14 +254,14 @@
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-floating">
-                                            <input type="text" class="form-control" id="registration_number" name="registration_number" required>
-                                            <label for="registration_number">Registration Number</label>
+                                            <input type="text" class="form-control" id="registration_number" name="registration_number">
+                                            <label for="registration_number">Registration Number (Optional)</label>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-floating">
-                                            <input type="date" class="form-control" id="registration_date" name="registration_date" required>
-                                            <label for="registration_date">Registration Date</label>
+                                            <input type="date" class="form-control" id="registration_date" name="registration_date">
+                                            <label for="registration_date">Registration Date (Optional)</label>
                                         </div>
                                     </div>
                                 </div>
@@ -1557,10 +1559,12 @@ function updateStep(step) {
     nextBtn.style.display = step === steps.length - 1 ? 'none' : 'flex';
     submitBtn.style.display = step === steps.length - 1 ? 'flex' : 'none';
     
-    // When moving to step 2 (violations), initialize violation calculation
-    if (step === 1 && typeof updateViolationTotal === 'function') {
-        console.log('Step 2 displayed, initializing violation total calculation');
-        setTimeout(updateViolationTotal, 100);
+    // When moving to step 2 (violations), only initialize the violation selection listeners
+    // but don't automatically recalculate the amount
+    if (step === 1) {
+        console.log('Step 2 displayed, initializing violation selection listeners');
+        // Initialize the event listeners for violation changes
+        initializeViolationFines();
     }
 }
 
@@ -1584,13 +1588,8 @@ function validateStep(step) {
         if (selectedViolations.length === 0) {
             isValid = false;
             alert('Please select at least one violation type');
-        } else {
-            // Update the violation amount when validating step 2
-            if (typeof updateViolationTotal === 'function') {
-                console.log('Updating violation total during validation');
-                updateViolationTotal();
-            }
         }
+        // Remove automatic recalculation during validation
     }
 
     return isValid;
@@ -1615,11 +1614,8 @@ nextBtn.addEventListener('click', () => {
         // If moving to step 2, check if this is a repeat violator
         if (currentStep === 1) {
             checkForRepeatViolator();
-            
-            // Recalculate fine amount in case of pre-selected violations
-            if (typeof updateFineAmount === 'function') {
-                setTimeout(updateFineAmount, 100);
-            }
+            // Don't recalculate fine automatically when moving to step 2
+            // Let the initializeViolationFines function handle this based on violation selection
         }
     }
 });
@@ -2319,8 +2315,12 @@ function initializeViolationFines() {
         }
     }
 
-    // Initial update for any pre-selected violations
-    updateFineAmount();
+    // Only update for pre-selected violations if no amount is already set
+    if (fineAmountEl && (!fineAmountEl.value || fineAmountEl.value === '0')) {
+        updateFineAmount();
+    } else {
+        console.log('Fine amount already set, preserving current value:', fineAmountEl?.value);
+    }
 }
 
 // Make sure to call initializeViolationFines when DOM is fully loaded
@@ -2794,6 +2794,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error('Your browser does not support camera access');
             }
 
+            // Show the modal first so the UI doesn't jump
+            cameraModal.show();
+            updateScannerTitle(currentScanMode);
+            
+            // Show "accessing camera" message while getting permissions
+            permissionMsg.style.display = 'block';
+            cameraFeed.style.display = 'none';
+            captureButton.style.display = 'none';
+
             stream = await navigator.mediaDevices.getUserMedia({
                 video: {
                     facingMode: 'environment',
@@ -2802,15 +2811,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            cameraModal.show();
-            updateScannerTitle(currentScanMode);
-            
             cameraFeed.srcObject = stream;
             await cameraFeed.play();
             
+            // Hide permission message and show camera feed
+            permissionMsg.style.display = 'none';
             cameraFeed.style.display = 'block';
             captureButton.style.display = 'block';
-            permissionMsg.style.display = 'none';
             showScanningOverlay();
             
         } catch (err) {
@@ -2832,12 +2839,41 @@ document.addEventListener('DOMContentLoaded', function() {
             errorMessage += err.message || 'Please check your camera permissions and try again.';
         }
         
-        alert(errorMessage);
+        // Use SweetAlert instead of a basic alert for better UX
+        Swal.fire({
+            icon: 'error',
+            title: 'Camera Access Error',
+            text: errorMessage,
+            confirmButtonText: 'Try Again',
+            showCancelButton: true,
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Try to reinitialize the camera
+                initializeCamera();
+            } else {
+                // Close the modal if user cancels
+                cameraModal.hide();
+            }
+        });
         
+        // Update the permission message
         permissionMsg.innerHTML = `
-            <span class="material-icons text-danger" style="font-size: 48px;">error</span>
-            <p class="mt-2 text-danger">${errorMessage}</p>
+            <div class="d-flex flex-column align-items-center">
+                <span class="material-icons text-danger mb-3" style="font-size: 48px;">error</span>
+                <p class="fw-bold text-danger mb-1">Camera Access Error</p>
+                <p class="text-muted small mb-2">${errorMessage}</p>
+                <button id="retryCamera" class="btn btn-sm btn-outline-primary">
+                    <span class="material-icons me-1" style="font-size: 16px;">refresh</span>
+                    Try Again
+                </button>
+            </div>
         `;
+        
+        // Add event listener to the retry button
+        document.getElementById('retryCamera')?.addEventListener('click', () => {
+            initializeCamera();
+        });
         
         if (cameraModal._isShown) {
             cameraFeed.style.display = 'none';
@@ -2921,10 +2957,24 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('retakeButton').addEventListener('click', () => {
         previewModal.hide();
         capturedImageData = null;
+        
+        // Important: Don't stop the stream when retaking the photo
+        // This ensures we don't need to request permissions again
+        
+        // Immediately hide the permission message and show camera feed
+        if (cameraFeed && cameraFeed.srcObject) {
+            permissionMsg.style.display = 'none'; // Hide permission message immediately
+            cameraFeed.style.display = 'block';
+            cameraCanvas.style.display = 'none';
+            captureButton.style.display = 'block';
+            showScanningOverlay();
+        } else {
+            // Only initialize the camera if the stream was somehow lost
+            initializeCamera();
+        }
+        
+        // Show the camera modal after setting up the UI
         cameraModal.show();
-        cameraFeed.style.display = 'block';
-        cameraCanvas.style.display = 'none';
-        showScanningOverlay();
     });
 
     // Handle proceed button
@@ -3210,7 +3260,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Modify modal event listeners to properly manage focus
     document.getElementById('cameraModal').addEventListener('hidden.bs.modal', function(e) {
-        cleanup();
+        // Only cleanup the camera if we're not retaking the photo
+        // by checking if the preview modal is not being shown
+        if (!document.getElementById('previewModal')._isShown) {
+            cleanup();
+        }
+        
         // Return focus to the button that opened the modal
         const openButton = document.querySelector('[data-bs-target="#cameraModal"]');
         if (openButton) {
@@ -3219,9 +3274,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     document.getElementById('previewModal').addEventListener('hidden.bs.modal', function(e) {
+        // Only cleanup if we're completely done with scanning
+        // (not going back to camera modal)
         if (!document.getElementById('cameraModal')._isShown) {
             cleanup();
         }
+        
         // Return focus to the button that opened the modal
         const openButton = document.querySelector('[data-bs-target="#previewModal"]');
         if (openButton) {
@@ -3742,27 +3800,53 @@ window.addEventListener('load', function() {
 
 // Alternative implementation to calculate total fine amount
 function updateViolationTotal() {
-    // Default values for fine amounts
-    const fineValues = {
-        'Speeding': 500,
-        'Running a Red Light': 800,
-        'Illegal Parking': 300,
-        'No Seat Belt': 250,
-        'Using Phone While Driving': 1000,
-        'Driving Under Influence': 2500,
-        'Unlicensed Driver': 1500,
-        'Reckless Driving': 2000,
-        'Expired Registration': 1000,
-        'No Helmet': 500,
-        'Obstruction': 1000,
-        'Wrong Way Driving': 600,
-        'Invalid Plate': 1000,
-        'No Muffler': 500,
-        'Permitting Hitching/Over Loading Passenger(s)': 800,
-        'Unregistered MV': 1200,
-        'Refusal to convey to proper destination': 600,
-        'Discourteous driver/Conduct': 500,
-        'Others': 500
+    // Default fine amount for unlisted violations
+    const DEFAULT_FINE = 300;
+    
+    // Updated fine amounts based on the new penalty table - same as in updateFineAmount
+    const fineAmounts = {
+        'Jaywalking': 200,
+        'No Seat Belt': 200,
+        'Speeding': 300,
+        'Illegal Parking': 250,
+        'Obstruction': 250,
+        'Reckless Driving': 300,
+        'Unlicensed Driver': 500,
+        'Permitting Hitching': 500,
+        'No License': 100,
+        'DUI': 300,
+        'Using Phone While Driving': 300,
+        'Disobedience to Traffic Control': 200,
+        'Smoking While Driving': 200,
+        'Improper Use of Horn/Muffler': 250,
+        'Failure to Give Way to Pedestrian': 200,
+        'Driving Through Funeral Procession': 200,
+        'Unauthorized Sirens/Lights': 300,
+        'Driving on Reserved Lanes': 100,
+        'No Early Warning Device': 200,
+        'Defective Lights': 250,
+        'Tampered/Fake Plates': 200,
+        'Unregistered MV': 500,
+        'No Loading/Unloading Violation': 100,
+        'Sports Activities on Streets': 300,
+        'Throwing Objects on Road': 300,
+        'Drying Products on Roads': 300,
+        'Unauthorized Signs': 200,
+        'No Franchise/Fare Matrix': 175,
+        'Overloading': 250,
+        'Out-of-Route Operation': 275,
+        'Unsecured Cargo': 200,
+        'Dirty PUV': 150,
+        'Improper Attire on Motorcycle': 200,
+        'Entering Prohibited Zones': 250,
+        'Refusal to Convey': 250,
+        'Discourteous Driver': 200,
+        'Expired OR/CR': 300,
+        'No Permit': 250,
+        'Overcharging': 250,
+        'Defective Muffler': 250,
+        'Dilapidated': 300,
+        'Others': 300
     };
     
     // Get all checked violation checkboxes
@@ -3773,7 +3857,7 @@ function updateViolationTotal() {
     let totalFine = 0;
     checkedViolations.forEach(function(checkbox) {
         const violationType = checkbox.value;
-        const amount = fineValues[violationType] || 500; // Use 500 as default if not found
+        const amount = fineAmounts[violationType] !== undefined ? fineAmounts[violationType] : DEFAULT_FINE;
         console.log(`Adding fine for ${violationType}: ${amount}`);
         totalFine += amount;
     });

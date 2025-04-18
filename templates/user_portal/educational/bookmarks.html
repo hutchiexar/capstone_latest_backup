@@ -49,68 +49,152 @@
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid py-4 px-3" style="max-width: 1600px;">
     <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="mb-0">
-            <span class="material-icons me-2">bookmark</span>
-            My Bookmarked Topics
-        </h1>
-        <a href="{% url 'educational:topic_list' %}" class="btn btn-outline-primary">
-            <span class="material-icons me-1">arrow_back</span>
-            Back to All Topics
-        </a>
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-md border-0 rounded-3" style="box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;">
+                <div class="card-body p-4">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+                        <div>
+                            <h1 class="fs-2 mb-1 fw-bold d-flex align-items-center">
+                                <i class="fas fa-bookmark me-3 text-primary"></i>
+                                My Bookmarked Topics
+                            </h1>
+                            <p class="text-muted mb-0">Access your saved educational materials for quick reference</p>
+                        </div>
+                        <a href="{% url 'educational:topic_list' %}" class="btn btn-outline-primary d-flex align-items-center justify-content-center">
+                            <i class="fas fa-arrow-left me-2"></i> Back to All Topics
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     {% if bookmarked_topics %}
         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
             {% for bookmark in bookmarked_topics %}
-                <div class="col">
-                    <div class="card topic-card h-100">
-                        <div class="card-body">
-                            <span class="category-badge mb-2 d-inline-block">{{ bookmark.topic.category.title }}</span>
-                            <h5 class="card-title mb-2">{{ bookmark.topic.title }}</h5>
-                            <p class="card-text text-muted mb-3">
+                <div class="col bookmark-item">
+                    <div class="card h-100 shadow-sm border-0 rounded-3 topic-card">
+                        {% if bookmark.topic.image %}
+                        <div class="card-img-top position-relative">
+                            <img src="{{ bookmark.topic.image.url }}" alt="{{ bookmark.topic.title }}" class="img-fluid rounded-top" style="height: 160px; width: 100%; object-fit: cover;">
+                            <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,0.3)); pointer-events: none;"></div>
+                            <span class="position-absolute top-0 end-0 m-3">
+                                <span class="badge bg-primary rounded-pill px-3 py-2">{{ bookmark.topic.category.title }}</span>
+                            </span>
+                        </div>
+                        {% endif %}
+                        <div class="card-body p-4">
+                            {% if not bookmark.topic.image %}
+                            <span class="category-badge mb-3 d-inline-block">{{ bookmark.topic.category.title }}</span>
+                            {% endif %}
+                            <h5 class="card-title fw-bold mb-3">{{ bookmark.topic.title }}</h5>
+                            <p class="card-text text-muted mb-4">
                                 {{ bookmark.topic.content|striptags|truncatechars:120 }}
                             </p>
                             <div class="d-grid">
-                                <a href="{% url 'educational:topic_detail' topic_id=bookmark.topic.id %}" class="btn btn-outline-primary action-btn">
-                                    <span class="material-icons me-1">visibility</span>
-                                    View Topic
+                                <a href="{% url 'educational:topic_detail' topic_id=bookmark.topic.id %}" class="btn btn-primary d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-eye me-2"></i> View Topic
                                 </a>
                             </div>
                         </div>
-                        <div class="card-footer d-flex justify-content-between align-items-center">
-                            <small class="text-muted">Bookmarked on {{ bookmark.created_at|date:"M d, Y" }}</small>
-                            
-                            <form method="post" action="{% url 'educational:toggle_bookmark' topic_id=bookmark.topic.id %}" class="bookmark-form">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-link text-danger p-0 action-btn" title="Remove bookmark">
-                                    <span class="material-icons">bookmark_remove</span>
-                                </button>
-                            </form>
+                        <div class="card-footer bg-white p-3 border-0">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted d-flex align-items-center">
+                                    <i class="fas fa-calendar me-2"></i> {{ bookmark.created_at|date:"M d, Y" }}
+                                </small>
+                                
+                                <form method="post" action="{% url 'educational:toggle_bookmark' topic_id=bookmark.topic.id %}" class="bookmark-form">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger d-flex align-items-center px-3 py-2 action-btn" title="Remove bookmark">
+                                        <i class="fas fa-bookmark-slash me-2"></i> Remove
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
             {% endfor %}
         </div>
     {% else %}
-        <div class="card">
-            <div class="card-body empty-state">
-                <div class="empty-state-icon">
-                    <span class="material-icons">bookmark_border</span>
+        <div class="card shadow-sm border-0 rounded-3">
+            <div class="card-body p-5 empty-state">
+                <div class="text-center">
+                    <div class="empty-state-icon mb-4">
+                        <i class="fas fa-bookmark fa-4x text-primary opacity-25"></i>
+                    </div>
+                    <h3 class="fw-bold mb-3">No Bookmarked Topics</h3>
+                    <p class="text-muted mb-4 mx-auto" style="max-width: 500px;">You haven't bookmarked any educational topics yet. Browse through our resources and save topics that interest you.</p>
+                    <a href="{% url 'educational:topic_list' %}" class="btn btn-primary btn-lg d-inline-flex align-items-center px-4">
+                        <i class="fas fa-book me-2"></i> Browse Topics
+                    </a>
                 </div>
-                <h3 class="mb-3">No Bookmarked Topics</h3>
-                <p class="text-muted mb-4">You haven't bookmarked any educational topics yet. Browse through our resources and save topics that interest you.</p>
-                <a href="{% url 'educational:topic_list' %}" class="btn btn-primary btn-lg">
-                    <span class="material-icons me-1">menu_book</span>
-                    Browse Topics
-                </a>
             </div>
         </div>
     {% endif %}
 </div>
-{% endblock %}
+
+<style>
+/* Cards and containers */
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04) !important;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.1) !important;
+}
+
+.topic-card {
+    border-left: 4px solid transparent;
+}
+
+.topic-card:hover {
+    border-left-color: #0d6efd;
+}
+
+/* Category badge */
+.category-badge {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 50px;
+    background-color: rgba(13, 110, 253, 0.1);
+    color: #0d6efd;
+    font-weight: 600;
+    display: inline-block;
+}
+
+/* Action buttons */
+.action-btn {
+    transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Empty state */
+.empty-state {
+    padding: 5rem 2rem;
+}
+
+/* Animation for removal */
+.bookmark-item {
+    transition: all 0.3s ease;
+}
+
+.bookmark-item.removing {
+    opacity: 0;
+    transform: scale(0.8);
+}
+</style>
 
 {% block extra_js %}
 {{ block.super }}
@@ -121,7 +205,7 @@
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
                 
-                const topicCard = this.closest('.col');
+                const bookmarkItem = this.closest('.bookmark-item');
                 
                 fetch(this.action, {
                     method: 'POST',
@@ -134,31 +218,31 @@
                 .then(data => {
                     if (data.success && !data.is_bookmarked) {
                         // Animate the removal
-                        topicCard.style.opacity = '0';
-                        topicCard.style.transform = 'scale(0.8)';
+                        bookmarkItem.classList.add('removing');
                         setTimeout(() => {
-                            topicCard.remove();
+                            bookmarkItem.remove();
                             
                             // Check if there are any cards left
-                            if (document.querySelectorAll('.topic-card').length === 0) {
+                            if (document.querySelectorAll('.bookmark-item').length === 0) {
                                 // Show empty state
-                                const container = document.querySelector('.container');
-                                const rowEl = document.querySelector('.row');
+                                const container = document.querySelector('.container-fluid');
+                                const rowEl = document.querySelector('.row.row-cols-1');
                                 rowEl.remove();
                                 
                                 const emptyState = document.createElement('div');
-                                emptyState.className = 'card';
+                                emptyState.className = 'card shadow-sm border-0 rounded-3';
                                 emptyState.innerHTML = `
-                                    <div class="card-body empty-state">
-                                        <div class="empty-state-icon">
-                                            <span class="material-icons">bookmark_border</span>
+                                    <div class="card-body p-5 empty-state">
+                                        <div class="text-center">
+                                            <div class="empty-state-icon mb-4">
+                                                <i class="fas fa-bookmark fa-4x text-primary opacity-25"></i>
+                                            </div>
+                                            <h3 class="fw-bold mb-3">No Bookmarked Topics</h3>
+                                            <p class="text-muted mb-4 mx-auto" style="max-width: 500px;">You haven't bookmarked any educational topics yet. Browse through our resources and save topics that interest you.</p>
+                                            <a href="{% url 'educational:topic_list' %}" class="btn btn-primary btn-lg d-inline-flex align-items-center px-4">
+                                                <i class="fas fa-book me-2"></i> Browse Topics
+                                            </a>
                                         </div>
-                                        <h3 class="mb-3">No Bookmarked Topics</h3>
-                                        <p class="text-muted mb-4">You haven't bookmarked any educational topics yet. Browse through our resources and save topics that interest you.</p>
-                                        <a href="{% url 'educational:topic_list' %}" class="btn btn-primary btn-lg">
-                                            <span class="material-icons me-1">menu_book</span>
-                                            Browse Topics
-                                        </a>
                                     </div>
                                 `;
                                 container.appendChild(emptyState);
@@ -171,4 +255,5 @@
         });
     });
 </script>
+{% endblock %}
 {% endblock %} 

@@ -1,0 +1,87 @@
+/* Mobile fixes for the Educational Materials dropdown menu */
+@media (max-width: 991.98px) {
+    /* Fix for dropdown menus on mobile */
+    .navbar-nav .dropdown-menu {
+        position: static !important;
+        float: none;
+        width: 100%;
+        background-color: rgba(0, 0, 0, 0.02);
+        border: none;
+        box-shadow: none;
+        padding: 0.5rem 0;
+        margin: 0.125rem 0 0.5rem 1rem;
+        border-radius: 0.5rem;
+    }
+    
+    /* Adjust dropdown items for better mobile display */
+    .dropdown-menu .dropdown-item {
+        padding: 0.5rem 1.5rem;
+        color: var(--dark-blue);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        white-space: normal;
+    }
+    
+    /* Icon styling for dropdown items */
+    .dropdown-menu .dropdown-item .material-icons,
+    .dropdown-menu .dropdown-item .material-symbols-rounded {
+        font-size: 1.25rem;
+        color: var(--primary-color);
+    }
+    
+    /* Position dropdown arrows correctly */
+    .dropdown-toggle::after {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+    
+    /* Spacing between dropdown menu items */
+    .nav-item.dropdown {
+        margin-bottom: 0.25rem;
+    }
+    
+    /* Fix specifically for Educational Materials dropdown */
+    #educationDropdown + .dropdown-menu {
+        max-height: none;
+        overflow: visible;
+        width: 100%;
+    }
+}
+
+/* Enhanced fixes for the Educational Materials dropdown */
+@media (max-width: 991.98px) {
+    /* Force the dropdown menu to display as a block element */
+    #educationDropdown + .dropdown-menu.show {
+        display: block !important;
+        position: static !important;
+        float: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0.5rem 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        background-color: var(--primary-light, #f0f7ff) !important;
+        border-radius: 0.5rem !important;
+    }
+    
+    /* Center the dropdown items on mobile */
+    #educationDropdown + .dropdown-menu .dropdown-item {
+        text-align: left !important;
+        padding: 0.75rem 1rem !important;
+        margin: 0.25rem 0 !important;
+    }
+    
+    /* Add proper spacing between dropdown items */
+    #educationDropdown + .dropdown-menu li:not(:last-child) {
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    /* Add some visual indication of the dropdown being expanded */
+    .nav-item.dropdown.show > .nav-link {
+        background-color: var(--primary-light, #f0f7ff);
+        color: var(--primary-color, #3563E9);
+    }
+} 

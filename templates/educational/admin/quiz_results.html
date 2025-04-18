@@ -1,0 +1,40 @@
+<div id="collapse{{ question.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ question.id }}" data-bs-parent="#accordionQuestions">
+    <div class="accordion-body">
+        <h6 class="mb-3">{{ question.text }}</h6>
+        
+        {% if question.image %}
+        <div class="mb-2">
+            <img src="{{ question.image.url }}" alt="Question image" class="img-thumbnail" style="max-height: 150px; max-width: 100%; object-fit: contain; padding: 0.25rem;">
+        </div>
+        {% endif %}
+        
+        <ul class="list-group mb-3"> 
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize accordions
+    var accordionElements = document.querySelectorAll('.accordion-collapse');
+    if (accordionElements.length > 0) {
+        accordionElements.forEach(function(accordion) {
+            new bootstrap.Collapse(accordion, {
+                toggle: false
+            });
+        });
+    }
+    
+    // Add click event listeners to accordion buttons
+    var accordionButtons = document.querySelectorAll('.accordion-button');
+    accordionButtons.forEach(function(button) {
+        button.addEventListener('click', function() {
+            var target = this.getAttribute('data-bs-target') || this.getAttribute('href');
+            var collapse = document.querySelector(target);
+            if (collapse) {
+                var bsCollapse = bootstrap.Collapse.getInstance(collapse) || new bootstrap.Collapse(collapse, {
+                    toggle: false
+                });
+                bsCollapse.toggle();
+            }
+        });
+    });
+});
+</script> 

@@ -1,0 +1,894 @@
+{% extends "user_portal/base_user.html" %}
+{% load static %}
+{% load educational_tags %}
+
+{% block title %}Quiz Results: {{ quiz.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Modern Color Palette - Matching Dashboard */
+    :root {
+        --primary-color: #3563E9;
+        --primary-light: #EEF3FF;
+        --primary-hover: #2954d4;
+        --success-color: #0CAA1D;
+        --success-light: #E6F7EE;
+        --danger-color: #F53D3D;
+        --danger-light: #FFEEEE;
+        --warning-color: #FFB800;
+        --warning-light: #FFF8E8;
+        --info-color: #4DA7FF;
+        --info-light: #EBF5FF;
+        --dark-blue: #0F1C3F;
+        --neutral-gray: #737791;
+        --light-gray: #F6F7F9;
+        --white: #FFFFFF;
+    }
+
+    /* Card and Container Styles */
+    .result-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        animation: fadeIn 0.5s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    
+    .header-section {
+        background-color: var(--white);
+        border-radius: 1rem;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1.25rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .header-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 6px;
+        height: 100%;
+        background-color: var(--primary-color);
+        border-top-left-radius: 1rem;
+        border-bottom-left-radius: 1rem;
+    }
+    
+    .content-card {
+        background-color: var(--white);
+        border-radius: 1rem;
+        margin-bottom: 1.25rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        overflow: hidden;
+        border: none;
+        position: relative;
+    }
+    
+    .card-header {
+        background-color: var(--white);
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .card-body {
+        padding: 1.5rem;
+    }
+    
+    /* Typography */
+    .page-title {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--dark-blue);
+        letter-spacing: -0.02em;
+        margin-bottom: 0.5rem;
+    }
+    
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--dark-blue);
+        letter-spacing: -0.01em;
+        position: relative;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .section-title::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 40px;
+        height: 3px;
+        background-color: var(--primary-color);
+        border-radius: 2px;
+    }
+    
+    .score-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -0.01em;
+        color: var(--success-color);
+        margin: 0;
+        padding: 0;
+        text-align: center;
+    }
+    
+    .score-value.passed {
+        color: var(--success-color);
+    }
+    
+    .score-value.failed {
+        color: var(--danger-color);
+    }
+    
+    .score-label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--neutral-gray);
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        margin-bottom: 0.75rem;
+        text-align: center;
+    }
+    
+    .stat-label {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--neutral-gray);
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-value {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--dark-blue);
+        text-align: center;
+    }
+    
+    .meta-text {
+        font-size: 0.9rem;
+        color: var(--neutral-gray);
+    }
+    
+    /* Score Visualization */
+    .score-circle {
+        width: 180px;
+        height: 180px;
+        border-radius: 50%;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+    }
+    
+    .score-circle-bg {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background-color: var(--light-gray);
+        z-index: 1;
+    }
+    
+    .score-circle-fill {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background-color: var(--success-color);
+        z-index: 2;
+        clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, 50% 0%);
+        transition: clip-path 1s ease-in-out;
+    }
+    
+    .score-circle-inner {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        background-color: var(--white);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 3;
+        position: relative;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+    
+    .progress-container {
+        background-color: var(--white);
+        border-radius: 0.75rem;
+        padding: 0.75rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.03);
+        margin: 0.75rem 0;
+    }
+    
+    .progress {
+        height: 8px;
+        border-radius: 4px;
+        background-color: var(--light-gray);
+        overflow: hidden;
+        margin: 0.5rem 0;
+    }
+    
+    .progress-bar {
+        background-color: var(--success-color);
+        height: 100%;
+        border-radius: 4px;
+    }
+    
+    .progress-marks {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.7rem;
+        color: var(--neutral-gray);
+        margin-top: 0.25rem;
+    }
+    
+    .progress-marks span {
+        position: relative;
+        text-align: center;
+        width: auto;
+        transform: none;
+    }
+    
+    .progress-marks span:first-child {
+        text-align: left;
+    }
+    
+    .progress-marks span:last-child {
+        text-align: right;
+    }
+    
+    /* Status indicators */
+    .status-badge {
+        padding: 0.4rem 1rem;
+        border-radius: 2rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        white-space: nowrap;
+    }
+    
+    .status-badge-passed {
+        background-color: var(--success-light);
+        color: var(--success-color);
+    }
+    
+    .status-badge-failed {
+        background-color: var(--danger-light);
+        color: var(--danger-color);
+    }
+    
+    /* Stats cards */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+    }
+    
+    .stat-card {
+        background-color: var(--white);
+        border-radius: 0.75rem;
+        padding: 1rem;
+        text-align: center;
+        border: 1px solid rgba(0,0,0,0.03);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+        transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.08);
+    }
+    
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 0.75rem;
+    }
+    
+    .stat-icon.passing-icon {
+        background-color: var(--info-light);
+        color: var(--info-color);
+    }
+    
+    .stat-icon.questions-icon {
+        background-color: var(--primary-light);
+        color: var(--primary-color);
+    }
+    
+    .stat-icon.correct-icon {
+        background-color: var(--success-light);
+        color: var(--success-color);
+    }
+    
+    /* Question Results */
+    .accordion-item {
+        border: none;
+        border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+    
+    .accordion-item:last-child {
+        border-bottom: none;
+    }
+    
+    .accordion-button {
+        padding: 1.25rem;
+        font-weight: 500;
+        color: var(--dark-blue);
+        background-color: var(--white);
+        transition: all 0.2s ease;
+    }
+    
+    .accordion-button:hover {
+        background-color: var(--light-gray);
+    }
+    
+    .accordion-button:not(.collapsed) {
+        color: var(--primary-color);
+        background-color: var(--primary-light);
+        font-weight: 600;
+    }
+    
+    .accordion-button:focus {
+        box-shadow: none;
+        border-color: rgba(0,0,0,0.1);
+    }
+    
+    .accordion-body {
+        padding: 1.25rem 1.5rem;
+        background-color: var(--light-gray);
+    }
+    
+    .result-indicator {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    
+    .result-indicator.correct {
+        background-color: var(--success-light);
+        color: var(--success-color);
+    }
+    
+    .result-indicator.incorrect {
+        background-color: var(--danger-light);
+        color: var(--danger-color);
+    }
+    
+    /* Answer styling */
+    .question-text {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--dark-blue);
+        margin-bottom: 1rem;
+        line-height: 1.4;
+    }
+    
+    .answer-section {
+        margin-bottom: 1.5rem;
+    }
+    
+    .answer-label {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--dark-blue);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .answer-card {
+        border-radius: 0.75rem;
+        padding: 1rem;
+        background-color: var(--white);
+        border: 1px solid rgba(0,0,0,0.05);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .answer-card.correct {
+        border-left: 5px solid var(--success-color);
+    }
+    
+    .answer-card.incorrect {
+        border-left: 5px solid var(--danger-color);
+    }
+    
+    .answer-text {
+        font-size: 1rem;
+        font-weight: 500;
+        color: var(--dark-blue);
+        line-height: 1.5;
+    }
+    
+    .explanation-text {
+        font-size: 0.9rem;
+        color: var(--neutral-gray);
+        margin-top: 0.5rem;
+        line-height: 1.6;
+    }
+    
+    /* Buttons */
+    .btn {
+        border-radius: 0.75rem;
+        padding: 0.625rem 1.25rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-lg {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+    }
+    
+    .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+        box-shadow: 0 4px 8px rgba(53, 99, 233, 0.25);
+    }
+    
+    .btn-primary:hover {
+        background-color: var(--primary-hover);
+        border-color: var(--primary-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(41, 84, 212, 0.3);
+    }
+    
+    .btn-outline-primary {
+        color: var(--primary-color);
+        border-color: var(--primary-color);
+        background-color: transparent;
+    }
+    
+    .btn-outline-primary:hover {
+        background-color: var(--primary-color);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(53, 99, 233, 0.25);
+    }
+    
+    /* Alerts */
+    .alert {
+        border: none;
+        border-radius: 0.75rem;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1.25rem;
+        display: flex;
+        align-items: center;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+    }
+    
+    .alert-success {
+        background-color: var(--success-light);
+        color: var(--success-color);
+    }
+    
+    .alert-warning {
+        background-color: var(--warning-light);
+        color: var(--warning-color);
+    }
+    
+    .alert-info {
+        background-color: var(--info-light);
+        color: var(--info-color);
+    }
+    
+    /* Badge styling */
+    .badge {
+        font-weight: 600;
+        padding: 0.4rem 0.75rem;
+        border-radius: 0.5rem;
+    }
+    
+    .badge.bg-success {
+        background-color: var(--success-light) !important;
+        color: var(--success-color);
+    }
+    
+    .badge.bg-danger {
+        background-color: var(--danger-light) !important;
+        color: var(--danger-color);
+    }
+    
+    .badge.bg-primary {
+        background-color: var(--primary-light) !important;
+        color: var(--primary-color);
+    }
+    
+    /* Action section */
+    .actions-container {
+        position: sticky;
+        bottom: 1rem;
+        z-index: 10;
+    }
+    
+    .actions-card {
+        background-color: var(--white);
+        border-radius: 1rem;
+        padding: 1rem;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        backdrop-filter: blur(10px);
+    }
+    
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .score-circle {
+            width: 140px;
+            height: 140px;
+        }
+        
+        .score-circle-inner {
+            width: 120px;
+            height: 120px;
+        }
+        
+        .score-circle-fill {
+            clip: rect(0, 140px, 140px, 70px);
+        }
+        
+        .score-circle-fill.filled-50 {
+            clip: rect(0, 70px, 140px, 0);
+        }
+        
+        .score-value {
+            font-size: 2.5rem;
+        }
+        
+        .page-title {
+            font-size: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="result-container py-4">
+    <!-- Header -->
+    <div class="header-section">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-2">
+            <div>
+                <h1 class="page-title">Quiz Results: {{ quiz.title }}</h1>
+                <p class="meta-text">
+                    <span class="material-symbols-rounded me-1" style="font-size: 0.9rem; vertical-align: middle;">calendar_today</span>
+                    Completed on {{ attempt.end_time|date:"F j, Y g:i A" }}
+                </p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'educational:quiz_detail' quiz.id %}" class="btn btn-outline-primary">
+                    <span class="material-symbols-rounded me-1" style="font-size: 1rem; vertical-align: middle;">arrow_back</span>
+                    Back
+                </a>
+                <a href="{% url 'educational:start_quiz' quiz.id %}" class="btn btn-primary">
+                    <span class="material-symbols-rounded me-1" style="font-size: 1rem; vertical-align: middle;">refresh</span>
+                    Retry
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Score Overview -->
+    <div class="content-card mb-4">
+        <div class="card-body p-0">
+            <div class="row g-0">
+                <!-- Left Column - Score Circle -->
+                <div class="col-lg-4 border-end">
+                    <div class="p-4 text-center">
+                        <p class="score-label">YOUR SCORE</p>
+                        
+                        <div class="score-circle mb-3" id="scoreCircle">
+                            <div class="score-circle-bg"></div>
+                            <div class="score-circle-fill" id="scoreCircleFill"></div>
+                            <div class="score-circle-inner">
+                                <div class="score-value">{{ attempt.score|floatformat:0 }}%</div>
+                                {% if attempt.is_passed %}
+                                    <span class="status-badge status-badge-passed mt-1">
+                                        <span class="material-symbols-rounded me-1" style="font-size: 0.875rem;">check_circle</span>
+                                        Passed
+                                    </span>
+                                {% else %}
+                                    <span class="status-badge status-badge-failed mt-1">
+                                        <span class="material-symbols-rounded me-1" style="font-size: 0.875rem;">cancel</span>
+                                        Failed
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="progress-container">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="stat-label">Score Progress</span>
+                                <span class="meta-text fw-medium">{{ attempt.score|floatformat:0 }}%</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar" style="width: {{ attempt.score }}%"></div>
+                            </div>
+                            <div class="progress-marks">
+                                <span>0%</span>
+                                <span>{{ quiz.passing_score }}%</span>
+                                <span>100%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Column - Stats -->
+                <div class="col-lg-8">
+                    <div class="p-3">
+                        <h3 class="section-title mb-3">Performance Overview</h3>
+                        
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon passing-icon">
+                                    <span class="material-symbols-rounded" style="font-size: 1.75rem;">percent</span>
+                                </div>
+                                <p class="stat-label">Passing Score</p>
+                                <div class="stat-value">{{ quiz.passing_score }}%</div>
+                                <p class="meta-text mt-2">Required to pass this quiz</p>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-icon questions-icon">
+                                    <span class="material-symbols-rounded" style="font-size: 1.75rem;">quiz</span>
+                                </div>
+                                <p class="stat-label">Total Questions</p>
+                                <div class="stat-value">{{ questions.count }}</div>
+                                <p class="meta-text mt-2">Questions in this quiz</p>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-icon correct-icon">
+                                    <span class="material-symbols-rounded" style="font-size: 1.75rem;">check_circle</span>
+                                </div>
+                                <p class="stat-label">Correct Answers</p>
+                                <div class="stat-value">{{ user_responses|correct_count }}/{{ questions.count }}</div>
+                                <p class="meta-text mt-2">Answers you got right</p>
+                            </div>
+                        </div>
+                        
+                        {% if not attempt.is_passed %}
+                            <div class="alert alert-warning mt-3 mb-0">
+                                <span class="material-symbols-rounded me-2" style="font-size: 1.5rem;">warning</span>
+                                <div>
+                                    <strong>You didn't reach the passing score.</strong>
+                                    <p class="mb-0 mt-1">Review your answers below and try again to improve your score!</p>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-success mt-3 mb-0">
+                                <span class="material-symbols-rounded me-2" style="font-size: 1.5rem;">trophy</span>
+                                <div>
+                                    <strong>Congratulations!</strong>
+                                    <p class="mb-0 mt-1">You've successfully passed this quiz and demonstrated your knowledge.</p>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Question Results -->
+    <div class="content-card">
+        <div class="card-header">
+            <h3 class="section-title mb-0">Question Results</h3>
+        </div>
+        <div class="accordion" id="accordionQuestions">
+            {% for question in questions %}
+                {% with response=user_responses|get_item:question.id %}
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading{{ question.id }}">
+                        <button class="accordion-button collapsed" type="button" 
+                                data-bs-toggle="collapse" 
+                                data-bs-target="#collapse{{ question.id }}" 
+                                aria-expanded="false" 
+                                aria-controls="collapse{{ question.id }}">
+                            <div class="d-flex justify-content-between align-items-center w-100 me-2">
+                                <div class="d-flex align-items-center">
+                                    <div class="result-indicator me-2 {% if response.is_correct %}correct{% else %}incorrect{% endif %}">
+                                        {% if response.is_correct %}
+                                            <span class="material-symbols-rounded" style="font-size: 1.125rem;">check</span>
+                                        {% else %}
+                                            <span class="material-symbols-rounded" style="font-size: 1.125rem;">close</span>
+                                        {% endif %}
+                                    </div>
+                                    <span class="fw-medium">Q{{ question.order }}: {{ question.text|truncatechars:65 }}</span>
+                                </div>
+                                <span class="badge {% if response.is_correct %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ response.points_earned }}/{{ question.points }}
+                                </span>
+                            </div>
+                        </button>
+                    </h2>
+                    <div id="collapse{{ question.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ question.id }}" data-bs-parent="#accordionQuestions">
+                        <div class="accordion-body">
+                            <h4 class="question-text">{{ question.text }}</h4>
+                            
+                            {% if question.image %}
+                            <div class="mb-3 text-center">
+                                <div class="bg-white rounded-3 d-inline-block p-2 shadow-sm">
+                                    <img src="{{ question.image.url }}" alt="Question image" class="img-fluid rounded" style="max-height: 220px;">
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="answer-section">
+                                <div class="answer-label">
+                                    <span class="material-symbols-rounded me-2" style="font-size: 1.25rem;">person</span>
+                                    Your Answer
+                                </div>
+                                <div class="answer-card {% if response.is_correct %}correct{% else %}incorrect{% endif %}">
+                                    <div class="d-flex">
+                                        <div class="result-indicator me-3 {% if response.is_correct %}correct{% else %}incorrect{% endif %}">
+                                            {% if response.is_correct %}
+                                                <span class="material-symbols-rounded" style="font-size: 1.125rem;">check</span>
+                                            {% else %}
+                                                <span class="material-symbols-rounded" style="font-size: 1.125rem;">close</span>
+                                            {% endif %}
+                                        </div>
+                                        <div>
+                                            <div class="answer-text">{{ response.selected_answer.text }}</div>
+                                            {% if response.selected_answer.explanation %}
+                                                <div class="explanation-text">{{ response.selected_answer.explanation }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {% if not response.is_correct %}
+                                <div class="answer-section">
+                                    <div class="answer-label">
+                                        <span class="material-symbols-rounded me-2" style="font-size: 1.25rem; color: var(--success-color);">check_circle</span>
+                                        Correct Answer
+                                    </div>
+                                    {% for correct_answer in correct_answers|get_item:question.id %}
+                                        <div class="answer-card correct">
+                                            <div class="d-flex">
+                                                <div class="result-indicator me-3 correct">
+                                                    <span class="material-symbols-rounded" style="font-size: 1.125rem;">check</span>
+                                                </div>
+                                                <div>
+                                                    <div class="answer-text">{{ correct_answer.text }}</div>
+                                                    {% if correct_answer.explanation %}
+                                                        <div class="explanation-text">{{ correct_answer.explanation }}</div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            
+                            {% if response.selected_answer.explanation %}
+                                <div class="alert alert-info mt-4">
+                                    <span class="material-symbols-rounded me-3" style="font-size: 1.5rem;">info</span>
+                                    <div>
+                                        <strong>Explanation:</strong>
+                                        <p class="mb-0 mt-1">{{ response.selected_answer.explanation }}</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endwith %}
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Actions -->
+    <div class="actions-container">
+        <div class="actions-card">
+            <div class="row align-items-center">
+                <div class="col-lg-6 mb-2 mb-lg-0">
+                    <div class="d-flex align-items-center">
+                        <span class="material-symbols-rounded me-2" style="font-size: 1.75rem; color: var(--primary-color);">school</span>
+                        <div>
+                            <h5 class="mb-1">Ready to continue learning?</h5>
+                            <p class="mb-0">Explore more educational content or retry this quiz.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 d-flex justify-content-center justify-content-lg-end gap-2">
+                    {% if quiz.topic %}
+                        <a href="{% url 'educational:topic_detail' quiz.topic.id %}" class="btn btn-outline-primary">
+                            <span class="material-symbols-rounded me-1" style="font-size: 1.125rem; vertical-align: middle;">menu_book</span>
+                            Study
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'educational:start_quiz' quiz.id %}" class="btn btn-primary">
+                        <span class="material-symbols-rounded me-1" style="font-size: 1.125rem; vertical-align: middle;">refresh</span>
+                        Retake
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set up score circle animation
+        const scoreValue = {{ attempt.score|floatformat:0 }};
+        const scoreCircleFill = document.getElementById('scoreCircleFill');
+        
+        if (scoreCircleFill) {
+            // For 100%, show full circle
+            if (scoreValue >= 100) {
+                scoreCircleFill.style.clipPath = 'circle(50% at 50% 50%)';
+            } 
+            // For 0%, show nothing
+            else if (scoreValue <= 0) {
+                scoreCircleFill.style.clipPath = 'polygon(50% 50%, 50% 50%, 50% 50%)';
+            }
+            // For values between 0 and 100
+            else {
+                const angle = (scoreValue / 100) * 360;
+                const radians = (angle - 90) * (Math.PI / 180);
+                const x = 50 + 50 * Math.cos(radians);
+                const y = 50 + 50 * Math.sin(radians);
+                
+                let clipPath;
+                if (angle <= 180) {
+                    // For first half of the circle (0-180 degrees)
+                    clipPath = `polygon(50% 50%, 50% 0%, ${x}% ${y}%)`;
+                } else {
+                    // For second half of the circle (180-360 degrees)
+                    clipPath = `polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, 50% 0%, ${x}% ${y}%)`;
+                }
+                
+                scoreCircleFill.style.clipPath = clipPath;
+            }
+            
+            // Color based on pass/fail
+            const isPassed = {{ attempt.is_passed|yesno:"true,false" }};
+            if (!isPassed) {
+                scoreCircleFill.style.backgroundColor = 'var(--danger-color)';
+                document.querySelector('.score-value').style.color = 'var(--danger-color)';
+            }
+        }
+        
+        // Add pulse animation after delay
+        setTimeout(function() {
+            const scoreCircle = document.getElementById('scoreCircle');
+            if (scoreCircle) {
+                scoreCircle.style.animation = 'pulse 1.5s ease-in-out 1';
+            }
+        }, 500);
+    });
+</script>
+{% endblock %}
+{% endblock %} 

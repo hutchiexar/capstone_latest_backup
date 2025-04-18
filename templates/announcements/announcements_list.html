@@ -187,13 +187,13 @@
                         </div>
                         {% if user.userprofile.role in 'ADMIN,SUPERVISOR' %}
                         <div class="action-buttons">
-                            <a href="{% url 'edit_announcement' announcement.id %}" class="btn-action btn-edit" title="Edit">
+                            <a href="{% url 'edit_announcement' announcement.id %}" class="btn btn-primary action-btn" title="Edit">
                                 <span class="material-icons">edit</span>
                             </a>
-                            <a href="{% url 'resend_announcement_notification' announcement.id %}" class="btn-action btn-notification" title="Send as Notification">
+                            <a href="{% url 'resend_announcement_notification' announcement.id %}" class="btn btn-info action-btn" title="Send as Notification">
                                 <span class="material-icons">notifications</span>
                             </a>
-                            <button type="button" class="btn-action btn-delete" onclick="confirmDelete({{ announcement.id }})" title="Delete">
+                            <button type="button" class="btn btn-danger action-btn" onclick="confirmDelete({{ announcement.id }})" title="Delete">
                                 <span class="material-icons">delete</span>
                             </button>
                         </div>
@@ -229,7 +229,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Add micro-interactions to action buttons
-    const actionButtons = document.querySelectorAll('.btn-action');
+    const actionButtons = document.querySelectorAll('.action-btn');
     actionButtons.forEach(button => {
         button.addEventListener('click', function() {
             this.classList.add('btn-pulse');
@@ -365,63 +365,41 @@ function confirmDelete(announcementId) {
     background-color: rgba(13, 110, 253, 0.2);
 }
 
-.btn-action {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background-color: #f8f9fa;
-    border: 1px solid #e9ecef;
-    transition: all 0.2s ease;
-    cursor: pointer;
+/* Action buttons */
+.action-buttons {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 4px !important;
 }
 
-.btn-action:hover {
-    background-color: var(--bg-light);
-    transform: scale(1.05);
+/* Action button styling */
+.action-btn {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    padding: 0 !important;
+    border-radius: 4px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 40px !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    transition: all 0.2s !important;
 }
 
-.btn-action .material-icons {
-    font-size: 16px;
-    color: #495057;
+.action-btn:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
 }
 
-.btn-edit:hover {
-    background-color: #cfe2ff;
-    border-color: #9ec5fe;
-}
-
-.btn-edit:hover .material-icons {
-    color: #0d6efd;
-}
-
-.btn-notification:hover {
-    background-color: #e8f6fe;
-    border-color: #9fdbff;
-}
-
-.btn-notification:hover .material-icons {
-    color: #0dcaf0;
-}
-
-.btn-reset:hover {
-    background-color: #d1e7dd;
-    border-color: #a3cfbb;
-}
-
-.btn-reset:hover .material-icons {
-    color: #198754;
-}
-
-.btn-delete:hover {
-    background-color: #f8d7da;
-    border-color: #f1aeb5;
-}
-
-.btn-delete:hover .material-icons {
-    color: #dc3545;
+/* Icon sizing */
+.action-btn .material-icons {
+    color: white !important;
+    font-size: 18px !important;
+    margin: 0 !important;
+    line-height: 1 !important;
 }
 
 /* Skeleton loading styles */
@@ -592,12 +570,7 @@ function confirmDelete(announcementId) {
     transform: scale(1.05);
 }
 
-.action-buttons {
-    display: flex;
-    gap: 8px;
-}
-
-/* Mobile Responsiveness */
+/* Responsive styles for action buttons */
 @media (max-width: 768px) {
     .search-form-wrapper {
         flex-direction: column;
@@ -635,15 +608,6 @@ function confirmDelete(announcementId) {
         padding: 0.25em 0.5em;
     }
     
-    .btn-action {
-        width: 28px;
-        height: 28px;
-    }
-    
-    .btn-action .material-icons {
-        font-size: 14px;
-    }
-    
     .card-title {
         font-size: 1rem;
     }
@@ -667,8 +631,15 @@ function confirmDelete(announcementId) {
         font-weight: 600;
     }
     
-    .action-buttons {
-        gap: 4px;
+    .action-btn {
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px !important;
+        max-width: 36px !important;
+    }
+    
+    .action-btn .material-icons {
+        font-size: 16px !important;
     }
     
     .empty-state-image {

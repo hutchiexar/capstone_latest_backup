@@ -1,0 +1,102 @@
+{% extends 'user_portal/base_user.html' %}
+{% load static %}
+
+{% block title %}Violation Details - CTTMO User Portal{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card shadow-sm rounded-lg">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">Violation Details</h5>
+        </div>
+        <div class="card-body">
+            <!-- Violation details here -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h6 class="fw-bold">Violation Information</h6>
+                    <div class="mb-3">
+                        <p class="mb-2"><strong>Violation ID:</strong> {{ violation.id }}</p>
+                        <p class="mb-2"><strong>Date:</strong> {{ violation.violation_date|date:"F d, Y H:i" }}</p>
+                        <p class="mb-2"><strong>Location:</strong> {{ violation.location }}</p>
+                        <p class="mb-2"><strong>Type:</strong> {{ violation.violation_type }}</p>
+                        <p class="mb-2"><strong>Fine Amount:</strong> ₱{{ violation.fine_amount }}</p>
+                        <p class="mb-2"><strong>Status:</strong> 
+                            <span class="badge {% if violation.status == 'PAID' %}bg-success{% elif violation.status == 'PENDING' %}bg-warning{% elif violation.status == 'APPROVED' %}bg-info{% elif violation.status == 'ADJUDICATED' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                {{ violation.get_status_display }}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="fw-bold">Violator Information</h6>
+                    <div class="mb-3">
+                        <p class="mb-2"><strong>License Number:</strong> {{ violation.violator.license_number }}</p>
+                        <p class="mb-2"><strong>Name:</strong> {{ violation.violator.first_name }} {{ violation.violator.last_name }}</p>
+                        <p class="mb-2"><strong>Due Date:</strong> {{ violation.payment_due_date|date:"F d, Y" }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Enforcer Information -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h6 class="fw-bold">Enforcer Information</h6>
+                    <div class="mb-3">
+                        <p class="mb-2"><strong>Enforcer Name:</strong> {{ violation.enforcer.get_full_name }}</p>
+                        <p class="mb-2"><strong>Enforcer ID:</strong> {{ violation.enforcer.userprofile.enforcer_id }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4 text-center">
+                <a href="{% url 'user_portal:user_violations' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Violations
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Check for payment status in URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const status = urlParams.get('status');
+    
+    if (status === 'success') {
+        Swal.fire({
+            icon: 'success',
+            title: 'Payment Successful!',
+            text: 'Your payment has been processed successfully.',
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#3563E9'
+        });
+        
+        // Clean up URL after showing message
+        const url = new URL(window.location.href);
+        url.searchParams.delete('status');
+        window.history.replaceState({}, document.title, url);
+        
+        // Reload the page after a delay to show updated status
+        setTimeout(() => {
+            window.location.href = window.location.pathname;
+        }, 2000);
+    } else if (status === 'cancelled') {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Payment Cancelled',
+            text: 'Your payment process was cancelled.',
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#3563E9'
+        });
+        
+        // Clean up URL after showing message
+        const url = new URL(window.location.href);
+        url.searchParams.delete('status');
+        window.history.replaceState({}, document.title, url);
+    }
+});
+</script>
+{% endblock %} 

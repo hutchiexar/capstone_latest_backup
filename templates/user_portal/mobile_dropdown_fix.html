@@ -1,0 +1,19 @@
+{% load static %}
+<!-- Mobile dropdown fixes -->
+<link rel="stylesheet" href="{% static 'css/mobile_fixes.css' %}">
+<script>
+    // Ensure dropdowns behave properly on mobile
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle dropdown menu display on mobile
+        if (window.innerWidth < 992) {
+            const educationDropdown = document.getElementById('educationDropdown');
+            if (educationDropdown) {
+                // Make sure dropdown items are properly displayed in mobile view
+                const dropdownMenu = educationDropdown.nextElementSibling;
+                if (dropdownMenu) {
+                    dropdownMenu.classList.add('mobile-friendly-dropdown');
+                }
+            }
+        }
+    });
+</script> 

@@ -37,7 +37,7 @@ def user_dashboard(request):
         Q(violator__license_number=license_number) | Q(user_account=user)
     ).order_by('-violation_date')
     
-    # Separate violations into NCAP and regular
+    # Separate violations into NCAP and regular for counting
     # NCAP violations are identified by having ANY type of image attached
     ncap_violations = violations.filter(
         Q(image__isnull=False) | 
@@ -54,9 +54,8 @@ def user_dashboard(request):
         Q(secondary_photo__isnull=True)
     )
     
-    # Get recent violations for dashboard display (limited to 5)
-    recent_regular_violations = regular_violations[:5]
-    recent_ncap_violations = ncap_violations[:5]
+    # Get recent violations for dashboard display (limited to the most recent 10)
+    recent_violations = violations[:10]
     
     # Count violations by status
     pending_count = violations.filter(status='PENDING').count()
@@ -75,8 +74,9 @@ def user_dashboard(request):
         'paid_count': paid_count,
         'total_paid': total_paid,
         'total_due': total_due,
-        'recent_regular_violations': recent_regular_violations,
-        'recent_ncap_violations': recent_ncap_violations,
+        'recent_violations': recent_violations,
+        'recent_regular_violations': regular_violations[:5],
+        'recent_ncap_violations': ncap_violations[:5],
     }
     
     return render(request, 'user_portal/dashboard.html', context)
@@ -84,7 +84,7 @@ def user_dashboard(request):
 @login_required
 def user_violations(request):
     """
-    Display a list of the user's regular violations.
+    Display a list of all regular user violations (excluding NCAP violations with camera evidence).
     """
     user = request.user
     license_number = user.userprofile.license_number
@@ -94,8 +94,8 @@ def user_violations(request):
         Q(violator__license_number=license_number) | Q(user_account=user)
     ).order_by('-violation_date')
     
-    # Filter to exclude NCAP violations (those with images)
-    # A violation is considered NCAP if it has ANY type of image attached
+    # Filter to only include regular violations (without any images)
+    # NCAP violations are identified by having photos/images
     violations = violations.filter(
         Q(image__isnull=True) & 
         Q(driver_photo__isnull=True) & 
@@ -132,8 +132,13 @@ def user_violations(request):
     # Prepare status choices for filter dropdown
     status_choices = dict(Violation.STATUS_CHOICES)
     
+    # Check if coming from print form
+    if request.GET.get('printed', False):
+        # messages.success(request, "The violation ticket was successfully printed.")
+        pass  # No action needed
+    
     context = {
-        'title': 'My Violations',
+        'title': 'My Regular Violations',
         'violations': violations_page,
         'search_query': search_query,
         'status_filter': status_filter,
@@ -193,6 +198,15 @@ def user_ncap_violations(request):
     # Prepare status choices for filter dropdown
     status_choices = dict(Violation.STATUS_CHOICES)
     
+    # Check if coming from successful violation save or print operation
+    if request.session.pop('ncap_violation_saved', False):
+        messages.success(request, "NCAP violation has been successfully recorded.")
+    
+    # Check if redirected from print form
+    if request.GET.get('printed', False):
+        # messages.success(request, "The NCAP violation was successfully printed.")
+        pass  # No action needed
+    
     context = {
         'title': 'My NCAP Violations',
         'violations': violations_page,
@@ -237,7 +251,7 @@ def violation_detail(request, violation_id):
         return render(request, template_name, context)
     except Exception as e:
         messages.error(request, f"Error loading violation: {str(e)}")
-        return redirect('user_dashboard')
+        return redirect('user_portal:user_dashboard')
 
 @login_required
 def user_profile(request):
@@ -278,7 +292,7 @@ def user_settings(request):
         request.user.userprofile.notification_preferences = notification_preferences
         request.user.userprofile.save()
         messages.success(request, 'Settings updated successfully.')
-        return redirect('user_settings')
+        return redirect('user_portal:user_settings')
     
     context = {
         'user_profile': request.user.userprofile,
@@ -348,7 +362,7 @@ def mark_notification_read(request, notification_id):
     notification.is_read = True
     notification.save()
     
-    return redirect(request.META.get('HTTP_REFERER', 'user_dashboard'))
+    return redirect(request.META.get('HTTP_REFERER', 'user_portal:user_dashboard'))
 
 @login_required
 def mark_all_notifications_read(request):
@@ -1145,4 +1159,32 @@ def education_progress(request):
         'in_progress_topics': in_progress_topics,
         'stats': stats
     }
-    return render(request, 'user_portal/educational/my_progress.html', context) 
+    return render(request, 'user_portal/educational/my_progress.html', context)
+
+@login_required
+def print_ncap_violation_form(request, violation_id):
+    """View for printing a NCAP violation form/ticket for a user"""
+    user = request.user
+    license_number = user.userprofile.license_number
+    
+    # Try to get the violation linked to this user by license number or user account
+    violation = get_object_or_404(
+        Violation.objects.filter(
+            Q(violator__license_number=license_number) | Q(user_account=user)
+        ),
+        id=violation_id
+    )
+    
+    # Verify this is an NCAP violation (with images)
+    is_ncap = bool(violation.image) or bool(violation.driver_photo) or bool(violation.vehicle_photo) or bool(violation.secondary_photo)
+    
+    if not is_ncap:
+        messages.error(request, "The requested violation is not an NCAP violation.")
+        return redirect('user_portal:user_ncap_violations')
+    
+    context = {
+        'violation': violation,
+        'now': timezone.now()
+    }
+    
+    return render(request, 'violations/ncap_print_form.html', context) 

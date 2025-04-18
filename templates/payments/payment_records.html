@@ -18,6 +18,12 @@
                         <p class="text-muted mb-0 small">Total Records: {{ total_count }}</p>
                     </div>
                 </div>
+                <div class="d-flex gap-2 export-buttons">
+                    <a href="{% url 'export_payment_records_pdf' %}{% if search_query %}?search={{ search_query }}{% endif %}" class="btn btn-outline-danger d-flex align-items-center justify-content-center">
+                        <span class="material-icons me-1" style="font-size: 18px;">picture_as_pdf</span>
+                        <span class="export-text">Export PDF</span>
+                    </a>
+                </div>
             </div>
 
             <!-- Search Form -->
@@ -60,20 +66,49 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for violation in paid_violations %}
+                    {% regroup paid_violations by receipt_number as grouped_violations %}
+                    {% for receipt_group in grouped_violations %}
                     <tr>
                         <td class="ps-4">
-                            <span class="badge bg-secondary">{{ violation.receipt_number }}</span>
+                            <span class="badge bg-secondary">{{ receipt_group.grouper }}</span>
                         </td>
-                        <td>{{ violation.receipt_date|date:"M d, Y" }}</td>
+                        <td>{{ receipt_group.list.0.receipt_date|date:"M d, Y" }}</td>
                         <td>
-                            <a href="#" class="text-decoration-none text-dark violation-detail-link" data-violation-id="{{ violation.id }}">
-                                #{{ violation.id }}
-                            </a>
+                            {% if receipt_group.list|length > 1 %}
+                                <span class="badge bg-info mb-1">Batch ({{ receipt_group.list|length }})</span>
+                                <div class="small">
+                                    {% for violation in receipt_group.list %}
+                                        #{{ violation.id }}{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <a href="#" class="text-decoration-none text-dark violation-detail-link" data-violation-id="{{ receipt_group.list.0.id }}">
+                                    #{{ receipt_group.list.0.id }}
+                                </a>
+                            {% endif %}
                         </td>
-                        <td class="text-dark">{{ violation.violator.get_full_name }}</td>
+                        <td class="text-dark">
+                            {% if receipt_group.list|length > 1 %}
+                                {% with first_violator=receipt_group.list.0.violator %}
+                                    {{ first_violator.get_full_name }}
+                                    {% if receipt_group.list|length > 1 %}
+                                        <div class="badge bg-primary mt-1">Multiple Violations</div>
+                                    {% endif %}
+                                {% endwith %}
+                            {% else %}
+                                {{ receipt_group.list.0.violator.get_full_name }}
+                            {% endif %}
+                        </td>
                         <td>
-                            <span class="fw-bold text-dark">₱{{ violation.fine_amount|floatformat:2 }}</span>
+                            {% with total_amount=0 %}
+                                {% for violation in receipt_group.list %}
+                                    {% with total_amount=total_amount|add:violation.fine_amount %}{% endwith %}
+                                {% endfor %}
+                                <span class="fw-bold text-dark">₱{{ total_amount|floatformat:2 }}</span>
+                                {% if receipt_group.list|length > 1 %}
+                                    <div class="small text-muted">Total for batch</div>
+                                {% endif %}
+                            {% endwith %}
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
@@ -83,15 +118,23 @@
                         </td>
                         <td class="text-end">
                             <div class="action-buttons">
-                                <button type="button" 
-                                        class="btn btn-action btn-view violation-detail-btn" 
-                                        data-violation-id="{{ violation.id }}">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <a href="{% url 'print_receipt' violation.id %}" 
-                                   class="btn btn-action btn-print"
+                                {% if receipt_group.list|length > 1 %}
+                                    <button type="button" 
+                                            class="btn btn-primary action-btn batch-detail-btn" 
+                                            data-batch-ids="{% for violation in receipt_group.list %}{{ violation.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                                        <span class="material-icons">visibility</span>
+                                    </button>
+                                {% else %}
+                                    <button type="button" 
+                                            class="btn btn-primary action-btn violation-detail-btn" 
+                                            data-violation-id="{{ receipt_group.list.0.id }}">
+                                        <span class="material-icons">visibility</span>
+                                    </button>
+                                {% endif %}
+                                <a href="{% url 'print_receipt' receipt_group.list.0.id %}" 
+                                   class="btn btn-success action-btn"
                                    target="_blank">
-                                    <i class="fas fa-print"></i>
+                                    <span class="material-icons">print</span>
                                 </a>
                             </div>
                         </td>
@@ -112,16 +155,17 @@
         
         <!-- Card View for mobile devices -->
         <div class="payment-cards d-block d-md-none p-3">
-            {% for violation in paid_violations %}
-            <div class="payment-card" data-violation-id="{{ violation.id }}">
+            {% regroup paid_violations by receipt_number as grouped_violations %}
+            {% for receipt_group in grouped_violations %}
+            <div class="payment-card" data-receipt-id="{{ receipt_group.grouper }}">
                 <div class="card mb-3">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <div>
-                            <span class="fw-bold">Receipt #: {{ violation.receipt_number }}</span>
+                            <span class="fw-bold">Receipt #: {{ receipt_group.grouper }}</span>
                         </div>
                         <div>
                             <div class="badge bg-success px-2 py-1">
-                                <i class="fas fa-check-circle me-1"></i> Paid
+                                <span class="material-icons" style="font-size: 12px; vertical-align: middle;">check_circle</span> Paid
                             </div>
                         </div>
                     </div>
@@ -131,17 +175,26 @@
                                 <small class="text-muted">Date:</small>
                             </div>
                             <div class="col-7">
-                                {{ violation.receipt_date|date:"M d, Y" }}
+                                {{ receipt_group.list.0.receipt_date|date:"M d, Y" }}
                             </div>
                         </div>
                         <div class="row mb-2">
                             <div class="col-5">
-                                <small class="text-muted">Violation #:</small>
+                                <small class="text-muted">Violation(s):</small>
                             </div>
                             <div class="col-7">
-                                <a href="#" class="text-decoration-none text-primary violation-detail-link" data-violation-id="{{ violation.id }}">
-                                    #{{ violation.id }}
-                                </a>
+                                {% if receipt_group.list|length > 1 %}
+                                    <span class="badge bg-info">Batch ({{ receipt_group.list|length }})</span>
+                                    <div class="small mt-1">
+                                        {% for violation in receipt_group.list %}
+                                            #{{ violation.id }}{% if not forloop.last %}, {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <a href="#" class="text-decoration-none text-primary violation-detail-link" data-violation-id="{{ receipt_group.list.0.id }}">
+                                        #{{ receipt_group.list.0.id }}
+                                    </a>
+                                {% endif %}
                             </div>
                         </div>
                         <div class="row mb-2">
@@ -149,7 +202,10 @@
                                 <small class="text-muted">Violator:</small>
                             </div>
                             <div class="col-7">
-                                {{ violation.violator.get_full_name }}
+                                {{ receipt_group.list.0.violator.get_full_name }}
+                                {% if receipt_group.list|length > 1 %}
+                                    <div class="badge bg-primary mt-1">Multiple Violations</div>
+                                {% endif %}
                             </div>
                         </div>
                         <div class="row mb-2">
@@ -157,23 +213,40 @@
                                 <small class="text-muted">Amount:</small>
                             </div>
                             <div class="col-7">
-                                <span class="fw-bold">₱{{ violation.fine_amount|floatformat:2 }}</span>
+                                {% with total_amount=0 %}
+                                    {% for violation in receipt_group.list %}
+                                        {% with total_amount=total_amount|add:violation.fine_amount %}{% endwith %}
+                                    {% endfor %}
+                                    <span class="fw-bold">₱{{ total_amount|floatformat:2 }}</span>
+                                    {% if receipt_group.list|length > 1 %}
+                                        <div class="small text-muted">Total for batch</div>
+                                    {% endif %}
+                                {% endwith %}
                             </div>
                         </div>
                     </div>
                     <div class="card-footer p-2">
                         <div class="mobile-actions">
-                            <button type="button" 
-                                    class="btn mobile-action-btn btn-view violation-detail-btn" 
-                                    data-violation-id="{{ violation.id }}">
-                                <i class="fas fa-eye"></i>
-                                <span>View</span>
-                            </button>
-                            <a href="{% url 'print_receipt' violation.id %}" 
-                               class="btn mobile-action-btn btn-print"
+                            {% if receipt_group.list|length > 1 %}
+                                <button type="button" 
+                                        class="btn btn-primary action-btn batch-detail-btn" 
+                                        data-batch-ids="{% for violation in receipt_group.list %}{{ violation.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                                    <span class="material-icons">visibility</span>
+                                    <span class="view-text">View</span>
+                                </button>
+                            {% else %}
+                                <button type="button" 
+                                        class="btn btn-primary action-btn violation-detail-btn" 
+                                        data-violation-id="{{ receipt_group.list.0.id }}">
+                                    <span class="material-icons">visibility</span>
+                                    <span class="view-text">View</span>
+                                </button>
+                            {% endif %}
+                            <a href="{% url 'print_receipt' receipt_group.list.0.id %}" 
+                               class="btn btn-success action-btn"
                                target="_blank">
-                                <i class="fas fa-print"></i>
-                                <span>Print</span>
+                                <span class="material-icons">print</span>
+                                <span class="view-text">Print</span>
                             </a>
                         </div>
                     </div>
@@ -202,10 +275,10 @@
 <div class="modal micromodal-slide" id="modal-violation-detail" aria-hidden="true">
     <div class="modal__overlay" tabindex="-1" data-micromodal-close>
         <div class="modal__container modal-lg" role="dialog" aria-modal="true" aria-labelledby="modal-violation-detail-title">
-            <header class="modal__header bg-primary text-white">
-                <h5 class="modal__title" id="modal-violation-detail-title">
-                    <span class="material-icons me-2">receipt_long</span>
-                    Violation Details
+            <header class="modal__header bg-white border-bottom">
+                <h5 class="modal__title text-dark" id="modal-violation-detail-title">
+                    <span class="material-icons me-2 text-secondary">receipt_long</span>
+                    Payment Details
                 </h5>
                 <button class="modal__close" aria-label="Close modal" data-micromodal-close></button>
             </header>
@@ -218,12 +291,34 @@
                     <div class="mt-3">Loading violation details...</div>
                 </div>
             </div>
-            <footer class="modal__footer">
-                <button class="btn btn-primary" data-micromodal-close>
+            <footer class="modal__footer bg-light">
+                <button class="btn btn-outline-secondary" data-micromodal-close>
                     <span class="material-icons me-1 align-middle" style="font-size: 18px;">close</span>
                     Close
                 </button>
             </footer>
+        </div>
+    </div>
+</div>
+
+<!-- Add a new Micromodal template for batch details -->
+<div class="modal micromodal-slide" id="modal-batch-details" aria-hidden="true">
+    <div class="modal__overlay" tabindex="-1" data-micromodal-close>
+        <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="modal-batch-details-title" style="max-width: 90%; width: 900px;">
+            <header class="modal__header bg-white border-bottom">
+                <h2 class="modal__title" id="modal-batch-details-title" style="color: #000; font-weight: 600;">
+                    Batch Payment Summary
+                </h2>
+                <button class="modal__close" aria-label="Close modal" data-micromodal-close></button>
+            </header>
+            <main class="modal__content p-0" id="modal-batch-details-content">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3">Loading batch details...</p>
+                </div>
+            </main>
         </div>
     </div>
 </div>
@@ -310,14 +405,26 @@
 }
 
 .btn-action {
-    width: 35px;
-    height: 35px;
+    width: 40px;
+    height: 40px;
     padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
+    border-radius: 4px;
     transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.btn-action .material-icons {
+    color: white;
+    font-size: 18px;
+    line-height: 1;
 }
 
 /* View Button */
@@ -353,6 +460,10 @@
 
 /* Responsive Adjustments */
 @media (max-width: 768px) {
+    .card-body {
+        padding: 0.75rem !important;
+    }
+    
     .d-flex.justify-content-between {
         flex-direction: column;
         gap: 1rem;
@@ -362,14 +473,32 @@
         width: 100%;
     }
     
-    .table td, 
-    .table th {
-        padding: 0.75rem;
+    .export-buttons {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+    }
+
+    .export-buttons .btn {
+        flex: 1;
+        margin: 0 5px;
+        font-size: 12px;
     }
     
-    .btn-action {
-        width: 32px;
-        height: 32px;
+    /* For very small screens */
+    @media (max-width: 360px) {
+        .mobile-action-btn {
+            padding: 6px 0;
+        }
+        
+        .mobile-action-btn i {
+            font-size: 0.8rem;
+        }
+        
+        .mobile-action-btn span {
+            font-size: 0.8rem;
+        }
     }
 }
 
@@ -504,7 +633,7 @@
 }
 
 .modal__close:hover {
-  background-color: rgba(255,255,255,0.1);
+  background-color: rgba(0,0,0,0.05);
 }
 
 .modal__close:before,
@@ -513,7 +642,7 @@
   position: absolute;
   width: 2px;
   height: 18px;
-  background-color: white;
+  background-color: #666;
   top: 7px;
   left: 15px;
 }
@@ -622,15 +751,17 @@
 .payment-card .card-footer {
     background-color: #f8f9fa;
     border-top: 1px solid #eaecef;
-    padding: 10px !important;
+    padding: 15px !important;
+    display: flex;
+    justify-content: center;
 }
 
 /* Mobile action buttons */
 .mobile-actions {
     display: flex;
-    width: 100%;
-    justify-content: space-between;
-    gap: 2%;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
 }
 
 .mobile-action-btn {
@@ -689,37 +820,6 @@
     color: white;
 }
 
-/* Responsive Adjustments */
-@media (max-width: 768px) {
-    .card-body {
-        padding: 0.75rem !important;
-    }
-    
-    .d-flex.justify-content-between {
-        flex-direction: column;
-        gap: 1rem;
-    }
-    
-    .search-box {
-        width: 100%;
-    }
-    
-    /* For very small screens */
-    @media (max-width: 360px) {
-        .mobile-action-btn {
-            padding: 6px 0;
-        }
-        
-        .mobile-action-btn i {
-            font-size: 0.8rem;
-        }
-        
-        .mobile-action-btn span {
-            font-size: 0.8rem;
-        }
-    }
-}
-
 /* Table Styles for Payment Records */
 .table {
     margin-bottom: 0;
@@ -759,6 +859,74 @@
     display: flex;
     gap: 0.5rem;
     justify-content: flex-end;
+}
+
+/* Material icons in mobile buttons */
+.mobile-action-btn .material-icons {
+    font-size: 16px;
+    margin-right: 4px;
+}
+
+/* Action Buttons - aligned with adjudication_list.html */
+.action-btn {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    padding: 0 !important;
+    border-radius: 4px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 40px !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    transition: all 0.2s !important;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+}
+
+/* Icon sizing */
+.action-btn .material-icons {
+    color: white !important;
+    font-size: 18px !important;
+    margin: 0 !important;
+    line-height: 1 !important;
+}
+
+/* Action buttons container */
+.action-buttons {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 4px !important;
+    width: 100% !important;
+    max-width: 140px !important;
+    margin: 0 auto !important;
+}
+
+/* View text should be hidden */
+.view-text {
+    display: none;
+}
+
+/* Card footer with buttons centered */
+.violation-card .card-footer,
+.payment-card .card-footer {
+    background-color: #f8f9fa;
+    border-top: 1px solid #eaecef;
+    padding: 15px !important;
+    display: flex;
+    justify-content: center;
+}
+
+.mobile-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
 }
 </style>
 
@@ -917,7 +1085,7 @@ function closeViolationModal() {
 }
 
 function showViolationDetail(violationId) {
-    console.log('Loading violation details for ID:', violationId);
+    console.log('Loading payment details for ID:', violationId);
     
     const modalContent = document.getElementById('modal-violation-detail-content');
     modalContent.innerHTML = `
@@ -925,7 +1093,7 @@ function showViolationDetail(violationId) {
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
-            <div class="mt-3">Loading details for violation #${violationId}...</div>
+            <div class="mt-3">Loading payment details for violation #${violationId}...</div>
         </div>
     `;
     
@@ -943,7 +1111,7 @@ function showViolationDetail(violationId) {
     
     // Add a timestamp to prevent caching
     const timestamp = new Date().getTime();
-    const url = `/violation/${violationId}/modal/?t=${timestamp}`;
+    const url = `/violation/${violationId}/payment-detail-modal/?t=${timestamp}`;
     
     console.log('Fetching URL:', url);
     
@@ -975,11 +1143,11 @@ function showViolationDetail(violationId) {
         });
     })
     .catch(error => {
-        console.error('Error fetching violation details:', error);
+        console.error('Error fetching payment details:', error);
         modalContent.innerHTML = `
             <div class="alert alert-danger m-3">
                 <span class="material-icons me-2">error_outline</span>
-                <div>Error loading violation details: ${error.message}</div>
+                <div>Error loading payment details: ${error.message}</div>
                 <div class="mt-2">Requested Violation ID: ${violationId}</div>
                 <div class="mt-3">
                     <button class="btn btn-outline-secondary" onclick="closeViolationModal()">
@@ -994,5 +1162,247 @@ function showViolationDetail(violationId) {
 function printReceipt(violationId) {
     window.open(`/violation/${violationId}/print-receipt/`, '_blank');
 }
+
+// Function to show batch details
+function showBatchDetails(batchIds) {
+    if (!batchIds || !batchIds.length) return;
+    
+    // Convert string to array if necessary
+    if (typeof batchIds === 'string') {
+        batchIds = batchIds.split(',');
+    }
+    
+    // Get modal content element
+    const modalContent = document.getElementById('modal-batch-details-content');
+    
+    // Update title - keeping it plain black
+    document.getElementById('modal-batch-details-title').innerHTML = 'Batch Payment Summary';
+    
+    // Show loading spinner in the modal
+    modalContent.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3">Loading batch details...</p>
+        </div>
+    `;
+    
+    // Show the modal using Micromodal
+    MicroModal.show('modal-batch-details');
+    
+    // Fetch first payment to get receipt info
+    fetch(`/violation/${batchIds[0]}/payment-detail-modal/`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Error fetching payment details`);
+            }
+            return response.text();
+        })
+        .then(detailHtml => {
+            // Extract receipt info from the HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = detailHtml;
+            
+            // Get receipt number and date
+            let receiptNumber = 'N/A';
+            let receiptDate = 'N/A';
+            
+            // Find receipt info
+            const allElements = tempDiv.querySelectorAll('*');
+            allElements.forEach(el => {
+                const text = el.textContent.trim();
+                if (text.includes('Receipt Number:')) {
+                    const valueEl = el.nextElementSibling || el.parentElement.nextElementSibling;
+                    if (valueEl && valueEl.textContent.trim()) {
+                        receiptNumber = valueEl.textContent.trim();
+                    }
+                }
+                if (text.includes('Receipt Date:')) {
+                    const valueEl = el.nextElementSibling || el.parentElement.nextElementSibling;
+                    if (valueEl && valueEl.textContent.trim()) {
+                        receiptDate = valueEl.textContent.trim();
+                    }
+                }
+            });
+            
+            // Fetch all payments in the batch
+            const fetchPromises = batchIds.map(id => 
+                fetch(`/violation/${id}/payment-info/`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Error fetching violation #${id}`);
+                        }
+                        return response.json();
+                    })
+                    .catch(error => {
+                        console.error(error);
+                        return { id: id, error: true, message: error.message };
+                    })
+            );
+            
+            return Promise.all([Promise.resolve({receiptNumber, receiptDate}), Promise.all(fetchPromises)]);
+        })
+        .then(([receiptInfo, violations]) => {
+            // Calculate batch summary
+            const totalFineAmount = violations
+                .filter(v => !v.error && v.fine_amount)
+                .reduce((sum, v) => sum + parseFloat(v.fine_amount || 0), 0);
+                
+            const uniqueViolationTypes = new Set();
+            violations.forEach(v => {
+                if (!v.error && v.violation_types) {
+                    v.violation_types.forEach(type => uniqueViolationTypes.add(type));
+                } else if (!v.error && v.violation_type) {
+                    uniqueViolationTypes.add(v.violation_type);
+                }
+            });
+            
+            // Create HTML content - with enhanced design
+            let batchHtml = `
+                <div class="p-4">
+                    <div class="row">
+                        <!-- Batch Summary Card -->
+                        <div class="col-md-7 mb-4">
+                            <div class="card shadow-sm border-0 h-100">
+                                <div class="card-header bg-white py-3 border-bottom">
+                                    <h5 class="mb-0 d-flex align-items-center">
+                                        <span class="material-icons me-2 text-primary">summarize</span>
+                                        Batch Summary
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="material-icons text-secondary me-2" style="font-size: 18px;">tag</span>
+                                                <span class="text-muted">Total Violations:</span>
+                                            </div>
+                                            <p class="ms-4 fw-bold mb-3">${violations.length}</p>
+                                            
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="material-icons text-secondary me-2" style="font-size: 18px;">receipt</span>
+                                                <span class="text-muted">Receipt Number:</span>
+                                            </div>
+                                            <p class="ms-4 fw-bold mb-3">${receiptInfo.receiptNumber}</p>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="material-icons text-secondary me-2" style="font-size: 18px;">calendar_today</span>
+                                                <span class="text-muted">Receipt Date:</span>
+                                            </div>
+                                            <p class="ms-4 fw-bold mb-3">${receiptInfo.receiptDate}</p>
+                                            
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="material-icons text-secondary me-2" style="font-size: 18px;">payments</span>
+                                                <span class="text-muted">Total Fine Amount:</span>
+                                            </div>
+                                            <p class="ms-4 fw-bold text-primary mb-3">₱${totalFineAmount.toFixed(2)}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Violation Types Card -->
+                        <div class="col-md-5 mb-4">
+                            <div class="card shadow-sm border-0 h-100">
+                                <div class="card-header bg-white py-3 border-bottom">
+                                    <h5 class="mb-0 d-flex align-items-center">
+                                        <span class="material-icons me-2 text-primary">label</span>
+                                        Violation Types
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-flex flex-wrap gap-2 mt-2">
+                                        ${Array.from(uniqueViolationTypes).map(type => `
+                                            <div class="badge bg-light text-dark p-2 rounded-pill">
+                                                <span class="material-icons me-1" style="font-size: 14px; vertical-align: text-top;">error</span>
+                                                ${type}
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Violations Table Card -->
+                    <div class="card shadow-sm border-0 mb-3">
+                        <div class="card-header bg-white py-3 border-bottom">
+                            <h5 class="mb-0 d-flex align-items-center">
+                                <span class="material-icons me-2 text-primary">list_alt</span>
+                                Violations in this Batch (${violations.length})
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="py-3">CASE ID</th>
+                                            <th class="py-3">VIOLATOR</th>
+                                            <th class="py-3">VIOLATION TYPE</th>
+                                            <th class="py-3 text-end">FINE</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${violations.map(v => {
+                                            if (v.error) {
+                                                return `
+                                                    <tr class="table-danger">
+                                                        <td class="py-3">${v.id}</td>
+                                                        <td class="py-3" colspan="3">Error: ${v.message}</td>
+                                                    </tr>
+                                                `;
+                                            } else {
+                                                const violationTypes = Array.isArray(v.violation_types) && v.violation_types.length > 0 
+                                                    ? v.violation_types.join(', ') 
+                                                    : v.violation_type || 'N/A';
+                                                    
+                                                return `
+                                                    <tr>
+                                                        <td class="py-3">${v.id}</td>
+                                                        <td class="py-3">${v.violator_name || 'N/A'}</td>
+                                                        <td class="py-3">${violationTypes}</td>
+                                                        <td class="py-3 text-end">₱${parseFloat(v.fine_amount || 0).toFixed(2)}</td>
+                                                    </tr>
+                                                `;
+                                            }
+                                        }).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Update the modal content
+            modalContent.innerHTML = batchHtml;
+        })
+        .catch(error => {
+            console.error('Error processing batch details:', error);
+            modalContent.innerHTML = `
+                <div class="alert alert-danger m-4">
+                    <div class="d-flex align-items-center">
+                        <span class="material-icons me-2">error_outline</span>
+                        <p class="mb-0">Error loading batch details: ${error.message}</p>
+                    </div>
+                </div>
+            `;
+        });
+}
+
+// Add event listener for batch detail buttons
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.batch-detail-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const batchIds = this.getAttribute('data-batch-ids');
+            showBatchDetails(batchIds);
+        });
+    });
+});
 </script>
 {% endblock %} 

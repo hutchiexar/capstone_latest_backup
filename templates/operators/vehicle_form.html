@@ -73,11 +73,25 @@
                             {% endif %}
                         </div>
                         <div class="col-md-6">
-                            <label for="{{ form.vehicle_type.id_for_label }}" class="form-label">Vehicle Type</label>
+                            <label for="{{ form.vehicle_type.id_for_label }}" class="form-label required-field">Vehicle Type</label>
                             {{ form.vehicle_type }}
                             {% if form.vehicle_type.errors %}
                                 <div class="text-danger mt-1">
                                     {% for error in form.vehicle_type.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6" id="potpot_number_container" style="display: none;">
+                            <label for="{{ form.potpot_number.id_for_label }}" class="form-label required-field">Potpot Number</label>
+                            {{ form.potpot_number }}
+                            {% if form.potpot_number.help_text %}
+                                <div class="form-text">{{ form.potpot_number.help_text }}</div>
+                            {% endif %}
+                            {% if form.potpot_number.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.potpot_number.errors %}
                                         {{ error }}
                                     {% endfor %}
                                 </div>
@@ -173,13 +187,23 @@
                 </div>
                 
                 <!-- Form Actions -->
-                <div class="d-flex justify-content-end">
-                    <a href="{% url 'operator_dashboard' %}" class="btn btn-outline-secondary d-flex align-items-center px-4 py-2 me-2">
-                        <span class="material-icons fs-5 me-2">arrow_back</span> Back to Dashboard
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <a href="{% url 'operator_dashboard' %}" class="btn btn-outline-secondary">
+                        <span class="material-icons">arrow_back</span>
+                        Back to Vehicles
                     </a>
-                    <button type="submit" class="btn btn-primary d-flex align-items-center px-4 py-2">
-                        <span class="material-icons fs-5 me-2">{% if is_create %}add{% else %}save{% endif %}</span> {{ submit_text }}
-                    </button>
+                    <div>
+                        {% if not is_create %}
+                        <button type="button" id="delete-vehicle-btn" class="btn btn-danger me-2" data-id="{{ vehicle.id }}">
+                            <span class="material-icons">delete</span>
+                            Delete Vehicle
+                        </button>
+                        {% endif %}
+                        <button type="submit" class="btn btn-primary btn-submit">
+                            <span class="material-icons">{% if is_create %}add{% else %}save{% endif %}</span>
+                            {% if is_create %}Register Vehicle{% else %}Save Changes{% endif %}
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -192,8 +216,8 @@
             <h5 class="mb-0 fw-bold">About Vehicle Registration</h5>
         </div>
         <div class="card-body p-4">
-            <p class="mb-2"><strong>PD Number Generation:</strong> The system automatically generates a unique PD number for your vehicle.</p>
-            <p class="mb-2"><strong>Driver Assignments:</strong> After registration, you can assign drivers to this vehicle from your dashboard.</p>
+            <p class="mb-2"><strong>Vehicle Registration:</strong> Only the vehicle type is required. Other fields can be filled in later if needed.</p>
+            <p class="mb-2"><strong>PD Number:</strong> PD numbers are no longer automatically generated. They can be assigned manually by administrators when needed.</p>
             <p class="mb-0"><strong>Requirements:</strong> Make sure to keep registration information up-to-date for regulatory compliance.</p>
         </div>
     </div>
@@ -234,6 +258,120 @@
                 if (selectedVehicleId) {
                     window.location.href = '{% url "operator_register_vehicle" %}?personal_vehicle_id=' + selectedVehicleId;
                 }
+            });
+        }
+        
+        // Show/hide potpot_number field based on vehicle type
+        const vehicleTypeSelect = document.getElementById('id_vehicle_type');
+        const potpotNumberContainer = document.getElementById('potpot_number_container');
+        const potpotNumberField = document.getElementById('id_potpot_number');
+        
+        // Generate a random 3-digit number (100-999)
+        function generatePotpotNumber() {
+            return Math.floor(Math.random() * 900 + 100).toString();
+        }
+        
+        // Check if a potpot number is unique via AJAX
+        async function isUniquePotpotNumber(number) {
+            try {
+                const response = await fetch(`/operator/check-potpot-number/?number=${number}`);
+                const data = await response.json();
+                return data.is_unique;
+            } catch (error) {
+                console.error('Error checking potpot number:', error);
+                return false;
+            }
+        }
+        
+        // Generate a unique potpot number
+        async function generateUniquePotpotNumber() {
+            let potpotNumber = generatePotpotNumber();
+            let attempts = 0;
+            const maxAttempts = 10; // Avoid infinite loops
+            
+            // Show a loading indicator
+            potpotNumberField.value = "Generating...";
+            potpotNumberField.disabled = true;
+            
+            while (attempts < maxAttempts) {
+                const isUnique = await isUniquePotpotNumber(potpotNumber);
+                if (isUnique) {
+                    break;
+                }
+                
+                potpotNumber = generatePotpotNumber();
+                attempts++;
+            }
+            
+            // Re-enable the field
+            potpotNumberField.disabled = false;
+            return potpotNumber;
+        }
+        
+        async function togglePotpotNumberField() {
+            if (vehicleTypeSelect.value === 'Potpot') {
+                potpotNumberContainer.style.display = 'block';
+                
+                // Only auto-generate if the field is empty or not a 3-digit number
+                const currentValue = potpotNumberField.value.trim();
+                if (!currentValue || !/^\d{3}$/.test(currentValue)) {
+                    const uniqueNumber = await generateUniquePotpotNumber();
+                    potpotNumberField.value = uniqueNumber;
+                    
+                    // Add a note about uniqueness
+                    const helpText = document.querySelector('#potpot_number_container .form-text');
+                    if (helpText) {
+                        helpText.textContent = "Unique 3-digit identifier generated automatically";
+                    }
+                }
+            } else {
+                potpotNumberContainer.style.display = 'none';
+                potpotNumberField.value = '';
+            }
+        }
+        
+        // Add validation to ensure potpot number is max 3 digits
+        if (potpotNumberField) {
+            potpotNumberField.addEventListener('input', function() {
+                // Remove any non-digit characters
+                this.value = this.value.replace(/\D/g, '');
+                
+                // Truncate to 3 digits if longer
+                if (this.value.length > 3) {
+                    this.value = this.value.substring(0, 3);
+                }
+            });
+        }
+        
+        // Initial state
+        togglePotpotNumberField();
+        
+        // Add event listener for changes
+        if (vehicleTypeSelect && potpotNumberContainer) {
+            vehicleTypeSelect.addEventListener('change', togglePotpotNumberField);
+        }
+        
+        // Delete vehicle confirmation with SweetAlert
+        const deleteBtn = document.getElementById('delete-vehicle-btn');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', function() {
+                const vehicleId = this.getAttribute('data-id');
+                
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "This vehicle will be permanently deleted. This action cannot be undone.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, delete it!',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Redirect to delete URL if confirmed
+                        window.location.href = "{% url 'delete_vehicle' 0 %}".replace('0', vehicleId);
+                    }
+                });
             });
         }
     });

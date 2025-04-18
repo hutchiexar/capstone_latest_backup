@@ -1,0 +1,861 @@
+{% extends "user_portal/base_user.html" %}
+{% load static %}
+{% load educational_tags %}
+
+{% block title %}Quizzes | Education Portal{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Modern Color Palette - Matching Dashboard */
+    :root {
+        --primary-color: #3563E9;
+        --primary-light: #EEF3FF;
+        --success-color: #0CAA1D;
+        --danger-color: #F53D3D;
+        --warning-color: #FFB800;
+        --info-color: #4DA7FF;
+        --dark-blue: #0F1C3F;
+        --neutral-gray: #737791;
+        --light-gray: #F6F7F9;
+        --white: #FFFFFF;
+    }
+
+    /* Common Utility Classes */
+    .shadow-lg { box-shadow: 0 20px 35px rgba(0,0,0,0.15); }
+    .shadow-sm { box-shadow: 0 5px 12px rgba(0,0,0,0.08); }
+    .shadow-md { box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+    .glow-primary { box-shadow: 0 0 15px rgba(53, 99, 233, 0.3); }
+    .glow-sm { box-shadow: 0 0 8px rgba(53, 99, 233, 0.15); }
+    .rounded-xl { border-radius: 1rem; }
+    .rounded-lg { border-radius: 0.75rem; }
+    .transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 300ms; }
+    
+    /* Animation */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(15px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes scaleIn {
+        from { transform: scale(0.95); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+    
+    /* Dashboard Container */
+    .dashboard-container {
+        animation: fadeIn 0.6s ease-out;
+    }
+    
+    /* Welcome Section */
+    .welcome-section {
+        background-color: var(--white);
+        border-radius: 1.25rem;
+        padding: 2.25rem;
+        margin-bottom: 2.5rem;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08), 0 0 20px rgba(53, 99, 233, 0.05);
+        animation: scaleIn 0.5s ease-out;
+    }
+    
+    .welcome-icon {
+        width: 64px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 16px;
+        background-color: var(--primary-light);
+        margin-right: 1.5rem;
+        flex-shrink: 0;
+        transform: none;
+    }
+    
+    /* Stat Card */
+    .stat-card {
+        background-color: var(--white);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        height: 100%;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+    }
+    
+    .stat-card::before {
+        display: none;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.12), 0 0 15px rgba(53, 99, 233, 0.1);
+    }
+    
+    .stat-card-icon {
+        width: 54px;
+        height: 54px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1.25rem;
+        flex-shrink: 0;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+    }
+    
+    .stat-card-icon.success {
+        background-color: #E6F7EE;
+        color: var(--success-color);
+    }
+    
+    .stat-card-icon.warning {
+        background-color: #FFF4DE;
+        color: var(--warning-color);
+    }
+    
+    .stat-card-icon.danger {
+        background-color: #FFEEEE;
+        color: var(--danger-color);
+    }
+    
+    .stat-card-title {
+        font-size: 0.875rem;
+        color: var(--neutral-gray);
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+    }
+    
+    .stat-card-value {
+        font-size: 1.875rem;
+        font-weight: 700;
+        color: var(--dark-blue);
+        margin-bottom: 0.25rem;
+    }
+    
+    .stat-card-description {
+        font-size: 0.875rem;
+        color: var(--neutral-gray);
+    }
+    
+    /* Badge Styling */
+    .status-badge {
+        padding: 0.4rem 0.75rem;
+        border-radius: 1rem;
+        font-weight: 500;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    .status-badge-passed {
+        background-color: #E6F7EE;
+        color: var(--success-color);
+    }
+    
+    .status-badge-failed {
+        background-color: #FFEEEE;
+        color: var(--danger-color);
+    }
+    
+    .status-badge-progress {
+        background-color: #FFF4DE;
+        color: var(--warning-color);
+    }
+    
+    /* Search/Filter Container */
+    .filter-container {
+        background-color: var(--white);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.08), 0 0 15px rgba(53, 99, 233, 0.05);
+        margin-bottom: 2rem;
+        animation: fadeIn 0.5s ease-out;
+    }
+    
+    .search-input {
+        border-radius: 0.5rem;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--light-gray);
+        transition: all 0.3s ease;
+        font-size: 0.95rem;
+    }
+    
+    .search-input:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(53, 99, 233, 0.15);
+    }
+    
+    .topic-select {
+        border-radius: 0.5rem;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--light-gray);
+        transition: all 0.3s ease;
+        font-size: 0.95rem;
+    }
+    
+    .topic-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(53, 99, 233, 0.15);
+    }
+    
+    /* Button Styling */
+    .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        border-radius: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 12px rgba(53, 99, 233, 0.2);
+    }
+    
+    .btn-primary:hover {
+        background-color: #2954d4;
+        border-color: #2954d4;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(41, 84, 212, 0.25), 0 0 20px rgba(53, 99, 233, 0.2);
+    }
+    
+    .btn-outline-primary {
+        color: var(--primary-color);
+        border-color: var(--primary-color);
+        border-radius: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-outline-primary:hover {
+        background-color: var(--primary-color);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(41, 84, 212, 0.2), 0 0 15px rgba(53, 99, 233, 0.15);
+    }
+    
+    /* Empty State */
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem 2rem;
+        background-color: var(--white);
+        border-radius: 1rem;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.08), 0 0 15px rgba(53, 99, 233, 0.05);
+    }
+    
+    .empty-state-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background-color: var(--light-gray);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+        font-size: 1.75rem;
+        color: var(--neutral-gray);
+    }
+    
+    /* Progress bar styling */
+    .progress {
+        height: 8px;
+        margin-bottom: 0.5rem;
+        background-color: #f0f2f5;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    
+    .progress-bar {
+        background-color: #4e73df;
+        border-radius: 4px;
+    }
+    
+    /* Page header */
+    .page-header {
+        margin-bottom: 2rem;
+    }
+    
+    .page-title {
+        font-weight: 700;
+        color: var(--dark-blue);
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.02em;
+    }
+    
+    .filter-icon-btn {
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.06);
+        border-radius: 0.625rem;
+    }
+    
+    .info-badge {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.5rem;
+        margin-right: 0.5rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .btn-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.625rem;
+    }
+    
+    /* Pagination styling */
+    .pagination {
+        gap: 0.3125rem;
+    }
+    
+    .page-item {
+        margin: 0 0.125rem;
+    }
+    
+    .page-link {
+        border-radius: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        color: var(--dark-blue);
+        border: 1px solid rgba(0,0,0,0.08);
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .page-link:hover {
+        background-color: var(--primary-light);
+        color: var(--primary-color);
+        border-color: var(--primary-light);
+        transform: translateY(-2px);
+        box-shadow: 0 3px 6px rgba(0,0,0,0.05);
+    }
+    
+    .page-item.active .page-link {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        box-shadow: 0 4px 8px rgba(53, 99, 233, 0.25);
+    }
+    
+    /* Quiz details animation */
+    .quiz-details {
+        transition: all 0.3s ease;
+    }
+    
+    .quiz-details:hover {
+        transform: translateY(-2px);
+    }
+
+    /* Input group styles */
+    .input-group-text {
+        border-radius: 0.625rem 0 0 0.625rem;
+        padding: 0.875rem 1.125rem;
+        background-color: var(--primary-light);
+        border-color: var(--primary-light);
+    }
+    
+    /* Card title */
+    .quiz-title {
+        font-weight: 700;
+        font-size: 1.175rem;
+        color: var(--dark-blue);
+        transition: all 0.2s ease;
+    }
+    
+    .stat-card:hover .quiz-title {
+        color: var(--primary-color);
+    }
+
+    /* CSS for Skeleton Loaders */
+    @keyframes shimmer {
+        0% {
+            background-position: -200% 0;
+        }
+        100% {
+            background-position: 200% 0;
+        }
+    }
+
+    .skeleton {
+        background: linear-gradient(90deg, var(--light-gray) 25%, #e8eef7 50%, var(--light-gray) 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 0.5rem;
+    }
+
+    .skeleton-card {
+        background-color: var(--white);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        height: 100%;
+        box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+    }
+
+    .skeleton-title {
+        height: 1.5rem;
+        width: 70%;
+        margin-bottom: 1rem;
+    }
+
+    .skeleton-badge {
+        height: 1.25rem;
+        width: 5rem;
+        border-radius: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .skeleton-text {
+        height: 0.875rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .skeleton-text.short {
+        width: 40%;
+    }
+
+    .skeleton-text.medium {
+        width: 60%;
+    }
+
+    .skeleton-text.long {
+        width: 90%;
+    }
+
+    .skeleton-progress {
+        height: 8px;
+        border-radius: 1rem;
+        margin: 1rem 0;
+    }
+
+    .skeleton-button {
+        height: 2.5rem;
+        width: 100%;
+        border-radius: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .skeleton-chip {
+        height: 1.5rem;
+        width: 4rem;
+        border-radius: 1rem;
+        display: inline-block;
+        margin-right: 0.5rem;
+    }
+
+    .skeleton-container {
+        display: block;
+    }
+
+    .content-container {
+        display: none;
+    }
+
+    .loaded .skeleton-container {
+        display: none;
+    }
+
+    .loaded .content-container {
+        display: block;
+    }
+
+    /* Card Container Styles */
+    .quiz-container {
+        padding: 2rem;
+        background-color: var(--white);
+        border-radius: 1rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        margin-bottom: 2rem;
+    }
+
+    /* Quiz Card Styles - Updated */
+    .quiz-card {
+        background-color: var(--white);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        border: 1px solid rgba(0,0,0,0.05);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        transition: all 0.2s ease;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .quiz-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    }
+
+    .quiz-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--dark-blue);
+        margin-bottom: 0.75rem;
+    }
+
+    .quiz-description {
+        color: var(--neutral-gray);
+        font-size: 0.95rem;
+        margin-bottom: 1rem;
+    }
+
+    .status-badge {
+        padding: 0.3rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .badge-pill {
+        padding: 0.3rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        margin-right: 0.5rem;
+        background-color: var(--light-gray);
+        color: var(--neutral-gray);
+    }
+
+    .badge-pill.primary {
+        background-color: var(--primary-light);
+        color: var(--primary-color);
+    }
+
+    .quiz-result {
+        margin-top: auto;
+        padding-top: 1rem;
+    }
+
+    .quiz-date {
+        color: var(--neutral-gray);
+        font-size: 0.8rem;
+        text-align: right;
+    }
+
+    .quiz-progress {
+        height: 6px;
+        background-color: var(--light-gray);
+        border-radius: 3px;
+        overflow: hidden;
+        margin: 0.5rem 0;
+    }
+
+    .quiz-progress-bar {
+        height: 100%;
+        background-color: var(--primary-color);
+        border-radius: 3px;
+    }
+
+    .quiz-score {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+    }
+
+    .quiz-action {
+        display: block;
+        text-align: center;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        border: 1px solid var(--primary-color);
+        color: var(--primary-color);
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        margin-top: 1rem;
+    }
+
+    .quiz-action:hover {
+        background-color: var(--primary-color);
+        color: var(--white);
+    }
+
+    .quiz-action i {
+        margin-right: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4 dashboard-container" id="quizContainer">
+    <!-- Welcome Section -->
+    <div class="welcome-section d-flex align-items-center">
+        <div class="welcome-icon">
+            <span class="material-symbols-rounded fs-1 text-primary">school</span>
+        </div>
+        <div>
+            <h1 class="page-title h3 mb-2 fw-bold">Educational Quizzes</h1>
+            <p class="text-muted mb-0">Test your knowledge with these interactive quizzes</p>
+        </div>
+        <div class="ms-auto">
+            <a href="{% url 'educational:topic_list' %}" class="btn btn-outline-primary">
+                <span class="material-symbols-rounded me-2">menu_book</span>
+                Educational Topics
+            </a>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="filter-container">
+        <form method="get" class="row g-3 align-items-center">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <input type="text" class="form-control search-input" name="q" value="{{ query|default:'' }}" placeholder="Search quizzes...">
+                    <button class="btn btn-primary" type="submit">
+                        <span class="material-symbols-rounded">search</span>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <select class="form-select topic-select" name="topic" onchange="this.form.submit()">
+                    <option value="">All Topics</option>
+                    {% for topic in topics %}
+                        <option value="{{ topic.id }}" {% if selected_topic == topic.id|stringformat:"i" %}selected{% endif %}>
+                            {{ topic.title }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <a href="{% url 'educational:quiz_list' %}" class="btn btn-outline-primary d-flex align-items-center justify-content-center w-100">
+                    <span class="material-symbols-rounded me-2">filter_alt_off</span>
+                    Clear
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Quiz Cards Section -->
+    <div class="quiz-container">
+        <!-- Skeleton Loaders -->
+        <div class="skeleton-container">
+            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+                {% for i in '123456'|make_list %}
+                <div class="col">
+                    <div class="skeleton-card">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="skeleton skeleton-title"></div>
+                            <div class="skeleton skeleton-badge"></div>
+                        </div>
+                        
+                        <div class="skeleton skeleton-text long mb-3"></div>
+                        <div class="skeleton skeleton-text long mb-3"></div>
+                        
+                        <div class="mb-3">
+                            <div class="skeleton skeleton-chip"></div>
+                            <div class="skeleton skeleton-chip"></div>
+                            <div class="skeleton skeleton-chip"></div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <div class="skeleton skeleton-text short"></div>
+                                <div class="skeleton skeleton-text short"></div>
+                            </div>
+                            
+                            <div class="skeleton skeleton-progress"></div>
+                            
+                            <div class="d-flex justify-content-between mt-1">
+                                <div class="skeleton skeleton-text short"></div>
+                                <div class="skeleton skeleton-text short"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="skeleton skeleton-button"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Actual Quiz Cards -->
+        <div class="content-container">
+            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+                {% for quiz in page_obj %}
+                    {% with user_attempt=user_quiz_attempts|get_item:quiz.id %}
+                    <div class="col">
+                        <div class="quiz-card">
+                            <div class="d-flex justify-content-between">
+                                <h3 class="quiz-title">{{ quiz.title }}</h3>
+                                {% if user_attempt and user_attempt.is_passed %}
+                                    <span class="status-badge status-badge-passed">
+                                        <span class="material-symbols-rounded me-1" style="font-size: 0.875rem;">check_circle</span>
+                                        Passed
+                                    </span>
+                                {% endif %}
+                            </div>
+                            
+                            <p class="quiz-description">{{ quiz.description|default:"No description provided."|truncatechars:100 }}</p>
+                            
+                            <div class="mb-3">
+                                <span class="badge-pill">
+                                    <span class="material-symbols-rounded me-1" style="font-size: 0.75rem;">quiz</span>
+                                    {{ quiz.questions.count }} question{{ quiz.questions.count|pluralize }}
+                                </span>
+                                <span class="badge-pill primary">
+                                    <span class="material-symbols-rounded me-1" style="font-size: 0.75rem;">percent</span>
+                                    {{ quiz.passing_score }}% to pass
+                                </span>
+                            </div>
+                            
+                            {% if user_attempt %}
+                                <div class="quiz-result">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="text-muted small">Your Result</div>
+                                        {% if user_attempt.end_time %}
+                                        <div class="quiz-date">
+                                            <span class="material-symbols-rounded" style="font-size: 0.75rem; vertical-align: middle;">calendar_today</span>
+                                            {{ user_attempt.end_time|date:"M d, Y" }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% if user_attempt.score %}
+                                        <div class="quiz-progress">
+                                            <div class="quiz-progress-bar" style="width: {{ user_attempt.score }}%;"></div>
+                                        </div>
+                                        <div class="quiz-score">
+                                            <span class="text-muted">Score: {{ user_attempt.score|floatformat:1 }}%</span>
+                                            <span>
+                                                {% if user_attempt.is_passed %}
+                                                <span class="text-success fw-medium">Passed</span>
+                                                {% else %}
+                                                <span class="text-danger fw-medium">Failed</span>
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                    {% else %}
+                                        <div class="d-flex align-items-center">
+                                            <span class="material-symbols-rounded me-2 text-warning">hourglass_top</span>
+                                            <span class="text-warning small">Continue your attempt</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                            
+                            {% if user_attempt and not user_attempt.is_completed %}
+                                <a href="{% url 'educational:take_quiz' user_attempt.id %}" class="quiz-action">
+                                    <span class="material-symbols-rounded me-1">play_arrow</span>
+                                    Continue Quiz
+                                </a>
+                            {% else %}
+                                <a href="{% url 'educational:quiz_detail' quiz.id %}" class="quiz-action">
+                                    <span class="material-symbols-rounded me-1">info</span>
+                                    Details & Start
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endwith %}
+                {% empty %}
+                    <div class="col-12">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">
+                                <span class="material-symbols-rounded">search_off</span>
+                            </div>
+                            <h5 class="mb-2">No quizzes found</h5>
+                            <p class="text-muted mb-4">Try adjusting your search or filter criteria.</p>
+                            <a href="{% url 'educational:quiz_list' %}" class="btn btn-primary btn-icon">
+                                <span class="material-symbols-rounded">refresh</span>
+                                View All Quizzes
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+                <nav class="mt-4" aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if query %}&q={{ query }}{% endif %}{% if selected_topic %}&topic={{ selected_topic }}{% endif %}" aria-label="First">
+                                    <span aria-hidden="true">&laquo;&laquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if selected_topic %}&topic={{ selected_topic }}{% endif %}" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link" aria-hidden="true">&laquo;&laquo;</span>
+                            </li>
+                            <li class="page-item disabled">
+                                <span class="page-link" aria-hidden="true">&laquo;</span>
+                            </li>
+                        {% endif %}
+                        
+                        {% for i in page_obj.paginator.page_range %}
+                            {% if page_obj.number == i %}
+                                <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                            {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ i }}{% if query %}&q={{ query }}{% endif %}{% if selected_topic %}&topic={{ selected_topic }}{% endif %}">{{ i }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if selected_topic %}&topic={{ selected_topic }}{% endif %}" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}{% if selected_topic %}&topic={{ selected_topic }}{% endif %}" aria-label="Last">
+                                    <span aria-hidden="true">&raquo;&raquo;</span>
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link" aria-hidden="true">&raquo;</span>
+                            </li>
+                            <li class="page-item disabled">
+                                <span class="page-link" aria-hidden="true">&raquo;&raquo;</span>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Simulate loading
+    const quizContainer = document.getElementById('quizContainer');
+    
+    // Show skeleton for a minimum amount of time (800ms)
+    setTimeout(function() {
+        quizContainer.classList.add('loaded');
+    }, 800);
+    
+    // If content loads very fast, still show skeleton for the minimum time
+    if (document.readyState === 'complete') {
+        setTimeout(function() {
+            quizContainer.classList.add('loaded');
+        }, 800);
+    } else {
+        window.addEventListener('load', function() {
+            quizContainer.classList.add('loaded');
+        });
+    }
+});
+</script>
+{% endblock %}
+{% endblock %} 

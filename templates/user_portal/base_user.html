@@ -548,6 +548,8 @@
                 width: 100%;
                 display: flex;
                 justify-content: center;
+                flex-direction: column;
+                align-items: center;
             }
             
             .nav-link {
@@ -558,7 +560,7 @@
             }
             
             .nav-item.dropdown {
-                position: static;
+                position: relative;
             }
             
             .nav-item.dropdown .dropdown-menu {
@@ -571,6 +573,8 @@
                 padding: 0;
                 background-color: var(--primary-light);
                 border-radius: 0.5rem;
+                left: 50%;
+                transform: translateX(-50%) !important;
             }
             
             .dropdown-menu .dropdown-item {
@@ -781,7 +785,51 @@
                 left: auto !important;
             }
         }
+
+        /* Fix for Educational Materials dropdown in mobile view */
+        @media (max-width: 991px) {
+            /* Educational dropdown specific fix */
+            .nav-item.dropdown .dropdown-menu {
+                position: relative !important;
+                width: 100% !important;
+                max-width: 240px !important;
+                margin: 0.5rem auto !important;
+                float: none !important;
+                left: auto !important;
+                right: auto !important;
+                transform: none !important;
+            }
+            
+            /* Make dropdown items centered and properly spaced */
+            .dropdown-menu .dropdown-item {
+                display: flex !important;
+                justify-content: center !important;
+                align-items: center !important;
+                padding: 0.75rem 1rem !important;
+                margin: 0.25rem 0 !important;
+            }
+            
+            /* Fix spacing of icons in dropdown items */
+            .dropdown-menu .dropdown-item .material-icons {
+                margin-right: 0.5rem !important;
+            }
+            
+            /* Ensure dropdown stays within viewport */
+            .dropdown-menu.show {
+                display: block !important;
+                overflow: visible !important;
+            }
+            
+            /* Specific fixes for Education dropdown */
+            #educationDropdown + .dropdown-menu {
+                background-color: var(--primary-light) !important;
+                border-radius: 0.5rem !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+        }
     </style>
+    
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -810,11 +858,25 @@
                             <span>Dashboard</span>
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'user_violations' %}active{% endif %}" href="{% url 'user_portal:user_violations' %}" aria-label="My Violations" tabindex="0">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name == 'user_violations' or request.resolver_match.url_name == 'user_ncap_violations' %}active{% endif %}" href="#" id="violationsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="My Violations" tabindex="0">
                             <span class="material-symbols-rounded nav-icon">gavel</span>
                             <span>My Violations</span>
                         </a>
+                        <ul class="dropdown-menu" aria-labelledby="violationsDropdown">
+                            <li>
+                                <a class="dropdown-item {% if request.resolver_match.url_name == 'user_violations' %}active{% endif %}" href="{% url 'user_portal:user_violations' %}">
+                                    <span class="material-symbols-rounded">description</span>
+                                    <span>Regular Violations</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item {% if request.resolver_match.url_name == 'user_ncap_violations' %}active{% endif %}" href="{% url 'user_portal:user_ncap_violations' %}">
+                                    <span class="material-symbols-rounded">photo_camera</span>
+                                    <span>NCAP Violations</span>
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'file_report' %}active{% endif %}" href="{% url 'user_portal:file_report' %}" aria-label="File Report" tabindex="0">
@@ -839,6 +901,12 @@
                                 <a class="dropdown-item" href="{% url 'educational:landing_page' %}">
                                     <span class="material-icons">school</span>
                                     <span>Start Learning</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'educational:quiz_list' %}">
+                                    <span class="material-icons">quiz</span>
+                                    <span>Quizzes</span>
                                 </a>
                             </li>
                             <li>
@@ -981,6 +1049,12 @@
                                 </a>
                             </li>
                             <li>
+                                <a class="dropdown-item" href="{% url 'educational:quiz_list' %}" tabindex="0">
+                                    <span class="material-symbols-rounded">quiz</span>
+                                    Quizzes
+                                </a>
+                            </li>
+                            <li>
                                 <a class="dropdown-item" href="{% url 'educational:user_bookmarks' %}" tabindex="0">
                                     <span class="material-symbols-rounded">bookmarks</span>
                                     My Bookmarks
@@ -1098,6 +1172,10 @@
                         <span class="material-symbols-rounded me-3">menu_book</span>
                         Browse Topics
                     </a>
+                    <a href="{% url 'educational:quiz_list' %}" class="list-group-item list-group-item-action d-flex align-items-center">
+                        <span class="material-symbols-rounded me-3">quiz</span>
+                        Quizzes
+                    </a>
                     <a href="{% url 'educational:user_bookmarks' %}" class="list-group-item list-group-item-action d-flex align-items-center">
                         <span class="material-symbols-rounded me-3">bookmarks</span>
                         My Bookmarks
@@ -1157,9 +1235,9 @@
         </div>
     </footer>
 
-    <!-- Bootstrap JS -->
+    <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <!-- Auto-dismiss alerts -->
     <script>
         // Functions for mobile popups
@@ -3196,5 +3274,6 @@
     // Make the function available globally
     window.openNotificationDetailModal = openNotificationDetailModal;
     </script>
+
 </body>
 </html>

@@ -133,30 +133,34 @@
                                 <td class="text-end pe-4">
                                     <div class="action-buttons">
                                         <button type="button" 
-                                                class="btn btn-action btn-view"
+                                                class="btn btn-primary action-btn"
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#userDetailModal"
-                                                data-user-id="{{ user.id }}">
+                                                data-user-id="{{ user.id }}"
+                                                title="View Details">
                                             <span class="material-icons">visibility</span>
                                         </button>
                                         <a href="{% url 'edit_user' user.id %}" 
-                                        class="btn btn-action btn-edit">
+                                        class="btn btn-info action-btn"
+                                        title="Edit User">
                                             <span class="material-icons">edit</span>
                                         </a>
                                         {% if user.user.username != request.user.username %}
                                         <button type="button"
-                                                class="btn btn-action btn-toggle-status"
+                                                class="btn {{ user.user.is_active|yesno:'btn-danger,btn-success' }} action-btn"
                                                 data-user-id="{{ user.id }}"
-                                                data-action="{{ user.user.is_active|yesno:'deactivate,activate' }}">
+                                                data-action="{{ user.user.is_active|yesno:'deactivate,activate' }}"
+                                                title="{{ user.user.is_active|yesno:'Deactivate,Activate' }} User">
                                             <span class="material-icons">{{ user.user.is_active|yesno:'block,check_circle' }}</span>
                                         </button>
                                         {% else %}
                                         <!-- Disabled action button for current user -->
                                         <button type="button"
-                                                class="btn btn-action btn-toggle-status"
+                                                class="btn {{ user.user.is_active|yesno:'btn-danger,btn-success' }} action-btn"
                                                 data-user-id="{{ user.id }}"
                                                 data-action="{{ user.user.is_active|yesno:'deactivate,activate' }}"
-                                                title="Cannot modify your own account">
+                                                title="Cannot modify your own account"
+                                                disabled>
                                             <span class="material-icons">{{ user.user.is_active|yesno:'block,check_circle' }}</span>
                                         </button>
                                         {% endif %}
@@ -236,37 +240,41 @@
                                 </div>
                             </div>
                             <div class="card-footer p-2">
-                                <div class="mobile-actions">
+                                <div class="d-flex justify-content-center gap-2">
                                     <button type="button" 
-                                            class="btn mobile-action-btn btn-view"
+                                            class="btn btn-primary action-btn"
                                             data-bs-toggle="modal"
                                             data-bs-target="#userDetailModal"
-                                            data-user-id="{{ user.id }}">
+                                            data-user-id="{{ user.id }}"
+                                            title="View Details">
                                         <span class="material-icons">visibility</span>
-                                        <span>View</span>
+                                        <span class="view-text">View</span>
                                     </button>
                                     <a href="{% url 'edit_user' user.id %}" 
-                                        class="btn mobile-action-btn btn-edit">
+                                        class="btn btn-info action-btn"
+                                        title="Edit User">
                                         <span class="material-icons">edit</span>
-                                        <span>Edit</span>
+                                        <span class="view-text">Edit</span>
                                     </a>
                                     {% if user.user.username != request.user.username %}
                                     <button type="button"
-                                            class="btn mobile-action-btn btn-toggle"
+                                            class="btn {{ user.user.is_active|yesno:'btn-danger,btn-success' }} action-btn"
                                             data-user-id="{{ user.id }}"
-                                            data-action="{{ user.user.is_active|yesno:'deactivate,activate' }}">
+                                            data-action="{{ user.user.is_active|yesno:'deactivate,activate' }}"
+                                            title="{{ user.user.is_active|yesno:'Deactivate,Activate' }} User">
                                         <span class="material-icons">{{ user.user.is_active|yesno:'block,check_circle' }}</span>
-                                        <span>{{ user.user.is_active|yesno:'Deactivate,Activate' }}</span>
+                                        <span class="view-text">{{ user.user.is_active|yesno:'Deactivate,Activate' }}</span>
                                     </button>
                                     {% else %}
                                     <!-- Disabled action button for current user -->
                                     <button type="button"
-                                            class="btn mobile-action-btn btn-toggle"
+                                            class="btn {{ user.user.is_active|yesno:'btn-danger,btn-success' }} action-btn"
                                             data-user-id="{{ user.id }}"
                                             data-action="{{ user.user.is_active|yesno:'deactivate,activate' }}"
-                                            title="Cannot modify your own account">
+                                            title="Cannot modify your own account"
+                                            disabled>
                                         <span class="material-icons">{{ user.user.is_active|yesno:'block,check_circle' }}</span>
-                                        <span>{{ user.user.is_active|yesno:'Deactivate,Activate' }}</span>
+                                        <span class="view-text">{{ user.user.is_active|yesno:'Deactivate,Activate' }}</span>
                                     </button>
                                     {% endif %}
                                 </div>
@@ -500,29 +508,79 @@
     }
 
     /* Action Buttons */
+    .action-buttons {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 4px !important;
+        width: 100% !important;
+        max-width: 140px !important;
+        margin-left: auto !important;
+    }
+
+    .action-btn {
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        max-width: 40px !important;
+        padding: 0 !important;
+        border-radius: 4px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex: 0 0 40px !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+        transition: all 0.2s !important;
+    }
+
+    .action-btn:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+    }
+
+    .action-btn .material-icons {
+        color: white !important;
+        font-size: 18px !important;
+        margin: 0 !important;
+        line-height: 1 !important;
+    }
+
+    /* Hide text labels on buttons */
+    .view-text {
+        display: none;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .action-btn {
+            width: 36px !important;
+            height: 36px !important;
+            min-width: 36px !important;
+            max-width: 36px !important;
+        }
+        
+        .action-btn .material-icons {
+            font-size: 16px !important;
+        }
+    }
+
+    /* Action Buttons - Original overridden styles */
     .btn-action {
-        width: 32px;
-        height: 32px;
-        padding: 0;
-        display: inline-flex;
-        align-items: center;
+        display: none;
+    }
+
+    /* Mobile actions container */
+    .mobile-actions {
+        display: flex;
         justify-content: center;
-        border-radius: 6px;
-        border: 1px solid #e5e7eb;
-        background-color: white;
-        color: #6b7280;
-        transition: all 0.2s ease;
-        margin-left: 0.5rem;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
     }
 
-    .btn-action:hover {
-        background-color: #f3f4f6;
-        border-color: #d1d5db;
-        color: #374151;
-    }
-
-    .btn-action .material-icons {
-        font-size: 1.25rem;
+    /* Mobile action buttons overridden */
+    .mobile-action-btn {
+        display: none;
     }
 
     /* Skeleton Loader Styles */
@@ -715,111 +773,6 @@
         border-top: 1px solid #eaecef;
         padding: 10px !important;
     }
-
-    /* Mobile action buttons */
-    .mobile-actions {
-        display: flex;
-        width: 100%;
-        justify-content: space-between;
-        gap: 2%;
-    }
-
-    .mobile-action-btn {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 8px 0;
-        border-radius: 4px;
-        font-size: 0.875rem;
-        gap: 5px;
-        transition: all 0.2s;
-        border: none;
-        color: white;
-        text-align: center;
-    }
-
-    .mobile-action-btn.btn-view {
-        background-color: var(--primary-color, #2563eb);
-    }
-
-    .mobile-action-btn.btn-edit {
-        background-color: #f59e0b;
-    }
-
-    .mobile-action-btn.btn-toggle {
-        background-color: #6b7280;
-    }
-
-    .mobile-action-btn:hover {
-        opacity: 0.9;
-        transform: translateY(-1px);
-    }
-
-    .mobile-action-btn:active {
-        opacity: 1;
-        transform: translateY(0);
-    }
-
-    .mobile-action-btn i,
-    .mobile-action-btn .material-icons {
-        font-size: 0.9rem;
-    }
-
-    .mobile-action-btn span {
-        font-weight: 500;
-        font-size: 0.85rem;
-        color: white;
-    }
-
-    /* Responsive Styles */
-    @media (max-width: 768px) {
-        .card-body {
-            padding: 1rem !important;
-        }
-        
-        .table td {
-            padding: 0.75rem;
-        }
-        
-        .btn-action {
-            width: 28px;
-            height: 28px;
-        }
-        
-        .btn-action .material-icons {
-            font-size: 1rem;
-        }
-        
-        .avatar-container img,
-        .avatar-placeholder {
-            width: 40px;
-            height: 40px;
-        }
-        
-        /* Role and status badges on mobile */
-        .role-badge,
-        .status-badge {
-            padding: 0.3rem 0.5rem;
-            font-size: 0.75rem;
-        }
-        
-        /* For very small screens */
-        @media (max-width: 360px) {
-            .mobile-action-btn {
-                padding: 6px 0;
-            }
-            
-            .mobile-action-btn i,
-            .mobile-action-btn .material-icons {
-                font-size: 0.8rem;
-            }
-            
-            .mobile-action-btn span {
-                font-size: 0.8rem;
-            }
-        }
-    }
     </style>
 
     <script>
@@ -1007,7 +960,7 @@
         }
         
         // Add event listeners to all toggle status buttons
-        document.querySelectorAll('.btn-toggle-status').forEach(button => {
+        document.querySelectorAll('.btn-danger.action-btn, .btn-success.action-btn').forEach(button => {
             button.addEventListener('click', function(e) {
                 e.preventDefault();
                 const userId = this.getAttribute('data-user-id');
@@ -1034,7 +987,7 @@
             });
         });
         
-        // Initialize modal events
+        // Initialize modal events for both desktop and mobile
         const userDetailModal = document.getElementById('userDetailModal');
         if (userDetailModal) {
             userDetailModal.addEventListener('show.bs.modal', function(event) {
@@ -1050,16 +1003,18 @@
             });
         }
 
-        // Add user detail modal trigger for mobile view
-        document.querySelectorAll('.user-card .btn-view').forEach(button => {
+        // Add user detail modal trigger for view buttons
+        document.querySelectorAll('.btn-primary.action-btn').forEach(button => {
             button.addEventListener('click', function() {
-                const userId = this.closest('.user-card').getAttribute('data-user-id');
-                showUserDetail(userId);
+                const userId = this.getAttribute('data-user-id');
+                if (userId) {
+                    showUserDetail(userId);
+                }
             });
         });
         
         // Add toggle status for mobile view
-        document.querySelectorAll('.user-card .btn-toggle').forEach(button => {
+        document.querySelectorAll('.user-card .btn-danger.action-btn, .user-card .btn-success.action-btn').forEach(button => {
             button.addEventListener('click', function() {
                 const userId = this.closest('.user-card').getAttribute('data-user-id');
                 const action = this.getAttribute('data-action');

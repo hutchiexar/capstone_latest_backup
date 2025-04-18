@@ -65,7 +65,11 @@
                     <span class="material-icons me-2" style="color: var(--primary-color)">balance_scale</span>
                     <h4 class="mb-0">Adjudication Cases</h4>
                 </div>
-                <div class="d-flex align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    <a href="{% url 'adjudication_dashboard' %}" class="btn btn-primary d-flex align-items-center gap-2">
+                        <span class="material-icons">dashboard</span>
+                        <span>Adjudication Dashboard</span>
+                    </a>
                     {% include 'includes/search_form.html' with placeholder="Search by name, license number..." %}
                 </div>
             </div>
@@ -80,56 +84,70 @@
                 <table class="table table-hover align-middle" id="adjudicationTable">
                     <thead>
                         <tr>
-                            <th>Case ID</th>
-                            <th>Date Filed</th>
-                            <th>Violator</th>
-                            <th>Fine Amount</th>
-                            <th>Status</th>
-                            <th class="text-end">Actions</th>
+                            <th class="bg-soft-primary text-center">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="select-all">
+                                    <label class="form-check-label" for="select-all"></label>
+                                </div>
+                            </th>
+                            <th class="text-center">CASE ID</th>
+                            <th class="text-center">DATE FILED</th>
+                            <th class="text-center">VIOLATOR</th>
+                            <th class="text-center">FINE AMOUNT</th>
+                            <th class="text-center">STATUS</th>
+                            <th class="text-center" style="width: 140px;">ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for violation in violations %}
+                        {% if violation.status != 'ADJUDICATED' and violation.status != 'APPROVED' %}
                         <tr>
-                            <td>{{ violation.id }}</td>
-                            <td>{{ violation.violation_date|date:"M d, Y" }}</td>
-                            <td>
-                                <div class="d-flex flex-column">
+                            <td class="text-center">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="violation-{{ violation.id }}" name="selected_violations" value="{{ violation.id }}">
+                                    <label class="form-check-label" for="violation-{{ violation.id }}"></label>
+                                </div>
+                            </td>
+                            <td class="text-center">{{ violation.id }}</td>
+                            <td class="text-center">{{ violation.violation_date|date:"M d, Y" }}</td>
+                            <td class="text-center">
+                                <div class="d-flex flex-column justify-content-center align-items-center">
                                     <span class="fw-medium">{{ violation.violator.first_name }} {{ violation.violator.last_name }}</span>
-                                    <div class="d-flex align-items-center text-muted small">
-                                        <span class="me-2"><i class="fas fa-id-card me-1"></i>{{ violation.violator.license_number }}</span>
+                                    <div class="d-flex align-items-center text-muted small mt-1">
+                                        <span class="me-2"><i class="fas fa-id-card"></i></span>
                                         {% if violation.plate_number %}
                                         <span><i class="fas fa-car me-1"></i>{{ violation.plate_number }}</span>
                                         {% endif %}
                                     </div>
                                 </div>
                             </td>
-                            <td>₱{{ violation.fine_amount }}</td>
-                            <td>
+                            <td class="text-center">₱{{ violation.fine_amount|floatformat:2 }}</td>
+                            <td class="text-center">
                                 {% include 'includes/status_badge.html' with status=violation.status display_text=violation.get_status_display %}
                             </td>
-                            <td class="text-end">
+                            <td class="text-center" style="width: 140px;">
                                 <div class="action-buttons">
-                                    <button type="button" class="btn btn-action btn-view view-violation-btn" 
+                                    <button type="button" class="btn btn-primary action-btn view-violation-btn" 
                                            data-violation-id="{{ violation.id }}" 
                                            data-bs-toggle="tooltip" 
                                            data-bs-placement="top" 
                                            title="View Details and Violations">
-                                        <i class="fas fa-eye"></i>
+                                        <span class="material-icons">visibility</span>
                                     </button>
                                     <a href="{% url 'adjudication_form' violation.id %}" 
-                                       class="btn btn-action btn-adjudicate"
+                                       class="btn btn-purple action-btn"
                                        data-bs-toggle="tooltip"
                                        data-bs-placement="top"
                                        title="Adjudicate Case">
-                                        <i class="fas fa-balance-scale"></i>
+                                        <span class="material-icons">balance</span>
                                     </a>
                                 </div>
                             </td>
                         </tr>
+                        {% endif %}
                         {% empty %}
                         <tr>
-                            <td colspan="7" class="text-center py-4">
+                            <td colspan="8" class="text-center py-4">
                                 <div class="text-muted">
                                     <span class="material-icons d-block mb-2" style="font-size: 2.5rem; opacity: 0.5;">search_off</span>
                                     <p class="mb-0">No violations found</p>
@@ -144,6 +162,7 @@
             <!-- Mobile Card View -->
             <div class="adjudication-cards d-md-none">
                 {% for violation in violations %}
+                {% if violation.status != 'ADJUDICATED' and violation.status != 'APPROVED' %}
                 <div class="adjudication-card">
                     <div class="adjudication-card-header">
                         <div class="d-flex justify-content-between align-items-center">
@@ -151,12 +170,11 @@
                             <span class="filing-date text-muted">{{ violation.violation_date|date:"M d, Y" }}</span>
                         </div>
                         <div class="violator-info">
-                            <span class="fw-medium">{{ violation.violator.first_name }} {{ violation.violator.last_name }}</span>
-                            <div class="d-flex align-items-center text-muted small mt-1">
-                                <span class="me-2"><i class="fas fa-id-card me-1"></i>{{ violation.violator.license_number }}</span>
-                                {% if violation.plate_number %}
-                                <span><i class="fas fa-car me-1"></i>{{ violation.plate_number }}</span>
-                                {% endif %}
+                            <div class="d-flex flex-column align-items-center">
+                                <span class="fw-medium">{{ violation.violator.first_name }} {{ violation.violator.last_name }}</span>
+                                <div class="text-muted small mt-1">
+                                    <i class="fas fa-id-card"></i> {{ violation.violator.license_number }}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -165,18 +183,21 @@
                             <div>
                                 {% include 'includes/status_badge.html' with status=violation.status display_text=violation.get_status_display %}
                             </div>
-                            <div class="fine-amount">₱{{ violation.fine_amount }}</div>
+                            <div class="fine-amount">₱{{ violation.fine_amount|floatformat:2 }}</div>
                         </div>
-                        <div class="d-flex justify-content-between align-items-center mt-2">
-                            <button type="button" class="btn btn-sm btn-primary view-violation-btn" data-violation-id="{{ violation.id }}">
-                                <i class="fas fa-eye me-1"></i> View Details
-                            </button>
-                            <a href="{% url 'adjudication_form' violation.id %}" class="btn btn-sm btn-purple">
-                                <i class="fas fa-balance-scale me-1"></i> Adjudicate
-                            </a>
+                        <div class="d-flex justify-content-center align-items-center mt-2">
+                            <div class="action-buttons">
+                                <button type="button" class="btn btn-primary action-btn view-violation-btn" data-violation-id="{{ violation.id }}">
+                                    <span class="material-icons">visibility</span>
+                                </button>
+                                <a href="{% url 'adjudication_form' violation.id %}" class="btn btn-purple action-btn">
+                                    <span class="material-icons">balance</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
+                {% endif %}
                 {% empty %}
                 <div class="text-center py-4">
                     <div class="text-muted">
@@ -736,11 +757,123 @@
   from { transform: translateY(0); }
   to { transform: translateY(-10%); }
 }
+
+/* Action Buttons */
+.action-btn {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    padding: 0 !important;
+    border-radius: 4px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 40px !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    transition: all 0.2s !important;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+}
+
+/* Icon sizing */
+.action-btn .material-icons {
+    color: white !important;
+    font-size: 18px !important;
+    margin: 0 !important;
+    line-height: 1 !important;
+}
+
+/* Action buttons container */
+.action-buttons {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 4px !important;
+    width: 100% !important;
+    max-width: 140px !important;
+    margin: 0 auto !important;
+}
+
+/* Add view-text class for hiding text labels */
+.view-text {
+    display: none;
+}
+
+/* Center align all table content */
+.table th, .table td {
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* Style for checkboxes */
+.form-check-input {
+    cursor: pointer;
+}
+
+/* Selected row highlight */
+tr.selected {
+    background-color: rgba(var(--primary-rgb), 0.05);
+}
+
+/* Additional checkbox script to handle row selection highlighting */
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle select-all checkbox
+    const selectAllCheckbox = document.getElementById('select-all');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+            const checkboxes = document.querySelectorAll('input[name="selected_violations"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+                // Highlight/unhighlight the row
+                const row = checkbox.closest('tr');
+                if (row) {
+                    if (isChecked) {
+                        row.classList.add('selected');
+                    } else {
+                        row.classList.remove('selected');
+                    }
+                }
+            });
+        });
+    }
+    
+    // Handle individual checkbox changes
+    const individualCheckboxes = document.querySelectorAll('input[name="selected_violations"]');
+    individualCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const row = this.closest('tr');
+            if (row) {
+                if (this.checked) {
+                    row.classList.add('selected');
+                } else {
+                    row.classList.remove('selected');
+                }
+            }
+        });
+    });
+});
 </style>
 
 <script>
 // Update the search functionality to also work with cards
 document.addEventListener('DOMContentLoaded', function() {
+    // Handle select-all checkbox
+    const selectAllCheckbox = document.getElementById('select-all');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+            const checkboxes = document.querySelectorAll('input[name="selected_violations"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
+        });
+    }
+    
     // Initialize Micromodal
     MicroModal.init({
         openTrigger: 'data-micromodal-trigger',

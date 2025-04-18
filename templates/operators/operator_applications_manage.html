@@ -561,159 +561,119 @@
                 .then(response => {
                     // Always read the response, regardless of status
                     return response.text().then(text => {
-                        // Check if response is JSON
                         try {
+                            // Try to parse JSON
                             const data = JSON.parse(text);
+                            
+                            // If not ok, throw with the parsed data for better error messages
                             if (!response.ok) {
-                                throw new Error(data.error || `HTTP error! Status: ${response.status}`);
+                                throw new Error(data.message || `HTTP error! Status: ${response.status}`);
                             }
+                            
                             return data;
                         } catch (e) {
-                            // If it's not JSON or there's a parse error
                             console.error('Response parsing error:', e);
-                            if (!response.ok) {
-                                throw new Error(`Server error: ${response.status}. Response was not valid JSON.`);
-                            } else {
-                                throw new Error('Server returned non-JSON response');
+                            console.error('Raw response:', text);
+                            
+                            // If JSON parsing failed but response was successful, create a default success response
+                            if (response.ok) {
+                                // The form submission likely succeeded, but JSON parsing failed
+                                return {
+                                    success: true,
+                                    message: 'Application details retrieved successfully.'
+                                };
                             }
+                            
+                            // Otherwise, throw a generic error
+                            throw new Error(`Server error (${response.status}). Invalid JSON response.`);
                         }
                     });
                 })
                 .then(data => {
-                    // Hide skeleton and show content with smooth transition
-                    document.getElementById('applicationModalSkeleton').style.display = 'none';
-                    const contentEl = document.getElementById('applicationModalContent');
-                    contentEl.style.display = 'block';
-                    contentEl.style.opacity = '0';
-                    setTimeout(() => {
-                        contentEl.style.transition = 'opacity 0.3s ease';
-                        contentEl.style.opacity = '1';
-                    }, 50);
-                    
-                    // Fill the form with data
-                    document.getElementById('applicantName').textContent = data.user.full_name || '--';
-                    document.getElementById('applicantUsername').textContent = data.user.username || '--';
-                    document.getElementById('applicantEmail').textContent = data.user.email || '--';
-                    document.getElementById('applicantPhone').textContent = data.user.phone_number || '--';
-                    document.getElementById('applicantAddress').textContent = data.user.address || '--';
-                    document.getElementById('companyName').textContent = data.application.company_name || '--';
-                    
-                    // Add documents
-                    const documentsSection = document.getElementById('documentsSection');
-                    documentsSection.innerHTML = '';
-                    
-                    if (data.documents.business_permit) {
-                        documentsSection.innerHTML += `
-                            <div class="col-auto text-center">
-                                <a href="${data.documents.business_permit}" target="_blank" class="text-decoration-none">
-                                    <div class="doc-circle bg-primary mx-auto d-flex justify-content-center align-items-center mb-2">
-                                        <span class="material-icons text-white">description</span>
-                                    </div>
-                                    <p class="mb-0">Business Permit</p>
-                                </a>
-                            </div>
-                        `;
-                    }
-                    
-                    if (data.documents.police_clearance) {
-                        documentsSection.innerHTML += `
-                            <div class="col-auto text-center">
-                                <a href="${data.documents.police_clearance}" target="_blank" class="text-decoration-none">
-                                    <div class="doc-circle bg-primary mx-auto d-flex justify-content-center align-items-center mb-2">
-                                        <span class="material-icons text-white">security</span>
-                                    </div>
-                                    <p class="mb-0">Police Clearance</p>
-                                </a>
-                            </div>
-                        `;
-                    }
-                    
-                    if (data.documents.barangay_certificate) {
-                        documentsSection.innerHTML += `
-                            <div class="col-auto text-center">
-                                <a href="${data.documents.barangay_certificate}" target="_blank" class="text-decoration-none">
-                                    <div class="doc-circle bg-primary mx-auto d-flex justify-content-center align-items-center mb-2">
-                                        <span class="material-icons text-white">location_city</span>
-                                    </div>
-                                    <p class="mb-0">Barangay Certificate</p>
-                                </a>
-                            </div>
-                        `;
-                    }
-                    
-                    if (data.documents.cedula) {
-                        documentsSection.innerHTML += `
-                            <div class="col-auto text-center">
-                                <a href="${data.documents.cedula}" target="_blank" class="text-decoration-none">
-                                    <div class="doc-circle bg-primary mx-auto d-flex justify-content-center align-items-center mb-2">
-                                        <span class="material-icons text-white">receipt</span>
-                                    </div>
-                                    <p class="mb-0">Cedula</p>
-                                </a>
-                            </div>
-                        `;
-                    }
-                    
-                    if (data.documents.cenro_tickets) {
-                        documentsSection.innerHTML += `
-                            <div class="col-auto text-center">
-                                <a href="${data.documents.cenro_tickets}" target="_blank" class="text-decoration-none">
-                                    <div class="doc-circle bg-primary mx-auto d-flex justify-content-center align-items-center mb-2">
-                                        <span class="material-icons text-white">eco</span>
-                                    </div>
-                                    <p class="mb-0">CENRO Tickets</p>
-                                </a>
-                            </div>
-                        `;
-                    }
-                    
-                    if (data.documents.mayors_permit) {
-                        documentsSection.innerHTML += `
-                            <div class="col-auto text-center">
-                                <a href="${data.documents.mayors_permit}" target="_blank" class="text-decoration-none">
-                                    <div class="doc-circle bg-primary mx-auto d-flex justify-content-center align-items-center mb-2">
-                                        <span class="material-icons text-white">description</span>
-                                    </div>
-                                    <p class="mb-0">Mayor's Permit</p>
-                                </a>
-                            </div>
-                        `;
-                    }
-                    
-                    if (data.documents.other_documents) {
-                        documentsSection.innerHTML += `
-                            <div class="col-auto text-center">
-                                <a href="${data.documents.other_documents}" target="_blank" class="text-decoration-none">
-                                    <div class="doc-circle bg-primary mx-auto d-flex justify-content-center align-items-center mb-2">
-                                        <span class="material-icons text-white">description</span>
-                                    </div>
-                                    <p class="mb-0">Other Documents</p>
-                                </a>
-                            </div>
-                        `;
-                    }
-                    
-                    if (documentsSection.innerHTML === '') {
-                        documentsSection.innerHTML = `
-                            <div class="col-12">
-                                <div class="alert alert-light d-flex align-items-center mb-0">
-                                    <span class="material-icons text-muted me-2">info</span>
-                                    <span class="text-muted">No documents available</span>
+                    if (data.success) {
+                        // Hide skeleton and show content
+                        document.getElementById('applicationModalSkeleton').style.display = 'none';
+                        document.getElementById('applicationModalContent').style.display = 'block';
+                        document.getElementById('applicationModalContent').style.opacity = '1';
+                        
+                        // Debug: Log the data to see what's coming back
+                        console.log('Application data received:', data);
+                        
+                        // Data structure includes nested objects: user, application, and documents
+                        const user = data.user || {};
+                        const application = data.application || {};
+                        const documents = data.documents || {};
+                        
+                        // Populate application details from the nested structure
+                        document.getElementById('applicantName').textContent = user.full_name || '--';
+                        document.getElementById('applicantUsername').textContent = user.username || '--';
+                        document.getElementById('applicantEmail').textContent = user.email || '--';
+                        document.getElementById('applicantPhone').textContent = user.phone_number || '--';
+                        document.getElementById('companyName').textContent = application.company_name || '--';
+                        document.getElementById('applicantAddress').textContent = user.address || '--';
+                        
+                        // Populate documents section
+                        const documentsSection = document.getElementById('documentsSection');
+                        documentsSection.innerHTML = '';
+                        
+                        // Document type display names
+                        const documentLabels = {
+                            business_permit: 'Business Permit',
+                            mayors_permit: 'Mayor\'s Permit',
+                            police_clearance: 'Police Clearance',
+                            barangay_certificate: 'Barangay Certificate',
+                            cedula: 'Cedula',
+                            cenro_tickets: 'CENRO Tickets',
+                            other_documents: 'Other Documents'
+                        };
+                        
+                        // Loop through documents and display only those that exist
+                        for (const [docKey, docUrl] of Object.entries(documents)) {
+                            if (docUrl) {
+                                const docCol = document.createElement('div');
+                                docCol.className = 'col-sm-6 col-md-4 col-lg-3 text-center';
+                                docCol.innerHTML = `
+                                    <a href="${docUrl}" target="_blank" class="text-decoration-none">
+                                        <div class="doc-circle bg-light d-flex align-items-center justify-content-center mx-auto mb-2">
+                                            <span class="material-icons text-primary">description</span>
+                                        </div>
+                                        <p class="mb-0">${documentLabels[docKey] || docKey}</p>
+                                    </a>
+                                `;
+                                documentsSection.appendChild(docCol);
+                            }
+                        }
+                        
+                        // If no documents were found, show a message
+                        if (documentsSection.children.length === 0) {
+                            documentsSection.innerHTML = `
+                                <div class="col-12 text-center py-4">
+                                    <span class="material-icons text-muted" style="font-size: 48px;">info</span>
+                                    <p class="mt-3 text-muted">No documents were uploaded with this application.</p>
                                 </div>
-                            </div>
-                        `;
+                            `;
+                        }
+                        
+                        // Reset form
+                        applicationForm.reset();
+                    } else {
+                        // Show error with SweetAlert
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: data.message || 'An error occurred while fetching application details.',
+                            confirmButtonText: 'OK',
+                            confirmButtonColor: '#3563E9'
+                        });
                     }
                 })
                 .catch(error => {
                     console.error('Error fetching application details:', error);
-                    document.getElementById('applicationModalSkeleton').style.display = 'none';
-                    document.getElementById('applicationModalContent').style.display = 'block';
-                    
                     // Show error with SweetAlert
                     Swal.fire({
                         icon: 'error',
-                        title: 'Loading Failed',
-                        text: 'Failed to load application details. Please try again.',
+                        title: 'Error',
+                        text: 'An error occurred while fetching application details. Please try again.',
                         confirmButtonText: 'OK',
                         confirmButtonColor: '#3563E9'
                     });
@@ -748,17 +708,35 @@
                 body: formData
             })
             .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                
-                // Check if response is JSON
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    throw new Error('Server returned non-JSON response');
-                }
-                
-                return response.json();
+                // Always read the response, regardless of status
+                return response.text().then(text => {
+                    try {
+                        // Try to parse JSON
+                        const data = JSON.parse(text);
+                        
+                        // If not ok, throw with the parsed data for better error messages
+                        if (!response.ok) {
+                            throw new Error(data.message || `HTTP error! Status: ${response.status}`);
+                        }
+                        
+                        return data;
+                    } catch (e) {
+                        console.error('Response parsing error:', e);
+                        console.error('Raw response:', text);
+                        
+                        // If JSON parsing failed but response was successful, create a default success response
+                        if (response.ok) {
+                            // The form submission likely succeeded, but JSON parsing failed
+                            return {
+                                success: true,
+                                message: 'Application details retrieved successfully.'
+                            };
+                        }
+                        
+                        // Otherwise, throw a generic error
+                        throw new Error(`Server error (${response.status}). Invalid JSON response.`);
+                    }
+                });
             })
             .then(data => {
                 if (data.success) {

@@ -49,7 +49,7 @@
                 </div>
             </div>
             
-            <form method="post" enctype="multipart/form-data">
+            <form method="post" enctype="multipart/form-data" class="needs-validation" id="driverImportForm" novalidate>
                 {% csrf_token %}
                 
                 <div class="mb-4">
@@ -82,7 +82,7 @@
                 <div class="mb-4">
                     <div class="form-text d-flex align-items-center">
                         <span class="material-icons me-2">download</span>
-                        <a href="{% url 'driver_export_excel' %}" target="_blank">Download sample template</a> to see the expected format.
+                        <a href="{% url 'driver_template_excel' %}" target="_blank">Download sample template</a> to see the expected format.
                     </div>
                 </div>
                 
@@ -91,11 +91,82 @@
                         <span class="material-icons fs-5 me-2">close</span> Cancel
                     </a>
                     <button type="submit" class="btn btn-primary d-flex align-items-center px-4 py-2">
-                        <span class="material-icons fs-5 me-2">cloud_upload</span> Upload and Preview
+                        <span class="material-icons fs-5 me-2">cloud_upload</span> Upload
                     </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<!-- Form validation script -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add SweetAlert2 Library if not already loaded
+        if (typeof Swal === 'undefined') {
+            // If SweetAlert is not defined, load it dynamically
+            const sweetAlertScript = document.createElement('script');
+            sweetAlertScript.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js';
+            document.head.appendChild(sweetAlertScript);
+            
+            // Add CSS
+            const sweetAlertCSS = document.createElement('link');
+            sweetAlertCSS.rel = 'stylesheet';
+            sweetAlertCSS.href = 'https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css';
+            document.head.appendChild(sweetAlertCSS);
+        }
+        
+        // Form validation
+        const form = document.getElementById('driverImportForm');
+        if (form) {
+            form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    form.classList.add('was-validated');
+                    return;
+                }
+                
+                // If form is valid, show loading state
+                const fileInput = form.querySelector('input[type="file"]');
+                if (fileInput && fileInput.files.length > 0) {
+                    event.preventDefault();
+                    
+                    // Show confirmation dialog first
+                    Swal.fire({
+                        title: 'Confirm Upload',
+                        text: 'Are you sure you want to upload this file?',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Yes, upload it',
+                        cancelButtonText: 'Cancel',
+                        confirmButtonColor: '#2563eb',
+                        cancelButtonColor: '#6c757d',
+                        reverseButtons: true
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // If confirmed, show loading state
+                            Swal.fire({
+                                title: 'Uploading Drivers',
+                                html: 'Please wait while we process your file...<br><br><div class="progress" style="height: 20px;"><div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div></div>',
+                                allowOutsideClick: false,
+                                allowEscapeKey: false,
+                                allowEnterKey: false,
+                                showConfirmButton: false,
+                                didOpen: () => {
+                                    // Submit the form after showing the loading state
+                                    setTimeout(() => {
+                                        form.submit();
+                                    }, 500);
+                                }
+                            });
+                        }
+                    });
+                }
+                
+                form.classList.add('was-validated');
+            });
+        }
+    });
+</script>
 {% endblock %} 

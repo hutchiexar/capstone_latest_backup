@@ -1,9 +1,9 @@
 {% if reports %}
     {% for report in reports %}
     <tr id="report-{{ report.id }}">
-        <td class="ps-4">#{{ report.id }}</td>
-        <td>
-            <div class="d-flex align-items-center">
+        <td class="ps-4 text-center">#{{ report.id }}</td>
+        <td class="text-center">
+            <div class="d-flex align-items-center justify-content-center">
                 {% if report.user.profile.profile_image %}
                 <img src="{{ report.user.profile.profile_image.url }}" alt="{{ report.user.get_full_name }}" class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;">
                 {% else %}
@@ -17,7 +17,7 @@
                 </div>
             </div>
         </td>
-        <td>
+        <td class="text-center">
             <span class="badge rounded-pill {% if report.type == 'COMPLAINT' %}text-bg-danger
                     {% elif report.type == 'SUGGESTION' %}text-bg-info
                     {% elif report.type == 'INQUIRY' %}text-bg-primary
@@ -33,13 +33,13 @@
                 {{ report.get_type_display }}
             </span>
         </td>
-        <td>
-            <div class="text-truncate" style="max-width: 200px;" title="{{ report.subject }}">
+        <td class="text-center">
+            <div class="text-truncate mx-auto" style="max-width: 200px;" title="{{ report.subject }}">
                 {{ report.subject }}
             </div>
         </td>
-        <td>
-            <div class="d-flex align-items-center">
+        <td class="text-center">
+            <div class="d-flex align-items-center justify-content-center">
                 <span class="material-icons me-2 {% if report.status == 'PENDING' %}text-warning
                         {% elif report.status == 'IN_PROGRESS' %}text-primary
                         {% elif report.status == 'RESOLVED' %}text-success
@@ -60,18 +60,18 @@
                 </span>
             </div>
         </td>
-        <td>{{ report.created_at|date:"M d, Y" }}</td>
-        <td class="text-end pe-4">
-            <div class="action-buttons d-flex justify-content-end gap-2">
-                <button type="button" class="btn btn-sm btn-primary" onclick="openViewModal('{{ report.id }}')" title="View Details">
-                    <span class="material-icons" style="font-size: 16px;">visibility</span>
+        <td class="text-center">{{ report.created_at|date:"M d, Y" }}</td>
+        <td class="text-center" style="width: 140px;">
+            <div class="action-buttons">
+                <button type="button" class="btn btn-primary action-btn" onclick="openViewModal('{{ report.id }}')" title="View Details">
+                    <span class="material-icons">visibility</span>
                 </button>
-                <button type="button" class="btn btn-sm btn-info text-white" onclick="openStatusModal('{{ report.id }}')" title="Update Status">
-                    <span class="material-icons" style="font-size: 16px;">update</span>
+                <button type="button" class="btn btn-info text-white action-btn" onclick="openStatusModal('{{ report.id }}')" title="Update Status">
+                    <span class="material-icons">update</span>
                 </button>
                 {% if report.status == 'PENDING' or report.status == 'IN_PROGRESS' %}
-                <button type="button" class="btn btn-sm btn-warning text-white" onclick="openDisputeModal('{{ report.id }}')" title="Dispute Report">
-                    <span class="material-icons" style="font-size: 16px;">gavel</span>
+                <button type="button" class="btn btn-warning text-white action-btn" onclick="openDisputeModal('{{ report.id }}')" title="Dispute Report">
+                    <span class="material-icons">gavel</span>
                 </button>
                 {% endif %}
             </div>

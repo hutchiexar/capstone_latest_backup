@@ -615,21 +615,20 @@
             <h5 class="card-title mb-0">My Violations</h5>
         </div>
         <div class="card-body">
+            <!-- Two tabs for Regular and NCAP violations -->
             <ul class="nav nav-tabs mb-3" id="violationsTab" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="regular-tab" data-bs-toggle="tab" data-bs-target="#regular-violations" type="button" role="tab" aria-controls="regular-violations" aria-selected="true">
-                        <i class="fas fa-exclamation-triangle me-1"></i> Regular Violations
-                        {% if regular_violations_count > 0 %}
-                        <span class="badge bg-danger ms-1">{{ regular_violations_count }}</span>
-                        {% endif %}
+                    <button class="nav-link active" id="regular-tab" data-bs-toggle="tab" 
+                            data-bs-target="#regular-violations" type="button" role="tab" 
+                            aria-controls="regular-violations" aria-selected="true">
+                        Regular Violations
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="ncap-tab" data-bs-toggle="tab" data-bs-target="#ncap-violations" type="button" role="tab" aria-controls="ncap-violations" aria-selected="false">
-                        <i class="fas fa-camera me-1"></i> NCAP Violations
-                        {% if ncap_violations_count > 0 %}
-                        <span class="badge bg-danger ms-1">{{ ncap_violations_count }}</span>
-                        {% endif %}
+                    <button class="nav-link" id="ncap-tab" data-bs-toggle="tab" 
+                            data-bs-target="#ncap-violations" type="button" role="tab" 
+                            aria-controls="ncap-violations" aria-selected="false">
+                        NCAP Violations
                     </button>
                 </li>
             </ul>
@@ -702,7 +701,6 @@
                                     <th>Violation</th>
                                     <th>Status</th>
                                     <th>Penalty</th>
-                                    <th>Images</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -725,14 +723,6 @@
                                     </td>
                                     <td>₱{{ violation.fine_amount|floatformat:2 }}</td>
                                     <td>
-                                        <button class="btn btn-sm btn-outline-primary view-images" 
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#imageModal"
-                                            data-violation-id="{{ violation.id }}">
-                                            <i class="fas fa-images me-1"></i> View
-                                        </button>
-                                    </td>
-                                    <td>
                                         <a href="{% url 'user_portal:violation_detail' violation.id %}" class="btn btn-sm btn-primary">
                                             <i class="fas fa-info-circle me-1"></i> Details
                                         </a>
@@ -751,7 +741,7 @@
                     <div class="text-center py-4">
                         <img src="{% static 'images/no-violations.svg' %}" alt="No violations" style="height: 120px;" class="mb-3">
                         <h5>No NCAP Violations Found</h5>
-                        <p class="text-muted">You don't have any camera-detected violations on record.</p>
+                        <p class="text-muted">You don't have any NCAP traffic violations on record.</p>
                     </div>
                     {% endif %}
                 </div>

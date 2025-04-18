@@ -330,7 +330,7 @@
                                         <div class="form-floating">
                                             <input type="text" class="form-control" id="operator_pd_number" 
                                                    name="operator_pd_number">
-                                            <label for="operator_pd_number">Operator PD Number</label>
+                                            <label for="operator_pd_number">PO Number</label>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -1043,8 +1043,9 @@ function setupSingleImageUpload(previewId, inputId) {
 // Form validation - kept only one handler at the end, removed duplicates
 const form = document.getElementById('violationForm');
 form.addEventListener('submit', function(event) {
+    event.preventDefault();  // Always prevent default submission
+    
     if (!this.checkValidity()) {
-        event.preventDefault();
         event.stopPropagation();
         
         // Show validation error with SweetAlert
@@ -1056,11 +1057,23 @@ form.addEventListener('submit', function(event) {
                 confirmButtonText: 'OK'
             });
         }
-    } else {
-        event.preventDefault(); // Prevent default form submission
-        
-        // If form is valid, show a loading message
-        if (typeof Swal !== 'undefined') {
+        this.classList.add('was-validated');
+        return;
+    }
+    
+    // If form is valid, show confirmation dialog
+    Swal.fire({
+        title: 'Submit Violation',
+        text: 'Do you want to upload this violation?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Submit and Print',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Show a loading message
             Swal.fire({
                 title: 'Processing Violation...',
                 text: 'Please wait while we process your submission',
@@ -1070,263 +1083,269 @@ form.addEventListener('submit', function(event) {
                     Swal.showLoading();
                 }
             });
-        }
-        
-        // Create FormData from the form
-        const formData = new FormData(this);
-        
-        // Perform client-side validation
-        let validationErrors = [];
-        
-        // Required fields
-        const requiredFields = ['violation_type', 'location', 'violation_date', 'fine_amount'];
-        requiredFields.forEach(field => {
-            const value = formData.get(field);
-            if (!value || value.trim() === '') {
-                validationErrors.push(`${field.replace('_', ' ')} is required`);
-                // Add visual indicator
-                const element = document.getElementById(field);
+            
+            // Create FormData from the form
+            const formData = new FormData(this);
+            
+            // Perform client-side validation
+            let validationErrors = [];
+            
+            // Required fields
+            const requiredFields = ['violation_type', 'location', 'violation_date', 'fine_amount'];
+            requiredFields.forEach(field => {
+                const value = formData.get(field);
+                if (!value || value.trim() === '') {
+                    validationErrors.push(`${field.replace('_', ' ')} is required`);
+                    // Add visual indicator
+                    const element = document.getElementById(field);
+                    if (element) {
+                        element.classList.add('is-invalid');
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'invalid-feedback';
+                        errorDiv.textContent = 'This field is required';
+                        element.parentNode.appendChild(errorDiv);
+                    }
+                }
+            });
+            
+            // Validate fine amount is a number
+            const fineAmount = formData.get('fine_amount');
+            if (fineAmount && isNaN(parseFloat(fineAmount))) {
+                validationErrors.push('Fine amount must be a valid number');
+                const element = document.getElementById('fine_amount');
                 if (element) {
                     element.classList.add('is-invalid');
                     const errorDiv = document.createElement('div');
                     errorDiv.className = 'invalid-feedback';
-                    errorDiv.textContent = 'This field is required';
+                    errorDiv.textContent = 'Please enter a valid number';
                     element.parentNode.appendChild(errorDiv);
                 }
             }
-        });
-        
-        // Validate fine amount is a number
-        const fineAmount = formData.get('fine_amount');
-        if (fineAmount && isNaN(parseFloat(fineAmount))) {
-            validationErrors.push('Fine amount must be a valid number');
-            const element = document.getElementById('fine_amount');
-            if (element) {
-                element.classList.add('is-invalid');
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'invalid-feedback';
-                errorDiv.textContent = 'Please enter a valid number';
-                element.parentNode.appendChild(errorDiv);
+            
+            // If there are validation errors, show them and stop the submission
+            if (validationErrors.length > 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Error',
+                    html: `<ul class="text-left"><li>${validationErrors.join('</li><li>')}</li></ul>`,
+                    confirmButtonText: 'OK'
+                });
+                return; // Stop form submission
             }
-        }
-        
-        // If there are validation errors, show them and stop the submission
-        if (validationErrors.length > 0) {
+            
+            // Log the form data for debugging
+            const formValues = {};
+            for (let [key, value] of formData.entries()) {
+                formValues[key] = value;
+            }
+            console.log('Form data being submitted:', formValues);
+            
+            // Show a loading indicator with a more detailed message
             Swal.fire({
-                icon: 'error',
-                title: 'Validation Error',
-                html: `<ul class="text-left"><li>${validationErrors.join('</li><li>')}</li></ul>`,
-                confirmButtonText: 'OK'
+                title: 'Processing Violation...',
+                html: 'Uploading images and processing data. This may take a moment...',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
             });
-            return; // Stop form submission
-        }
-        
-        // Log the form data for debugging
-        const formValues = {};
-        for (let [key, value] of formData.entries()) {
-            formValues[key] = value;
-        }
-        console.log('Form data being submitted:', formValues);
-        
-        // Show a loading indicator with a more detailed message
-        Swal.fire({
-            title: 'Processing Violation...',
-            html: 'Uploading images and processing data. This may take a moment...',
-            allowOutsideClick: false,
-            showConfirmButton: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
-        
-        // Submit the form via AJAX with a longer timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
-        
-        fetch(this.action, {
-            method: 'POST',
-            body: formData,
-            signal: controller.signal,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            credentials: 'same-origin'
-        })
-        .then(response => {
-            clearTimeout(timeoutId); // Clear the timeout
             
-            // Add a clearer log message for debugging
-            console.log(`Server response status: ${response.status}, contentType: ${response.headers.get('content-type')}`);
+            // Submit the form via AJAX with a longer timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
             
-            // Check content type to handle non-JSON responses
-            const contentType = response.headers.get('content-type');
-            
-            // Handle error responses
-            if (!response.ok) {
-                console.error(`Server error: ${response.status} ${response.statusText}`);
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                signal: controller.signal,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                clearTimeout(timeoutId); // Clear the timeout
                 
-                // For HTML error responses (server error pages)
-                if (contentType && contentType.includes('text/html')) {
-                    // Don't try to parse HTML as JSON, just throw a clear error
-                    throw new Error('The server encountered an error processing your request. Please try again.');
+                // Add a clearer log message for debugging
+                console.log(`Server response status: ${response.status}, contentType: ${response.headers.get('content-type')}`);
+                
+                // Check content type to handle non-JSON responses
+                const contentType = response.headers.get('content-type');
+                
+                // Handle error responses
+                if (!response.ok) {
+                    console.error(`Server error: ${response.status} ${response.statusText}`);
+                    
+                    // For HTML error responses (server error pages)
+                    if (contentType && contentType.includes('text/html')) {
+                        // Don't try to parse HTML as JSON, just throw a clear error
+                        throw new Error('The server encountered an error processing your request. Please try again.');
+                    }
+                    
+                    // For JSON error responses
+                    if (contentType && contentType.includes('application/json')) {
+                        return response.json().then(errorData => {
+                            console.log('Error data from server:', errorData);
+                            const errorMsg = errorData.message || `Error ${response.status}: ${response.statusText}`;
+                            const errorDetails = errorData.details || '';
+                            throw { message: errorMsg, details: errorDetails, type: 'server_validation' };
+                        });
+                    }
+                    
+                    // For other error types
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
                 }
                 
-                // For JSON error responses
-                if (contentType && contentType.includes('application/json')) {
-                    return response.json().then(errorData => {
-                        console.log('Error data from server:', errorData);
-                        const errorMsg = errorData.message || `Error ${response.status}: ${response.statusText}`;
-                        const errorDetails = errorData.details || '';
-                        throw { message: errorMsg, details: errorDetails, type: 'server_validation' };
+                // For successful responses, verify it's JSON
+                if (!contentType || !contentType.includes('application/json')) {
+                    console.error('Received non-JSON success response:', contentType);
+                    throw new Error('The server did not return a valid JSON response.');
+                }
+                
+                return response.json();
+            })
+            .then(data => {
+                console.log('Success response:', data);
+                
+                if (data.success) {
+                    // Show success message
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: data.message,
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        // Open print preview in a new tab
+                        if (data.violation_id) {
+                            const printUrl = `/violation/${data.violation_id}/print/`;
+                            window.open(printUrl, '_blank');
+                        }
+                        
+                        // Redirect after confirmation
+                        window.location.href = data.redirect_url;
+                    });
+                } else {
+                    // Show error message with details if available
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.message || 'An error occurred while processing your request.',
+                        confirmButtonText: 'OK',
+                        footer: data.details ? `<span class="text-danger">${data.details}</span>` : ''
                     });
                 }
+            })
+            .catch(error => {
+                console.error('Error during form submission:', error);
+                clearTimeout(timeoutId); // Clear the timeout if it hasn't fired yet
                 
-                // For other error types
-                throw new Error(`Error ${response.status}: ${response.statusText}`);
-            }
-            
-            // For successful responses, verify it's JSON
-            if (!contentType || !contentType.includes('application/json')) {
-                console.error('Received non-JSON success response:', contentType);
-                throw new Error('The server did not return a valid JSON response.');
-            }
-            
-            return response.json();
-        })
-        .then(data => {
-            console.log('Success response:', data);
-            
-            if (data.success) {
-                // Show success message
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success!',
-                    text: data.message,
-                    confirmButtonText: 'OK'
-                }).then(() => {
-                    // Redirect after confirmation
-                    window.location.href = data.redirect_url;
-                });
-            } else {
-                // Show error message with details if available
+                // Provide more user-friendly error message based on error type
+                let errorMessage = 'An error occurred while processing your request. Please try again.';
+                let errorDetails = '';
+                
+                if (error.name === 'AbortError') {
+                    errorMessage = 'The request took too long to complete and was canceled. This might be due to large image files or network issues.';
+                    errorDetails = 'Try using smaller image files or check your internet connection.';
+                } else if (error.message && error.message.includes('JSON')) {
+                    errorMessage = 'The server returned an invalid response format. This might be a temporary issue.';
+                    errorDetails = 'The server might be experiencing technical difficulties. Please try again later.';
+                } else if (error.message && (error.message.includes('network') || error.name === 'TypeError' || error.message.includes('response was not ok'))) {
+                    errorMessage = 'Network error. Please check your internet connection and try again.';
+                    errorDetails = 'Your connection to the server was interrupted. Check your internet connection and make sure the server is running.';
+                } else if (error.message && error.message.includes('HTML')) {
+                    errorMessage = 'The server encountered an internal error. Please try again later.';
+                    errorDetails = 'The system might be experiencing technical difficulties.';
+                } else if (error.message && (error.message.includes('400') || error.message.includes('Bad Request'))) {
+                    errorMessage = 'The server rejected your submission due to validation errors.';
+                    errorDetails = 'Please check all required fields and ensure they contain valid data. Especially check the date, time, and fine amount fields.';
+                } else if (error.type === 'server_validation') {
+                    // For server validation errors returned as JSON
+                    errorMessage = error.message;
+                    errorDetails = error.details || 'Please verify all the information and try again.';
+                    
+                    // Special handling for violator information errors
+                    if (error.message.includes('violator')) {
+                        errorDetails = 'Check the license number format and ensure driver information is valid. If no license number is available, you can leave it blank.';
+                    }
+                }
+                
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
-                    text: data.message || 'An error occurred while processing your request.',
+                    text: errorMessage,
                     confirmButtonText: 'OK',
-                    footer: data.details ? `<span class="text-danger">${data.details}</span>` : ''
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Error during form submission:', error);
-            clearTimeout(timeoutId); // Clear the timeout if it hasn't fired yet
-            
-            // Provide more user-friendly error message based on error type
-            let errorMessage = 'An error occurred while processing your request. Please try again.';
-            let errorDetails = '';
-            
-            if (error.name === 'AbortError') {
-                errorMessage = 'The request took too long to complete and was canceled. This might be due to large image files or network issues.';
-                errorDetails = 'Try using smaller image files or check your internet connection.';
-            } else if (error.message && error.message.includes('JSON')) {
-                errorMessage = 'The server returned an invalid response format. This might be a temporary issue.';
-                errorDetails = 'The server might be experiencing technical difficulties. Please try again later.';
-            } else if (error.message && (error.message.includes('network') || error.name === 'TypeError' || error.message.includes('response was not ok'))) {
-                errorMessage = 'Network error. Please check your internet connection and try again.';
-                errorDetails = 'Your connection to the server was interrupted. Check your internet connection and make sure the server is running.';
-            } else if (error.message && error.message.includes('HTML')) {
-                errorMessage = 'The server encountered an internal error. Please try again later.';
-                errorDetails = 'The system might be experiencing technical difficulties.';
-            } else if (error.message && (error.message.includes('400') || error.message.includes('Bad Request'))) {
-                errorMessage = 'The server rejected your submission due to validation errors.';
-                errorDetails = 'Please check all required fields and ensure they contain valid data. Especially check the date, time, and fine amount fields.';
-            } else if (error.type === 'server_validation') {
-                // For server validation errors returned as JSON
-                errorMessage = error.message;
-                errorDetails = error.details || 'Please verify all the information and try again.';
-                
-                // Special handling for violator information errors
-                if (error.message.includes('violator')) {
-                    errorDetails = 'Check the license number format and ensure driver information is valid. If no license number is available, you can leave it blank.';
-                }
-            }
-            
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: errorMessage,
-                confirmButtonText: 'OK',
-                footer: errorDetails ? `<span class="text-danger">${errorDetails}</span>` : '<span class="text-muted">If this issue persists, please contact support.</span>',
-                didClose: () => {
-                    // Provide an alternative form submission method if AJAX fails
-                    const shouldSubmitDirectly = confirm("Would you like to try submitting the form directly instead? This may work better for large images or slow connections.");
-                    if (shouldSubmitDirectly) {
-                        // Create a hidden form and submit it traditionally
-                        const directForm = document.createElement('form');
-                        directForm.method = 'POST';
-                        directForm.action = form.action;
-                        directForm.enctype = 'multipart/form-data';
-                        directForm.style.display = 'none';
-                        
-                        // Add CSRF token
-                        const csrfToken = document.createElement('input');
-                        csrfToken.type = 'hidden';
-                        csrfToken.name = 'csrfmiddlewaretoken';
-                        csrfToken.value = getCookie('csrftoken');
-                        directForm.appendChild(csrfToken);
-                        
-                        // Show a loading message during the regular form submission
-                        Swal.fire({
-                            title: 'Submitting Form...',
-                            text: 'Using traditional form submission. This may take a moment...',
-                            allowOutsideClick: false,
-                            showConfirmButton: false,
-                            didOpen: () => {
-                                Swal.showLoading();
-                            }
-                        });
-                        
-                        // Copy all input elements from the original form
-                        Array.from(form.elements).forEach(element => {
-                            if (element.name && element.name !== 'csrfmiddlewaretoken') {
-                                if (element.type === 'file' && element.files.length > 0) {
-                                    // File inputs can't be copied directly - we'll submit the original form instead
-                                    console.log(`Skipping file input: ${element.name} (will use original form)`);
-                                } else if (element.type === 'checkbox' || element.type === 'radio') {
-                                    if (element.checked) {
+                    footer: errorDetails ? `<span class="text-danger">${errorDetails}</span>` : '<span class="text-muted">If this issue persists, please contact support.</span>',
+                    didClose: () => {
+                        // Provide an alternative form submission method if AJAX fails
+                        const shouldSubmitDirectly = confirm("Would you like to try submitting the form directly instead? This may work better for large images or slow connections.");
+                        if (shouldSubmitDirectly) {
+                            // Create a hidden form and submit it traditionally
+                            const directForm = document.createElement('form');
+                            directForm.method = 'POST';
+                            directForm.action = form.action;
+                            directForm.enctype = 'multipart/form-data';
+                            directForm.style.display = 'none';
+                            
+                            // Add CSRF token
+                            const csrfToken = document.createElement('input');
+                            csrfToken.type = 'hidden';
+                            csrfToken.name = 'csrfmiddlewaretoken';
+                            csrfToken.value = getCookie('csrftoken');
+                            directForm.appendChild(csrfToken);
+                            
+                            // Show a loading message during the regular form submission
+                            Swal.fire({
+                                title: 'Submitting Form...',
+                                text: 'Using traditional form submission. This may take a moment...',
+                                allowOutsideClick: false,
+                                showConfirmButton: false,
+                                didOpen: () => {
+                                    Swal.showLoading();
+                                }
+                            });
+                            
+                            // Copy all input elements from the original form
+                            Array.from(form.elements).forEach(element => {
+                                if (element.name && element.name !== 'csrfmiddlewaretoken') {
+                                    if (element.type === 'file' && element.files.length > 0) {
+                                        // File inputs can't be copied directly - we'll submit the original form instead
+                                        console.log(`Skipping file input: ${element.name} (will use original form)`);
+                                    } else if (element.type === 'checkbox' || element.type === 'radio') {
+                                        if (element.checked) {
+                                            const input = document.createElement('input');
+                                            input.type = 'hidden';
+                                            input.name = element.name;
+                                            input.value = element.value;
+                                            directForm.appendChild(input);
+                                        }
+                                    } else if (element.type !== 'button' && element.type !== 'submit') {
                                         const input = document.createElement('input');
                                         input.type = 'hidden';
                                         input.name = element.name;
                                         input.value = element.value;
                                         directForm.appendChild(input);
                                     }
-                                } else if (element.type !== 'button' && element.type !== 'submit') {
-                                    const input = document.createElement('input');
-                                    input.type = 'hidden';
-                                    input.name = element.name;
-                                    input.value = element.value;
-                                    directForm.appendChild(input);
                                 }
-                            }
-                        });
-                        
-                        // For regular form submission, we'll use the original form with file inputs
-                        // but disable AJAX handling
-                        
-                        // Disable our custom event handler
-                        const oldListener = form.onsubmit;
-                        form.onsubmit = null;
-                        
-                        // Submit the original form
-                        document.body.appendChild(directForm);
-                        form.submit();
+                            });
+                            
+                            // For regular form submission, we'll use the original form with file inputs
+                            // but disable AJAX handling
+                            
+                            // Disable our custom event handler
+                            const oldListener = form.onsubmit;
+                            form.onsubmit = null;
+                            
+                            // Submit the original form
+                            document.body.appendChild(directForm);
+                            form.submit();
+                        }
                     }
-                }
+                });
             });
-        });
-    }
+        }
+    });
     this.classList.add('was-validated');
 });
 
@@ -1785,7 +1804,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Populate PD Number in the operator section if it exists
         const operatorPdNumberField = document.getElementById('operator_pd_number');
         if (operatorPdNumberField) {
-            operatorPdNumberField.value = operator.new_pd_number || '';
+            operatorPdNumberField.value = operator.po_number || '';
             operatorPdNumberField.dispatchEvent(new Event('input', { bubbles: true }));
             operatorPdNumberField.dispatchEvent(new Event('change', { bubbles: true }));
             operatorPdNumberField.classList.add('is-valid');
@@ -2550,8 +2569,9 @@ window.printViolationForm = function(violationId) {
         return;
     }
     
-    // Open print page in a new window
-    const printUrl = `/violation/${violationId}/print/`;
+    // Open print page in a new window using the correct Django URL
+    // Modified to ensure NCAP template is used
+    const printUrl = "{% url 'print_violation_form' 999999 %}".replace('999999', violationId);
     console.log('Opening print URL:', printUrl);
     
     const printWindow = window.open(printUrl, '_blank');
@@ -2577,7 +2597,7 @@ window.printViolationForm = function(violationId) {
             });
         });
     } else {
-        // If popup is blocked, inform the user
+        // If popup is blocked, inform the user7
         Swal.fire({
             icon: 'warning',
             title: 'Print Window Blocked',
@@ -2586,5 +2606,53 @@ window.printViolationForm = function(violationId) {
         });
     }
 }
+
+// Add this JavaScript at the end of the file, just before the closing 
+</script> 
+<!-- tag
+// Operator selection functionality - auto-populate PO number when operator is selected
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if we have operator search functionality
+    const operatorSearchField = document.getElementById('operator_search');
+    if (operatorSearchField) {
+        const operatorSearchResults = document.getElementById('operator_search_results');
+        const operatorPdNumberField = document.getElementById('operator_pd_number');
+        
+        // Function to handle when an operator is selected
+        window.selectOperator = function(operatorId) {
+            // Fetch the operator details
+            fetch(`/operators/${operatorId}/details-json/`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Auto-populate the PO Number field with the operator's PO number
+                    if (operatorPdNumberField && data.operator && data.operator.po_number) {
+                        operatorPdNumberField.value = data.operator.po_number;
+                    }
+                })
+                .catch(error => {
+                    console.error("Error loading operator details:", error);
+                });
+        };
+        
+        // Add click event handlers to operator search results
+        if (operatorSearchResults) {
+            operatorSearchResults.addEventListener('click', function(e) {
+                // Find the closest parent with data-operator-id attribute
+                const operatorItem = e.target.closest('[data-operator-id]');
+                if (operatorItem) {
+                    const operatorId = operatorItem.getAttribute('data-operator-id');
+                    if (operatorId) {
+                        selectOperator(operatorId);
+                    }
+                }
+            });
+        }
+    }
+}); -->
 </script>
 {% endblock %}

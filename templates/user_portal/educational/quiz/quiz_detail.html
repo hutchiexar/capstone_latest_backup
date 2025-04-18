@@ -1,0 +1,409 @@
+{% extends "user_portal/base_user.html" %}
+{% load static %}
+
+{% block title %}{{ quiz.title }} | Quizzes{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Modern Color Palette - Matching Dashboard */
+    :root {
+        --primary-color: #3563E9;
+        --primary-light: #EEF3FF;
+        --success-color: #0CAA1D;
+        --danger-color: #F53D3D;
+        --warning-color: #FFB800;
+        --info-color: #4DA7FF;
+        --dark-blue: #0F1C3F;
+        --neutral-gray: #737791;
+        --light-gray: #F6F7F9;
+        --white: #FFFFFF;
+    }
+
+    /* Shadow and Container Styles */
+    .shadow-sm { box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
+    .shadow-md { box-shadow: 0 6px 15px rgba(0,0,0,0.08); }
+    .shadow-lg { box-shadow: 0 10px 25px rgba(0,0,0,0.12); }
+    .glow-primary { box-shadow: 0 0 15px rgba(53, 99, 233, 0.15); }
+    
+    /* Page Container */
+    .dashboard-container {
+        animation: fadeIn 0.3s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Header Section */
+    .header-card {
+        background-color: var(--white);
+        border-radius: 0.75rem;
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    
+    /* Main Content Cards */
+    .content-card {
+        background-color: var(--white);
+        border-radius: 0.75rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        overflow: hidden;
+        border: none;
+    }
+    
+    .card-header {
+        background-color: var(--white);
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .card-body {
+        padding: 1.25rem;
+    }
+    
+    /* Icon styles */
+    .icon-circle {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    
+    /* Status badges */
+    .status-badge {
+        padding: 0.25rem 0.625rem;
+        border-radius: 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    .status-badge-passed {
+        background-color: #E6F7EE;
+        color: var(--success-color);
+    }
+    
+    .status-badge-failed {
+        background-color: #FFEEEE;
+        color: var(--danger-color);
+    }
+    
+    /* Alerts */
+    .alert {
+        border: none;
+        border-radius: 0.5rem;
+        padding: 0.875rem 1rem;
+    }
+    
+    .alert-info {
+        background-color: var(--primary-light);
+        color: var(--primary-color);
+    }
+    
+    .alert-warning {
+        background-color: #FFF8E8;
+        color: var(--warning-color);
+    }
+    
+    /* Buttons */
+    .btn {
+        border-radius: 0.5rem;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-lg {
+        padding: 0.625rem 1.25rem;
+    }
+    
+    .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        box-shadow: 0 4px 8px rgba(53, 99, 233, 0.15);
+    }
+    
+    .btn-primary:hover {
+        background-color: #2954d4;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(41, 84, 212, 0.2);
+    }
+    
+    .btn-outline-primary {
+        color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+    
+    .btn-outline-primary:hover {
+        background-color: var(--primary-color);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(53, 99, 233, 0.15);
+    }
+    
+    /* Table styles */
+    .table th {
+        font-weight: 600;
+        font-size: 0.813rem;
+        color: var(--neutral-gray);
+    }
+    
+    .table td {
+        font-size: 0.875rem;
+        vertical-align: middle;
+    }
+    
+    /* Progress bar */
+    .progress {
+        height: 6px;
+        border-radius: 0.5rem;
+        background-color: var(--light-gray);
+    }
+    
+    .progress-bar {
+        border-radius: 0.5rem;
+    }
+    
+    /* Quiz tips list */
+    .list-group-item {
+        padding: 0.75rem 0;
+        border-color: rgba(0,0,0,0.05);
+    }
+    
+    .list-group-item span {
+        font-size: 0.875rem;
+    }
+    
+    /* Typography */
+    h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+    }
+    
+    h5 {
+        font-size: 1rem;
+        font-weight: 600;
+    }
+    
+    p {
+        color: var(--neutral-gray);
+        font-size: 0.875rem;
+        line-height: 1.5;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-3 dashboard-container">
+    <!-- Header -->
+    <div class="header-card">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="mb-1">{{ quiz.title }}</h1>
+                {% if quiz.topic %}
+                    <p class="mb-0 text-muted">
+                        <span class="material-symbols-rounded me-1" style="font-size: 0.875rem; vertical-align: middle;">book</span>
+                        From topic: 
+                        <a href="{% url 'educational:topic_detail' quiz.topic.id %}" class="text-decoration-none">{{ quiz.topic.title }}</a>
+                    </p>
+                {% endif %}
+            </div>
+            <a href="{% url 'educational:quiz_list' %}" class="btn btn-outline-primary">
+                <span class="material-symbols-rounded me-1" style="font-size: 0.875rem; vertical-align: middle;">arrow_back</span>
+                Back to Quizzes
+            </a>
+        </div>
+    </div>
+    
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <!-- Quiz Information -->
+            <div class="content-card">
+                {% if quiz.image %}
+                <div class="position-relative" style="max-height: 200px; overflow: hidden;">
+                    <img src="{{ quiz.image.url }}" alt="{{ quiz.title }}" class="img-fluid w-100" style="object-fit: cover;">
+                    <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,0.3));"></div>
+                </div>
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="mb-3">About this Quiz</h5>
+                    <p class="mb-3">{{ quiz.description|default:"No description provided." }}</p>
+                    
+                    <div class="row mb-3">
+                        <div class="col-sm-6">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="icon-circle bg-primary bg-opacity-10 text-primary me-2">
+                                    <span class="material-symbols-rounded" style="font-size: 1rem;">checklist</span>
+                                </div>
+                                <div>
+                                    <h6 class="fw-medium mb-0 fs-6">Questions</h6>
+                                    <small class="text-muted">{{ total_questions }} questions</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="icon-circle bg-success bg-opacity-10 text-success me-2">
+                                    <span class="material-symbols-rounded" style="font-size: 1rem;">trending_up</span>
+                                </div>
+                                <div>
+                                    <h6 class="fw-medium mb-0 fs-6">Passing Score</h6>
+                                    <small class="text-muted">{{ quiz.passing_score }}% or higher</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
+                        <span class="material-symbols-rounded me-2" style="font-size: 1.25rem;">info</span>
+                        <div>
+                            <small>Complete the quiz to test your knowledge. You can retake the quiz multiple times to improve your score.</small>
+                        </div>
+                    </div>
+                    
+                    {% if incomplete_attempt %}
+                        <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+                            <span class="material-symbols-rounded me-2" style="font-size: 1.25rem;">warning</span>
+                            <div>
+                                <small>You have an incomplete attempt for this quiz. You can continue where you left off or start a new attempt.</small>
+                            </div>
+                        </div>
+                        <a href="{% url 'educational:take_quiz' incomplete_attempt.id %}" class="btn btn-warning w-100">
+                            <span class="material-symbols-rounded me-2">play_circle</span>
+                            Continue Quiz
+                        </a>
+                    {% else %}
+                        <a href="{% url 'educational:start_quiz' quiz.id %}" class="btn btn-primary w-100">
+                            <span class="material-symbols-rounded me-2">play_circle</span>
+                            Start Quiz
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Previous Attempts -->
+            {% if user_attempts %}
+                <div class="content-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Your Previous Attempts</h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table mb-0">
+                            <thead>
+                                <tr class="bg-light">
+                                    <th class="py-2 ps-3">Date</th>
+                                    <th class="py-2">Score</th>
+                                    <th class="py-2">Result</th>
+                                    <th class="py-2 pe-3 text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for attempt in user_attempts %}
+                                    <tr>
+                                        <td class="py-2 ps-3">{{ attempt.end_time|date:"M d, Y H:i" }}</td>
+                                        <td class="py-2">
+                                            <div class="d-flex align-items-center">
+                                                <div class="progress" style="width: 80px;">
+                                                    <div class="progress-bar bg-primary" 
+                                                         role="progressbar" style="width: {{ attempt.score }}%;" 
+                                                         aria-valuenow="{{ attempt.score }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                                </div>
+                                                <span class="ms-2 small">{{ attempt.score|floatformat:1 }}%</span>
+                                            </div>
+                                        </td>
+                                        <td class="py-2">
+                                            {% if attempt.is_passed %}
+                                                <span class="status-badge status-badge-passed">
+                                                    <span class="material-symbols-rounded me-1" style="font-size: 0.75rem;">check_circle</span>
+                                                    Passed
+                                                </span>
+                                            {% else %}
+                                                <span class="status-badge status-badge-failed">
+                                                    <span class="material-symbols-rounded me-1" style="font-size: 0.75rem;">cancel</span>
+                                                    Failed
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="py-2 pe-3 text-end">
+                                            <a href="{% url 'educational:quiz_results' attempt.id %}" class="btn btn-sm btn-outline-primary">
+                                                <span class="material-symbols-rounded me-1" style="font-size: 0.75rem; vertical-align: middle;">visibility</span>
+                                                View Results
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Related Topic -->
+            {% if quiz.topic %}
+                <div class="content-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Related Educational Topic</h5>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="mb-2">{{ quiz.topic.title }}</h5>
+                        <p class="small mb-3">{{ quiz.topic.content|truncatechars:120 }}</p>
+                        <a href="{% url 'educational:topic_detail' quiz.topic.id %}" class="btn btn-outline-primary w-100">
+                            <span class="material-symbols-rounded me-1" style="font-size: 0.875rem; vertical-align: middle;">menu_book</span>
+                            Study Topic
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <!-- Quick Tips -->
+            <div class="content-card">
+                <div class="card-header">
+                    <h5 class="mb-0">Quiz Tips</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item px-0 d-flex align-items-center">
+                            <div class="icon-circle bg-primary-light text-primary me-2" style="width: 24px; height: 24px;">
+                                <span class="material-symbols-rounded" style="font-size: 0.875rem;">check</span>
+                            </div>
+                            <span>Read each question carefully</span>
+                        </div>
+                        <div class="list-group-item px-0 d-flex align-items-center">
+                            <div class="icon-circle bg-primary-light text-primary me-2" style="width: 24px; height: 24px;">
+                                <span class="material-symbols-rounded" style="font-size: 0.875rem;">sync</span>
+                            </div>
+                            <span>You can navigate between questions</span>
+                        </div>
+                        <div class="list-group-item px-0 d-flex align-items-center">
+                            <div class="icon-circle bg-primary-light text-primary me-2" style="width: 24px; height: 24px;">
+                                <span class="material-symbols-rounded" style="font-size: 0.875rem;">save</span>
+                            </div>
+                            <span>Your progress is saved automatically</span>
+                        </div>
+                        <div class="list-group-item px-0 d-flex align-items-center">
+                            <div class="icon-circle bg-primary-light text-primary me-2" style="width: 24px; height: 24px;">
+                                <span class="material-symbols-rounded" style="font-size: 0.875rem;">send</span>
+                            </div>
+                            <span>Submit when you've answered all questions</span>
+                        </div>
+                        <div class="list-group-item px-0 border-bottom-0 d-flex align-items-center">
+                            <div class="icon-circle bg-primary-light text-primary me-2" style="width: 24px; height: 24px;">
+                                <span class="material-symbols-rounded" style="font-size: 0.875rem;">replay</span>
+                            </div>
+                            <span>Review your answers to learn from mistakes</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

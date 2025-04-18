@@ -205,20 +205,7 @@ STATICFILES_DIRS = [
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Make sure 'django.contrib.admin' is in INSTALLED_APPS
-INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'traffic_violation_system',
-    'traffic_violation_system.educational.apps.EducationalConfig',
-    'sslserver',
-    'django_extensions',
-    'rest_framework',
-]
+# Delete duplicate INSTALLED_APPS declaration (already defined above)
 
 STRIPE_PUBLIC_KEY = 'pk_test_51QMUtiRtsOGIIsiiixsia2aXfEA3K3aWdsxOUP70JIVEqoBPOOTRqfG0rzuhvokcNBIwZJQV5TTwmI6EM2UFAquf00l1UPS9oo'
 STRIPE_SECRET_KEY = 'sk_test_51QMUtiRtsOGIIsii5FbSeuUGHw5rhyUaVkIJfAVA8UbqHpW4YRTm7BjIftFB34UQC7G1sqqVQrdpTo9b2YadUjcQ00I21Bdd4g'

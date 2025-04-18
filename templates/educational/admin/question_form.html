@@ -1,0 +1,592 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{% if question %}Edit Question{% else %}Add Question{% endif %}{% endblock %}
+
+{% block extra_head %}
+<!-- SweetAlert CDN -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 px-3">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-md border-0 rounded-3" style="box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;">
+                <div class="card-body p-4">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+                        <div>
+                            <h1 class="fs-2 mb-1 fw-bold">{% if question %}Edit Question{% else %}Add Question to "{{ quiz.title }}"{% endif %}</h1>
+                            <p class="text-muted mb-0">{% if question %}Update question details and answer options{% else %}Create a new question with answer options{% endif %}</p>
+                        </div>
+                        <div>
+                            {% if question %}
+                                <a href="{% url 'educational:admin_edit_quiz' question.quiz.id %}" class="btn btn-outline-secondary d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-arrow-left me-2"></i> Back to Quiz
+                                </a>
+                            {% else %}
+                                <a href="{% url 'educational:admin_edit_quiz' quiz.id %}" class="btn btn-outline-secondary d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-arrow-left me-2"></i> Back to Quiz
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4 shadow-sm border-0 rounded-3">
+                <div class="card-header bg-white py-3 px-4 border-0">
+                    <h5 class="mb-0 fw-bold">Question Details</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" action="{% if question %}{% url 'educational:admin_edit_question' question.id %}{% else %}{% url 'educational:admin_add_question' quiz.id %}{% endif %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label for="text" class="form-label fw-medium">Question Text <span class="text-danger">*</span></label>
+                            <textarea class="form-control form-control-lg" id="text" name="text" rows="3" required placeholder="Enter your question text here">{{ question.text|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="image" class="form-label fw-medium">Question Image</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="fas fa-image"></i></span>
+                                <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                            </div>
+                            {% if question.image %}
+                            <div class="mt-3">
+                                <div class="card p-2 bg-light border-0 rounded-3 d-inline-block">
+                                    <img src="{{ question.image.url }}" alt="Question image" class="img-fluid rounded" style="max-height: 200px; max-width: 100%;">
+                                    <div class="form-check mt-2 ms-1">
+                                        <input class="form-check-input" type="checkbox" id="remove_image" name="remove_image">
+                                        <label class="form-check-label" for="remove_image">Remove image</label>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            <div class="form-text text-muted mt-2">Upload an optional image to display with the question (JPEG, PNG, GIF).</div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="question_type" class="form-label fw-medium">Question Type</label>
+                            <select class="form-select" id="question_type" name="question_type">
+                                <option value="MULTIPLE_CHOICE" {% if question.question_type == 'MULTIPLE_CHOICE' or not question %}selected{% endif %}>Multiple Choice</option>
+                                <option value="TRUE_FALSE" {% if question.question_type == 'TRUE_FALSE' %}selected{% endif %}>True/False</option>
+                            </select>
+                        </div>
+                            <div class="col-md-6">
+                                <label for="points" class="form-label fw-medium">Points</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="fas fa-star"></i></span>
+                            <input type="number" class="form-control" id="points" name="points" min="1" value="{{ question.points|default:1 }}">
+                                </div>
+                                <div class="form-text text-muted">Number of points this question is worth.</div>
+                            </div>
+                        </div>
+                        
+                        <!-- True/False specific options -->
+                        <div id="true_false_options" class="mb-4" {% if question.question_type != 'TRUE_FALSE' and question %}style="display: none;"{% endif %}>
+                            <label class="form-label fw-medium mb-3">Correct Answer <span class="badge bg-success ms-2">Select one</span></label>
+                            <div class="card rounded-3 border-0 shadow-sm">
+                                <div class="form-check p-3 mb-0 border-bottom {% if correct_answer == 'true' %}bg-success bg-opacity-10{% endif %}">
+                                <input class="form-check-input" type="radio" name="correct_answer" id="correct_true" value="true" 
+                                       {% if correct_answer == 'true' %}checked{% endif %}>
+                                    <label class="form-check-label fw-medium" for="correct_true">
+                                        <i class="fas fa-check-circle text-success me-2"></i> True <span class="badge bg-success ms-2 {% if correct_answer != 'true' %}d-none{% endif %}">CORRECT</span>
+                                </label>
+                            </div>
+                                <div class="form-check p-3 mb-0 {% if correct_answer == 'false' or not correct_answer %}bg-success bg-opacity-10{% endif %}">
+                                <input class="form-check-input" type="radio" name="correct_answer" id="correct_false" value="false" 
+                                       {% if correct_answer == 'false' or not correct_answer %}checked{% endif %}>
+                                    <label class="form-check-label fw-medium" for="correct_false">
+                                        <i class="fas fa-times-circle text-danger me-2"></i> False <span class="badge bg-success ms-2 {% if correct_answer != 'false' and correct_answer != '' %}d-none{% endif %}">CORRECT</span>
+                                </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Multiple Choice Options Section -->
+                        <div id="multiple_choice_options" class="mb-4" {% if question.question_type == 'TRUE_FALSE' and not question %}style="display: none;"{% endif %}>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <label class="form-label fw-medium mb-0">Answer Options</label>
+                                    <span class="badge bg-success ms-2">Select one correct answer</span>
+                                </div>
+                                <button type="button" id="add_option_btn" class="btn btn-primary">
+                                    <i class="fas fa-plus me-2"></i> Add Option
+                                </button>
+                            </div>
+                            
+                            <div id="options_container">
+                                {% if question and question.question_type == 'MULTIPLE_CHOICE' and answers %}
+                                    {% for answer in answers %}
+                                    <div class="option-row mb-2">
+                                        <div class="card rounded-3 border-0 shadow-sm p-2 {% if answer.is_correct %}border-start border-4 border-success{% endif %}">
+                                            <div class="d-flex align-items-start gap-2">
+                                                <div class="form-check mt-1">
+                                                    <input class="form-check-input" type="radio" name="correct_option" value="{{ forloop.counter0 }}" {% if answer.is_correct %}checked{% endif %} required>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="d-flex align-items-center mb-1">
+                                                        <input type="text" class="form-control" name="option_text[]" value="{{ answer.text }}" placeholder="Answer option" required>
+                                                        <span class="badge bg-success ms-2 correct-badge {% if not answer.is_correct %}d-none{% endif %}">CORRECT</span>
+                                                    </div>
+                                                    <textarea class="form-control explanation-field" name="option_explanation[]" placeholder="Explanation (optional)" rows="1">{{ answer.explanation|default:'' }}</textarea>
+                                                </div>
+                                                <button type="button" class="btn btn-action btn-delete remove-option ms-2" data-bs-toggle="tooltip" title="Remove option">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <!-- Default empty option rows for new multiple choice questions -->
+                                    {% for i in '01234'|make_list %}
+                                    <div class="option-row mb-2">
+                                        <div class="card rounded-3 border-0 shadow-sm p-2">
+                                            <div class="d-flex align-items-start gap-2">
+                                                <div class="form-check mt-1">
+                                                    <input class="form-check-input" type="radio" name="correct_option" value="{{ forloop.counter0 }}" {% if forloop.first %}checked{% endif %} required>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="d-flex align-items-center mb-1">
+                                                        <input type="text" class="form-control" name="option_text[]" placeholder="Answer option" required>
+                                                        <span class="badge bg-success ms-2 correct-badge {% if not forloop.first %}d-none{% endif %}">CORRECT</span>
+                                                    </div>
+                                                    <textarea class="form-control explanation-field" name="option_explanation[]" placeholder="Explanation (optional)" rows="1"></textarea>
+                                                </div>
+                                                <button type="button" class="btn btn-action btn-delete remove-option ms-2" data-bs-toggle="tooltip" title="Remove option" {% if forloop.counter <= 2 %}disabled{% endif %}>
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                            <div class="alert alert-info d-flex align-items-center mt-3 mb-0">
+                                <i class="fas fa-info-circle me-3 fs-5"></i>
+                                <div>
+                                    Select the correct answer by clicking the radio button next to it. Each question must have exactly one correct answer.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            {% if question %}
+                                <button type="submit" class="btn btn-primary btn-lg px-4">
+                                    <i class="fas fa-save me-2"></i> Update Question
+                                </button>
+                            {% else %}
+                                <button type="submit" class="btn btn-primary btn-lg px-4">
+                                    <i class="fas fa-plus me-2"></i> Add Question
+                                </button>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+                </div>
+            </div>
+            
+        <div class="col-lg-4">
+            <div class="card mb-4 shadow-sm border-0 rounded-3">
+                <div class="card-header bg-white py-3 px-4 border-0">
+                    <h5 class="mb-0 fw-bold">Instructions</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <span class="material-icons text-primary me-3" style="font-size: 2rem;">quiz</span>
+                            <h6 class="fw-bold mb-0">Multiple Choice Questions</h6>
+                        </div>
+                        <ul class="mb-0 text-muted">
+                            <li class="mb-2">Create a question with several answer options</li>
+                            <li class="mb-2">Mark one option as the correct answer by selecting the radio button</li>
+                            <li class="mb-2">Add explanations to help users understand why answers are right or wrong</li>
+                            <li class="mb-2">You can add or remove options as needed (minimum 2)</li>
+                        </ul>
+                        </div>
+                        
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <span class="material-icons text-primary me-3" style="font-size: 2rem;">check_circle</span>
+                            <h6 class="fw-bold mb-0">True/False Questions</h6>
+                        </div>
+                        <ul class="mb-0 text-muted">
+                            <li class="mb-2">Create a statement that is either true or false</li>
+                            <li class="mb-2">Select which response is correct</li>
+                            <li class="mb-2">True/False options are automatically created</li>
+                        </ul>
+                        </div>
+                        
+                    <div class="mb-0">
+                        <div class="d-flex align-items-center mb-3">
+                            <span class="material-icons text-primary me-3" style="font-size: 2rem;">image</span>
+                            <h6 class="fw-bold mb-0">Question Images</h6>
+                        </div>
+                        <ul class="mb-0 text-muted">
+                            <li class="mb-2">Upload an optional image to display with your question</li>
+                            <li class="mb-2">Supported formats: JPEG, PNG, GIF</li>
+                            <li class="mb-2">Images will be automatically resized if needed</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Action Buttons */
+.btn-action {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    color: #fff;
+}
+
+.btn-action i {
+    font-size: 1.1rem;
+}
+
+/* View Button */
+.btn-view {
+    background-color: #3498db;
+}
+
+.btn-view:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Edit Button */
+.btn-edit {
+    background-color: #f39c12;
+}
+
+.btn-edit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Delete Button */
+.btn-delete {
+    background-color: #e74c3c;
+}
+
+.btn-delete:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Cards and containers */
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04) !important;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.container-fluid {
+    max-width: 1600px;
+}
+
+/* Option rows styling */
+.option-row .card {
+    transition: all 0.2s ease;
+}
+
+.option-row:has(input[type="radio"]:checked) .card {
+    border-left: 4px solid #28a745 !important;
+    background-color: rgba(40, 167, 69, 0.05);
+}
+
+/* Correct answer styling */
+.correct-badge {
+    font-size: 0.7rem;
+    padding: 0.35em 0.65em;
+}
+
+.form-check input[type="radio"]:checked + label {
+    font-weight: 600;
+}
+
+/* True/False styling */
+#true_false_options .form-check {
+    transition: all 0.2s ease;
+    border-radius: 0.5rem;
+}
+
+#true_false_options .form-check:hover {
+    background-color: rgba(40, 167, 69, 0.05);
+}
+
+/* Auto-growing textarea styles */
+.explanation-field {
+    min-height: 36px;
+    resize: none;
+    overflow: hidden;
+    transition: height 0.1s ease;
+}
+</style>
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const questionTypeSelect = document.getElementById('question_type');
+        const trueFalseOptions = document.getElementById('true_false_options');
+        const multipleChoiceOptions = document.getElementById('multiple_choice_options');
+        const addOptionBtn = document.getElementById('add_option_btn');
+        const optionsContainer = document.getElementById('options_container');
+        const form = document.querySelector('form');
+        
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+        
+        // Toggle question type options
+        questionTypeSelect.addEventListener('change', function() {
+            if (this.value === 'TRUE_FALSE') {
+                trueFalseOptions.style.display = 'block';
+                multipleChoiceOptions.style.display = 'none';
+                
+                // Ensure a true/false option is selected
+                if (!document.querySelector('input[name="correct_answer"]:checked')) {
+                    document.getElementById('correct_true').checked = true;
+                }
+                
+                // Make sure the required attribute is removed from multiple choice inputs
+                document.querySelectorAll('input[name="option_text[]"]').forEach(input => {
+                    input.removeAttribute('required');
+                });
+                document.querySelectorAll('input[name="correct_option"]').forEach(input => {
+                    input.removeAttribute('required');
+                });
+            } else {
+                trueFalseOptions.style.display = 'none';
+                multipleChoiceOptions.style.display = 'block';
+                
+                // Make sure at least one multiple choice option is selected
+                if (!document.querySelector('input[name="correct_option"]:checked') && 
+                    document.querySelectorAll('input[name="correct_option"]').length > 0) {
+                    document.querySelector('input[name="correct_option"]').checked = true;
+                }
+                
+                // Add required attribute to multiple choice inputs
+                document.querySelectorAll('input[name="option_text[]"]').forEach(input => {
+                    input.setAttribute('required', 'required');
+                });
+                document.querySelectorAll('input[name="correct_option"]').forEach(input => {
+                    input.setAttribute('required', 'required');
+                });
+            }
+        });
+        
+        // Remove option button functionality (event delegation)
+        optionsContainer.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-option') || e.target.parentElement.classList.contains('remove-option')) {
+                const button = e.target.classList.contains('remove-option') ? e.target : e.target.parentElement;
+                const row = button.closest('.option-row');
+                
+                // Only show confirmation if we would still have at least 2 options
+                const optionCount = document.querySelectorAll('.option-row').length;
+                if (optionCount > 2) {
+                    // SweetAlert confirmation
+                    Swal.fire({
+                        title: 'Remove option?',
+                        text: 'Are you sure you want to remove this answer option?',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: 'Yes, remove it!',
+                        cancelButtonText: 'Cancel'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // User confirmed, proceed with deletion
+                            row.remove();
+                            
+                            // Update the value attributes of the radio buttons
+                            document.querySelectorAll('input[name="correct_option"]').forEach((radio, index) => {
+                                radio.value = index;
+                            });
+                            
+                            // Disable remove buttons if we reach minimum options
+                            if (optionCount <= 3) {
+                                document.querySelectorAll('.remove-option').forEach(btn => {
+                                    btn.disabled = true;
+                                });
+                            }
+                            
+                            // Show success message
+                            Swal.fire({
+                                title: 'Removed!',
+                                text: 'The answer option has been removed.',
+                                icon: 'success',
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+                        }
+                    });
+                }
+            }
+        });
+        
+        // Replace form validation alerts with SweetAlert
+        form.addEventListener('submit', function(e) {
+            const questionType = questionTypeSelect.value;
+            
+            if (questionType === 'TRUE_FALSE') {
+                // Ensure a true/false option is selected
+                if (!document.querySelector('input[name="correct_answer"]:checked')) {
+                    e.preventDefault();
+                    Swal.fire({
+                        title: 'Selection Required',
+                        text: 'Please select either True or False as the correct answer.',
+                        icon: 'error'
+                    });
+                    return false;
+                }
+            } else {
+                // For multiple choice, ensure at least one option is entered
+                const optionTexts = document.querySelectorAll('input[name="option_text[]"]');
+                if (optionTexts.length < 2) {
+                    e.preventDefault();
+                    Swal.fire({
+                        title: 'More Options Needed',
+                        text: 'Please add at least two answer options.',
+                        icon: 'error'
+                    });
+                    return false;
+                }
+                
+                // Ensure an option is selected as correct
+                if (!document.querySelector('input[name="correct_option"]:checked')) {
+                    e.preventDefault();
+                    Swal.fire({
+                        title: 'Correct Answer Required',
+                        text: 'Please select one answer as correct.',
+                        icon: 'error'
+                    });
+                    return false;
+                }
+                
+                // Ensure options have text
+                let emptyOptions = false;
+                optionTexts.forEach(input => {
+                    if (!input.value.trim()) {
+                        emptyOptions = true;
+                    }
+                });
+                
+                if (emptyOptions) {
+                    e.preventDefault();
+                    Swal.fire({
+                        title: 'Empty Options',
+                        text: 'Please fill in all answer options or remove empty ones.',
+                        icon: 'error'
+                    });
+                    return false;
+                }
+            }
+        });
+        
+        // Add option button functionality
+        addOptionBtn.addEventListener('click', function() {
+            const optionCount = document.querySelectorAll('.option-row').length;
+            const newOptionRow = document.createElement('div');
+            newOptionRow.className = 'option-row mb-2';
+            newOptionRow.innerHTML = `
+                <div class="card rounded-3 border-0 shadow-sm p-2">
+                    <div class="d-flex align-items-start gap-2">
+                        <div class="form-check mt-1">
+                            <input class="form-check-input" type="radio" name="correct_option" value="${optionCount}" required>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-1">
+                                <input type="text" class="form-control" name="option_text[]" placeholder="Answer option" required>
+                                <span class="badge bg-success ms-2 correct-badge d-none">CORRECT</span>
+                            </div>
+                            <textarea class="form-control explanation-field" name="option_explanation[]" placeholder="Explanation (optional)" rows="1"></textarea>
+                        </div>
+                        <button type="button" class="btn btn-action btn-delete remove-option ms-2" data-bs-toggle="tooltip" title="Remove option">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            optionsContainer.appendChild(newOptionRow);
+            
+            // Reinitialize tooltips for the new button
+            var tooltips = new bootstrap.Tooltip(newOptionRow.querySelector('[data-bs-toggle="tooltip"]'));
+            
+            // Setup auto-growing for the new textarea
+            setupAutoGrowingTextareas(newOptionRow.querySelector('.explanation-field'));
+            
+            // Enable all remove buttons when we have more than minimum options
+            if (optionCount >= 2) {
+                document.querySelectorAll('.remove-option').forEach(btn => {
+                    btn.disabled = false;
+                });
+            }
+        });
+        
+        // Setup auto-growing textareas
+        function setupAutoGrowingTextareas(textareaElement) {
+            textareaElement.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+        }
+        
+        // Initialize auto-growing for all textareas
+        document.querySelectorAll('.explanation-field').forEach(function(textarea) {
+            setupAutoGrowingTextareas(textarea);
+        });
+        
+        // Highlight selected answer option
+        optionsContainer.addEventListener('change', function(e) {
+            if (e.target.type === 'radio' && e.target.name === 'correct_option') {
+                // Remove highlighting from all options
+                document.querySelectorAll('.option-row .card').forEach(card => {
+                    card.classList.remove('border-start', 'border-4', 'border-success');
+                    card.style.backgroundColor = '';
+                });
+                
+                // Hide all "CORRECT" badges
+                document.querySelectorAll('.correct-badge').forEach(badge => {
+                    badge.classList.add('d-none');
+                });
+                
+                // Highlight the selected option
+                const selectedRow = e.target.closest('.option-row');
+                const card = selectedRow.querySelector('.card');
+                card.classList.add('border-start', 'border-4', 'border-success');
+                card.style.backgroundColor = 'rgba(40, 167, 69, 0.05)';
+                
+                // Show the CORRECT badge for the selected option
+                selectedRow.querySelector('.correct-badge').classList.remove('d-none');
+            }
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %} 

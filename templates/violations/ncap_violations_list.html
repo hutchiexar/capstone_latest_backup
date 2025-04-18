@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load custom_filters %}
 
 {% block content %}
 <!-- Add Micromodal.js for detail view modals -->
@@ -21,32 +22,68 @@
         document.head.appendChild(link);
     }
 
-    // Check for success parameter in URL
+    // Check for parameters in URL
     document.addEventListener('DOMContentLoaded', function() {
         // Get URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const successParam = urlParams.get('success');
         const idParam = urlParams.get('id');
+        const printedParam = urlParams.get('printed');
+        const sentToPrinterParam = urlParams.get('sent_to_printer');
+        
+        // Clear URL parameters to prevent showing messages on refresh
+        const url = new URL(window.location.href);
+        let showMessage = false;
+        let messageConfig = {};
         
         // If success parameter exists, show success message
         if (successParam === 'true') {
-            Swal.fire({
+            showMessage = true;
+            messageConfig = {
                 icon: 'success',
                 title: 'Violation Added Successfully!',
-                text: idParam ? `NCAP Violation #${idParam} has been added to the system` : 'Your NCAP violation has been added to the system',
+                text: idParam ? `NCAP Violation #${idParam} has been added to the system` : 'Your NCAP violation has been added to the system'
+            };
+            url.searchParams.delete('success');
+            url.searchParams.delete('id');
+        } 
+        // If printed parameter exists
+        else if (printedParam === 'true') {
+            showMessage = true;
+            messageConfig = {
+                icon: 'success',
+                title: 'Sent to Printer',
+                text: 'Violation sent to print'
+            };
+            url.searchParams.delete('printed');
+        }
+        // If sent_to_printer parameter exists (print dialog was canceled)
+        else if (sentToPrinterParam === 'true') {
+            showMessage = true;
+            messageConfig = {
+                icon: 'info',
+                title: 'Print Canceled',
+                text: 'Violation was sent to printer but printing was canceled.'
+            };
+            url.searchParams.delete('sent_to_printer');
+        }
+        
+        // Show the appropriate message if needed
+        if (showMessage) {
+            Swal.fire({
+                icon: messageConfig.icon,
+                title: messageConfig.title,
+                text: messageConfig.text,
                 confirmButtonText: 'OK'
             }).then(() => {
-                // Remove the parameters from URL to prevent showing the message again on refresh
-                const url = new URL(window.location.href);
-                url.searchParams.delete('success');
-                url.searchParams.delete('id');
-                window.history.replaceState({}, document.title, url.toString());
-                
                 // If ID parameter exists, highlight the row
                 if (idParam) {
                     highlightViolationRow(idParam);
                 }
             });
+            
+            // Remove the parameters from URL
+            window.history.replaceState({}, document.title, url.toString());
         }
     });
     
@@ -104,21 +141,21 @@
                 <table class="table table-hover align-middle" id="ncapViolationsTable">
                     <thead>
                         <tr class="table-header">
-                            <th>Case ID</th>
-                            <th>Image</th>
-                            <th>Date Filed</th>
-                            <th>Violator</th>
-                            <th>Violation Type</th>
-                            <th>Fine Amount</th>
-                            <th>Status</th>
-                            <th class="text-end">Actions</th>
+                            <th class="text-center">Case ID</th>
+                            <th class="text-center">Image</th>
+                            <th class="text-center">Date Filed</th>
+                            <th class="text-center">Violator</th>
+                            <th class="text-center">Violation Type</th>
+                            <th class="text-center">Fine Amount</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center" style="width: 140px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for violation in violations %}
                         <tr data-violation-id="{{ violation.id }}">
-                            <td>{{ violation.id }}</td>
-                            <td>
+                            <td class="text-center">{{ violation.id }}</td>
+                            <td class="text-center">
                                 <div class="images-preview">
                                     {% if violation.image %}
                                     <div class="image-preview" 
@@ -167,14 +204,14 @@
                                     {% endif %}
                                 </div>
                             </td>
-                            <td>{{ violation.violation_date|date:"M d, Y" }}</td>
-                            <td>
-                                <div class="d-flex flex-column">
+                            <td class="text-center">{{ violation.violation_date|date:"M d, Y" }}</td>
+                            <td class="text-center">
+                                <div class="d-flex flex-column justify-content-center align-items-center">
                                     <span class="fw-medium">{{ violation.violator.first_name }} {{ violation.violator.last_name }}</span>
                                     <small class="text-muted">{{ violation.violator.license_number }}</small>
                                 </div>
                             </td>
-                            <td>
+                            <td class="text-center">
                                 <div class="violation-types-wrapper">
                                     <div class="violation-types">
                                         {% for type in violation.get_violation_types %}
@@ -183,16 +220,21 @@
                                     </div>
                                 </div>
                             </td>
-                            <td>₱{{ violation.fine_amount }}</td>
-                            <td>
+                            <td class="text-center">₱{{ violation.fine_amount }}</td>
+                            <td class="text-center">
                                 {% include 'includes/status_badge.html' with status=violation.status display_text=violation.get_status_display %}
+                                {% if violation_counts|get_item:violation.id > 1 %}
+                                <span class="badge bg-primary ms-2" data-bs-toggle="tooltip" data-bs-placement="top" title="This violator has {{ violation_counts|get_item:violation.id }} violations in total">{{ violation_counts|get_item:violation.id }} violations</span>
+                                {% endif %}
                             </td>
-                            <td class="text-end">
+                            <td class="text-center" style="width: 140px;">
                                 <div class="action-buttons">
-                                    <a href="javascript:void(0);" class="btn btn-sm btn-primary view-violation-btn" data-violation-id="{{ violation.id }}">
+                                    <button type="button" class="btn btn-primary action-btn view-violation-btn" data-violation-id="{{ violation.id }}">
                                         <span class="material-icons">visibility</span>
-                                        <span class="view-text">View</span>
-                                    </a>
+                                    </button>
+                                    <button type="button" class="btn btn-info action-btn print-violation-btn" data-violation-id="{{ violation.id }}" title="Print Violation">
+                                        <span class="material-icons">print</span>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -224,6 +266,9 @@
                             </div>
                             <div>
                                 {% include 'includes/status_badge.html' with status=violation.status display_text=violation.get_status_display %}
+                                {% if violation_counts|get_item:violation.id > 1 %}
+                                <span class="badge bg-primary ms-2" data-bs-toggle="tooltip" data-bs-placement="top" title="This violator has {{ violation_counts|get_item:violation.id }} violations in total">{{ violation_counts|get_item:violation.id }} violations</span>
+                                {% endif %}
                             </div>
                         </div>
                         <div class="card-body">
@@ -321,11 +366,15 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="card-footer text-end">
-                            <a href="javascript:void(0);" class="btn btn-sm btn-primary view-violation-btn" data-violation-id="{{ violation.id }}">
-                                <span class="material-icons">visibility</span>
-                                <span class="view-text">View Details</span>
-                            </a>
+                        <div class="card-footer text-center">
+                            <div class="action-buttons">
+                                <button type="button" class="btn btn-primary action-btn view-violation-btn" data-violation-id="{{ violation.id }}">
+                                    <span class="material-icons">visibility</span>
+                                </button>
+                                <button type="button" class="btn btn-info action-btn print-violation-btn" data-violation-id="{{ violation.id }}" title="Print Violation">
+                                    <span class="material-icons">print</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -640,8 +689,55 @@
 
 /* Action buttons */
 .action-buttons {
-    display: flex;
-    justify-content: flex-end;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 4px !important;
+    width: 100% !important;
+    max-width: 140px !important;
+    margin: 0 auto !important;
+}
+
+/* Equal-sized action buttons */
+.action-btn {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    padding: 0 !important;
+    border-radius: 4px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 40px !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    transition: all 0.2s !important;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+}
+
+/* Icon sizing */
+.action-btn .material-icons {
+    color: white !important;
+    font-size: 18px !important;
+    margin: 0 !important;
+    line-height: 1 !important;
+}
+
+/* Center align all table content */
+.table th, .table td {
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* Make mobile action container centered as well */
+.violation-card .card-footer {
+    display: flex !important;
+    justify-content: center !important;
+    width: 100% !important;
 }
 
 /* Highlighted row style */
@@ -685,40 +781,8 @@
     }
 }
 
-.action-buttons .btn {
-    min-width: 90px;
-    height: 36px;
-    padding: 0 12px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    transition: all 0.2s;
-    gap: 5px;
-}
-
-.view-violation-btn {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-    color: white !important;
-    font-weight: 500;
-    box-shadow: 0 2px 4px rgba(13, 110, 253, 0.2);
-}
-
-.view-violation-btn:hover {
-    background-color: #0b5ed7;
-    border-color: #0a58ca;
-    box-shadow: 0 3px 6px rgba(13, 110, 253, 0.3);
-    transform: translateY(-1px);
-}
-
-.view-violation-btn .material-icons {
-    color: white !important;
-    font-size: 18px;
-}
-
 .view-text {
-    font-size: 14px;
+    display: none;
 }
 
 /* Status badge styles */
@@ -1175,13 +1239,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize tooltips
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
+    if (typeof bootstrap !== 'undefined') {
+        tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+            new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    }
 
     // Add event listeners for violation detail views
     const viewButtons = document.querySelectorAll('.view-violation-btn');
     const imagePreviewElements = document.querySelectorAll('.image-preview');
+    const printButtons = document.querySelectorAll('.print-violation-btn');
     
     // Add listeners to view buttons
     viewButtons.forEach(button => {
@@ -1189,6 +1256,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const violationId = this.getAttribute('data-violation-id');
             if (violationId) {
                 showViolationDetail(violationId);
+            }
+        });
+    });
+    
+    // Add listeners to print buttons
+    printButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const violationId = this.getAttribute('data-violation-id');
+            if (violationId) {
+                printViolation(violationId);
             }
         });
     });
@@ -1321,6 +1398,27 @@ function getCookie(name) {
         }
     }
     return cookieValue;
+}
+
+/**
+ * Print the violation details
+ * Opens a new tab with the printable view of the violation
+ */
+function printViolation(violationId) {
+    if (!violationId) return;
+    
+    // Show loading notification
+    Swal.fire({
+        title: 'Preparing for Print',
+        text: 'Opening print view...',
+        icon: 'info',
+        timer: 1500,
+        showConfirmButton: false
+    });
+    
+    // Open printable version in new tab
+    const printUrl = `/violation/${violationId}/print/`;
+    window.open(printUrl, '_blank');
 }
 </script>
 

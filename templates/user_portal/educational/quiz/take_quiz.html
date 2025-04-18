@@ -1,0 +1,634 @@
+{% extends "user_portal/base_user.html" %}
+{% load static %}
+{% load educational_tags %}
+
+{% block title %}Taking: {{ quiz.title }}{% endblock %}
+
+{% block extra_css %}
+<!-- SweetAlert CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
+<style>
+    /* Modern Color Palette - Matching Dashboard */
+    :root {
+        --primary-color: #3563E9;
+        --primary-light: #EEF3FF;
+        --success-color: #0CAA1D;
+        --danger-color: #F53D3D;
+        --warning-color: #FFB800;
+        --info-color: #4DA7FF;
+        --dark-blue: #0F1C3F;
+        --neutral-gray: #737791;
+        --light-gray: #F6F7F9;
+        --white: #FFFFFF;
+    }
+
+    /* Shadow and Container Styles */
+    .shadow-sm { box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
+    .shadow-md { box-shadow: 0 6px 15px rgba(0,0,0,0.08); }
+    .shadow-lg { box-shadow: 0 10px 25px rgba(0,0,0,0.12); }
+    
+    /* Page Container */
+    .dashboard-container {
+        animation: fadeIn 0.3s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Header & Cards */
+    .header-card {
+        background-color: var(--white);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    
+    .content-card {
+        background-color: var(--white);
+        border-radius: 0.75rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        overflow: hidden;
+        border: none;
+    }
+    
+    .card-header {
+        background-color: var(--white);
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .card-body {
+        padding: 1.5rem;
+    }
+    
+    .card-footer {
+        background-color: var(--light-gray);
+        padding: 1.25rem 1.5rem;
+        border-top: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    /* Progress bar */
+    .progress {
+        height: 8px;
+        border-radius: 0.5rem;
+        background-color: var(--light-gray);
+    }
+    
+    .progress-bar {
+        background-color: var(--primary-color);
+        border-radius: 0.5rem;
+    }
+    
+    /* Question navigator */
+    .navigator-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        padding: 0;
+        position: relative;
+        transition: all 0.2s ease;
+    }
+    
+    .navigator-btn.answered {
+        background-color: var(--primary-light);
+        color: var(--primary-color);
+        border-color: var(--primary-light);
+    }
+    
+    .navigator-btn.current {
+        background-color: var(--primary-color);
+        color: var(--white);
+        border-color: var(--primary-color);
+    }
+    
+    .navigator-btn.unanswered {
+        background-color: var(--light-gray);
+        color: var(--neutral-gray);
+        border-color: var(--light-gray);
+    }
+    
+    .navigator-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .status-indicator-key {
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+        display: inline-block;
+    }
+    
+    .answered-key {
+        background-color: var(--primary-light);
+    }
+    
+    .current-key {
+        background-color: var(--primary-color);
+    }
+    
+    .unanswered-key {
+        background-color: var(--light-gray);
+    }
+    
+    /* Answer options */
+    .answer-option {
+        border-radius: 0.75rem;
+        transition: all 0.2s ease;
+        overflow: hidden;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        border: 1px solid rgba(0,0,0,0.03);
+    }
+    
+    .answer-option:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        transform: translateY(-2px);
+    }
+    
+    .answer-option.selected {
+        border: 2px solid var(--primary-color);
+        background-color: var(--primary-light);
+    }
+    
+    .answer-option label {
+        cursor: pointer;
+        padding: 1rem 1.25rem;
+        margin: 0;
+        width: 100%;
+    }
+    
+    .option-circle {
+        width: 32px;
+        height: 32px;
+        border-radius: 0.5rem;
+        background-color: var(--light-gray);
+        color: var(--neutral-gray);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.875rem;
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+    
+    .selected .option-circle {
+        background-color: var(--primary-color);
+        color: var(--white);
+    }
+    
+    /* Quiz info items */
+    .info-item {
+        padding: 0.875rem 1rem;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .info-item:last-child {
+        border-bottom: none;
+    }
+    
+    .info-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    
+    /* Buttons */
+    .btn {
+        border-radius: 0.5rem;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        box-shadow: 0 4px 8px rgba(53, 99, 233, 0.15);
+    }
+    
+    .btn-primary:hover {
+        background-color: #2954d4;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(41, 84, 212, 0.2);
+    }
+    
+    .btn-success {
+        background-color: var(--success-color);
+        border-color: var(--success-color);
+        box-shadow: 0 4px 8px rgba(12, 170, 29, 0.15);
+    }
+    
+    .btn-success:hover {
+        background-color: #099518;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(12, 170, 29, 0.2);
+    }
+    
+    .btn-outline-secondary {
+        color: var(--neutral-gray);
+        border-color: var(--neutral-gray);
+    }
+    
+    .btn-outline-secondary:hover {
+        background-color: var(--neutral-gray);
+        color: var(--white);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(115, 119, 145, 0.15);
+    }
+    
+    /* Badge styling */
+    .badge {
+        font-weight: 500;
+        padding: 0.35rem 0.65rem;
+        border-radius: 0.5rem;
+    }
+    
+    /* Typography */
+    .quiz-title {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: var(--dark-blue);
+        letter-spacing: -0.02em;
+    }
+    
+    .quiz-description {
+        font-size: 0.95rem;
+        color: var(--neutral-gray);
+        line-height: 1.6;
+    }
+    
+    .question-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--dark-blue);
+        margin-bottom: 1.5rem;
+        line-height: 1.5;
+    }
+    
+    .question-number {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+    
+    .answer-text {
+        font-size: 1rem;
+        font-weight: 500;
+        color: var(--dark-blue);
+    }
+    
+    h5 {
+        font-size: 1.125rem;
+        font-weight: 700;
+    }
+    
+    p {
+        color: var(--neutral-gray);
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+    
+    /* Dividers and separators */
+    .question-divider {
+        height: 1px;
+        background-color: rgba(0,0,0,0.05);
+        margin: 1.5rem 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4 dashboard-container">
+    <!-- Header -->
+    <div class="header-card">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h1 class="quiz-title mb-2">{{ quiz.title }}</h1>
+                <p class="quiz-description mb-0">Complete the quiz to test your knowledge and improve your understanding of traffic rules and regulations.</p>
+            </div>
+            <div class="d-flex gap-2">
+                {% if all_answered %}
+                    <form id="completeForm" method="post" action="{% url 'educational:complete_quiz' attempt.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="confirmed" value="false" id="confirmField">
+                        <button type="button" class="btn btn-success" onclick="confirmSubmit()">
+                            <span class="material-symbols-rounded me-2" style="font-size: 1rem; vertical-align: middle;">check_circle</span>
+                            Submit Quiz
+                        </button>
+                    </form>
+                {% endif %}
+                <a href="{% url 'educational:quiz_detail' quiz.id %}" class="btn btn-outline-secondary">
+                    <span class="material-symbols-rounded me-2" style="font-size: 1rem; vertical-align: middle;">close</span>
+                    Exit Quiz
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Progress Bar -->
+    <div class="content-card">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-medium mb-0">Progress</h6>
+                <span class="badge bg-primary">{{ progress|floatformat:0 }}% Complete</span>
+            </div>
+            <div class="progress">
+                <div class="progress-bar" role="progressbar" style="width: {{ progress }}%;" 
+                     aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <!-- Current Question -->
+            {% if current_question %}
+                <div class="content-card">
+                    <div class="card-header">
+                        <span class="question-number d-block mb-1">Question {{ current_question.order }} of {{ all_questions.count }}</span>
+                        <h2 class="question-title mb-0">{{ current_question.text }}</h2>
+                    </div>
+                    <div class="card-body">
+                        {% if current_question.image %}
+                        <div class="mb-4 text-center">
+                            <div class="bg-light rounded-3 d-inline-block p-3">
+                                <img src="{{ current_question.image.url }}" alt="Question image" class="img-fluid rounded" style="max-height: 280px;">
+                            </div>
+                        </div>
+                        <div class="question-divider"></div>
+                        {% endif %}
+                        
+                        <form method="post" class="mt-4">
+                            {% csrf_token %}
+                            
+                            {% if current_question.question_type == 'MULTIPLE_CHOICE' %}
+                                <div class="answer-options-container">
+                                    {% for answer in current_question.answers.all %}
+                                        <div class="answer-option {% if current_response and current_response.selected_answer.id == answer.id %}selected{% endif %}">
+                                            <div class="form-check p-0">
+                                                <input class="form-check-input visually-hidden" type="radio" name="answer" id="answer{{ answer.id }}" value="{{ answer.id }}" 
+                                                    {% if current_response and current_response.selected_answer.id == answer.id %}checked{% endif %}>
+                                                <label class="form-check-label d-block" for="answer{{ answer.id }}">
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="option-circle me-3">
+                                                            <span>{{ forloop.counter }}</span>
+                                                        </div>
+                                                        <span class="answer-text">{{ answer.text }}</span>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    {% empty %}
+                                        <div class="alert alert-danger d-flex align-items-center" role="alert">
+                                            <span class="material-symbols-rounded me-2" style="font-size: 1.25rem;">error</span>
+                                            <div>No answer options available for this question.</div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% elif current_question.question_type == 'TRUE_FALSE' %}
+                                <div class="answer-options-container">
+                                    {% for answer in current_question.answers.all %}
+                                        <div class="answer-option {% if current_response and current_response.selected_answer.id == answer.id %}selected{% endif %}">
+                                            <div class="form-check p-0">
+                                                <input class="form-check-input visually-hidden" type="radio" name="answer" id="answer{{ answer.id }}" value="{{ answer.id }}" 
+                                                    {% if current_response and current_response.selected_answer.id == answer.id %}checked{% endif %}>
+                                                <label class="form-check-label d-block" for="answer{{ answer.id }}">
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="option-circle me-3">
+                                                            {% if answer.text == 'True' %}
+                                                                <span class="material-symbols-rounded" style="font-size: 0.875rem;">check</span>
+                                                            {% else %}
+                                                                <span class="material-symbols-rounded" style="font-size: 0.875rem;">close</span>
+                                                            {% endif %}
+                                                        </div>
+                                                        <span class="answer-text">{{ answer.text }}</span>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            
+                            <div class="question-divider"></div>
+                            
+                            <div class="d-flex justify-content-between">
+                                <button type="submit" class="btn btn-primary">
+                                    <span class="material-symbols-rounded me-2" style="font-size: 1rem; vertical-align: middle;">save</span>
+                                    Save Answer
+                                </button>
+                                
+                                {% if all_answered %}
+                                    <button type="button" class="btn btn-success" onclick="confirmSubmit()">
+                                        <span class="material-symbols-rounded me-2" style="font-size: 1rem; vertical-align: middle;">check_circle</span>
+                                        Submit Quiz
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            {% else %}
+                <div class="content-card">
+                    <div class="card-body text-center py-5">
+                        <span class="material-symbols-rounded text-warning mb-3" style="font-size: 3rem;">warning</span>
+                        <h5 class="fw-bold mb-2">No questions available</h5>
+                        <p class="text-muted mb-4">This quiz does not have any questions yet.</p>
+                        <a href="{% url 'educational:quiz_detail' quiz.id %}" class="btn btn-primary">
+                            <span class="material-symbols-rounded me-2" style="font-size: 1rem; vertical-align: middle;">arrow_back</span>
+                            Return to Quiz Details
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Question Navigator -->
+            <div class="content-card">
+                <div class="card-header">
+                    <h5 class="mb-0">Question Navigator</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row row-cols-5 g-2 mb-4">
+                        {% for question in all_questions %}
+                            <div class="col">
+                                <a href="{% url 'educational:take_quiz' attempt.id %}?question={{ question.id }}" 
+                                   class="btn navigator-btn w-100 h-100 d-flex align-items-center justify-content-center {% if question.id in answered_questions %}answered{% elif question.id == current_question.id %}current{% else %}unanswered{% endif %}">
+                                    {{ question.order }}
+                                    {% if question.id in answered_questions and question.id != current_question.id %}
+                                    <span class="position-absolute top-0 end-0 translate-middle-x">
+                                        <span class="material-symbols-rounded" style="font-size: 0.7rem;">check</span>
+                                    </span>
+                                    {% endif %}
+                                </a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mt-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="status-indicator-key answered-key me-2"></span>
+                            <span class="small text-muted">Answered ({{ answered_questions|length }} of {{ all_questions.count }})</span>
+                        </div>
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="status-indicator-key current-key me-2"></span>
+                            <span class="small text-muted">Current Question</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="status-indicator-key unanswered-key me-2"></span>
+                            <span class="small text-muted">Unanswered</span>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if all_answered %}
+                    <div class="card-footer">
+                        <form method="post" action="{% url 'educational:complete_quiz' attempt.id %}" id="completeForm">
+                            {% csrf_token %}
+                            <input type="hidden" name="confirmed" value="false" id="confirmField">
+                            <button type="button" onclick="confirmSubmit()" class="btn btn-success w-100">
+                                <span class="material-symbols-rounded me-2" style="font-size: 1rem; vertical-align: middle;">check_circle</span>
+                                Submit Quiz
+                            </button>
+                        </form>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Quiz Information -->
+            <div class="content-card">
+                <div class="card-header">
+                    <h5 class="mb-0">Quiz Information</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="info-item">
+                        <div class="d-flex align-items-center">
+                            <div class="info-icon bg-primary-light text-primary me-2">
+                                <span class="material-symbols-rounded" style="font-size: 1rem;">checklist</span>
+                            </div>
+                            <span class="small">Total Questions</span>
+                        </div>
+                        <span class="badge bg-primary">{{ all_questions.count }}</span>
+                    </div>
+                    <div class="info-item">
+                        <div class="d-flex align-items-center">
+                            <div class="info-icon bg-success-light text-success me-2">
+                                <span class="material-symbols-rounded" style="font-size: 1rem;">check_circle</span>
+                            </div>
+                            <span class="small">Answered</span>
+                        </div>
+                        <span class="badge bg-success">{{ answered_questions|length }}</span>
+                    </div>
+                    <div class="info-item">
+                        <div class="d-flex align-items-center">
+                            <div class="info-icon bg-light text-secondary me-2">
+                                <span class="material-symbols-rounded" style="font-size: 1rem;">hourglass_empty</span>
+                            </div>
+                            <span class="small">Remaining</span>
+                        </div>
+                        <span class="badge bg-secondary">{{ all_questions.count|subtract:answered_questions|length }}</span>
+                    </div>
+                    <div class="info-item">
+                        <div class="d-flex align-items-center">
+                            <div class="info-icon bg-info-light text-info me-2">
+                                <span class="material-symbols-rounded" style="font-size: 1rem;">trending_up</span>
+                            </div>
+                            <span class="small">Passing Score</span>
+                        </div>
+                        <span class="badge bg-info">{{ quiz.passing_score }}%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- SweetAlert JS -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add click event for answer options for better UX
+    const answerOptions = document.querySelectorAll('.answer-option');
+    answerOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            // Find the input inside this option and check it
+            const input = this.querySelector('input[type="radio"]');
+            if (input) {
+                input.checked = true;
+                
+                // Remove selected class from all options
+                answerOptions.forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                
+                // Add selected class to clicked option
+                this.classList.add('selected');
+            }
+        });
+    });
+});
+
+function confirmSubmit() {
+    // Check if this is the user's first attempt
+    const isFirstAttempt = {% if not retake %}true{% else %}false{% endif %};
+    
+    let title = 'Submit Quiz?';
+    let text = "You won't be able to change your answers after submission.";
+    let icon = 'question';
+    
+    if (isFirstAttempt) {
+        title = 'Ready to Submit Your Quiz?';
+        text = "This is your first attempt! Once submitted, you can't change your answers. Make sure you've reviewed all questions carefully.";
+        icon = 'warning';
+    }
+    
+    Swal.fire({
+        title: title,
+        text: text,
+        icon: icon,
+        showCancelButton: true,
+        confirmButtonColor: '#3563E9',
+        cancelButtonColor: '#737791',
+        confirmButtonText: 'Yes, submit now!',
+        cancelButtonText: 'Let me review again',
+        customClass: {
+            confirmButton: 'btn btn-primary',
+            cancelButton: 'btn btn-outline-secondary'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById('confirmField').value = 'true';
+            document.getElementById('completeForm').submit();
+            
+            Swal.fire({
+                title: 'Submitting...',
+                text: 'Please wait while we process your quiz.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+        }
+    });
+}
+</script>
+{% endblock %} 

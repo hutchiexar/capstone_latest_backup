@@ -246,6 +246,211 @@
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
     }
+    
+    .table td, .table th {
+        vertical-align: middle;
+    }
+    
+    .small.text-muted {
+        font-size: 0.8rem;
+        margin-top: 2px;
+    }
+    
+    /* Enhanced card styles for vehicles and violations */
+    .border-left-primary {
+        border-left: 4px solid var(--primary-color) !important;
+    }
+    
+    .border-left-warning {
+        border-left: 4px solid var(--warning-color) !important;
+    }
+    
+    .bg-gradient-primary {
+        background: linear-gradient(to right, var(--primary-color), #4a77e5) !important;
+    }
+    
+    .bg-gradient-warning {
+        background: linear-gradient(to right, var(--warning-color), #ffc107) !important;
+    }
+    
+    .card-header h5.card-title {
+        font-size: 1rem;
+        font-weight: 600;
+    }
+    
+    .font-weight-medium {
+        font-weight: 500 !important;
+    }
+    
+    .card-footer {
+        background-color: rgba(0, 0, 0, 0.03) !important;
+        border-top: 1px solid rgba(0, 0, 0, 0.125) !important;
+    }
+    
+    .card-footer .btn-sm {
+        padding: .25rem .5rem;
+        font-size: .75rem;
+        line-height: 1.5;
+    }
+    
+    /* Add transition effects */
+    .card {
+        transition: all 0.3s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+
+    /* Vehicle card specific styles */
+    #vehicles .card {
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+    
+    /* Define color variables for different status badges */
+    :root {
+        --primary-color: #3f51b5;
+        --primary-rgb: 63, 81, 181;
+        --warning-color: #ff9800;
+        --success-color: #4CAF50;
+        --danger-color: #f44336;
+        --light-color: #f8f9fa;
+        --neutral-gray: #6c757d;
+    }
+    
+    /* Improve text contrast in card headers */
+    .bg-gradient-primary, .bg-gradient-warning {
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Add subtle background to rows in mobile view */
+    .card-body .row:nth-child(odd) {
+        background-color: rgba(0, 0, 0, 0.02);
+        border-radius: 4px;
+    }
+
+    /* Responsive font sizing for small screens */
+    @media (max-width: 576px) {
+        .card-body {
+            padding: 0.75rem !important;
+        }
+        
+        .card-body .row {
+            margin-bottom: 0.5rem !important;
+        }
+        
+        .font-weight-medium {
+            font-size: 14px;
+        }
+        
+        .text-muted {
+            font-size: 13px;
+        }
+        
+        .fw-bold.fs-5 {
+            font-size: 1.1rem !important;
+        }
+        
+        .btn-sm {
+            font-size: 12px;
+            padding: 0.2rem 0.4rem;
+        }
+        
+        .card-header h5.card-title {
+            font-size: 0.9rem;
+        }
+        
+        .badge {
+            font-size: 70%;
+            padding: 0.35em 0.5em;
+        }
+    }
+
+    .table thead th {
+        font-weight: 600;
+        color: #495057;
+        border-bottom: 2px solid #e9ecef;
+    }
+    
+    /* Centered table styles */
+    .table.table-bordered td, 
+    .table.table-bordered th {
+        vertical-align: middle;
+        text-align: center;
+    }
+    
+    .table.table-bordered td {
+        padding: 0.75rem;
+    }
+    
+    .table.table-bordered th {
+        padding: 1rem 0.75rem;
+    }
+    
+    .table.table-bordered .btn {
+        margin: 0 0.25rem;
+    }
+    
+    .text-center {
+        text-align: center !important;
+    }
+    
+    .vehicle-info-value.text-center {
+        text-align: center !important;
+        font-weight: 500;
+    }
+
+    .violation-text {
+        line-height: 1.4;
+        font-size: 0.95rem;
+    }
+    
+    .badge {
+        font-weight: 500;
+        letter-spacing: 0.3px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    
+    .badge.bg-warning {
+        background-color: #fff8e1 !important;
+        color: #f57c00 !important;
+        border: 1px solid #ffe0b2;
+    }
+    
+    .badge.bg-success {
+        background-color: #e8f5e9 !important;
+        color: #2e7d32 !important;
+        border: 1px solid #c8e6c9;
+    }
+    
+    .badge.bg-info {
+        background-color: #e3f2fd !important;
+        color: #1565c0 !important;
+        border: 1px solid #bbdefb;
+    }
+    
+    .badge.bg-danger {
+        background-color: #ffebee !important;
+        color: #c62828 !important;
+        border: 1px solid #ffcdd2;
+    }
+    
+    .badge.bg-primary {
+        background-color: #e8eaf6 !important;
+        color: #3949ab !important;
+        border: 1px solid #c5cae9;
+    }
+    
+    .table td, .table th {
+        vertical-align: middle;
+    }
+    
+    .small.text-muted {
+        font-size: 0.8rem;
+        margin-top: 2px;
+    }
 </style>
 {% endblock %}
 
@@ -296,7 +501,7 @@
                     
                     <!-- Operation Statistics -->
                     <div class="row g-4 mb-4">
-                        <div class="col-md-3">
+                        <div class="col-md-6">
                             <div class="stat-card">
                                 <div class="stat-icon bg-primary-light">
                                     <span class="material-icons text-primary">directions_car</span>
@@ -308,19 +513,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="stat-card">
-                                <div class="stat-icon bg-success-light">
-                                    <span class="material-icons text-success">person</span>
-                                </div>
-                                <div>
-                                    <div class="stat-card-title">Registered Drivers</div>
-                                    <div class="stat-card-value">{{ drivers.count }}</div>
-                                    <div class="stat-card-description">Total active drivers</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
+                        <div class="col-md-6">
                             <div class="stat-card">
                                 <div class="stat-icon bg-warning-light">
                                     <span class="material-icons text-warning">warning</span>
@@ -329,18 +522,6 @@
                                     <div class="stat-card-title">Active Violations</div>
                                     <div class="stat-card-value">{{ violations_count }}</div>
                                     <div class="stat-card-description">Pending violations</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="stat-card">
-                                <div class="stat-icon bg-danger-light">
-                                    <span class="material-icons text-danger">error_outline</span>
-                                </div>
-                                <div>
-                                    <div class="stat-card-title">Unassigned Vehicles</div>
-                                    <div class="stat-card-value">{{ unassigned_count }}</div>
-                                    <div class="stat-card-description">Vehicles without drivers</div>
                                 </div>
                             </div>
                         </div>
@@ -362,21 +543,9 @@
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="drivers-tab" data-bs-toggle="tab" data-bs-target="#drivers" type="button" role="tab">
-                        <span class="material-icons align-middle me-2">person</span>
-                        Drivers
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
                     <button class="nav-link" id="violations-tab" data-bs-toggle="tab" data-bs-target="#violations" type="button" role="tab">
                         <span class="material-icons align-middle me-2">warning</span>
                         Violations
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="unassigned-tab" data-bs-toggle="tab" data-bs-target="#unassigned" type="button" role="tab">
-                        <span class="material-icons align-middle me-2">error_outline</span>
-                        Unassigned Vehicles
                     </button>
                 </li>
             </ul>
@@ -384,247 +553,268 @@
             <!-- Tab Content -->
             <div class="tab-content p-4" id="operatorTabsContent">
                 <!-- Vehicles Tab -->
-                <div class="tab-pane fade show active" id="vehicles" role="tabpanel">
-                    <div class="card shadow-sm border-0 rounded-3">
-                        <div class="card-header bg-white border-0 py-3">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div class="d-flex align-items-center">
-                                    <span class="material-icons me-2 text-primary">directions_car</span>
-                                    <h5 class="mb-0 fw-bold">Your Vehicles</h5>
+                <div class="tab-pane fade show active" id="vehicles" role="tabpanel" aria-labelledby="vehicles-tab">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <h5>My Vehicles</h5>
                                 </div>
-                                <a href="{% url 'operator_register_vehicle' %}" class="btn btn-primary d-flex align-items-center">
-                                    <span class="material-icons me-2">add</span>
-                                    Register New Vehicle
-                                </a>
-                            </div>
+                        <div class="col-md-6 text-md-end">
+                            <a href="{% url 'operator_register_vehicle' %}" class="btn btn-primary btn-sm"><i class="material-icons align-middle" style="font-size: 16px;">add</i> Add Vehicle</a>
                         </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0">
-                                    <thead class="bg-light">
-                                        <tr>
-                                            <th class="px-4 py-3">#</th>
-                                            <th class="px-4 py-3">Type</th>
-                                            <th class="px-4 py-3">Plate #</th>
-                                            <th class="px-4 py-3">P.O. Number</th>
-                                            <th class="px-4 py-3">Status</th>
-                                            <th class="px-4 py-3 text-end">Actions</th>
+                    </div>
+                    
+                    {% if vehicles %}
+                    <!-- Table view for larger screens -->
+                    <div class="table-responsive d-none d-md-block">
+                        <table class="table table-bordered table-hover">
+                            <thead class="table-light text-center">
+                                <tr>
+                                    <th class="text-center">Type</th>
+                                    <th class="text-center">Plate Number</th>
+                                    <th class="text-center">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {% for vehicle in vehicles %}
                                         <tr>
-                                            <td class="px-4 py-3 fw-medium">{{ vehicle.new_pd_number }}</td>
-                                            <td class="px-4 py-3">{{ vehicle.vehicle_type }}</td>
-                                            <td class="px-4 py-3">{{ vehicle.plate_number }}</td>
-                                            <td class="px-4 py-3">{{ vehicle.po_number }}</td>
-                                            <td class="px-4 py-3">
-                                                <span class="badge {% if vehicle.active %}bg-success{% else %}bg-danger{% endif %} rounded-pill">
-                                                    {% if vehicle.active %}Active{% else %}Inactive{% endif %}
-                                                </span>
-                                            </td>
-                                            <td class="px-4 py-3 text-end">
-                                                <div class="btn-group">
-                                                    <a href="{% url 'edit_vehicle' vehicle.id %}" class="btn btn-outline-primary btn-sm">
-                                                        <span class="material-icons fs-5">edit</span>
-                                                    </a>
-                                                    <a href="{% url 'assign_driver_to_vehicle' %}?vehicle={{ vehicle.id }}" 
-                                                       class="btn btn-outline-success btn-sm">
-                                                        <span class="material-icons fs-5">person_add</span>
-                                                    </a>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        {% empty %}
-                                        <tr>
-                                            <td colspan="5" class="text-center py-4">
-                                                <div class="d-flex flex-column align-items-center">
-                                                    <span class="material-icons text-muted mb-2" style="font-size: 48px;">directions_car</span>
-                                                    <p class="text-muted mb-3">No vehicles registered yet</p>
-                                                    <a href="{% url 'operator_register_vehicle' %}" class="btn btn-primary">
-                                                        <span class="material-icons me-2">add</span>
-                                                        Register Your First Vehicle
-                                                    </a>
-                                                </div>
+                                    <td class="text-center">{{ vehicle.vehicle_type }}</td>
+                                    <td class="text-center">{{ vehicle.plate_number }}</td>
+                                    <td class="text-center">
+                                        <a href="{% url 'edit_vehicle' vehicle.id %}" class="btn btn-sm btn-outline-primary"><i class="material-icons align-middle" style="font-size: 16px;">edit</i></a>
+                                        <button class="btn btn-sm btn-outline-danger delete-vehicle" data-id="{{ vehicle.id }}" data-vehicle-pd="{{ vehicle.pd_number }}"><i class="material-icons align-middle" style="font-size: 16px;">delete</i></button>
                                             </td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>
                                 </table>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
-                <!-- Drivers Tab -->
-                <div class="tab-pane fade" id="drivers" role="tabpanel">
-                    <div class="card dashboard-card">
-                        <div class="card-header bg-white py-3">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <h5 class="m-0">Your Drivers</h5>
-                                <a href="{% url 'register_driver' %}" class="btn btn-primary">
-                                    <span class="material-icons me-2">person_add</span>
-                                    Register New Driver
-                                </a>
+                    <!-- Card view for mobile/small screens -->
+                    <div class="d-md-none">
+                        {% for vehicle in vehicles %}
+                        <div class="card mb-3 shadow-sm border-left-primary">
+                            <div class="card-header bg-gradient-primary text-white py-2">
+                                <h5 class="card-title mb-0 font-weight-bold">{{ vehicle.vehicle_type }}</h5>
                             </div>
+                            <div class="card-body py-3">
+                                <div class="row mb-2">
+                                    <div class="col-5 text-muted">Type:</div>
+                                    <div class="col-7 font-weight-medium text-center">{{ vehicle.vehicle_type }}</div>
                         </div>
-                        <div class="card-body p-0">
-                            {% if drivers %}
-                            <div class="table-responsive">
-                                <table class="table table-hover mb-0">
-                                    <thead class="bg-light">
-                                        <tr>
-                                            <th>Name</th>
-                                            <th>P.O. Number</th>
-                                            <th>License Number</th>
-                                            <th>Status</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for driver in drivers %}
-                                        <tr>
-                                            <td>{{ driver.first_name }} {{ driver.last_name }}</td>
-                                            <td>{{ driver.new_pd_number }}</td>
-                                            <td>{{ driver.license_number|default:"Not provided" }}</td>
-                                            <td>
-                                                {% if driver.active %}
-                                                <span class="badge bg-success">Active</span>
-                                                {% else %}
-                                                <span class="badge bg-danger">Inactive</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                <div class="btn-group">
-                                                    <a href="{% url 'edit_driver' driver.id %}" class="btn btn-sm btn-outline-primary">
-                                                        <span class="material-icons">edit</span>
-                                                    </a>
-                                                    <a href="{% url 'assign_driver_to_vehicle' %}?driver={{ driver.id }}" class="btn btn-sm btn-outline-success">
-                                                        <span class="material-icons">directions_car</span>
-                                                    </a>
+                                <div class="row mb-2">
+                                    <div class="col-5 text-muted">Plate Number:</div>
+                                    <div class="col-7 font-weight-medium text-center">{{ vehicle.plate_number }}</div>
                                                 </div>
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
                             </div>
-                            {% else %}
-                            <div class="empty-state">
-                                <div class="empty-state-icon">
-                                    <span class="material-icons">person</span>
+                            <div class="card-footer bg-light py-2">
+                                <div class="d-flex justify-content-around">
+                                    <a href="{% url 'edit_vehicle' vehicle.id %}" class="btn btn-sm btn-warning">
+                                        <i class="fas fa-edit me-1"></i> Edit
+                                    </a>
+                                    <button class="btn btn-sm btn-danger delete-vehicle" data-id="{{ vehicle.id }}" data-vehicle-pd="{{ vehicle.pd_number }}">
+                                        <i class="fas fa-trash me-1"></i> Delete
+                                    </button>
                                 </div>
-                                <div class="empty-state-text">No drivers registered yet</div>
-                                <a href="{% url 'register_driver' %}" class="btn btn-primary">
-                                    <span class="material-icons me-2">person_add</span>
-                                    Register New Driver
-                                </a>
                             </div>
-                            {% endif %}
                         </div>
+                        {% endfor %}
                     </div>
+                    {% else %}
+                    <div class="empty-state py-5 text-center">
+                        <div class="empty-state-icon mb-4">
+                            <span class="material-icons" style="font-size: 64px; color: #ddd;">directions_car_off</span>
+                        </div>
+                        <h5 class="mb-2">No Vehicles Yet</h5>
+                        <p class="text-muted">You haven't registered any vehicles yet.</p>
+                        <a href="{% url 'operator_register_vehicle' %}" class="btn btn-primary btn-sm mt-3"><i class="material-icons align-middle" style="font-size: 16px;">add</i> Add Vehicle</a>
+                    </div>
+                    {% endif %}
                 </div>
 
                 <!-- Violations Tab -->
                 <div class="tab-pane fade" id="violations" role="tabpanel">
                     <div class="card dashboard-card">
                         <div class="card-header bg-white py-3">
-                            <h5 class="m-0">Recent Violations</h5>
+                            <div class="d-flex align-items-center">
+                                <span class="material-icons me-2 text-warning">warning</span>
+                                <h5 class="m-0 fw-bold">Recent Violations</h5>
+                            </div>
                         </div>
                         <div class="card-body p-0">
                             {% if violations %}
-                            <div class="table-responsive">
-                                <table class="table table-hover mb-0">
+                            <div class="table-responsive d-none d-md-block">
+                                <table class="table table-hover align-middle mb-0">
                                     <thead class="bg-light">
                                         <tr>
-                                            <th>Date</th>
-                                            <th>Vehicle</th>
-                                            <th>Driver</th>
-                                            <th>Violation</th>
-                                            <th>Status</th>
-                                            <th>Fine Amount</th>
+                                            <th class="px-4 py-3 fw-semibold">Date</th>
+                                            <th class="px-4 py-3 fw-semibold">Vehicle</th>
+                                            <th class="px-4 py-3 fw-semibold">Driver</th>
+                                            <th class="px-4 py-3 fw-semibold">Violation</th>
+                                            <th class="px-4 py-3 fw-semibold">Status</th>
+                                            <th class="px-4 py-3 fw-semibold text-end">Fine Amount</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {% for violation in violations %}
                                         <tr>
-                                            <td>{{ violation.violation_date|date:"M d, Y" }}</td>
-                                            <td>{{ violation.plate_number }}</td>
-                                            <td>{{ violation.violator.first_name }} {{ violation.violator.last_name }}</td>
-                                            <td>{{ violation.violation_type }}</td>
-                                            <td>
-                                                <span class="badge bg-{{ violation.status|lower }}-light text-{{ violation.status|lower }}">
-                                                    {{ violation.status }}
-                                                </span>
+                                            <td class="px-4 py-3">{{ violation.violation_date|date:"M d, Y" }}</td>
+                                            <td class="px-4 py-3">
+                                                {% if violation.plate_number %}
+                                                    <span class="fw-medium">{{ violation.plate_number }}</span>
+                                                {% else %}
+                                                    <span class="text-muted">Not specified</span>
+                                                {% endif %}
+                                                {% if violation.potpot_number %}
+                                                    <div class="small text-muted">Potpot: {{ violation.potpot_number }}</div>
+                                                {% endif %}
                                             </td>
-                                            <td>₱{{ violation.fine_amount }}</td>
+                                            <td class="px-4 py-3">
+                                                {% if violation.violator.first_name or violation.violator.last_name %}
+                                                    {{ violation.violator.first_name }} {{ violation.violator.last_name }}
+                                                {% elif violation.driver_name %}
+                                                    {{ violation.driver_name }}
+                                                {% else %}
+                                                    <span class="text-muted">Not specified</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="px-4 py-3">
+                                                <div class="violation-text" style="max-width: 250px; word-wrap: break-word;">
+                                                    {{ violation.violation_type|truncatechars:80 }}
+                                                </div>
+                                            </td>
+                                            <td class="px-4 py-3">
+                                                {% if violation.status == 'PENDING' %}
+                                                    <span class="badge bg-warning text-dark rounded-pill px-3 py-2">Pending</span>
+                                                {% elif violation.status == 'PAID' %}
+                                                    <span class="badge bg-success text-white rounded-pill px-3 py-2">Paid</span>
+                                                {% elif violation.status == 'SETTLED' %}
+                                                    <span class="badge bg-success text-white rounded-pill px-3 py-2">Settled</span>
+                                                {% elif violation.status == 'ADJUDICATED' %}
+                                                    <span class="badge bg-info text-white rounded-pill px-3 py-2">Adjudicated</span>
+                                                {% elif violation.status == 'APPROVED' %}
+                                                    <span class="badge bg-primary text-white rounded-pill px-3 py-2">Approved</span>
+                                                {% elif violation.status == 'REJECTED' %}
+                                                    <span class="badge bg-danger text-white rounded-pill px-3 py-2">Rejected</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary text-white rounded-pill px-3 py-2">{{ violation.status }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="px-4 py-3 fw-semibold text-end">₱{{ violation.fine_amount|floatformat:2 }}</td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>
                                 </table>
                             </div>
+                            
+                            <!-- Mobile Card View for Violations (visible only on small screens) -->
+                            <div class="d-md-none">
+                                <div class="px-3 py-3">
+                                    {% for violation in violations %}
+                                    <div class="card mb-3 shadow-sm border-left-warning">
+                                        <div class="card-header bg-gradient-warning text-white py-2">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <h5 class="card-title mb-0 font-weight-bold">
+                                                    <i class="fas fa-exclamation-triangle me-2"></i>Violation #{{ violation.id }}
+                                                </h5>
+                                                <div>
+                                                    {% if violation.status == 'PENDING' %}
+                                                        <span class="badge bg-warning text-dark">Pending</span>
+                                                    {% elif violation.status == 'PAID' %}
+                                                        <span class="badge bg-success">Paid</span>
+                                                    {% elif violation.status == 'SETTLED' %}
+                                                        <span class="badge bg-success">Settled</span>
+                                                    {% elif violation.status == 'ADJUDICATED' %}
+                                                        <span class="badge bg-info">Adjudicated</span>
+                                                    {% elif violation.status == 'APPROVED' %}
+                                                        <span class="badge bg-primary">Approved</span>
+                                                    {% elif violation.status == 'REJECTED' %}
+                                                        <span class="badge bg-danger">Rejected</span>
                             {% else %}
-                            <div class="empty-state">
-                                <div class="empty-state-icon">
-                                    <span class="material-icons">check_circle</span>
+                                                        <span class="badge bg-secondary">{{ violation.status }}</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
                                 </div>
-                                <div class="empty-state-text">No violations recorded</div>
+                                        <div class="card-body py-3">
+                                            <!-- Date info -->
+                                            <div class="row mb-2">
+                                                <div class="col-5 text-muted">Date:</div>
+                                                <div class="col-7 font-weight-medium">{{ violation.violation_date|date:"M d, Y" }}</div>
                             </div>
+                                            
+                                            <!-- Vehicle and Driver Info -->
+                                            <div class="row g-3 mb-3">
+                                                <!-- Vehicle Info -->
+                                                <div class="col-6">
+                                                    <div class="d-flex align-items-start">
+                                                        <span class="material-icons text-primary me-2">directions_car</span>
+                                                        <div>
+                                                            <div class="text-muted small mb-1">Vehicle</div>
+                                                            {% if violation.plate_number %}
+                                                                <div class="fw-medium">{{ violation.plate_number }}</div>
+                                                            {% else %}
+                                                                <div class="text-muted">Not specified</div>
+                                                            {% endif %}
+                                                            
+                                                            {% if violation.potpot_number %}
+                                                                <div class="small text-muted mt-1">Potpot: {{ violation.potpot_number }}</div>
                             {% endif %}
                         </div>
                     </div>
                 </div>
 
-                <!-- Unassigned Vehicles Tab -->
-                <div class="tab-pane fade" id="unassigned" role="tabpanel">
-                    <div class="card dashboard-card">
-                        <div class="card-header bg-white py-3">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <h5 class="m-0">Vehicles Without Drivers</h5>
-                                <div class="alert alert-warning py-2 px-3 mb-0">
-                                    <span class="material-icons align-middle me-2">info</span>
-                                    These vehicles need driver assignments
+                                                <!-- Driver Info -->
+                                                <div class="col-6">
+                                                    <div class="d-flex align-items-start">
+                                                        <span class="material-icons text-primary me-2">person</span>
+                                                        <div>
+                                                            <div class="text-muted small mb-1">Driver</div>
+                                                            <div class="fw-medium">
+                                                                {% if violation.violator.first_name or violation.violator.last_name %}
+                                                                    {{ violation.violator.first_name }} {{ violation.violator.last_name }}
+                                                                {% elif violation.driver_name %}
+                                                                    {{ violation.driver_name }}
+                                                                {% else %}
+                                                                    <span class="text-muted">Not specified</span>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="card-body p-0">
-                            {% if unassigned_vehicles %}
-                            <div class="table-responsive">
-                                <table class="table table-hover mb-0">
-                                    <thead class="bg-light">
-                                        <tr>
-                                            <th>P.O. Number</th>
-                                            <th>Type</th>
-                                            <th>Plate Number</th>
-                                            <th>Registration Date</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for vehicle in unassigned_vehicles %}
-                                        <tr>
-                                            <td>{{ vehicle.new_pd_number }}</td>
-                                            <td>{{ vehicle.vehicle_type }}</td>
-                                            <td>{{ vehicle.plate_number }}</td>
-                                            <td>{{ vehicle.created_at|date:"M d, Y" }}</td>
-                                            <td>
-                                                <a href="{% url 'assign_driver_to_vehicle' %}?vehicle={{ vehicle.id }}" 
-                                                   class="btn btn-primary btn-sm">
-                                                    <span class="material-icons me-2">person_add</span>
-                                                    Assign Driver
+                                            
+                                            <!-- Violation Description -->
+                                            <div class="row mb-2">
+                                                <div class="col-5 text-muted">Violation:</div>
+                                                <div class="col-7 font-weight-medium">
+                                                    {{ violation.violation_type|truncatechars:60 }}
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Fine Amount -->
+                                            <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                                                <div class="text-muted">Fine Amount:</div>
+                                                <div class="fw-bold fs-5">₱{{ violation.fine_amount|floatformat:2 }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="card-footer bg-light py-2">
+                                            <div class="d-flex justify-content-center">
+                                                <a href="{% url 'user_portal:violation_detail' violation.id %}" class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-eye me-1"></i> View Details
                                                 </a>
-                                            </td>
-                                        </tr>
+                                            </div>
+                                        </div>
+                                    </div>
                                         {% endfor %}
-                                    </tbody>
-                                </table>
+                                </div>
                             </div>
                             {% else %}
-                            <div class="empty-state">
-                                <div class="empty-state-icon">
-                                    <span class="material-icons">check_circle</span>
+                            <div class="empty-state py-5 text-center">
+                                <div class="empty-state-icon mb-4">
+                                    <span class="material-icons" style="font-size: 64px; color: #ddd;">warning_off</span>
                                 </div>
-                                <div class="empty-state-text">All vehicles have assigned drivers</div>
+                                <h5 class="mb-2">No Violations Yet</h5>
+                                <p class="text-muted">You don't have any violations recorded in the system.</p>
                             </div>
                             {% endif %}
                         </div>
@@ -658,60 +848,95 @@ document.head.insertAdjacentHTML('beforeend', `
         background-color: white;
         border-bottom: 1px solid #dee2e6;
     }
+    
+    /* Enhanced table styles */
+    .table-hover tbody tr:hover {
+        background-color: rgba(var(--primary-rgb), 0.03);
+        transition: all 0.2s ease;
+    }
+    
+    .table thead th {
+        font-weight: 600;
+        color: #495057;
+        border-bottom: 2px solid #e9ecef;
+    }
+
+    /* Centered table styles */
+    .table.table-bordered td, 
+    .table.table-bordered th {
+        vertical-align: middle;
+        text-align: center;
+    }
+    
+    .table.table-bordered td {
+        padding: 0.75rem;
+    }
+    
+    .table.table-bordered th {
+        padding: 1rem 0.75rem;
+    }
+    
+    .table.table-bordered .btn {
+        margin: 0 0.25rem;
+    }
+    
+    .text-center {
+        text-align: center !important;
+    }
+    
+    .vehicle-info-value.text-center {
+        text-align: center !important;
+        font-weight: 500;
+    }
 </style>
 `);
 
-// Tab switching function
-function switchTab(tabName) {
-    console.log('Switching to tab:', tabName);
-    
-    // Hide all tab containers
-    document.querySelectorAll('#vehicles-container, #drivers-container, #violations-container').forEach(container => {
-        container.style.display = 'none';
-    });
-    
-    // Show selected tab container
-    document.getElementById(tabName + '-container').style.display = 'block';
-    
-    // Handle loading state
-    const loadingElement = document.getElementById(tabName + 'Loading');
-    const contentElement = document.getElementById(tabName + 'Content');
-    
-    if (loadingElement && contentElement) {
-        // Show loading first
-        loadingElement.style.display = 'block';
-        contentElement.style.display = 'none';
-        
-        // After a delay, show the content
-        setTimeout(() => {
-            loadingElement.style.display = 'none';
-            contentElement.style.display = 'block';
-        }, 500);
-    }
-}
-
-// Initialize on page load
+// Delete vehicle confirmation with SweetAlert
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, starting content transition');
+    // Ensure bootstrap tabs are properly initialized
+    const vehiclesTab = document.getElementById('vehicles-tab');
+    const violationsTab = document.getElementById('violations-tab');
     
-    // Show vehicle content by default and hide loaders after delay
-    setTimeout(() => {
-        // Show stats
-        const statsLoading = document.getElementById('statsLoading');
-        const statsContent = document.getElementById('statsContent');
+    if (vehiclesTab && violationsTab) {
+        // Manually initialize Bootstrap tabs
+        vehiclesTab.addEventListener('click', function() {
+            document.getElementById('vehicles').classList.add('show', 'active');
+            document.getElementById('violations').classList.remove('show', 'active');
+            vehiclesTab.classList.add('active');
+            violationsTab.classList.remove('active');
+        });
         
-        if (statsLoading) statsLoading.style.display = 'none';
-        if (statsContent) statsContent.style.display = 'flex';
-        
-        // Show vehicle content
-        const vehiclesLoading = document.getElementById('vehiclesLoading');
-        const vehiclesContent = document.getElementById('vehiclesContent');
-        
-        if (vehiclesLoading) vehiclesLoading.style.display = 'none';
-        if (vehiclesContent) vehiclesContent.style.display = 'block';
-        
-        console.log('Initial content shown');
-    }, 1000);
+        violationsTab.addEventListener('click', function() {
+            document.getElementById('violations').classList.add('show', 'active');
+            document.getElementById('vehicles').classList.remove('show', 'active');
+            violationsTab.classList.add('active');
+            vehiclesTab.classList.remove('active');
+        });
+    }
+    
+    // Add event listeners to all delete vehicle buttons
+    document.querySelectorAll('.delete-vehicle').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const vehicleId = this.getAttribute('data-id');
+            
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "This vehicle will be permanently deleted. This action cannot be undone.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Redirect to delete URL if confirmed
+                    window.location.href = "{% url 'delete_vehicle' 0 %}".replace('0', vehicleId);
+                }
+            });
+        });
+    });
 });
 </script>
 {% endblock %}

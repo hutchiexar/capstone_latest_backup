@@ -378,6 +378,75 @@
                         {% endif %}
                     </div>
                 </div>
+
+                {% if same_name_violations %}
+                <div class="info-card mb-3">
+                    <div class="info-header">
+                        <span class="material-icons">people</span>
+                        <h6>Similar Names (Possible Same Person)</h6>
+                        <span class="badge bg-info text-dark ms-2">
+                            {{ same_name_violations|length }} record{% if same_name_violations|length != 1 %}s{% endif %}
+                        </span>
+                    </div>
+                    <div class="info-content">
+                        <div class="similar-violations-list">
+                            {% for snv in same_name_violations %}
+                                <div class="similar-violation-card">
+                                    <div class="similar-violation-header">
+                                        <div class="similar-violation-date">
+                                            <span class="material-icons small">event</span>
+                                            {{ snv.violation_date|date:"M d, Y" }}
+                                        </div>
+                                        <div class="similar-violation-fine">
+                                            <strong>₱{{ snv.fine_amount }}</strong>
+                                        </div>
+                                    </div>
+                                    <div class="similar-violation-body">
+                                        <div class="similar-violation-info">
+                                            <div class="violator-info">
+                                                <div class="d-flex align-items-center mb-1">
+                                                    <span class="material-icons small me-1">person</span>
+                                                    <strong>{{ snv.violator.get_full_name }}</strong>
+                                                </div>
+                                                <div class="violator-details">
+                                                    <small class="text-muted me-2">ID: #{{ snv.violator.id }}</small>
+                                                    {% if snv.violator.license_number %}
+                                                    <small class="text-muted">License: {{ snv.violator.license_number }}</small>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="violation-info mt-2">
+                                                <div class="d-flex align-items-center mb-1">
+                                                    <span class="material-icons small me-1">gavel</span>
+                                                    <strong>Violation</strong>
+                                                </div>
+                                                <div class="violation-types-container">
+                                                    {% for vtype in snv.get_violation_types %}
+                                                    <div class="violation-badge-item">{{ vtype }}</div>
+                                                    {% empty %}
+                                                    <div class="text-truncate" style="max-width: 100%;" data-bs-toggle="tooltip" title="{{ snv.violation_type }}">
+                                                        {{ snv.violation_type|truncatechars:40 }}
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="similar-violation-status">
+                                            {% include 'includes/status_badge.html' with status=snv.status display_text=snv.get_status_display %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="alert alert-info mt-3 mb-0">
+                            <div class="d-flex align-items-center">
+                                <span class="material-icons me-2">info</span>
+                                <small>These violations belong to people with the same name. They might be the same person with multiple records in the system.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
 
             <!-- Payment Tab -->
@@ -1019,6 +1088,124 @@
 /* Highlight current violation */
 .table-primary {
     background-color: #e7f5ff !important;
+}
+
+/* Empty State Styles */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 2rem;
+    text-align: center;
+}
+
+.empty-state-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 70px;
+    height: 70px;
+    background-color: rgba(13, 110, 253, 0.1);
+    border-radius: 50%;
+    margin-bottom: 1.5rem;
+}
+
+.empty-state-icon .material-icons {
+    font-size: 36px;
+    color: #0d6efd;
+}
+
+.empty-state-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #343a40;
+    margin-bottom: 0.75rem;
+}
+
+.empty-state-description {
+    font-size: 1rem;
+    color: #6c757d;
+}
+
+/* Similar violations list styles */
+.similar-violations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+}
+
+.similar-violation-card {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.similar-violation-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    transform: translateY(-2px);
+}
+
+.similar-violation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #eee;
+}
+
+.similar-violation-date {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.85rem;
+    color: #555;
+}
+
+.similar-violation-date .material-icons {
+    font-size: 14px;
+}
+
+.similar-violation-fine {
+    font-size: 0.9rem;
+    color: #198754;
+}
+
+.similar-violation-body {
+    padding: 12px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.similar-violation-info {
+    flex: 1;
+}
+
+.violator-info {
+    margin-bottom: 8px;
+}
+
+.violator-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.violation-badge-item {
+    display: inline-block;
+    background-color: rgba(13, 110, 253, 0.1);
+    color: #0d6efd;
+    font-size: 0.8rem;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-right: 5px;
+    margin-bottom: 5px;
 }
 </style>
 

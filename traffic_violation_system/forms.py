@@ -346,7 +346,7 @@ class VehicleForm(forms.ModelForm):
     """Form for creating and updating vehicles"""
     
     capacity = forms.IntegerField(
-        required=True,
+        required=False,
         min_value=1,
         max_value=100,
         widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Passenger capacity'}),
@@ -356,12 +356,13 @@ class VehicleForm(forms.ModelForm):
     class Meta:
         model = Vehicle
         fields = [
-            'vehicle_type', 'plate_number', 'engine_number', 'chassis_number',
+            'vehicle_type', 'plate_number', 'potpot_number', 'engine_number', 'chassis_number',
             'capacity', 'year_model', 'color', 'notes', 'active'
         ]
         widgets = {
             'vehicle_type': forms.Select(attrs={'class': 'form-select', 'placeholder': 'Select vehicle type'}),
             'plate_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter plate number'}),
+            'potpot_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Potpot Number'}),
             'engine_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter engine number'}),
             'chassis_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter chassis number'}),
             'year_model': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter year model'}),
@@ -374,9 +375,26 @@ class VehicleForm(forms.ModelForm):
         self.operator = kwargs.pop('operator', None)
         super().__init__(*args, **kwargs)
         
+        # Make all fields except vehicle_type optional
+        for field_name, field in self.fields.items():
+            if field_name != 'vehicle_type':
+                field.required = False
+        
         # Add help texts
         self.fields['vehicle_type'].help_text = "Type of public utility vehicle"
+        self.fields['potpot_number'].help_text = "Required for Potpot vehicle type"
         self.fields['active'].help_text = "Whether this vehicle is currently active in your fleet"
+
+    def clean(self):
+        cleaned_data = super().clean()
+        vehicle_type = cleaned_data.get('vehicle_type')
+        potpot_number = cleaned_data.get('potpot_number')
+        
+        # Make potpot_number required if vehicle_type is Potpot
+        if vehicle_type == 'Potpot' and not potpot_number:
+            self.add_error('potpot_number', 'Potpot Number is required for Potpot vehicle type')
+            
+        return cleaned_data
 
     def save(self, commit=True):
         instance = super().save(commit=False)

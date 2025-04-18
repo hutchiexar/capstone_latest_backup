@@ -1,0 +1,418 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{% if quiz %}Edit Quiz: {{ quiz.title }}{% else %}Create New Quiz{% endif %}{% endblock %}
+
+{% block extra_head %}
+<!-- SweetAlert CDN -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 px-3">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-md border-0 rounded-3" style="box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;">
+                <div class="card-body p-4">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+                        <div>
+                            <h1 class="fs-2 mb-1 fw-bold">{% if quiz %}Edit Quiz: {{ quiz.title }}{% else %}Create New Quiz{% endif %}</h1>
+                            <p class="text-muted mb-0">{% if quiz %}Update quiz details and manage questions{% else %}Create a new educational quiz for users{% endif %}</p>
+                        </div>
+                        <div>
+                            {% if quiz %}
+                                <a href="{% url 'educational:admin_quiz_detail' quiz.id %}" class="btn btn-outline-secondary d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-arrow-left me-2"></i> Back to Quiz
+                                </a>
+                            {% else %}
+                                <a href="{% url 'educational:admin_quiz_list' %}" class="btn btn-outline-secondary d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-arrow-left me-2"></i> Back to List
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4 shadow-sm border-0 rounded-3">
+                <div class="card-header bg-white py-3 px-4 border-0">
+                    <h5 class="mb-0 fw-bold">Quiz Information</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" action="{% if quiz %}{% url 'educational:admin_edit_quiz' quiz.id %}{% else %}{% url 'educational:admin_create_quiz' %}{% endif %}">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label for="title" class="form-label fw-medium">Quiz Title <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-lg" id="title" name="title" value="{{ quiz.title|default:'' }}" required placeholder="Enter quiz title">
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="description" class="form-label fw-medium">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="4" placeholder="Provide an introduction and instructions for the quiz">{{ quiz.description|default:'' }}</textarea>
+                            <div class="form-text text-muted">Provide an introduction and instructions for the quiz.</div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="topic" class="form-label fw-medium">Related Educational Topic</label>
+                                <select class="form-select" id="topic" name="topic">
+                                    <option value="">None (Standalone Quiz)</option>
+                                    {% for topic in topics %}
+                                        <option value="{{ topic.id }}" {% if quiz.topic_id == topic.id %}selected{% endif %}>
+                                            {{ topic.title }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text text-muted">Optionally link this quiz to an educational topic.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="passing_score" class="form-label fw-medium">Passing Score (%)</label>
+                                <input type="number" class="form-control" id="passing_score" name="passing_score" min="1" max="100" value="{{ quiz.passing_score|default:70 }}">
+                                <div class="form-text text-muted">Minimum percentage required to pass the quiz.</div>
+                            </div>
+                        </div>
+                        
+                        {% if quiz %}
+                        <div class="mb-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="is_published" name="is_published" {% if quiz.is_published %}checked{% endif %}>
+                                <label class="form-check-label fw-medium" for="is_published">Published</label>
+                            </div>
+                            <div class="form-text text-muted">When published, users will be able to take this quiz.</div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            {% if quiz %}
+                                <button type="submit" class="btn btn-primary btn-lg px-4">
+                                    <i class="fas fa-save me-2"></i> Update Quiz
+                                </button>
+                            {% else %}
+                                <button type="submit" class="btn btn-primary btn-lg px-4">
+                                    <i class="fas fa-plus me-2"></i> Create Quiz
+                                </button>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            {% if quiz %}
+            <div class="card mb-4 shadow-sm border-0 rounded-3">
+                <div class="card-header bg-white py-3 px-4 border-0 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold">Questions <span class="badge bg-primary rounded-pill ms-2">{{ questions.count }}</span></h5>
+                    <a href="{% url 'educational:admin_add_question' quiz.id %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i> Add Question
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    {% if questions %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0 quiz-table">
+                                <thead>
+                                    <tr>
+                                        <th width="5%">#</th>
+                                        <th>QUESTION</th>
+                                        <th width="15%">TYPE</th>
+                                        <th width="10%">POINTS</th>
+                                        <th width="15%" class="text-center">ACTIONS</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for question in questions %}
+                                        <tr>
+                                            <td>{{ question.order }}</td>
+                                            <td class="fw-medium">{{ question.text|truncatechars:60 }}</td>
+                                            <td>
+                                                <span class="badge bg-info">{{ question.get_question_type_display }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ question.points }} pts</span>
+                                            </td>
+                                            <td>
+                                                <div class="quiz-actions">
+                                                    <a href="{% url 'educational:admin_edit_question' question.id %}" class="btn btn-action btn-edit" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit Question">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <form method="post" action="{% url 'educational:admin_delete_question' question.id %}" class="d-inline delete-question-form">
+                                                        {% csrf_token %}
+                                                        <button type="button" class="btn btn-action btn-delete delete-question-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete Question" data-question-id="{{ question.id }}" data-question-text="{{ question.text|truncatechars:50 }}">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <span class="material-icons d-block mb-3" style="font-size: 3rem; opacity: 0.5;">quiz</span>
+                            <h5 class="text-muted mb-3">No questions added yet</h5>
+                            <p class="text-muted mb-4">Start adding questions to complete your quiz</p>
+                            <a href="{% url 'educational:admin_add_question' quiz.id %}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i> Add First Question
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-lg-4">
+            {% if quiz %}
+            <div class="card mb-4 shadow-sm border-0 rounded-3">
+                <div class="card-header bg-white py-3 px-4 border-0">
+                    <h5 class="mb-0 fw-bold">Quiz Details</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-2">Status</h6>
+                        {% if quiz.is_published %}
+                            <span class="status-pill status-active">Published</span>
+                        {% else %}
+                            <span class="status-pill status-inactive">Draft</span>
+                        {% endif %}
+                    </div>
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-2">Created By</h6>
+                        <p class="mb-0 fw-medium">{{ quiz.created_by.get_full_name|default:quiz.created_by.username }}</p>
+                    </div>
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-2">Created On</h6>
+                        <p class="mb-0 fw-medium">{{ quiz.created_at|date:"F j, Y" }}</p>
+                    </div>
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-2">Last Updated</h6>
+                        <p class="mb-0 fw-medium">{{ quiz.updated_at|date:"F j, Y g:i A" }}</p>
+                    </div>
+                </div>
+                <div class="card-footer bg-light py-3 px-4">
+                    {% if quiz.is_published %}
+                        <form method="post" action="{% url 'educational:admin_unpublish_quiz' quiz.id %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-warning w-100 d-flex align-items-center justify-content-center">
+                                <i class="fas fa-eye-slash me-2"></i> Unpublish Quiz
+                            </button>
+                        </form>
+                    {% else %}
+                        <form method="post" action="{% url 'educational:admin_publish_quiz' quiz.id %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success w-100 d-flex align-items-center justify-content-center">
+                                <i class="fas fa-eye me-2"></i> Publish Quiz
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <div class="card mb-4 shadow-sm border-0 rounded-3">
+                <div class="card-header bg-white py-3 px-4 border-0">
+                    <h5 class="mb-0 fw-bold">Instructions</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="mb-4">
+                        <span class="material-icons d-block mb-3 text-primary" style="font-size: 3rem;">lightbulb</span>
+                        <h6 class="fw-bold mb-3">Creating a New Quiz</h6>
+                        <p class="text-muted">Fill out the form to create a new quiz. Once created, you can add questions and set answers.</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-2">Best Practices</h6>
+                        <ul class="mb-0 text-muted">
+                            <li class="mb-2">Provide a clear, descriptive title</li>
+                            <li class="mb-2">Add detailed instructions in the description</li>
+                            <li class="mb-2">Set an appropriate passing score (typically 70-80%)</li>
+                            <li class="mb-2">Include a mix of question types</li>
+                            <li class="mb-2">Review the quiz before publishing</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-info d-flex align-items-center" role="alert">
+                        <i class="fas fa-info-circle me-3 fs-5"></i>
+                        <div>
+                            After creating the quiz, you'll be able to add questions and set correct answers.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+/* Action Buttons */
+.btn-action {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    color: #fff;
+}
+
+.btn-action i {
+    font-size: 1.1rem;
+}
+
+/* View Button */
+.btn-view {
+    background-color: #3498db;
+}
+
+.btn-view:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Edit Button */
+.btn-edit {
+    background-color: #f39c12;
+}
+
+.btn-edit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Delete Button */
+.btn-delete {
+    background-color: #e74c3c;
+}
+
+.btn-delete:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Action buttons container */
+.quiz-actions {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* Cards and containers */
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04) !important;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.container-fluid {
+    max-width: 1600px;
+}
+
+/* Status Indicators */
+.status-pill {
+    padding: 6px 14px;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-block;
+    min-width: 90px;
+    text-align: center;
+}
+
+.status-active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-inactive {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Enhanced Quiz Table */
+.quiz-table {
+    width: 100%;
+    margin-bottom: 0;
+}
+
+.quiz-table th {
+    background-color: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+    padding: 15px 20px;
+    border-bottom: 2px solid #eff2f7;
+}
+
+.quiz-table td {
+    padding: 15px 20px;
+    vertical-align: middle;
+    border-bottom: 1px solid #eff2f7;
+    color: #495057;
+}
+</style>
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+        
+        // SweetAlert confirmation for question deletion
+        document.querySelectorAll('.delete-question-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const questionId = this.getAttribute('data-question-id');
+                const questionText = this.getAttribute('data-question-text');
+                const form = this.closest('form');
+                
+                Swal.fire({
+                    title: 'Delete Question?',
+                    html: `Are you sure you want to delete the question:<br><strong>${questionText}</strong>?<br><br>This action cannot be undone.`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Yes, delete it!',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Submit the form if confirmed
+                        form.submit();
+                        
+                        // Show a loading message
+                        Swal.fire({
+                            title: 'Deleting...',
+                            text: 'Please wait while we delete the question.',
+                            icon: 'info',
+                            showConfirmButton: false,
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %} 

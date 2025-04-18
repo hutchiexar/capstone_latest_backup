@@ -1,4 +1,5 @@
 from django.urls import path
+from django.views.generic.base import RedirectView
 from . import views
 
 app_name = 'user_portal'
@@ -6,7 +7,9 @@ app_name = 'user_portal'
 urlpatterns = [
     path('dashboard/', views.user_dashboard, name='user_dashboard'),
     path('violations/', views.user_violations, name='user_violations'),
+    # Use the actual NCAP violations view instead of redirecting
     path('ncap-violations/', views.user_ncap_violations, name='user_ncap_violations'),
+    path('ncap-violations/<int:violation_id>/print/', views.print_ncap_violation_form, name='print_ncap_violation_form'),
     path('notifications/', views.user_notifications, name='user_notifications'),
     path('violations/<int:violation_id>/', views.violation_detail, name='violation_detail'),
     path('profile/', views.user_profile, name='user_profile'),

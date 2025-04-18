@@ -1,7 +1,7 @@
 {% extends 'user_portal/base_user.html' %}
 {% load static %}
 
-{% block title %}My Violations - CTTMO User Portal{% endblock %}
+{% block title %}My Regular Violations - CTTMO User Portal{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -397,8 +397,8 @@
                                     </span>
                                 </div>
                                 <div class="header-title">
-                                    <h1 class="mb-1 fw-bold">My Violations</h1>
-                                    <p class="text-muted mb-0">View and manage your traffic violations</p>
+                                    <h1 class="mb-1 fw-bold">My Regular Violations</h1>
+                                    <p class="text-muted mb-0">View and manage your direct traffic violations (excludes NCAP camera violations)</p>
                                 </div>
                             </div>
                             <div class="d-flex gap-3 header-controls">
@@ -452,49 +452,53 @@
             <div class="card violations-card shadow-lg rounded-xl">
                 <div class="card-body p-0">
                     <div class="table-responsive table-container d-none d-md-block">
-                        <table class="table violations-table">
+                        <table class="table violations-table table table-hover">
                             <thead>
                                 <tr>
+                                    <th>ID</th>
                                     <th>Date</th>
-                                <th>Violation Type</th>
-                                <th>Location</th>
-                                <th>Amount</th>
-                                <th>Due Date</th>
-                                <th>Status</th>
-                                    <th class="text-end">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for violation in violations %}
-                            <tr>
+                                    <th>Violation</th>
+                                    <th>Status</th>
+                                    <th>Penalty</th>
+                                    <th>Images</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for violation in violations %}
+                                <tr>
+                                    <td>{{ violation.id }}</td>
                                     <td>{{ violation.violation_date|date:"M d, Y" }}</td>
-                                <td class="violation-details-cell">
-                                    <div class="d-flex flex-column">
-                                        <div class="violation-number">Case #{{ violation.id }}</div>
-                                        <div class="violation-type">{{ violation.violation_type }}</div>
-                                    </div>
-                                </td>
-                                <td>{{ violation.location }}</td>
-                                <td>₱{{ violation.fine_amount }}</td>
-                                <td>{{ violation.payment_due_date|date:"M d, Y" }}</td>
-                                <td>
-                                        <span class="status-badge status-badge-{{ violation.status|lower }}">
-                                        {{ violation.get_status_display }}
-                                    </span>
-                                </td>
-                                    <td class="text-end">
-                                        <div class="action-buttons">
-                                    <a href="{% url 'user_portal:violation_detail' violation.id %}" 
-                                            class="btn btn-sm btn-outline-primary btn-view-details">
-                                        View Details
-                                    </a>
-                                    {% if violation.status == 'APPROVED' %}
-                                    <a href="{% url 'process_payment' violation.id %}" 
-                                            class="btn btn-sm btn-success btn-pay-now ms-2">
-                                        Pay Now
-                                    </a>
-                                    {% endif %}
-                                        </div>
+                                    <td>{{ violation.violation_type }}</td>
+                                    <td>
+                                        <span class="status-badge
+                                            {% if violation.status == 'PENDING' %}status-badge-pending
+                                            {% elif violation.status == 'APPROVED' %}status-badge-approved
+                                            {% elif violation.status == 'ADJUDICATED' %}status-badge-adjudicated
+                                            {% elif violation.status == 'PAID' %}status-badge-paid
+                                            {% elif violation.status == 'DISMISSED' %}status-badge-dismissed
+                                            {% else %}status-badge-other{% endif %}
+                                        ">
+                                            {{ violation.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>₱{{ violation.fine_amount|floatformat:2 }}</td>
+                                    <td>
+                                        {% if violation.image or violation.driver_photo or violation.vehicle_photo or violation.secondary_photo %}
+                                        <button class="btn btn-sm btn-outline-primary view-images" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#imageModal"
+                                                data-violation-id="{{ violation.id }}">
+                                            <i class="fas fa-images me-1"></i> View
+                                        </button>
+                                        {% else %}
+                                        <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'user_portal:violation_detail' violation.id %}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-info-circle me-1"></i> Details
+                                        </a>
                                     </td>
                                 </tr>
                                 {% empty %}
@@ -518,51 +522,43 @@
         </div>
     </div>
 
-    <!-- Mobile Card View for smaller screens -->
+    <!-- Mobile Card View -->
     <div class="d-md-none mt-4">
         {% for violation in violations %}
-        <div class="card mb-3 violation-card shadow-sm">
+        <div class="card mb-3 shadow-sm">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <span class="small">{{ violation.violation_date|date:"M d, Y" }}</span>
-                <span class="status-badge status-badge-{{ violation.status|lower }}">
+                <span class="fw-bold">ID: {{ violation.id }}</span>
+                <span class="status-badge 
+                    {% if violation.status == 'PENDING' %}status-badge-pending
+                    {% elif violation.status == 'APPROVED' %}status-badge-approved
+                    {% elif violation.status == 'ADJUDICATED' %}status-badge-adjudicated
+                    {% elif violation.status == 'PAID' %}status-badge-paid
+                    {% elif violation.status == 'DISMISSED' %}status-badge-dismissed
+                    {% else %}status-badge-other{% endif %}
+                ">
                     {{ violation.get_status_display }}
                 </span>
             </div>
             <div class="card-body">
-                <h6 class="card-title">
-                    <div class="d-flex flex-column">
-                        <div class="violation-number">Case #{{ violation.id }}</div>
-                        <div class="violation-type">{{ violation.violation_type }}</div>
-                    </div>
-                </h6>
-                <p class="card-text small text-muted">{{ violation.location }}</p>
-                <p class="card-text">
-                    <span class="fw-bold">Amount:</span> ₱{{ violation.fine_amount }}
-                </p>
-                <p class="card-text">
-                    <span class="fw-bold">Due Date:</span> {{ violation.payment_due_date|date:"M d, Y" }}
-                </p>
-                <div class="d-flex gap-2 mt-3">
-                    <a href="{% url 'user_portal:violation_detail' violation.id %}" 
-                       class="btn btn-sm btn-outline-primary btn-view-details">
-                        View Details
-                    </a>
-                    {% if violation.status == 'APPROVED' %}
-                    <a href="{% url 'process_payment' violation.id %}" 
-                       class="btn btn-sm btn-success btn-pay-now">
-                        Pay Now
-                    </a>
+                <h6 class="card-title">{{ violation.violation_type }}</h6>
+                <p class="card-text text-muted">{{ violation.violation_date|date:"M d, Y" }}</p>
+                <p class="card-text"><strong>Penalty:</strong> ₱{{ violation.fine_amount|floatformat:2 }}</p>
+                
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    {% if violation.image or violation.driver_photo or violation.vehicle_photo or violation.secondary_photo %}
+                    <button class="btn btn-sm btn-outline-primary view-images" 
+                            data-bs-toggle="modal" 
+                            data-bs-target="#imageModal"
+                            data-violation-id="{{ violation.id }}">
+                        <i class="fas fa-images me-1"></i> View Images
+                    </button>
                     {% endif %}
+                    
+                    <a href="{% url 'user_portal:violation_detail' violation.id %}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-info-circle me-1"></i> Details
+                    </a>
                 </div>
             </div>
-        </div>
-        {% empty %}
-        <div class="text-center py-4">
-            <div class="empty-state-icon mx-auto mb-3">
-                <span class="material-icons" style="font-size: 32px; color: var(--primary-color);">check_circle</span>
-            </div>
-            <h6 class="mb-1 fw-bold" style="font-size: 1.1rem;">No Violations Found</h6>
-            <p class="text-muted mb-0">You don't have any recorded traffic violations</p>
         </div>
         {% endfor %}
     </div>
@@ -633,4 +629,110 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 800);
 });
 </script>
-{% endblock %} 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Handle image view button click
+        $('.view-images').on('click', function() {
+            const violationId = $(this).data('violation-id');
+            
+            // Clear previous images
+            $('#imageModalContent').html('<div class="text-center py-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2">Loading images...</p></div>');
+            
+            // Fetch images for this violation
+            $.ajax({
+                url: `/api/violations/${violationId}/images/`,
+                method: 'GET',
+                success: function(response) {
+                    let imagesHtml = '';
+                    
+                    if (response.image || response.driver_photo || response.vehicle_photo || response.secondary_photo) {
+                        imagesHtml += '<div class="row">';
+                        
+                        if (response.image) {
+                            imagesHtml += `
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-header">Primary Evidence</div>
+                                        <div class="card-body p-0">
+                                            <img src="${response.image}" class="img-fluid" alt="Violation Evidence">
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        
+                        if (response.driver_photo) {
+                            imagesHtml += `
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-header">Driver Photo</div>
+                                        <div class="card-body p-0">
+                                            <img src="${response.driver_photo}" class="img-fluid" alt="Driver Photo">
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        
+                        if (response.vehicle_photo) {
+                            imagesHtml += `
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-header">Vehicle Photo</div>
+                                        <div class="card-body p-0">
+                                            <img src="${response.vehicle_photo}" class="img-fluid" alt="Vehicle Photo">
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        
+                        if (response.secondary_photo) {
+                            imagesHtml += `
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-header">Additional Evidence</div>
+                                        <div class="card-body p-0">
+                                            <img src="${response.secondary_photo}" class="img-fluid" alt="Additional Evidence">
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        
+                        imagesHtml += '</div>';
+                    } else {
+                        imagesHtml = '<div class="alert alert-info">No images available for this violation.</div>';
+                    }
+                    
+                    $('#imageModalContent').html(imagesHtml);
+                },
+                error: function() {
+                    $('#imageModalContent').html('<div class="alert alert-danger">Failed to load images. Please try again later.</div>');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
+
+<!-- Image Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="imageModalLabel">Violation Evidence</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="imageModalContent">
+                <!-- Content will be loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div> 

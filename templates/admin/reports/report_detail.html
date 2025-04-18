@@ -195,7 +195,7 @@
     </div>
 </div>
 
-<!-- Status Update Modal -->
+<!-- Update Status Modal (MicroModal) -->
 <div class="modal micromodal-slide" id="modal-update-status" aria-hidden="true">
     <div class="modal-overlay" tabindex="-1" data-micromodal-close>
         <div class="modal-container" role="dialog" aria-modal="true" aria-labelledby="modal-update-status-title">
@@ -216,7 +216,7 @@
     </div>
 </div>
 
-<!-- Dispute Report Modal -->
+<!-- Dispute Report Modal (MicroModal) -->
 <div class="modal micromodal-slide" id="modal-dispute-report" aria-hidden="true">
     <div class="modal-overlay" tabindex="-1" data-micromodal-close>
         <div class="modal-container" role="dialog" aria-modal="true" aria-labelledby="modal-dispute-report-title">
@@ -241,17 +241,68 @@
 {% block extra_js %}
 <script src="https://unpkg.com/micromodal/dist/micromodal.min.js"></script>
 <script>
+    // Direct fix for floating Close button shown in the screenshot
     document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            // Specifically target the standalone Close button outside of any container
+            const standaloneButtons = Array.from(document.querySelectorAll('button')).filter(button => {
+                const text = button.textContent.trim();
+                const hasCloseText = text === 'Close';
+                const isDirectChildOfBody = button.parentElement === document.body;
+                const notInContainer = !button.closest('.modal, .modal-container, .card, .modal-content, .modal-footer, .dropdown-menu');
+                
+                return hasCloseText && (isDirectChildOfBody || notInContainer);
+            });
+            
+            console.log('Found standalone Close buttons:', standaloneButtons.length);
+            standaloneButtons.forEach(button => {
+                console.log('Removing floating Close button:', button);
+                button.remove();
+            });
+        }, 500); // Small delay to ensure the DOM is fully loaded
+        
+        // Remove any stray Close buttons outside of modals (this fixes the floating button issue)
+        const standaloneCloseButtons = document.querySelectorAll('body > button.close, body > button[aria-label="Close"]');
+        standaloneCloseButtons.forEach(button => {
+            if (!button.closest('.modal, .modal-container, .modal-content')) {
+                button.remove();
+            }
+        });
+        
         // Initialize Micromodal
         MicroModal.init({
             onShow: modal => console.info(`${modal.id} is shown`),
             onClose: modal => console.info(`${modal.id} is hidden`),
             openTrigger: 'data-micromodal-trigger',
             closeTrigger: 'data-micromodal-close',
-            disableFocus: false,
             disableScroll: true,
-            awaitOpenAnimation: false,
-            awaitCloseAnimation: false
+            disableFocus: false,
+            awaitOpenAnimation: true,
+            awaitCloseAnimation: true
+        });
+
+        // Fix any floating Close buttons by adding proper event handlers
+        document.querySelectorAll('[data-micromodal-close]').forEach(element => {
+            element.addEventListener('click', function(e) {
+                const modalId = element.closest('.modal')?.id;
+                if (modalId) {
+                    MicroModal.close(modalId);
+                }
+            });
+        });
+        
+        // Ensure all standalone close buttons are handled properly
+        const standaloneCloseButtons = document.querySelectorAll('.close, .btn-close, button[aria-label="Close"]');
+        standaloneCloseButtons.forEach(button => {
+            if (!button.hasAttribute('data-micromodal-close')) {
+                button.setAttribute('data-micromodal-close', '');
+                const modalId = button.closest('.modal')?.id;
+                if (modalId) {
+                    button.addEventListener('click', function() {
+                        MicroModal.close(modalId);
+                    });
+                }
+            }
         });
 
         // Handle update status form submission

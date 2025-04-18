@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load custom_filters %}
 
 {% block content %}
 <!-- Add Micromodal.js for detail view modals -->
@@ -46,22 +47,21 @@
                 <table class="table table-hover align-middle">
                     <thead>
                         <tr class="table-header">
-                            <th>ID</th>
-                            <th>Images</th>
-                            <th>Date</th>
-                            <th>Violator</th>
-                            <th>License</th>
-                            <th>Violation</th>
-                            <th>Fine Amount</th>
-                            <th>Status</th>
-                            <th class="text-end">Actions</th>
+                            <th class="text-center">ID</th>
+                            <th class="text-center">Images</th>
+                            <th class="text-center">Date</th>
+                            <th class="text-center">Violator</th>
+                            <th class="text-center">Violation</th>
+                            <th class="text-center">Fine Amount</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center" style="width: 140px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for violation in violations %}
                         <tr>
-                            <td>#{{ violation.id }}</td>
-                            <td>
+                            <td class="text-center">#{{ violation.id }}</td>
+                            <td class="text-center">
                                 <div class="images-preview">
                                     {% if violation.image %}
                                     <div class="image-preview">
@@ -95,10 +95,9 @@
                                     {% endif %}
                                 </div>
                             </td>
-                            <td>{{ violation.violation_date|date:"M d, Y - h:i A" }}</td>
-                            <td>{{ violation.violator.get_full_name }}</td>
-                            <td>{{ violation.violator.license_number|default:"" }}</td>
-                            <td>
+                            <td class="text-center">{{ violation.violation_date|date:"M d, Y - h:i A" }}</td>
+                            <td class="text-center">{{ violation.violator.get_full_name }}</td>
+                            <td class="text-center">
                                 <div class="violation-types-container">
                                     {% for type in violation.get_violation_types %}
                                     <span class="violation-type-badge">{{ type }}</span>
@@ -107,21 +106,24 @@
                                     {% endfor %}
                                 </div>
                             </td>
-                            <td>₱{{ violation.fine_amount }}</td>
-                            <td>
+                            <td class="text-center">₱{{ violation.fine_amount }}</td>
+                            <td class="text-center">
                                 {% include 'includes/status_badge.html' with status=violation.status display_text=violation.get_status_display %}
+                                {% if violation_counts|get_item:violation.id > 1 %}
+                                <span class="badge bg-primary ms-2" data-bs-toggle="tooltip" data-bs-placement="top" title="This violator has {{ violation_counts|get_item:violation.id }} violations in total">{{ violation_counts|get_item:violation.id }} violations</span>
+                                {% endif %}
                             </td>
-                            <td class="text-end">
-                                <div class="d-flex justify-content-end">
-                                    <button type="button" class="btn btn-sm btn-primary view-violation-btn" data-violation-id="{{ violation.id }}">
-                                        <i class="fas fa-eye me-1"></i> View
+                            <td class="text-center" style="width: 140px;">
+                                <div class="action-buttons">
+                                    <button type="button" class="btn btn-primary action-btn view-violation-btn" data-violation-id="{{ violation.id }}">
+                                        <span class="material-icons">visibility</span>
                                     </button>
                                 </div>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="9">
+                            <td colspan="8">
                                 <div class="empty-state">
                                     <div class="empty-state-icon">
                                         <span class="material-icons">gavel</span>
@@ -151,6 +153,9 @@
                             <div class="d-flex justify-content-between align-items-start mb-2">
                                 <h6 class="card-subtitle mb-2 text-muted">#{{ violation.id }}</h6>
                                 {% include 'includes/status_badge.html' with status=violation.status display_text=violation.get_status_display %}
+                                {% if violation_counts|get_item:violation.id > 1 %}
+                                <span class="badge bg-primary ms-2" data-bs-toggle="tooltip" data-bs-placement="top" title="This violator has {{ violation_counts|get_item:violation.id }} violations in total">{{ violation_counts|get_item:violation.id }} violations</span>
+                                {% endif %}
                             </div>
                             
                             <div class="row g-3">
@@ -203,7 +208,6 @@
                                     <div class="violation-details">
                                         <h5 class="card-title">{{ violation.violator.first_name }} {{ violation.violator.last_name }}</h5>
                                         <div class="violation-info mb-2">
-                                            <div><strong>License:</strong> {{ violation.violator.license_number }}</div>
                                             <div class="d-flex flex-column mb-2">
                                                 <div><strong>Date:</strong> {{ violation.violation_date|date:"M d, Y" }}</div>
                                                 <div><strong>Location:</strong> {{ violation.location }}</div>
@@ -223,11 +227,12 @@
                                 </div>
                             </div>
                             
-                            <div class="d-flex justify-content-end mt-3">
-                                <a href="javascript:void(0);" class="btn btn-sm btn-primary view-violation-btn" data-violation-id="{{ violation.id }}">
-                                    <span class="material-icons">visibility</span>
-                                    <span class="view-text">View Details</span>
-                                </a>
+                            <div class="d-flex justify-content-center mt-3">
+                                <div class="action-buttons">
+                                    <button type="button" class="btn btn-primary action-btn view-violation-btn" data-violation-id="{{ violation.id }}">
+                                        <span class="material-icons">visibility</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -406,12 +411,11 @@
 .table th:nth-child(1), .table td:nth-child(1) { width: 5%; } /* ID */
 .table th:nth-child(2), .table td:nth-child(2) { width: 10%; } /* Images */
 .table th:nth-child(3), .table td:nth-child(3) { width: 10%; } /* Date */
-.table th:nth-child(4), .table td:nth-child(4) { width: 15%; } /* Violator */
-.table th:nth-child(5), .table td:nth-child(5) { width: 15%; } /* License */
-.table th:nth-child(6), .table td:nth-child(6) { width: 15%; } /* Violation */
-.table th:nth-child(7), .table td:nth-child(7) { width: 10%; } /* Fine */
-.table th:nth-child(8), .table td:nth-child(8) { width: 10%; } /* Status */
-.table th:nth-child(9), .table td:nth-child(9) { width: 10%; } /* Actions */
+.table th:nth-child(4), .table td:nth-child(4) { width: 20%; } /* Violator - increased from 15% */
+.table th:nth-child(5), .table td:nth-child(5) { width: 20%; } /* Violation - increased from 15% */
+.table th:nth-child(6), .table td:nth-child(6) { width: 10%; } /* Fine */
+.table th:nth-child(7), .table td:nth-child(7) { width: 10%; } /* Status */
+.table th:nth-child(8), .table td:nth-child(8) { width: 10%; } /* Actions */
 
 /* Alternating row background */
 .table tbody tr:nth-of-type(odd) {
@@ -423,46 +427,50 @@
     background-color: rgba(0, 0, 0, 0.04);
 }
 
-/* Action buttons */
+/* Center the action buttons with strong rules */
 .action-buttons {
-    display: flex;
-    justify-content: flex-end;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 4px !important;
+    width: 100% !important;
+    max-width: 140px !important;
+    margin: 0 auto !important;
 }
 
-.action-buttons .btn {
-    min-width: 90px;
-    height: 36px;
-    padding: 0 12px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    transition: all 0.2s;
-    gap: 5px;
+/* Equal-sized action buttons */
+.action-btn {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    padding: 0 !important;
+    border-radius: 4px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 40px !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    transition: all 0.2s !important;
 }
 
-.view-violation-btn {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
+.action-btn:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+}
+
+/* Icon sizing */
+.action-btn .material-icons {
     color: white !important;
-    font-weight: 500;
-    box-shadow: 0 2px 4px rgba(13, 110, 253, 0.2);
+    font-size: 18px !important;
+    margin: 0 !important;
+    line-height: 1 !important;
 }
 
-.view-violation-btn:hover {
-    background-color: #0b5ed7;
-    border-color: #0a58ca;
-    box-shadow: 0 3px 6px rgba(13, 110, 253, 0.3);
-    transform: translateY(-1px);
-}
-
-.view-violation-btn .material-icons {
-    color: white !important;
-    font-size: 18px;
-}
-
-.view-text {
-    font-size: 14px;
+/* Center align all table content */
+.table th, .table td {
+    text-align: center;
+    vertical-align: middle;
 }
 
 /* Status badge styles */
@@ -753,6 +761,13 @@
 
 .violation-card .card:active {
     transform: scale(0.98);
+}
+
+/* Make mobile action container centered as well */
+.violation-card .d-flex.justify-content-center.mt-3 {
+    display: flex !important;
+    justify-content: center !important;
+    width: 100% !important;
 }
 
 /**************************\
@@ -1078,6 +1093,39 @@
     padding: 3px 6px;
     margin-bottom: 3px;
 }
+
+/* View button styling */
+.view-violation-btn {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: white !important;
+    box-shadow: 0 2px 4px rgba(13, 110, 253, 0.2);
+    transition: all 0.2s;
+}
+
+.view-violation-btn:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+    box-shadow: 0 3px 6px rgba(13, 110, 253, 0.3);
+    transform: translateY(-1px);
+}
+
+.view-violation-btn .material-icons {
+    color: white !important;
+}
+
+/* Mobile adjustments for action buttons */
+@media (max-width: 767.98px) {
+    .action-buttons {
+        margin: 0 auto;
+        justify-content: center;
+    }
+    
+    /* Center actions on mobile cards */
+    .violation-card .d-flex.justify-content-center.mt-3 {
+        justify-content: center !important;
+    }
+}
 </style>
 
 <script>
@@ -1121,6 +1169,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 10);
         }
     });
+    
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    if (typeof bootstrap !== 'undefined') {
+        tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+            new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    }
     
     // Add event listeners for violation detail views
     const viewButtons = document.querySelectorAll('.view-violation-btn');

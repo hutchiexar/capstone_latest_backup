@@ -23,6 +23,7 @@ urlpatterns = [
     path('issue-ticket/', views.issue_ticket, name='issue_ticket'),
     path('violation/<int:violation_id>/', views.violation_detail, name='violation_detail'),
     path('violation/<int:violation_id>/modal/', views.violation_detail_modal, name='violation_detail_modal'),
+    path('violation/<int:violation_id>/payment-info/', views.violation_payment_info, name='violation_payment_info'),
     path('violation/<int:violation_id>/process-payment/', views.process_payment, name='process_payment'),
     path('violation/<int:violation_id>/record-payment/', views.record_payment, name='record_payment'),
     path('violation/<int:violation_id>/print/', views.print_violation_form, name='print_violation_form'),
@@ -38,6 +39,7 @@ urlpatterns = [
     path('webhook/payment/', views.payment_webhook, name='payment_webhook'),
     path('violations/', views.violations_list, name='violations_list'),
     path('violations/<int:violation_id>/update-status/', views.update_violation_status, name='update_violation_status'),
+    path('violations/search-violators/', views.search_violators, name='search_violators'),
     path('users/<int:user_id>/modal/', views.user_detail_modal, name='user_detail_modal'),
     path('ncap-violations/', views.ncap_violations_list, name='ncap_violations_list'),
     
@@ -70,12 +72,16 @@ urlpatterns = [
 
     # Add these URL patterns in the urlpatterns list
     path('payments/', views.payment_records, name='payment_records'),
+    path('payments/export-excel/', views.export_payment_records_excel, name='export_payment_records_excel'),
+    path('payments/export-pdf/', views.export_payment_records_pdf, name='export_payment_records_pdf'),
     path('violation/<int:violation_id>/print-receipt/', views.print_receipt, name='print_receipt'),
+    path('violation/<int:violation_id>/payment-detail-modal/', views.payment_detail_modal, name='payment_detail_modal'),
 
     # Adjudication approval URLs
     path('pending-approvals/', views.pending_approvals, name='pending_approvals'),
     path('violation/<int:violation_id>/approve-adjudication/', views.approve_adjudication, name='approve_adjudication'),
     path('violation/<int:violation_id>/reject-adjudication/', views.reject_adjudication, name='reject_adjudication'),
+    path('violation/<int:violation_id>/adjudicator-notes/', views.get_adjudicator_notes, name='get_adjudicator_notes'),
 
     # Payment processing URLs
     path('payment-processing/', views.payment_processing, name='payment_processing'),
@@ -125,6 +131,7 @@ urlpatterns = [
     path('operators/import/', views.operator_import, name='operator_import'),
     path('operators/import/confirm/', views.operator_import_confirm, name='operator_import_confirm'),
     path('operators/export/excel/', views.operator_export_excel, name='operator_export_excel'),
+    path('operators/template/excel/', views.operator_template_excel, name='operator_template_excel'),
     
     # Operator Application System
     path('operator/apply/', views.operator_apply, name='operator_apply'),
@@ -146,6 +153,7 @@ urlpatterns = [
     path('operator/vehicles/register/', views.operator_register_vehicle, name='operator_register_vehicle'),
     path('operator/vehicles/<int:vehicle_id>/edit/', views.operator_edit_vehicle, name='edit_vehicle'),
     path('operator/vehicles/<int:vehicle_id>/delete/', views.operator_delete_vehicle, name='delete_vehicle'),
+    path('operator/check-potpot-number/', views.check_potpot_number_unique, name='check_potpot_number_unique'),
 
     path('operator/drivers/register/', views.operator_register_driver, name='register_driver'),
     path('operator/drivers/<int:driver_id>/edit/', views.operator_edit_driver, name='edit_driver'),
@@ -158,12 +166,12 @@ urlpatterns = [
     # Admin driver management routes
     path('management/drivers/', views.admin_driver_list, name='admin_driver_list'),
     path('management/drivers/export/', views.driver_export_excel, name='driver_export_excel'),
+    path('management/drivers/template/', views.driver_template_excel, name='driver_template_excel'),
     path('management/drivers/create/', views.driver_create, name='driver_create'),
     path('management/drivers/<int:pk>/update/', views.driver_update, name='driver_update'),
     path('management/drivers/<int:pk>/delete/', views.driver_delete, name='driver_delete'),
     path('management/drivers/<int:pk>/', views.driver_detail, name='driver_detail'),
     path('management/drivers/import/', views.driver_import, name='driver_import'),
-    path('management/drivers/import/confirm/', views.driver_import_confirm, name='driver_import_confirm'),
 
     # Admin report management routes
     path('management/reports/', views.admin_report_list, name='admin_report_list'),
@@ -177,4 +185,8 @@ urlpatterns = [
 
     # Add this near the end of the file, before adding static/media URLs
     path('debug/media/', views.debug_media, name='debug_media'),
+
+    # Adjudication dashboard
+    path('adjudication/dashboard/', views.adjudication_dashboard, name='adjudication_dashboard'),
+    path('adjudication/rejected/', views.rejected_adjudications, name='rejected_adjudications'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

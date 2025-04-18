@@ -290,7 +290,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <td class="text-end pe-4">
                                 <div class="action-buttons">
                                     <button type="button" 
-                                            class="btn btn-action btn-view"
+                                            class="btn btn-primary action-btn"
                                             data-micromodal-trigger="modal-user-detail"
                                             data-user-id="{{ user_data.user.id }}"
                                             title="View Details">
@@ -298,7 +298,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     </button>
                                     {% if user_data.user.username != request.user.username %}
                                     <button type="button"
-                                            class="btn btn-action btn-toggle-status"
+                                            class="btn {{ user_data.user.is_active|yesno:'btn-danger,btn-success' }} action-btn"
                                             data-user-id="{{ user_data.user.id }}"
                                             data-action="{{ user_data.user.is_active|yesno:'deactivate,activate' }}"
                                             title="{{ user_data.user.is_active|yesno:'Deactivate,Activate' }} User">
@@ -526,19 +526,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     <div class="card-footer bg-light p-3 d-flex justify-content-end gap-2">
                         <button type="button" 
-                                class="btn btn-sm btn-outline-primary d-flex align-items-center"
+                                class="btn btn-primary action-btn"
                                 data-micromodal-trigger="modal-user-detail"
-                                data-user-id="{{ user_data.user.id }}">
-                            <span class="material-icons small me-1">visibility</span>
-                            <span>Details</span>
+                                data-user-id="{{ user_data.user.id }}"
+                                title="View Details">
+                            <span class="material-icons">visibility</span>
+                            <span class="view-text">Details</span>
                         </button>
                         {% if user_data.user.username != request.user.username %}
                         <button type="button"
-                                class="btn btn-sm btn-outline-{{ user_data.user.is_active|yesno:'danger,success' }} d-flex align-items-center"
+                                class="btn {{ user_data.user.is_active|yesno:'btn-danger,btn-success' }} action-btn"
                                 data-user-id="{{ user_data.user.id }}"
-                                data-action="{{ user_data.user.is_active|yesno:'deactivate,activate' }}">
-                            <span class="material-icons small me-1">{{ user_data.user.is_active|yesno:'block,check_circle' }}</span>
-                            <span>{{ user_data.user.is_active|yesno:'Deactivate,Activate' }}</span>
+                                data-action="{{ user_data.user.is_active|yesno:'deactivate,activate' }}"
+                                title="{{ user_data.user.is_active|yesno:'Deactivate,Activate' }} User">
+                            <span class="material-icons">{{ user_data.user.is_active|yesno:'block,check_circle' }}</span>
+                            <span class="view-text">{{ user_data.user.is_active|yesno:'Deactivate,Activate' }}</span>
                         </button>
                         {% endif %}
                     </div>
@@ -1271,6 +1273,63 @@ document.addEventListener('DOMContentLoaded', function() {
         padding: 0.75rem !important;
     }
 }
+
+/* Add standardized action-btn styling */
+.action-buttons {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 4px !important;
+    width: 100% !important;
+    max-width: 140px !important;
+    margin-left: auto !important;
+}
+
+.action-btn {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    padding: 0 !important;
+    border-radius: 4px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 40px !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    transition: all 0.2s !important;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+}
+
+.action-btn .material-icons {
+    color: white !important;
+    font-size: 18px !important;
+    margin: 0 !important;
+    line-height: 1 !important;
+}
+
+/* Responsive styles for action buttons */
+@media (max-width: 768px) {
+    .action-btn {
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px !important;
+        max-width: 36px !important;
+    }
+    
+    .action-btn .material-icons {
+        font-size: 16px !important;
+    }
+}
+
+/* Add view-text class for hiding text labels */
+.view-text {
+    display: none;
+}
 </style>
 
 <script>
@@ -1456,7 +1515,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Setup toggle status buttons (desktop and mobile)
-    const statusButtons = document.querySelectorAll('.btn-toggle-status, [data-action]');
+    const statusButtons = document.querySelectorAll('.btn-danger.action-btn, .btn-success.action-btn, [data-action]');
     statusButtons.forEach(button => {
         button.addEventListener('click', function() {
             const userId = this.getAttribute('data-user-id');
@@ -1468,7 +1527,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Setup view buttons (desktop and mobile)
-    const viewButtons = document.querySelectorAll('.btn-view, [data-micromodal-trigger="modal-user-detail"]');
+    const viewButtons = document.querySelectorAll('.btn-primary.action-btn, [data-micromodal-trigger="modal-user-detail"]');
     viewButtons.forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();

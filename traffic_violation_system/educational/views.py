@@ -5,15 +5,17 @@ from django.http import JsonResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.utils import timezone
 from django.contrib import messages
-from django.db.models import Count, Q
-from .models import EducationalCategory, EducationalTopic, TopicAttachment, UserBookmark, UserProgress
-from django.views.decorators.http import require_http_methods
+from django.db.models import Count, Q, Prefetch, Sum, Avg, F, Max
+from .models import EducationalCategory, EducationalTopic, TopicAttachment, UserBookmark, UserProgress, Quiz, QuizQuestion, QuizAnswer, UserQuizAttempt, UserQuestionResponse
+from django.views.decorators.http import require_http_methods, require_POST
 from PyPDF2 import PdfReader
 import io
 import tempfile
 import os
 import base64
 from PIL import Image
+from django.core.paginator import Paginator
+from django.conf import settings
 
 
 # Helper function to check if a user is an admin
@@ -1005,4 +1007,805 @@ def extract_pdf_text(request):
         return JsonResponse({
             'success': False,
             'error': f'Error processing PDF: {str(e)}'
-        }) 
+        })
+
+# Quiz Views - Admin
+
+@login_required
+def admin_quiz_list(request):
+    """View for admins to see all quizzes."""
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to access this page.")
+        return redirect('educational:topic_list')
+        
+    quizzes = Quiz.objects.select_related('topic', 'created_by')
+    
+    # Filter by search query
+    query = request.GET.get('q')
+    if query:
+        quizzes = quizzes.filter(
+            Q(title__icontains=query) | 
+            Q(description__icontains=query) |
+            Q(topic__title__icontains=query)
+        )
+    
+    # Filter by topic
+    topic_id = request.GET.get('topic')
+    if topic_id:
+        quizzes = quizzes.filter(topic_id=topic_id)
+    
+    # Filter by status
+    status = request.GET.get('status')
+    if status == 'published':
+        quizzes = quizzes.filter(is_published=True)
+    elif status == 'draft':
+        quizzes = quizzes.filter(is_published=False)
+    
+    # Pagination
+    paginator = Paginator(quizzes, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Get topics for filter dropdown
+    topics = EducationalTopic.objects.filter(is_published=True).order_by('title')
+    
+    context = {
+        'page_obj': page_obj,
+        'topics': topics,
+        'query': query,
+        'selected_topic': topic_id,
+        'selected_status': status,
+        'total_count': quizzes.count(),
+    }
+    
+    return render(request, 'educational/admin/quiz_list.html', context)
+
+@login_required
+def admin_quiz_detail(request, quiz_id):
+    """View for admins to see quiz details, including questions and statistics."""
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to access this page.")
+        return redirect('educational:topic_list')
+    
+    quiz = get_object_or_404(Quiz.objects.select_related('topic', 'created_by'), pk=quiz_id)
+    
+    # Get questions with answers
+    questions = QuizQuestion.objects.filter(quiz=quiz).prefetch_related('answers').order_by('order')
+    
+    # Get quiz statistics
+    total_attempts = UserQuizAttempt.objects.filter(quiz=quiz).count()
+    completed_attempts = UserQuizAttempt.objects.filter(quiz=quiz, is_completed=True).count()
+    passing_attempts = UserQuizAttempt.objects.filter(quiz=quiz, is_passed=True).count()
+    
+    avg_score = UserQuizAttempt.objects.filter(
+        quiz=quiz, 
+        is_completed=True
+    ).aggregate(avg_score=Avg('score'))['avg_score'] or 0
+    
+    context = {
+        'quiz': quiz,
+        'questions': questions,
+        'total_attempts': total_attempts,
+        'completed_attempts': completed_attempts,
+        'passing_attempts': passing_attempts,
+        'passing_rate': (passing_attempts / completed_attempts * 100) if completed_attempts > 0 else 0,
+        'avg_score': avg_score,
+    }
+    
+    return render(request, 'educational/admin/quiz_detail.html', context)
+
+@login_required
+def admin_create_quiz(request):
+    """View for admins to create a new quiz."""
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to access this page.")
+        return redirect('educational:topic_list')
+    
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        description = request.POST.get('description', '')
+        topic_id = request.POST.get('topic')
+        passing_score = int(request.POST.get('passing_score', 70))
+        
+        if not title:
+            messages.error(request, "Title is required.")
+            return redirect('educational:admin_create_quiz')
+        
+        topic = None
+        if topic_id:
+            topic = get_object_or_404(EducationalTopic, pk=topic_id)
+        
+        quiz = Quiz.objects.create(
+            title=title,
+            description=description,
+            topic=topic,
+            passing_score=passing_score,
+            created_by=request.user
+        )
+        
+        messages.success(request, f"Quiz '{quiz.title}' has been created. Now add some questions.")
+        return redirect('educational:admin_edit_quiz', quiz_id=quiz.id)
+    
+    # Get topics for dropdown
+    topics = EducationalTopic.objects.filter(is_published=True).order_by('title')
+    
+    context = {
+        'topics': topics,
+    }
+    
+    return render(request, 'educational/admin/quiz_form.html', context)
+
+@login_required
+def admin_edit_quiz(request, quiz_id):
+    """View for admins to edit an existing quiz."""
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to access this page.")
+        return redirect('educational:topic_list')
+    
+    quiz = get_object_or_404(Quiz, pk=quiz_id)
+    
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        description = request.POST.get('description', '')
+        topic_id = request.POST.get('topic')
+        passing_score = int(request.POST.get('passing_score', 70))
+        is_published = request.POST.get('is_published') == 'on'
+        
+        if not title:
+            messages.error(request, "Title is required.")
+            return redirect('educational:admin_edit_quiz', quiz_id=quiz.id)
+        
+        topic = None
+        if topic_id:
+            topic = get_object_or_404(EducationalTopic, pk=topic_id)
+        
+        quiz.title = title
+        quiz.description = description
+        quiz.topic = topic
+        quiz.passing_score = passing_score
+        quiz.is_published = is_published
+        quiz.save()
+        
+        messages.success(request, f"Quiz '{quiz.title}' has been updated.")
+        return redirect('educational:admin_quiz_detail', quiz_id=quiz.id)
+    
+    # Get questions with answers for this quiz
+    questions = QuizQuestion.objects.filter(quiz=quiz).prefetch_related('answers').order_by('order')
+    
+    # Get topics for dropdown
+    topics = EducationalTopic.objects.filter(is_published=True).order_by('title')
+    
+    context = {
+        'quiz': quiz,
+        'questions': questions,
+        'topics': topics,
+    }
+    
+    return render(request, 'educational/admin/quiz_form.html', context)
+
+@login_required
+def admin_add_question(request, quiz_id):
+    """View for admins to add a question to a quiz."""
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to access this page.")
+        return redirect('educational:topic_list')
+    
+    quiz = get_object_or_404(Quiz, pk=quiz_id)
+    
+    if request.method == 'POST':
+        text = request.POST.get('text')
+        question_type = request.POST.get('question_type')
+        points = int(request.POST.get('points', 1))
+        image = request.FILES.get('image')
+        
+        if not text:
+            messages.error(request, "Question text is required.")
+            return redirect('educational:admin_add_question', quiz_id=quiz.id)
+        
+        # Get the next order number
+        next_order = QuizQuestion.objects.filter(quiz=quiz).count() + 1
+        
+        question = QuizQuestion.objects.create(
+            quiz=quiz,
+            text=text,
+            question_type=question_type,
+            points=points,
+            order=next_order,
+            image=image
+        )
+        
+        # For True/False questions, automatically create the two answer options
+        if question_type == 'TRUE_FALSE':
+            QuizAnswer.objects.create(
+                question=question,
+                text="True",
+                is_correct=request.POST.get('correct_answer') == 'true'
+            )
+            QuizAnswer.objects.create(
+                question=question,
+                text="False",
+                is_correct=request.POST.get('correct_answer') == 'false'
+            )
+            messages.success(request, "Question added with True/False options.")
+            return redirect('educational:admin_edit_quiz', quiz_id=quiz.id)
+        else:
+            # Handle multiple choice options in a single submission
+            option_texts = request.POST.getlist('option_text[]')
+            option_explanations = request.POST.getlist('option_explanation[]')
+            correct_option = int(request.POST.get('correct_option', 0))
+            
+            # Create answer options for multiple choice questions
+            for i, text in enumerate(option_texts):
+                if text.strip():  # Only add non-empty options
+                    QuizAnswer.objects.create(
+                        question=question,
+                        text=text,
+                        is_correct=(i == correct_option),
+                        explanation=option_explanations[i] if i < len(option_explanations) else ''
+                    )
+            
+            messages.success(request, "Question and answer options added successfully.")
+            return redirect('educational:admin_edit_quiz', quiz_id=quiz.id)
+    
+    context = {
+        'quiz': quiz,
+    }
+    
+    return render(request, 'educational/admin/question_form.html', context)
+
+@login_required
+def admin_edit_question(request, question_id):
+    """View for admins to edit a question and its answers."""
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to access this page.")
+        return redirect('educational:topic_list')
+    
+    question = get_object_or_404(QuizQuestion.objects.select_related('quiz'), pk=question_id)
+    
+    if request.method == 'POST':
+        text = request.POST.get('text')
+        question_type = request.POST.get('question_type')
+        points = int(request.POST.get('points', 1))
+        
+        if not text:
+            messages.error(request, "Question text is required.")
+            return redirect('educational:admin_edit_question', question_id=question.id)
+        
+        # Handle image upload or removal
+        if 'image' in request.FILES:
+            # If there's a new image, use it
+            question.image = request.FILES['image']
+        elif request.POST.get('remove_image') == 'on' and question.image:
+            # If remove_image is checked and there's an existing image, delete it
+            question.image.delete()
+            question.image = None
+        
+        question.text = text
+        question.question_type = question_type
+        question.points = points
+        question.save()
+        
+        # Handle answer updates for True/False questions
+        if question_type == 'TRUE_FALSE':
+            correct_answer = request.POST.get('correct_answer')
+            true_answer = QuizAnswer.objects.filter(question=question, text="True").first()
+            false_answer = QuizAnswer.objects.filter(question=question, text="False").first()
+            
+            if true_answer and false_answer:
+                true_answer.is_correct = correct_answer == 'true'
+                false_answer.is_correct = correct_answer == 'false'
+                true_answer.save()
+                false_answer.save()
+            else:
+                # Create new True/False answers if they don't exist
+                if not true_answer:
+                    QuizAnswer.objects.create(
+                        question=question,
+                        text="True",
+                        is_correct=correct_answer == 'true'
+                    )
+                if not false_answer:
+                    QuizAnswer.objects.create(
+                        question=question,
+                        text="False",
+                        is_correct=correct_answer == 'false'
+                    )
+        else:
+            # Handle multiple choice options in a single submission
+            option_texts = request.POST.getlist('option_text[]')
+            option_explanations = request.POST.getlist('option_explanation[]')
+            correct_option = int(request.POST.get('correct_option', 0))
+            
+            # Remove all existing answers for multiple choice
+            QuizAnswer.objects.filter(question=question).delete()
+            
+            # Create new answer options
+            for i, text in enumerate(option_texts):
+                if text.strip():  # Only add non-empty options
+                    QuizAnswer.objects.create(
+                        question=question,
+                        text=text,
+                        is_correct=(i == correct_option),
+                        explanation=option_explanations[i] if i < len(option_explanations) else ''
+                    )
+        
+        messages.success(request, "Question updated successfully.")
+        return redirect('educational:admin_edit_quiz', quiz_id=question.quiz.id)
+    
+    # Get answers for this question
+    answers = QuizAnswer.objects.filter(question=question)
+    
+    # For True/False questions, determine which option is correct
+    correct_answer = None
+    if question.question_type == 'TRUE_FALSE':
+        true_answer = QuizAnswer.objects.filter(question=question, text="True").first()
+        if true_answer and true_answer.is_correct:
+            correct_answer = 'true'
+        else:
+            correct_answer = 'false'
+    
+    context = {
+        'question': question,
+        'answers': answers,
+        'correct_answer': correct_answer,
+    }
+    
+    return render(request, 'educational/admin/question_form.html', context)
+
+@login_required
+@require_POST
+def admin_add_answer(request, question_id):
+    """View for admins to add an answer to a question."""
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to access this page.")
+        return redirect('educational:topic_list')
+    
+    question = get_object_or_404(QuizQuestion, pk=question_id)
+    
+    text = request.POST.get('text')
+    is_correct = request.POST.get('is_correct') == 'on'
+    explanation = request.POST.get('explanation', '')
+    
+    if not text:
+        messages.error(request, "Answer text is required.")
+        return redirect('educational:admin_edit_question', question_id=question.id)
+    
+    # For multiple choice, ensure only one answer is marked correct
+    if question.question_type == 'MULTIPLE_CHOICE' and is_correct:
+        QuizAnswer.objects.filter(question=question).update(is_correct=False)
+    
+    QuizAnswer.objects.create(
+        question=question,
+        text=text,
+        is_correct=is_correct,
+        explanation=explanation
+    )
+    
+    messages.success(request, "Answer option added.")
+    return redirect('educational:admin_edit_question', question_id=question.id)
+
+@login_required
+@require_POST
+def admin_delete_question(request, question_id):
+    """View for admins to delete a question."""
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to access this page.")
+        return redirect('educational:topic_list')
+    
+    question = get_object_or_404(QuizQuestion, pk=question_id)
+    quiz_id = question.quiz.id
+    
+    # Delete the question and its answers (CASCADE will handle answers)
+    question.delete()
+    
+    # Reorder remaining questions
+    questions = QuizQuestion.objects.filter(quiz_id=quiz_id).order_by('order')
+    for i, q in enumerate(questions, 1):
+        q.order = i
+        q.save()
+    
+    messages.success(request, "Question deleted.")
+    return redirect('educational:admin_edit_quiz', quiz_id=quiz_id)
+
+@login_required
+@require_POST
+def admin_delete_answer(request, answer_id):
+    """View for admins to delete an answer."""
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to access this page.")
+        return redirect('educational:topic_list')
+    
+    answer = get_object_or_404(QuizAnswer, pk=answer_id)
+    question_id = answer.question.id
+    
+    # Ensure we're not deleting the only correct answer for multiple choice
+    if answer.is_correct and answer.question.question_type == 'MULTIPLE_CHOICE':
+        if QuizAnswer.objects.filter(question=answer.question, is_correct=True).count() <= 1:
+            messages.error(request, "Cannot delete the only correct answer. Please mark another answer as correct first.")
+            return redirect('educational:admin_edit_question', question_id=question_id)
+    
+    # Don't allow deleting True/False options
+    if answer.question.question_type == 'TRUE_FALSE' and answer.text in ["True", "False"]:
+        messages.error(request, "Cannot delete True/False options. You can only change which one is correct.")
+        return redirect('educational:admin_edit_question', question_id=question_id)
+    
+    answer.delete()
+    
+    messages.success(request, "Answer deleted.")
+    return redirect('educational:admin_edit_question', question_id=question_id)
+
+@login_required
+@require_POST
+def admin_publish_quiz(request, quiz_id):
+    """View for admins to publish a quiz."""
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to access this page.")
+        return redirect('educational:topic_list')
+    
+    quiz = get_object_or_404(Quiz, pk=quiz_id)
+    
+    # Check if the quiz has questions
+    if not QuizQuestion.objects.filter(quiz=quiz).exists():
+        messages.error(request, "Cannot publish a quiz without questions.")
+        return redirect('educational:admin_edit_quiz', quiz_id=quiz.id)
+    
+    # Check if all questions have at least one correct answer
+    questions_without_correct = QuizQuestion.objects.filter(
+        quiz=quiz
+    ).exclude(
+        id__in=QuizAnswer.objects.filter(
+            question__quiz=quiz, 
+            is_correct=True
+        ).values_list('question_id', flat=True)
+    )
+    
+    if questions_without_correct.exists():
+        messages.error(request, f"All questions must have at least one correct answer. Please fix question: {questions_without_correct.first().text[:50]}...")
+        return redirect('educational:admin_edit_quiz', quiz_id=quiz.id)
+    
+    quiz.publish()
+    messages.success(request, f"Quiz '{quiz.title}' has been published.")
+    
+    return redirect('educational:admin_quiz_detail', quiz_id=quiz.id)
+
+@login_required
+@require_POST
+def admin_unpublish_quiz(request, quiz_id):
+    """View for admins to unpublish a quiz."""
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to access this page.")
+        return redirect('educational:topic_list')
+    
+    quiz = get_object_or_404(Quiz, pk=quiz_id)
+    quiz.unpublish()
+    messages.success(request, f"Quiz '{quiz.title}' has been unpublished.")
+    
+    return redirect('educational:admin_quiz_detail', quiz_id=quiz.id)
+
+@login_required
+@require_POST
+def admin_delete_quiz(request, quiz_id):
+    """View for admins to delete a quiz."""
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to access this page.")
+        return redirect('educational:topic_list')
+    
+    quiz = get_object_or_404(Quiz, pk=quiz_id)
+    quiz_title = quiz.title
+    
+    try:
+        # Delete the quiz (this will cascade delete all related questions and answers)
+        quiz.delete()
+        messages.success(request, f"Quiz '{quiz_title}' has been deleted successfully.")
+    except Exception as e:
+        messages.error(request, f"Error deleting quiz: {str(e)}")
+    
+    return redirect('educational:admin_quiz_list')
+
+# Quiz Views - User
+
+@login_required
+def quiz_list(request):
+    """View for users to see available quizzes."""
+    # Get published quizzes
+    quizzes = Quiz.objects.filter(is_published=True).select_related('topic')
+    
+    # Get user's quiz attempts for these quizzes
+    user_attempts = UserQuizAttempt.objects.filter(
+        user=request.user,
+        quiz__in=quizzes
+    ).select_related('quiz')
+    
+    # Create a dictionary of quiz_id -> user's best attempt
+    user_quiz_attempts = {}
+    for attempt in user_attempts:
+        quiz_id = attempt.quiz.id
+        if quiz_id not in user_quiz_attempts or (attempt.score is not None and (user_quiz_attempts[quiz_id].score is None or attempt.score > user_quiz_attempts[quiz_id].score)):
+            user_quiz_attempts[quiz_id] = attempt
+    
+    # Filter by topic if provided
+    topic_id = request.GET.get('topic')
+    if topic_id:
+        quizzes = quizzes.filter(topic_id=topic_id)
+    
+    # Search by title/description
+    query = request.GET.get('q')
+    if query:
+        quizzes = quizzes.filter(
+            Q(title__icontains=query) | 
+            Q(description__icontains=query)
+        )
+    
+    # Get topics with published quizzes for filter
+    topics_with_quizzes = EducationalTopic.objects.filter(
+        quizzes__is_published=True
+    ).distinct().order_by('title')
+    
+    # Pagination
+    paginator = Paginator(quizzes, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        'topics': topics_with_quizzes,
+        'selected_topic': topic_id,
+        'query': query,
+        'user_quiz_attempts': user_quiz_attempts,
+    }
+    
+    return render(request, 'user_portal/educational/quiz/quiz_list.html', context)
+
+@login_required
+def quiz_detail(request, quiz_id):
+    """View for users to see quiz details and start/resume a quiz."""
+    quiz = get_object_or_404(Quiz.objects.select_related('topic'), pk=quiz_id, is_published=True)
+    
+    # Check if user has any attempts for this quiz
+    user_attempts = UserQuizAttempt.objects.filter(
+        user=request.user,
+        quiz=quiz
+    ).order_by('-start_time')
+    
+    # Get the most recent incomplete attempt, if any
+    incomplete_attempt = user_attempts.filter(is_completed=False).first()
+    
+    # Get completed attempts
+    completed_attempts = user_attempts.filter(is_completed=True)
+    
+    # Get quiz statistics
+    total_questions = QuizQuestion.objects.filter(quiz=quiz).count()
+    
+    context = {
+        'quiz': quiz,
+        'user_attempts': completed_attempts,
+        'incomplete_attempt': incomplete_attempt,
+        'total_questions': total_questions,
+    }
+    
+    return render(request, 'user_portal/educational/quiz/quiz_detail.html', context)
+
+@login_required
+def start_quiz(request, quiz_id):
+    """View for users to start a new quiz attempt."""
+    quiz = get_object_or_404(Quiz, pk=quiz_id, is_published=True)
+    
+    # Check for incomplete attempts and resume if exists
+    incomplete_attempt = UserQuizAttempt.objects.filter(
+        user=request.user,
+        quiz=quiz,
+        is_completed=False
+    ).first()
+    
+    if incomplete_attempt:
+        return redirect('educational:take_quiz', attempt_id=incomplete_attempt.id)
+    
+    # Create a new attempt
+    attempt = UserQuizAttempt.objects.create(
+        user=request.user,
+        quiz=quiz
+    )
+    
+    return redirect('educational:take_quiz', attempt_id=attempt.id)
+
+@login_required
+def take_quiz(request, attempt_id):
+    """View for users to take a quiz."""
+    attempt = get_object_or_404(
+        UserQuizAttempt.objects.select_related('quiz', 'quiz__topic'),
+        pk=attempt_id,
+        user=request.user
+    )
+    
+    # If the attempt is already completed, redirect to results
+    if attempt.is_completed:
+        return redirect('educational:quiz_results', attempt_id=attempt.id)
+    
+    # Get all questions for this quiz
+    all_questions = QuizQuestion.objects.filter(
+        quiz=attempt.quiz
+    ).prefetch_related('answers').order_by('order')
+    
+    # Get the user's responses for this attempt
+    responses = UserQuestionResponse.objects.filter(
+        attempt=attempt
+    ).select_related('question', 'selected_answer')
+    
+    # Create a dictionary of question_id -> response
+    answered_questions = {response.question_id: response for response in responses}
+    
+    # Determine which question to show
+    question_id = request.GET.get('question')
+    
+    # If a specific question is requested, show it
+    if question_id:
+        current_question = get_object_or_404(QuizQuestion, pk=question_id, quiz=attempt.quiz)
+    else:
+        # Otherwise, find the first unanswered question
+        for question in all_questions:
+            if question.id not in answered_questions:
+                current_question = question
+                break
+        else:
+            # All questions answered, show the first one
+            current_question = all_questions.first() if all_questions else None
+    
+    # Handle submission of an answer
+    if request.method == 'POST' and current_question:
+        answer_id = request.POST.get('answer')
+        
+        if not answer_id:
+            messages.error(request, "Please select an answer.")
+        else:
+            selected_answer = get_object_or_404(QuizAnswer, pk=answer_id, question=current_question)
+            
+            # Update or create the response
+            if current_question.id in answered_questions:
+                response = answered_questions[current_question.id]
+                response.selected_answer = selected_answer
+                response.save()
+            else:
+                response = UserQuestionResponse.objects.create(
+                    attempt=attempt,
+                    question=current_question,
+                    selected_answer=selected_answer
+                )
+            
+            # If all questions are answered, offer to complete
+            if UserQuestionResponse.objects.filter(attempt=attempt).count() == all_questions.count():
+                messages.success(request, "All questions answered! You can review your answers or submit the quiz.")
+            
+            # Find the next unanswered question, or go to the next question in sequence
+            next_question = None
+            for question in all_questions:
+                if question.id not in answered_questions and question.id != current_question.id:
+                    next_question = question
+                    break
+            
+            if not next_question:
+                # If no unanswered questions, go to the next one in sequence
+                try:
+                    current_index = list(all_questions).index(current_question)
+                    next_question = all_questions[current_index + 1] if current_index + 1 < len(all_questions) else all_questions[0]
+                except (ValueError, IndexError):
+                    next_question = all_questions.first() if all_questions else None
+            
+            if next_question:
+                return redirect(f"{request.path}?question={next_question.id}")
+    
+    # Calculate progress
+    progress = (len(answered_questions) / all_questions.count() * 100) if all_questions.count() > 0 else 0
+    
+    # Get current response if exists
+    current_response = answered_questions.get(current_question.id) if current_question else None
+    
+    context = {
+        'attempt': attempt,
+        'quiz': attempt.quiz,
+        'current_question': current_question,
+        'current_response': current_response,
+        'all_questions': all_questions,
+        'answered_questions': answered_questions,
+        'progress': progress,
+        'all_answered': len(answered_questions) == all_questions.count(),
+    }
+    
+    return render(request, 'user_portal/educational/quiz/take_quiz.html', context)
+
+@login_required
+@require_POST
+def complete_quiz(request, attempt_id):
+    """View for users to complete a quiz attempt."""
+    attempt = get_object_or_404(
+        UserQuizAttempt,
+        pk=attempt_id,
+        user=request.user,
+        is_completed=False
+    )
+    
+    # Get all questions for this quiz
+    all_questions = QuizQuestion.objects.filter(quiz=attempt.quiz)
+    
+    # Get the user's responses for this attempt
+    responses = UserQuestionResponse.objects.filter(attempt=attempt)
+    
+    # Check if all questions have been answered
+    if responses.count() < all_questions.count():
+        unanswered_count = all_questions.count() - responses.count()
+        messages.warning(request, f"You have {unanswered_count} unanswered questions. Are you sure you want to submit?")
+        
+        # Only complete if user confirmed
+        if request.POST.get('confirmed') != 'true':
+            return redirect('educational:take_quiz', attempt_id=attempt.id)
+    
+    # Complete the attempt
+    attempt.complete()
+    
+    return redirect('educational:quiz_results', attempt_id=attempt.id)
+
+@login_required
+def quiz_results(request, attempt_id):
+    """View for users to see their quiz results."""
+    attempt = get_object_or_404(
+        UserQuizAttempt.objects.select_related('quiz', 'quiz__topic'),
+        pk=attempt_id,
+        user=request.user,
+        is_completed=True
+    )
+    
+    # Get all questions with the user's responses
+    questions = QuizQuestion.objects.filter(
+        quiz=attempt.quiz
+    ).prefetch_related(
+        'answers'
+    ).order_by('order')
+    
+    responses = UserQuestionResponse.objects.filter(
+        attempt=attempt
+    ).select_related('question', 'selected_answer')
+    
+    # Create a dictionary of question_id -> response
+    user_responses = {response.question_id: response for response in responses}
+    
+    # Also get correct answers for all questions
+    correct_answers = {}
+    for question in questions:
+        correct_answers[question.id] = QuizAnswer.objects.filter(
+            question=question,
+            is_correct=True
+        )
+    
+    context = {
+        'attempt': attempt,
+        'quiz': attempt.quiz,
+        'questions': questions,
+        'user_responses': user_responses,
+        'correct_answers': correct_answers,
+    }
+    
+    return render(request, 'user_portal/educational/quiz/quiz_results.html', context)
+
+@login_required
+def search_educational_content(request):
+    """
+    Search educational topics based on user query.
+    """
+    query = request.GET.get('q', '').strip()
+    results = []
+    
+    if query:
+        # Search in topic titles and content
+        results = EducationalTopic.objects.filter(
+            Q(title__icontains=query) | 
+            Q(content__icontains=query) |
+            Q(category__title__icontains=query),
+            is_published=True
+        ).select_related('category').order_by('-created_at').distinct()
+        
+    context = {
+        'query': query,
+        'results': results,
+        'active_page': 'education',
+    }
+    
+    return render(request, 'user_portal/educational/search_results.html', context) 

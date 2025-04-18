@@ -107,15 +107,18 @@
                                         <span class="badge bg-primary rounded-pill">{{ category.topics_count|default:"0" }}</span>
                                     </td>
                                     <td class="text-end pe-4">
-                                        <div class="d-flex justify-content-end gap-2">
-                                            <a href="{% url 'educational:admin_topic_list' %}?category={{ category.id }}" class="btn btn-sm btn-outline-info" title="View Topics">
-                                                <span class="material-icons">list</span>
+                                        <div class="action-buttons">
+                                            <a href="{% url 'educational:admin_topic_list' %}?category={{ category.id }}" class="btn btn-action btn-view" 
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="View Topics">
+                                                <i class="material-icons small">list</i>
                                             </a>
-                                            <a href="{% url 'educational:admin_category_edit' category_id=category.id %}" class="btn btn-sm btn-outline-primary" title="Edit">
-                                                <span class="material-icons">edit</span>
+                                            <a href="{% url 'educational:admin_category_edit' category_id=category.id %}" class="btn btn-action btn-edit" 
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
+                                                <i class="material-icons small">edit</i>
                                             </a>
-                                            <a href="{% url 'educational:admin_category_delete' category_id=category.id %}" class="btn btn-sm btn-outline-danger" title="Delete">
-                                                <span class="material-icons">delete</span>
+                                            <a href="{% url 'educational:admin_category_delete' category_id=category.id %}" class="btn btn-action btn-delete" 
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Delete">
+                                                <i class="material-icons small">delete</i>
                                             </a>
                                         </div>
                                     </td>
@@ -158,13 +161,13 @@
                                 </div>
                                 <div class="d-flex flex-wrap justify-content-end gap-2 mt-3">
                                     <a href="{% url 'educational:admin_topic_list' %}?category={{ category.id }}" class="btn btn-sm btn-outline-info mobile-btn d-flex align-items-center" title="View Topics">
-                                        <span class="material-icons me-1">list</span> <span>Topics</span>
+                                        <i class="material-icons me-1 small">list</i> <span>Topics</span>
                                     </a>
                                     <a href="{% url 'educational:admin_category_edit' category_id=category.id %}" class="btn btn-sm btn-outline-primary mobile-btn d-flex align-items-center" title="Edit">
-                                        <span class="material-icons me-1">edit</span> <span>Edit</span>
+                                        <i class="material-icons me-1 small">edit</i> <span>Edit</span>
                                     </a>
                                     <a href="{% url 'educational:admin_category_delete' category_id=category.id %}" class="btn btn-sm btn-outline-danger mobile-btn d-flex align-items-center" title="Delete">
-                                        <span class="material-icons me-1">delete</span> <span>Delete</span>
+                                        <i class="material-icons me-1 small">delete</i> <span>Delete</span>
                                     </a>
                                 </div>
                             </div>
@@ -459,6 +462,78 @@
             display: none;
         }
     }
+    
+    /* Mobile pagination */
+    .mobile-pagination .page-link {
+        min-width: 36px;
+        height: 36px;
+    }
+    
+    /* Action Button Styles */
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: flex-end;
+    }
+    
+    .btn-action {
+        width: 35px;
+        height: 35px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-action i {
+        font-size: 1.1rem;
+    }
+    
+    /* View Button */
+    .btn-view {
+        color: var(--bs-primary);
+        border-color: #e9ecef;
+        background-color: #fff;
+    }
+    
+    .btn-view:hover {
+        background-color: var(--bs-primary);
+        border-color: var(--bs-primary);
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    /* Edit Button */
+    .btn-edit {
+        color: #8950fc;
+        border-color: #e9ecef;
+        background-color: #fff;
+    }
+    
+    .btn-edit:hover {
+        background-color: #8950fc;
+        border-color: #8950fc;
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    /* Delete Button */
+    .btn-delete {
+        color: #ef4444;
+        border-color: #e9ecef;
+        background-color: #fff;
+    }
+    
+    .btn-delete:hover {
+        background-color: #ef4444;
+        border-color: #ef4444;
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    /* For very small screens */
 </style>
 
 {% endblock %}
@@ -466,6 +541,12 @@
 {% block extra_scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    
         // Form validation
         const createForm = document.getElementById('create-category-form');
         if (createForm) {

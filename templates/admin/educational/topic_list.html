@@ -127,23 +127,28 @@
                                     </td>
                                     <td>{{ topic.created_at|date:"M d, Y" }}</td>
                                     <td class="text-center">
-                                        <div class="btn-group">
-                                            <a href="{% url 'educational:admin_topic_preview' topic_id=topic.id %}" class="btn btn-sm btn-outline-info" title="Preview">
+                                        <div class="action-buttons">
+                                            <a href="{% url 'educational:admin_topic_preview' topic_id=topic.id %}" class="btn btn-action btn-view" 
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Preview">
                                                 <i class="material-icons small">visibility</i>
                                             </a>
-                                            <a href="{% url 'educational:admin_topic_edit' topic_id=topic.id %}" class="btn btn-sm btn-outline-primary" title="Edit">
+                                            <a href="{% url 'educational:admin_topic_edit' topic_id=topic.id %}" class="btn btn-action btn-edit" 
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
                                                 <i class="material-icons small">edit</i>
                                             </a>
                                             {% if topic.is_published %}
-                                            <a href="{% url 'educational:admin_topic_publish' topic_id=topic.id %}" class="btn btn-sm btn-outline-warning" title="Unpublish">
+                                            <a href="{% url 'educational:admin_topic_publish' topic_id=topic.id %}" class="btn btn-action btn-unpublish" 
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Unpublish">
                                                 <i class="material-icons small">unpublished</i>
                                             </a>
                                             {% else %}
-                                            <a href="{% url 'educational:admin_topic_publish' topic_id=topic.id %}" class="btn btn-sm btn-outline-success" title="Publish">
+                                            <a href="{% url 'educational:admin_topic_publish' topic_id=topic.id %}" class="btn btn-action btn-publish" 
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Publish">
                                                 <i class="material-icons small">publish</i>
                                             </a>
                                             {% endif %}
-                                            <button type="button" class="btn btn-sm btn-outline-danger delete-topic-btn" title="Delete"
+                                            <button type="button" class="btn btn-action btn-delete delete-topic-btn" 
+                                                   data-bs-toggle="tooltip" data-bs-placement="top" title="Delete"
                                                    data-topic-id="{{ topic.id }}" data-topic-title="{{ topic.title }}">
                                                 <i class="material-icons small">delete</i>
                                             </button>
@@ -516,6 +521,98 @@
             font-size: 18px !important;
         }
     }
+    
+    /* Action Button Styles */
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: center;
+    }
+    
+    .btn-action {
+        width: 35px;
+        height: 35px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-action i {
+        font-size: 1.1rem;
+    }
+    
+    /* View Button */
+    .btn-view {
+        color: var(--bs-primary);
+        border-color: #e9ecef;
+        background-color: #fff;
+    }
+    
+    .btn-view:hover {
+        background-color: var(--bs-primary);
+        border-color: var(--bs-primary);
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    /* Edit Button */
+    .btn-edit {
+        color: #8950fc;
+        border-color: #e9ecef;
+        background-color: #fff;
+    }
+    
+    .btn-edit:hover {
+        background-color: #8950fc;
+        border-color: #8950fc;
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    /* Publish Button */
+    .btn-publish {
+        color: #10b981;
+        border-color: #e9ecef;
+        background-color: #fff;
+    }
+    
+    .btn-publish:hover {
+        background-color: #10b981;
+        border-color: #10b981;
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    /* Unpublish Button */
+    .btn-unpublish {
+        color: #f59e0b;
+        border-color: #e9ecef;
+        background-color: #fff;
+    }
+    
+    .btn-unpublish:hover {
+        background-color: #f59e0b;
+        border-color: #f59e0b;
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    /* Delete Button */
+    .btn-delete {
+        color: #ef4444;
+        border-color: #e9ecef;
+        background-color: #fff;
+    }
+    
+    .btn-delete:hover {
+        background-color: #ef4444;
+        border-color: #ef4444;
+        color: white;
+        transform: translateY(-2px);
+    }
 </style>
 
 {% block extra_scripts %}
@@ -543,6 +640,12 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+        
         // Find all delete topic buttons and attach event listeners
         document.querySelectorAll('.delete-topic-btn').forEach(button => {
             button.addEventListener('click', function() {

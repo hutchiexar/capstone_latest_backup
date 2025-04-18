@@ -208,7 +208,12 @@
         window.onload = function() {
             window.print();
             setTimeout(function() {
-                window.location.href = "{% url 'violations_list' %}?printed=true";
+                // Check if we're in a user portal or admin context
+                if (window.location.pathname.includes('user_portal')) {
+                    window.location.href = "{% url 'user_portal:user_violations' %}?printed=true";
+                } else {
+                    window.location.href = "{% url 'violations_list' %}?printed=true";
+                }
             }, 1000);
         };
     </script>

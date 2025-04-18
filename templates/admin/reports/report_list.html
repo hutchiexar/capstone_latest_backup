@@ -119,13 +119,13 @@
             <table class="table table-hover align-middle mb-0" id="reportsTable">
                 <thead class="table-light">
                     <tr>
-                        <th class="ps-4">ID</th>
-                        <th>User</th>
-                        <th>Type</th>
-                        <th>Subject</th>
-                        <th>Status</th>
-                        <th>Date Submitted</th>
-                        <th class="text-end pe-4">Actions</th>
+                        <th class="text-center">ID</th>
+                        <th class="text-center">User</th>
+                        <th class="text-center">Type</th>
+                        <th class="text-center">Subject</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Date Submitted</th>
+                        <th class="text-center" style="width: 140px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="reports-table-body">
@@ -196,15 +196,15 @@
                         </span>
                     </div>
                     
-                    <div class="action-buttons d-flex gap-2">
-                        <button type="button" class="btn btn-sm btn-primary mobile-btn" onclick="openViewModal('{{ report.id }}')" title="View Details">
+                    <div class="action-buttons">
+                        <button type="button" class="btn btn-primary action-btn" onclick="openViewModal('{{ report.id }}')" title="View Details">
                             <span class="material-icons">visibility</span>
                         </button>
-                        <button type="button" class="btn btn-sm btn-info text-white mobile-btn" onclick="openStatusModal('{{ report.id }}')" title="Update Status">
+                        <button type="button" class="btn btn-info text-white action-btn" onclick="openStatusModal('{{ report.id }}')" title="Update Status">
                             <span class="material-icons">update</span>
                         </button>
                         {% if report.status == 'PENDING' or report.status == 'IN_PROGRESS' %}
-                        <button type="button" class="btn btn-sm btn-warning text-white mobile-btn" onclick="openDisputeModal('{{ report.id }}')" title="Dispute Report">
+                        <button type="button" class="btn btn-warning text-white action-btn" onclick="openDisputeModal('{{ report.id }}')" title="Dispute Report">
                             <span class="material-icons">gavel</span>
                         </button>
                         {% endif %}
@@ -340,32 +340,54 @@
         border-radius: 0 0 4px 4px;
     }
     
-    /* Modal improvements */
-    .modal__container {
-        padding: 10px !important;
+    /* Modal improvements for mobile */
+    .modal__container,
+    .modal-container {
+        padding: 0 !important;
         max-width: 95% !important;
+        width: 95% !important;
+        margin: 0 auto;
     }
     
-    .modal__content {
-        padding: 15px !important;
+    .modal__content,
+    .modal-content {
+        padding: 12px !important;
     }
     
-    .modal__footer {
-        padding: 15px !important;
+    .modal__footer,
+    .modal-footer {
+        padding: 12px !important;
     }
     
-    .modal__header {
-        padding: 15px !important;
+    .modal__header,
+    .modal-header {
+        padding: 12px !important;
     }
 }
 
-/* Modal improvements for all screen sizes */
-.modal__container {
-    max-height: 90vh;
-    overflow-y: auto;
-    border-radius: 8px;
+/* Filter and UI elements */
+.filter-toggle {
+    cursor: pointer;
 }
 
+.filter-toggle:hover {
+    background-color: rgba(0,0,0,0.03);
+}
+
+/* Transitions for smooth experience */
+.filter-body {
+    transition: max-height 0.3s ease-in-out;
+}
+
+.report-card {
+    transition: transform 0.15s ease-in-out;
+}
+
+.report-card:active {
+    transform: scale(0.98);
+}
+
+/* Modal buttons styling */
 .modal__btn-primary {
     background-color: var(--bs-primary);
     color: white;
@@ -394,35 +416,300 @@
     min-height: 38px;
 }
 
-.filter-toggle {
+/* Modal styling - landscape orientation without scrolling */
+.modal__overlay,
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.modal__container,
+.modal-container {
+    background-color: #fff;
+    border-radius: 8px;
+    max-width: 950px !important; /* Wider width for landscape */
+    width: 90% !important;
+    max-height: 600px !important; /* Lower height to fit content */
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden; /* Hide scrollbars */
+}
+
+/* Modal close button */
+.modal__close,
+.modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: transparent;
+    border: 0;
     cursor: pointer;
+    width: 24px;
+    height: 24px;
 }
 
-.filter-toggle:hover {
-    background-color: rgba(0,0,0,0.03);
+.modal__close:before,
+.modal__close:after,
+.modal-close:before,
+.modal-close:after {
+    content: '';
+    position: absolute;
+    width: 2px;
+    height: 24px;
+    background-color: #333;
+    top: 0;
+    left: 50%;
 }
 
-/* Transitions for smooth experience */
-.filter-body {
-    transition: max-height 0.3s ease-in-out;
+.modal__close:before,
+.modal-close:before {
+    transform: rotate(45deg);
 }
 
-.report-card {
-    transition: transform 0.15s ease-in-out;
+.modal__close:after,
+.modal-close:after {
+    transform: rotate(-45deg);
 }
 
-.report-card:active {
-    transform: scale(0.98);
+/* Ensure Close buttons aren't floating outside modals */
+body > button.close, 
+body > button[aria-label="Close"],
+body > button[data-micromodal-close] {
+    display: none !important;
 }
 
+/* Modal structure styling */
+.modal__header,
+.modal-header {
+    position: relative;
+    padding: 0.75rem 1rem !important;
+    border-bottom: 1px solid #e0e0e0;
+    background-color: #fff;
+}
+
+.modal__title,
+.modal-title {
+    margin: 0;
+    font-size: 1.25rem;
+    padding-right: 30px; /* Make room for close button */
+    color: #333;
+}
+
+/* Modal content in landscape layout */
+.modal__content,
+.modal-content {
+    padding: 0.75rem;
+    background-color: #fff;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Two-column layout for landscape orientation */
+.modal-section {
+    padding: 10px;
+    flex: 1;
+    min-width: 300px;
+}
+
+.modal-section-full {
+    width: 100%;
+    padding: 10px;
+}
+
+.modal__footer,
+.modal-footer {
+    padding: 0.75rem 1rem !important;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    background-color: #fff;
+}
+
+/* Specific modal sizing for Report Details */
+#modal-view-report .modal__container {
+    width: 95% !important;
+    max-width: 1200px !important;
+    max-height: 90vh !important;
+}
+
+/* Fix for report modal details to ensure no scrolling */
+#modal-view-report .modal__content {
+    padding: 0.5rem;
+    overflow-y: auto;
+    max-height: calc(90vh - 80px); /* Account for header height */
+}
+
+/* Fix for modal content */
+#modal-view-report-content {
+    max-height: none;
+    overflow-y: visible;
+    padding-bottom: 0;
+}
+
+/* Adjust modal description height */
+.modal-description-container {
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+    .modal__container,
+    .modal-container {
+        flex-direction: column;
+        max-width: 95% !important;
+        width: 95% !important;
+        max-height: 95vh !important;
+    }
+    
+    .modal__content,
+    .modal-content {
+        flex-direction: column;
+        overflow-y: auto;
+    }
+    
+    .modal-section,
+    .modal-section-full {
+        width: 100%;
+    }
+}
+
+/* Add additional styling for modal action buttons */
+.report-detail-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px;
+    margin-top: 24px;
+    border-top: 1px solid #eee;
+    background-color: #f8f9fa;
+    border-radius: 0 0 8px 8px;
+}
+
+.report-detail-actions .btn {
+    min-width: 120px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.report-detail-actions .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.report-detail-actions .btn .material-icons {
+    font-size: 18px;
+    margin-right: 8px;
+}
+
+.report-detail-actions .btn-primary {
+    background-color: #2563eb;
+    border-color: #2563eb;
+}
+
+.report-detail-actions .btn-outline-secondary {
+    border: 1px solid #d1d5db;
+    color: #4b5563;
+}
+
+.report-detail-actions .btn-outline-secondary:hover {
+    background-color: #f3f4f6;
+    color: #1f2937;
+}
+
+/* Hide duplicate close buttons */
+.modal__footer button[onclick="closeViewModal()"] {
+    display: none;
+}
+
+/* Center table alignment */
+#reportsTable th {
+    text-align: center;
+}
+
+/* Table action buttons - new approach */
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Fixed-width container for action buttons */
+td .action-buttons {
+    width: 100%;
+    max-width: 140px;
+    margin: 0 auto;
+}
+
+/* Equal-sized action buttons */
+.action-btn {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    padding: 0 !important;
+    border-radius: 4px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 40px !important;
+}
+
+/* Icon sizing */
+.action-btn .material-icons {
+    font-size: 18px !important;
+    margin: 0 !important;
+}
+
+/* Center the action buttons container */
+.action-buttons {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 5px !important;
+    width: 100% !important;
+}
+
+/* Center all table cell content */
+#reportsTable td, #reportsTable th {
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* Fix responsive behavior */
+@media (max-width: 767.98px) {
+    .action-btn {
+        width: 40px;
+        height: 40px;
+    }
+}
 </style>
 
 <!-- View Report Modal (MicroModal) -->
 <div class="modal micromodal-slide" id="modal-view-report" aria-hidden="true">
     <div class="modal__overlay" tabindex="-1" data-micromodal-close>
-        <div class="modal__container modal-lg" role="dialog" aria-modal="true" aria-labelledby="modal-view-report-title">
+        <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="modal-view-report-title">
             <header class="modal__header bg-white">
-                <h5 class="modal__title text-dark" id="modal-view-report-title">
+                <h5 class="modal__title" id="modal-view-report-title">
                     <span class="material-icons me-2 text-primary">visibility</span>
                     Report Details
                 </h5>
@@ -437,12 +724,7 @@
                     <div class="mt-3">Loading report details...</div>
                 </div>
             </div>
-            <footer class="modal__footer">
-                <button class="btn btn-primary" onclick="closeViewModal()">
-                    <span class="material-icons me-1 align-middle" style="font-size: 18px;">close</span>
-                    Close
-                </button>
-            </footer>
+            <!-- No footer with close button needed - actions will be in the modal content -->
         </div>
     </div>
 </div>
@@ -452,7 +734,7 @@
     <div class="modal__overlay" tabindex="-1" data-micromodal-close>
         <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="modal-update-status-title">
             <header class="modal__header bg-white">
-                <h5 class="modal__title text-dark" id="modal-update-status-title">
+                <h5 class="modal__title" id="modal-update-status-title">
                     <span class="material-icons me-2 text-primary">update</span>
                     Update Report Status
                 </h5>
@@ -483,7 +765,7 @@
     <div class="modal__overlay" tabindex="-1" data-micromodal-close>
         <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="modal-dispute-report-title">
             <header class="modal__header bg-white">
-                <h5 class="modal__title text-dark" id="modal-dispute-report-title">
+                <h5 class="modal__title" id="modal-dispute-report-title">
                     <span class="material-icons me-2 text-danger">gavel</span>
                     Dispute Report
                 </h5>
@@ -514,78 +796,61 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, setting up MicroModal...');
     
-    // Initialize MicroModal with specific options for closing
-    try {
-        if (typeof MicroModal !== 'undefined') {
-            console.log('MicroModal is defined, initializing...');
-            MicroModal.init({
-                openTrigger: 'data-micromodal-trigger',
-                closeTrigger: 'data-micromodal-close',
-                disableScroll: true,
-                disableFocus: false,
-                awaitOpenAnimation: true,
-                awaitCloseAnimation: true,
-                debugMode: true,
-                onShow: modal => console.log(`Modal ${modal.id} is shown`),
-                onClose: modal => console.log(`Modal ${modal.id} is hidden`)
-            });
+    // More aggressive cleanup for any standalone Close buttons
+    function removeFloatingCloseButtons() {
+        // Find and remove any standalone "Close" button outside modals
+        document.querySelectorAll('button').forEach(button => {
+            // Handle buttons with "Close" text
+            const text = button.textContent.trim();
+            if (text === 'Close' && 
+                !button.closest('.modal') && 
+                !button.closest('.modal__container') && 
+                !button.closest('.modal__content') && 
+                !button.closest('.modal-content') &&
+                !button.closest('.modal__footer') && 
+                !button.closest('.modal-footer') &&
+                !button.closest('.card-body')) {
+                console.log('Removing stray close button:', button);
+                button.remove();
+            }
             
-            // Prevent clicks inside modal content from closing the modal
-            document.querySelectorAll('.modal__content').forEach(content => {
-                content.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                });
-                
-                // Also prevent form submissions when pressing Enter in input fields
-                content.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
-                        e.preventDefault();
-                    }
-                });
-            });
-            
-            // Add manual close handler for all close buttons
-            document.querySelectorAll('[data-micromodal-close]').forEach(element => {
-                element.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const modalId = this.closest('.modal').id;
-                    console.log(`Manual close requested for ${modalId}`);
-                    MicroModal.close(modalId);
-                });
-            });
-            
-            // Add global keyboard event listener for ESC key
-            document.addEventListener('keydown', function(event) {
-                if (event.key === 'Escape') {
-                    console.log('ESC key detected, closing any open modals');
-                    const openModals = document.querySelectorAll('.modal.is-open');
-                    openModals.forEach(modal => {
-                        MicroModal.close(modal.id);
-                    });
-                }
-            });
-            
-            console.log('MicroModal initialization complete');
-        } else {
-            console.error('MicroModal is not loaded! Falling back to standard functionality.');
-            
-            // Fallback initialization for close buttons if MicroModal isn't available
-            document.querySelectorAll('.modal__close, [data-micromodal-close]').forEach(element => {
-                element.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const modal = this.closest('.modal');
-                    if (modal) {
-                        modal.classList.remove('is-open');
-                        modal.setAttribute('aria-hidden', 'true');
-                        console.log('Closed modal with fallback method');
-                    }
-                });
-            });
-        }
-    } catch (error) {
-        console.error('Error initializing MicroModal:', error);
+            // Also look for buttons matching the one in the screenshot (outside modal with blue background)
+            if (button.classList.contains('btn-primary') && 
+                text === 'Close' && 
+                !button.closest('.modal__content') && 
+                !button.closest('.card-body')) {
+                console.log('Removing floating primary close button:', button);
+                button.remove();
+            }
+        });
+        
+        // Remove any stray Close buttons outside of modals
+        const standaloneCloseButtons = document.querySelectorAll('body > button.close, body > button[aria-label="Close"], body > button[data-micromodal-close], body > .btn');
+        standaloneCloseButtons.forEach(button => {
+            if (!button.closest('.modal, .modal-container, .modal-content, .modal__container, .modal__content')) {
+                console.log('Removing floating button:', button);
+                button.remove();
+            }
+        });
     }
+    
+    // Run cleanup immediately, after load, and after a short delay
+    removeFloatingCloseButtons();
+    window.addEventListener('load', removeFloatingCloseButtons);
+    setTimeout(removeFloatingCloseButtons, 500);
+    setTimeout(removeFloatingCloseButtons, 1000); // Run again after everything has settled
+    
+    // Initialize Micromodal
+    MicroModal.init({
+        onShow: modal => console.info(`${modal.id} is shown`),
+        onClose: modal => console.info(`${modal.id} is hidden`),
+        openTrigger: 'data-micromodal-trigger',
+        closeTrigger: 'data-micromodal-close',
+        disableScroll: true,
+        disableFocus: false,
+        awaitOpenAnimation: true,
+        awaitCloseAnimation: true
+    });
     
     // Toggle filter section
     window.toggleFilters = function() {
@@ -1378,6 +1643,68 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // Fix report modal buttons layout
+    function fixReportModalButtons() {
+        // Get the report modal content
+        const modalContent = document.querySelector('#modal-view-report-content > div');
+        if (!modalContent) {
+            console.log('Modal content not found');
+            return;
+        }
+
+        // First check if actions wrapper already exists and has buttons
+        const existingActionsWrapper = modalContent.querySelector('.report-detail-actions');
+        if (existingActionsWrapper && existingActionsWrapper.querySelectorAll('button').length > 0) {
+            console.log('Report actions wrapper already exists with buttons, no need to create duplicates');
+            return; // Actions already exist, no need to duplicate
+        }
+        
+        // Check if buttons exist
+        const closeButton = modalContent.querySelector('.btn-close-report');
+        const updateButton = modalContent.querySelector('.btn-update-report');
+        
+        if (!closeButton && !updateButton) {
+            console.log('No buttons found to organize');
+            return;
+        }
+
+        // Create actions wrapper if it doesn't exist
+        let actionsWrapper = modalContent.querySelector('.report-detail-actions');
+        if (!actionsWrapper) {
+            actionsWrapper = document.createElement('div');
+            actionsWrapper.className = 'report-detail-actions';
+            modalContent.appendChild(actionsWrapper);
+        } else {
+            // Clear existing actions
+            actionsWrapper.innerHTML = '';
+        }
+
+        // Update and append buttons
+        if (updateButton) {
+            updateButton.parentNode.removeChild(updateButton);
+            updateButton.classList.add('btn-primary');
+            updateButton.innerHTML = '<i class="material-icons">update</i> Update Status';
+            actionsWrapper.appendChild(updateButton);
+        }
+
+        if (closeButton) {
+            closeButton.parentNode.removeChild(closeButton);
+            closeButton.classList.add('btn-outline-secondary');
+            closeButton.innerHTML = '<i class="material-icons">close</i> Close';
+            actionsWrapper.appendChild(closeButton);
+        }
+    }
+    
+    // Fix buttons when the modal is shown
+    document.addEventListener('modal-open', function(e) {
+        if (e.detail && e.detail.id === 'modal-view-report') {
+            setTimeout(fixReportModalButtons, 100);
+        }
+    });
+    
+    // Also try to fix buttons on first load
+    setTimeout(fixReportModalButtons, 500);
 });
 </script>
 {% endblock %} 

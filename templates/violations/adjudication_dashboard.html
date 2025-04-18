@@ -1,0 +1,401 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Adjudication Dashboard</h1>
+        <div class="d-flex gap-2">
+            <a href="{% url 'rejected_adjudications' %}" class="btn btn-primary d-flex align-items-center gap-2">
+                <span class="material-icons">warning</span>
+                <span>Rejected Adjudications</span>
+            </a>
+            <a href="{% url 'adjudication_list' %}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+                <span class="material-icons">gavel</span>
+                <span>Adjudication List</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards Row -->
+    <div class="row g-3 mb-4">
+        <!-- Total Violations Card -->
+        <div class="col-6 col-xl-3 col-md-6">
+            <div class="card stat-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="stat-content">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="stat-icon">
+                                    <span class="material-icons">description</span>
+                                </div>
+                                <h6 class="text-uppercase mb-0">Total Violations</h6>
+                            </div>
+                            <h2 class="mb-2">{{ total_violations }}</h2>
+                            <div class="trend-info">
+                                <span class="material-icons info">info</span>
+                                <span>All recorded violations</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Adjudications Card -->
+        <div class="col-6 col-xl-3 col-md-6">
+            <div class="card stat-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="stat-content">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="stat-icon">
+                                    <span class="material-icons">gavel</span>
+                                </div>
+                                <h6 class="text-uppercase mb-0">Total Adjudications</h6>
+                            </div>
+                            <h2 class="mb-2">{{ total_adjudications }}</h2>
+                            <div class="trend-info">
+                                <span class="material-icons info">info</span>
+                                <span>All processed adjudications</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Approved Adjudications Card -->
+        <div class="col-6 col-xl-3 col-md-6">
+            <div class="card stat-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="stat-content">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="stat-icon success-icon">
+                                    <span class="material-icons">check_circle</span>
+                                </div>
+                                <h6 class="text-uppercase mb-0">Approved</h6>
+                            </div>
+                            <h2 class="mb-2">{{ approved_adjudications }}</h2>
+                            <div class="trend-info">
+                                <span class="material-icons success">thumb_up</span>
+                                <span>Approved adjudications</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rejected Adjudications Card -->
+        <div class="col-6 col-xl-3 col-md-6">
+            <div class="card stat-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="stat-content">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="stat-icon error-icon">
+                                    <span class="material-icons">cancel</span>
+                                </div>
+                                <h6 class="text-uppercase mb-0">Rejected</h6>
+                            </div>
+                            <h2 class="mb-2">{{ rejected_adjudications }}</h2>
+                            <div class="trend-info">
+                                <span class="material-icons error">warning</span>
+                                <span>
+                                    <a href="{% url 'rejected_adjudications' %}" class="text-danger">Need attention</a>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Approval Card -->
+        <div class="col-6 col-xl-3 col-md-6">
+            <div class="card stat-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="stat-content">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="stat-icon warning-icon">
+                                    <span class="material-icons">pending</span>
+                                </div>
+                                <h6 class="text-uppercase mb-0">Pending Approval</h6>
+                            </div>
+                            <h2 class="mb-2">{{ pending_adjudications }}</h2>
+                            <div class="trend-info">
+                                <span class="material-icons warning">hourglass_empty</span>
+                                <span>Awaiting supervisor approval</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Adjudicator Performance -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-6">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Top Adjudicators</h5>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" 
+                            onclick="refreshData()"
+                            title="Refresh Data">
+                        <span class="material-icons">refresh</span>
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Adjudicator</th>
+                                    <th>Total</th>
+                                    <th>Approved</th>
+                                    <th>Rejected</th>
+                                    <th>Pending</th>
+                                    <th>Performance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for adjudicator in adjudicator_summary %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar avatar-sm me-2 bg-primary text-white">
+                                                {{ adjudicator.adjudicated_by__first_name|first }}{{ adjudicator.adjudicated_by__last_name|first }}
+                                            </div>
+                                            <div>
+                                                {% if adjudicator.adjudicated_by__first_name %}
+                                                    {{ adjudicator.adjudicated_by__first_name }} {{ adjudicator.adjudicated_by__last_name }}
+                                                {% else %}
+                                                    {{ adjudicator.adjudicated_by__username }}
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><strong>{{ adjudicator.total }}</strong></td>
+                                    <td class="text-success">{{ adjudicator.approved }}</td>
+                                    <td class="text-danger">{{ adjudicator.rejected }}</td>
+                                    <td class="text-warning">{{ adjudicator.pending }}</td>
+                                    <td>
+                                        {% if adjudicator.total > 0 %}
+                                            {% with approval_rate=adjudicator.approved|floatformat:0|add:"0" %}
+                                            {% with total=adjudicator.total|floatformat:0|add:"0" %}
+                                            {% with percent=approval_rate|mul:100|floordiv:total %}
+                                                <div class="progress" style="height: 8px;" title="{{ percent }}% approval rate">
+                                                    <div class="progress-bar bg-success" role="progressbar" 
+                                                        style="width: {{ percent }}%;" 
+                                                        aria-valuenow="{{ percent }}" aria-valuemin="0" aria-valuemax="100">
+                                                    </div>
+                                                </div>
+                                                <small class="text-muted">{{ percent }}% approval</small>
+                                            {% endwith %}
+                                            {% endwith %}
+                                            {% endwith %}
+                                        {% else %}
+                                            <small class="text-muted">No data</small>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4">
+                                        <div class="empty-state">
+                                            <span class="material-icons empty-icon">person_off</span>
+                                            <p class="text-muted">No adjudicator data available</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Adjudications -->
+        <div class="col-xl-6">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Adjudications</h5>
+                    <a href="{% url 'adjudication_list' %}" class="btn btn-sm btn-outline-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for adj in recent_adjudications %}
+                        <div class="list-group-item px-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge rounded-pill
+                                                    {% if adj.status == 'APPROVED' %}bg-success
+                                                    {% elif adj.status == 'REJECTED' %}bg-danger
+                                                    {% elif adj.status == 'ADJUDICATED' %}bg-warning
+                                                    {% else %}bg-secondary{% endif %}">
+                                            {{ adj.status }}
+                                        </span>
+                                        <h6 class="mb-0">Citation #{{ adj.id }}</h6>
+                                    </div>
+                                    <p class="text-muted small mb-0">
+                                        {{ adj.violator.first_name }} {{ adj.violator.last_name }} | 
+                                        Adjudicated by {{ adj.adjudicated_by.get_full_name }} | 
+                                        ₱{{ adj.fine_amount }}
+                                    </p>
+                                </div>
+                                <div>
+                                    <small class="text-muted">{{ adj.adjudication_date|date:"M d, Y" }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="list-group-item px-4 py-5 text-center">
+                            <div class="empty-state">
+                                <span class="material-icons empty-icon">gavel_off</span>
+                                <p class="text-muted">No recent adjudications found</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.stat-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.stat-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: rgba(37, 99, 235, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stat-icon .material-icons {
+    color: #2563eb;
+    font-size: 24px;
+}
+
+.success-icon {
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.success-icon .material-icons {
+    color: #10b981;
+}
+
+.error-icon {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.error-icon .material-icons {
+    color: #ef4444;
+}
+
+.warning-icon {
+    background: rgba(245, 158, 11, 0.1);
+}
+
+.warning-icon .material-icons {
+    color: #f59e0b;
+}
+
+.trend-info {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.trend-info .material-icons {
+    font-size: 16px;
+}
+
+.trend-info .success {
+    color: #10b981;
+}
+
+.trend-info .error {
+    color: #ef4444;
+}
+
+.trend-info .warning {
+    color: #f59e0b;
+}
+
+.trend-info .info {
+    color: #3b82f6;
+}
+
+.avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+.empty-state {
+    padding: 2rem 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.empty-icon {
+    font-size: 48px;
+    color: #cbd5e1;
+    margin-bottom: 1rem;
+}
+
+.list-group-item {
+    transition: all 0.2s ease;
+}
+
+.list-group-item:hover {
+    background-color: #f8fafc;
+}
+</style>
+
+<script>
+// Function to refresh data
+function refreshData() {
+    window.location.reload();
+}
+
+// Custom template tag replacement for multiply and divide
+// Since the template doesn't allow these operations directly
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize any JS components
+});
+</script>
+{% endblock %} 

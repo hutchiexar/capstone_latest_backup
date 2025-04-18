@@ -3049,7 +3049,10 @@
                                     <a href="{% url 'ncap_violations_list' %}" class="list-group-item submenu-item {% if 'ncap-violations' in request.path %}active{% endif %}">
                                         <span class="material-icons">photo_camera</span>NCAP Violations
                                     </a>
-                                    <a href="{% url 'adjudication_list' %}" class="list-group-item submenu-item {% if 'adjudication' in request.path %}active{% endif %}">
+                                    <a href="{% url 'adjudication_dashboard' %}" class="list-group-item submenu-item {% if 'adjudication/dashboard' in request.path %}active{% endif %}">
+                                        <span class="material-icons">dashboard</span>Adjudication Dashboard
+                                    </a>
+                                    <a href="{% url 'adjudication_list' %}" class="list-group-item submenu-item {% if 'adjudication' in request.path and not 'dashboard' in request.path %}active{% endif %}">
                                         <span class="material-icons">balance</span>Adjudication
                                     </a>
                                 </div>
@@ -3164,6 +3167,15 @@
                             <a href="{% url 'educational:admin_dashboard' %}" class="list-group-item {% if request.path == '/educational/admin/dashboard/' or request.path == '/educational/admin/' %}active{% endif %}">
                                 <span class="material-icons">dashboard</span>Dashboard
                             </a>
+                            <a href="{% url 'educational:admin_category_list' %}" class="list-group-item {% if '/educational/admin/categories/' in request.path %}active{% endif %}">
+                                <span class="material-icons">category</span>Categories
+                            </a>
+                            <a href="{% url 'educational:admin_topic_list' %}" class="list-group-item {% if '/educational/admin/topics/' in request.path %}active{% endif %}">
+                                <span class="material-icons">article</span>Topics
+                            </a>
+                            <a href="{% url 'educational:admin_quiz_list' %}" class="list-group-item {% if '/educational/admin/quizzes/' in request.path %}active{% endif %}">
+                                <span class="material-icons">quiz</span>Quizzes
+                            </a>
                         </div>
                     </div>
                     {% endif %}
@@ -3192,8 +3204,11 @@
                             <a href="{% url 'user_portal:file_report' %}" class="list-group-item {% if 'reports' in request.path %}active{% endif %}">
                                 <span class="material-icons">description</span>Report Filing
                             </a>
-                            <a href="{% url 'educational:topic_list' %}" class="list-group-item {% if 'educational' in request.path %}active{% endif %}">
-                                <span class="material-icons">school</span>Educational Materials
+                            <a href="{% url 'educational:topic_list' %}" class="list-group-item {% if 'educational' in request.path and 'quiz' not in request.path %}active{% endif %}">
+                                <span class="material-icons">school</span>Educational Topics
+                            </a>
+                            <a href="{% url 'educational:quiz_list' %}" class="list-group-item {% if 'quiz' in request.path %}active{% endif %}">
+                                <span class="material-icons">quiz</span>Quizzes
                             </a>
                             {% if not user.userprofile.is_operator %}
                             <a href="{% url 'operator_apply' %}" class="list-group-item {% if 'operator/apply' in request.path %}active{% endif %}">
