@@ -476,9 +476,15 @@
         <div class="card-body p-4">
             <div class="row">
                 <div class="col-md-4 mb-4 mb-md-0">
-                    <div class="verified-badge mb-3">
-                        <span class="material-icons">verified</span>
-                        <span>Verified Operator</span>
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="verified-badge">
+                            <span class="material-icons">verified</span>
+                            <span>Verified Operator</span>
+                        </div>
+                        <button id="printOperatorBtn" class="btn btn-outline-primary" style="font-size: 0.85rem; padding: 0.5rem 0.75rem;">
+                            <span class="material-icons align-middle" style="font-size: 16px; margin-right: 5px;">description</span>
+                            View Operator Application Slip
+                        </button>
                     </div>
                     <p class="text-muted">Since {{ user.userprofile.operator_since|date:"F d, Y" }}</p>
                     <hr>
@@ -559,7 +565,7 @@
                             <h5>My Vehicles</h5>
                                 </div>
                         <div class="col-md-6 text-md-end">
-                            <a href="{% url 'operator_register_vehicle' %}" class="btn btn-primary btn-sm"><i class="material-icons align-middle" style="font-size: 16px;">add</i> Add Vehicle</a>
+                            <!-- Removed "Add Vehicle" button -->
                         </div>
                     </div>
                     
@@ -570,19 +576,14 @@
                             <thead class="table-light text-center">
                                 <tr>
                                     <th class="text-center">Type</th>
-                                    <th class="text-center">Plate Number</th>
-                                    <th class="text-center">Actions</th>
+                                    <th class="text-center">Potpot Number</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {% for vehicle in vehicles %}
                                         <tr>
                                     <td class="text-center">{{ vehicle.vehicle_type }}</td>
-                                    <td class="text-center">{{ vehicle.plate_number }}</td>
-                                    <td class="text-center">
-                                        <a href="{% url 'edit_vehicle' vehicle.id %}" class="btn btn-sm btn-outline-primary"><i class="material-icons align-middle" style="font-size: 16px;">edit</i></a>
-                                        <button class="btn btn-sm btn-outline-danger delete-vehicle" data-id="{{ vehicle.id }}" data-vehicle-pd="{{ vehicle.pd_number }}"><i class="material-icons align-middle" style="font-size: 16px;">delete</i></button>
-                                            </td>
+                                    <td class="text-center">{{ vehicle.potpot_number }}</td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>
@@ -602,19 +603,9 @@
                                     <div class="col-7 font-weight-medium text-center">{{ vehicle.vehicle_type }}</div>
                         </div>
                                 <div class="row mb-2">
-                                    <div class="col-5 text-muted">Plate Number:</div>
-                                    <div class="col-7 font-weight-medium text-center">{{ vehicle.plate_number }}</div>
+                                    <div class="col-5 text-muted">Potpot Number:</div>
+                                    <div class="col-7 font-weight-medium text-center">{{ vehicle.potpot_number }}</div>
                                                 </div>
-                            </div>
-                            <div class="card-footer bg-light py-2">
-                                <div class="d-flex justify-content-around">
-                                    <a href="{% url 'edit_vehicle' vehicle.id %}" class="btn btn-sm btn-warning">
-                                        <i class="fas fa-edit me-1"></i> Edit
-                                    </a>
-                                    <button class="btn btn-sm btn-danger delete-vehicle" data-id="{{ vehicle.id }}" data-vehicle-pd="{{ vehicle.pd_number }}">
-                                        <i class="fas fa-trash me-1"></i> Delete
-                                    </button>
-                                </div>
                             </div>
                         </div>
                         {% endfor %}
@@ -626,7 +617,7 @@
                         </div>
                         <h5 class="mb-2">No Vehicles Yet</h5>
                         <p class="text-muted">You haven't registered any vehicles yet.</p>
-                        <a href="{% url 'operator_register_vehicle' %}" class="btn btn-primary btn-sm mt-3"><i class="material-icons align-middle" style="font-size: 16px;">add</i> Add Vehicle</a>
+                        <!-- Removed "Add Vehicle" button -->
                     </div>
                     {% endif %}
                 </div>
@@ -647,7 +638,7 @@
                                     <thead class="bg-light">
                                         <tr>
                                             <th class="px-4 py-3 fw-semibold">Date</th>
-                                            <th class="px-4 py-3 fw-semibold">Vehicle</th>
+                                            <th class="px-4 py-3 fw-semibold">Potpot Number</th>
                                             <th class="px-4 py-3 fw-semibold">Driver</th>
                                             <th class="px-4 py-3 fw-semibold">Violation</th>
                                             <th class="px-4 py-3 fw-semibold">Status</th>
@@ -659,13 +650,12 @@
                                         <tr>
                                             <td class="px-4 py-3">{{ violation.violation_date|date:"M d, Y" }}</td>
                                             <td class="px-4 py-3">
-                                                {% if violation.plate_number %}
+                                                {% if violation.potpot_number %}
+                                                    <span class="fw-medium">{{ violation.potpot_number }}</span>
+                                                {% elif violation.plate_number %}
                                                     <span class="fw-medium">{{ violation.plate_number }}</span>
                                                 {% else %}
                                                     <span class="text-muted">Not specified</span>
-                                                {% endif %}
-                                                {% if violation.potpot_number %}
-                                                    <div class="small text-muted">Potpot: {{ violation.potpot_number }}</div>
                                                 {% endif %}
                                             </td>
                                             <td class="px-4 py-3">
@@ -749,8 +739,10 @@
                                                     <div class="d-flex align-items-start">
                                                         <span class="material-icons text-primary me-2">directions_car</span>
                                                         <div>
-                                                            <div class="text-muted small mb-1">Vehicle</div>
-                                                            {% if violation.plate_number %}
+                                                            <div class="text-muted small mb-1">Potpot Number:</div>
+                                                            {% if violation.potpot_number %}
+                                                                <div class="fw-medium">{{ violation.potpot_number }}</div>
+                                                            {% elif violation.plate_number %}
                                                                 <div class="fw-medium">{{ violation.plate_number }}</div>
                                                             {% else %}
                                                                 <div class="text-muted">Not specified</div>
@@ -827,70 +819,6 @@
 
 {% block extra_js %}
 <script>
-// Add these styles dynamically
-document.head.insertAdjacentHTML('beforeend', `
-<style>
-    .btn-light {
-        background-color: #f8f9fa;
-        border: none;
-        border-radius: 4px;
-        margin-right: 4px;
-    }
-    .btn-light.active {
-        background-color: #e9ecef;
-        color: var(--primary-color);
-        font-weight: 600;
-    }
-    .tab-section {
-        animation: fadeIn 0.3s ease-in;
-    }
-    .card-header {
-        background-color: white;
-        border-bottom: 1px solid #dee2e6;
-    }
-    
-    /* Enhanced table styles */
-    .table-hover tbody tr:hover {
-        background-color: rgba(var(--primary-rgb), 0.03);
-        transition: all 0.2s ease;
-    }
-    
-    .table thead th {
-        font-weight: 600;
-        color: #495057;
-        border-bottom: 2px solid #e9ecef;
-    }
-
-    /* Centered table styles */
-    .table.table-bordered td, 
-    .table.table-bordered th {
-        vertical-align: middle;
-        text-align: center;
-    }
-    
-    .table.table-bordered td {
-        padding: 0.75rem;
-    }
-    
-    .table.table-bordered th {
-        padding: 1rem 0.75rem;
-    }
-    
-    .table.table-bordered .btn {
-        margin: 0 0.25rem;
-    }
-    
-    .text-center {
-        text-align: center !important;
-    }
-    
-    .vehicle-info-value.text-center {
-        text-align: center !important;
-        font-weight: 500;
-    }
-</style>
-`);
-
 // Delete vehicle confirmation with SweetAlert
 document.addEventListener('DOMContentLoaded', function() {
     // Ensure bootstrap tabs are properly initialized
@@ -914,29 +842,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Add event listeners to all delete vehicle buttons
-    document.querySelectorAll('.delete-vehicle').forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            const vehicleId = this.getAttribute('data-id');
-            
-            Swal.fire({
-                title: 'Are you sure?',
-                text: "This vehicle will be permanently deleted. This action cannot be undone.",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#dc3545',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Yes, delete it!',
-                cancelButtonText: 'Cancel'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Redirect to delete URL if confirmed
-                    window.location.href = "{% url 'delete_vehicle' 0 %}".replace('0', vehicleId);
-                }
-            });
+    // Add print button functionality
+    const printButton = document.getElementById('printOperatorBtn');
+    if (printButton) {
+        printButton.addEventListener('click', function() {
+            // Redirect to the print slip page
+            window.location.href = "{% url 'operator_print_own_slip' %}";
         });
-    });
+    }
+    
+    // Delete vehicle functionality has been removed
 });
 </script>
 {% endblock %}

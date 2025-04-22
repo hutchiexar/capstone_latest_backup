@@ -44,6 +44,32 @@ class Violator(models.Model):
         ]
 
 
+class ViolationType(models.Model):
+    """Model to store violation types and their associated fine amounts"""
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, null=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    category = models.CharField(max_length=100, choices=[
+        ('LICENSING', 'Licensing Violations'),
+        ('REGISTRATION', 'Registration & Accessories'),
+        ('DIMENSION', 'Dimensions & Load Limits'),
+        ('FRANCHISE', 'Franchise & Permits'),
+        ('OTHER', 'Other Violations')
+    ])
+    is_active = models.BooleanField(default=True)
+    is_ncap = models.BooleanField(default=False, help_text="Whether this violation type is for NCAP (Non-Contact Apprehension Program)")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Violation Type"
+        verbose_name_plural = "Violation Types"
+        ordering = ['category', 'name']
+    
+    def __str__(self):
+        return f"{self.name} (₱{self.amount})"
+
+
 def get_ncap_image_path(instance, filename):
     """
     Custom function to generate a clean filename for NCAP violation images.
@@ -70,6 +96,7 @@ class Operator(models.Model):
     # operator_type = models.ForeignKey(OperatorType, on_delete=models.PROTECT, related_name='operators')
     # Foreign key to user account (will be added later as requested)
     user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='operator_profile')
+    active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -164,6 +191,8 @@ class Violation(models.Model):
     violation_date = models.DateTimeField(default=timezone.now)
     location = models.CharField(max_length=200)
     violation_type = models.TextField(help_text="Type of violation or comma-separated list of violations")
+    violation_type_obj = models.ForeignKey(ViolationType, on_delete=models.SET_NULL, null=True, blank=True, 
+                                        related_name='violations', verbose_name="Violation Type")
     fine_amount = models.DecimalField(max_digits=10, decimal_places=2)
     is_tdz_violation = models.BooleanField(default=False, help_text="Whether the violation occurred in a Traffic Discipline Zone, which doubles the fine")
     image = models.ImageField(upload_to=get_ncap_image_path, null=True, blank=True)
@@ -209,6 +238,17 @@ class Violation(models.Model):
     def save(self, *args, **kwargs):
         if not self.payment_due_date:
             self.payment_due_date = timezone.now() + timezone.timedelta(days=7)
+        
+        # If using a ViolationType object and this is a new record or the type changed, update the fine amount
+        if self.violation_type_obj and (not self.pk or 'violation_type_obj' in kwargs.get('update_fields', [])):
+            # Set the fine amount from the violation type, but only if not manually overridden
+            if not self.fine_amount or self.fine_amount == 0:
+                self.fine_amount = self.violation_type_obj.amount
+                
+            # If in a Traffic Discipline Zone, double the fine amount
+            if self.is_tdz_violation:
+                self.fine_amount *= 2
+        
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -286,7 +326,11 @@ class UserProfile(models.Model):
     is_active_duty = models.BooleanField(default=False)
     license_number = models.CharField(max_length=20, null=True, blank=True)
     is_operator = models.BooleanField(default=False)
+    is_driver = models.BooleanField(default=False)
     operator_since = models.DateTimeField(null=True, blank=True)
+    birthdate = models.DateField(null=True, blank=True)
+    emergency_contact_name = models.CharField(max_length=100, null=True, blank=True)
+    emergency_contact_number = models.CharField(max_length=15, null=True, blank=True)
 
     def get_permissions(self):
         permissions = {
@@ -356,12 +400,6 @@ class UserProfile(models.Model):
                 import uuid
                 self.enforcer_id = f"ENF{str(uuid.uuid4())[:7]}"
         
-        # Validate license number format for regular users
-        if self.role == 'USER' and self.license_number:
-            import re
-            if not re.match(r'^[A-Z0-9-]+$', self.license_number):
-                raise ValidationError('License number should contain only uppercase letters, numbers, and hyphens')
-                
         # Generate QR code for profile
         if not self.qr_code:
             try:
@@ -383,6 +421,14 @@ class UserProfile(models.Model):
                 pass
         
         super().save(*args, **kwargs)
+
+    def calculate_age(self):
+        """Calculate age based on birthdate"""
+        from datetime import date
+        if self.birthdate:
+            today = date.today()
+            return today.year - self.birthdate.year - ((today.month, today.day) < (self.birthdate.month, self.birthdate.day))
+        return None
 
 
 @receiver(post_save, sender=User)
@@ -596,6 +642,7 @@ class Driver(models.Model):
     emergency_contact = models.CharField(max_length=100, blank=True, null=True)
     emergency_contact_number = models.CharField(max_length=20, blank=True, null=True)
     active = models.BooleanField(default=True)
+    expiration_date = models.DateField(blank=True, null=True)
     operator = models.ForeignKey(Operator, on_delete=models.SET_NULL, null=True, blank=True, related_name='drivers')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -623,11 +670,40 @@ class Driver(models.Model):
             if not Driver.objects.filter(new_pd_number=new_pd).exists() and not Vehicle.objects.filter(new_pd_number=new_pd).exists():
                 return new_pd
 
+    def get_expiration_status(self):
+        """Return the expiration status of the driver's license"""
+        if not self.expiration_date:
+            return "UNKNOWN"
+        
+        today = timezone.now().date()
+        thirty_days_from_now = today + timezone.timedelta(days=30)
+        
+        if self.expiration_date < today:
+            return "EXPIRED"
+        elif self.expiration_date <= thirty_days_from_now:
+            return "EXPIRING_SOON"
+        else:
+            return "VALID"
+
     def save(self, *args, **kwargs):
         # Generate PD number if not provided
         if not self.new_pd_number:
             self.new_pd_number = self.generate_pd_number()
+        
+        # Set expiration date to 1 year from creation if not provided
+        if not self.expiration_date and self.created_at:
+            # Convert to date object if it's a datetime
+            created_date = self.created_at.date() if hasattr(self.created_at, 'date') else self.created_at
+            self.expiration_date = created_date + timezone.timedelta(days=365)
+        # If it's a new driver (no created_at yet), expiration will be set after save
+        
         super().save(*args, **kwargs)
+        
+        # For newly created drivers, set expiration date after save
+        if not self.expiration_date:
+            self.expiration_date = self.created_at.date() + timezone.timedelta(days=365)
+            # Save again, but avoid infinite recursion
+            Driver.objects.filter(pk=self.pk).update(expiration_date=self.expiration_date)
 
 
 class DriverVehicleAssignment(models.Model):
@@ -676,7 +752,8 @@ class OperatorApplication(models.Model):
     submitted_at = models.DateTimeField(auto_now_add=True)
     processed_at = models.DateTimeField(null=True, blank=True)
     processed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, 
-                                     related_name='processed_applications')
+                                     related_name='processed_operator_applications')
+    extra_data = models.TextField(blank=True, null=True, help_text="JSON-encoded additional data such as number of units")
     
     class Meta:
         verbose_name = 'Operator Application'

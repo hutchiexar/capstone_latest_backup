@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
-from .models import Violator, Violation, Payment, UserProfile, ActivityLog, Operator, Vehicle, OperatorApplication, Driver, DriverVehicleAssignment
+from .models import Violator, Violation, Payment, UserProfile, ActivityLog, Operator, Vehicle, OperatorApplication, Driver, DriverVehicleAssignment, ViolationType
 from django.utils import timezone
 
 # Define inline admin classes
@@ -177,5 +177,22 @@ class DriverVehicleAssignmentAdmin(admin.ModelAdmin):
         }),
         ('Assignment Status', {
             'fields': ('start_date', 'end_date', 'is_active', 'created_by')
+        }),
+    )
+
+# Register ViolationType with custom admin
+@admin.register(ViolationType)
+class ViolationTypeAdmin(admin.ModelAdmin):
+    list_display = ('name', 'amount', 'category', 'is_active', 'is_ncap')
+    list_filter = ('category', 'is_active', 'is_ncap', 'created_at')
+    search_fields = ('name', 'description')
+    ordering = ('category', 'name')
+    list_editable = ('amount', 'is_active', 'is_ncap')
+    fieldsets = (
+        ('Violation Information', {
+            'fields': ('name', 'description', 'amount')
+        }),
+        ('Categorization', {
+            'fields': ('category', 'is_active', 'is_ncap')
         }),
     )

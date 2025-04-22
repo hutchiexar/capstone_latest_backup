@@ -429,6 +429,38 @@ image.png{% extends 'user_portal/base_user.html' %}
                                 </div>
                             </div>
                         </div>
+                        
+                        {% if user_profile.is_driver %}
+                        <!-- Additional Driver Information -->
+                        {% if user_profile.birthdate %}
+                        <div class="mb-4 mt-4">
+                            <div class="d-flex align-items-start">
+                                <span class="material-icons me-3" style="color: var(--primary-color); font-size: 20px;">cake</span>
+                                <div>
+                                    <div class="info-label">Birth Date</div>
+                                    <div class="info-value">{{ user_profile.birthdate|date:"F d, Y" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if user_profile.emergency_contact_name %}
+                        <div>
+                            <div class="d-flex align-items-start">
+                                <span class="material-icons me-3" style="color: var(--primary-color); font-size: 20px;">emergency</span>
+                                <div>
+                                    <div class="info-label">Emergency Contact</div>
+                                    <div class="info-value">
+                                        {{ user_profile.emergency_contact_name }}
+                                        {% if user_profile.emergency_contact_number %}
+                                        <div class="text-muted small">{{ user_profile.emergency_contact_number }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -482,6 +514,27 @@ image.png{% extends 'user_portal/base_user.html' %}
             </div>
         </div>
     </div>
+
+    <!-- Add driver ID card link for approved drivers -->
+    {% if user_profile.is_driver %}
+    <div class="col-lg-6 mt-4">
+        <div class="card shadow-sm border-0 rounded-lg">
+            <div class="card-body d-flex align-items-center">
+                <div class="flex-shrink-0 me-3">
+                    <span class="material-icons text-primary" style="font-size: 2.5rem;">badge</span>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="card-title mb-1">Driver ID Card</h5>
+                    <p class="card-text text-muted mb-2">View and print your official CTTMO driver identification card</p>
+                    <a href="{% url 'user_portal:driver_id_card' %}" class="btn btn-sm btn-primary">
+                        <span class="material-icons me-1" style="font-size: 16px;">credit_card</span>
+                        View ID Card
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <!-- Success Toast Notification -->
@@ -566,21 +619,44 @@ image.png{% extends 'user_portal/base_user.html' %}
                                     <h6 class="mb-3 text-dark fw-bold">Contact Information</h6>
                                     <div class="row g-3">
                                         <div class="col-12 col-md-6">
-                        <label class="form-label">License Number</label>
-                                            <input type="text" class="form-control" name="license_number" value="{{ user.userprofile.license_number }}" aria-describedby="licenseHelp">
+                                            <label class="form-label">License Number</label>
+                                            <input type="text" class="form-control" name="license_number" id="license_number" value="{{ user.userprofile.license_number }}" aria-describedby="licenseHelp">
                                             <div id="licenseHelp" class="form-text text-muted">Your driver's license number</div>
-                    </div>
+                                        </div>
                                         <div class="col-12 col-md-6">
-                        <label class="form-label">Contact Number</label>
-                        <input type="tel" class="form-control" name="contact_number" value="{{ user.userprofile.contact_number }}">
-                    </div>
+                                            <label class="form-label">Contact Number</label>
+                                            <input type="tel" class="form-control" name="contact_number" value="{{ user.userprofile.contact_number }}">
+                                        </div>
                                         <div class="col-12">
-                        <label class="form-label">Address</label>
-                        <textarea class="form-control" name="address" rows="3">{{ user.userprofile.address }}</textarea>
+                                            <label class="form-label">Address</label>
+                                            <textarea class="form-control" name="address" rows="3">{{ user.userprofile.address }}</textarea>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                            
+                            <!-- Additional Information for Drivers -->
+                            {% if user_profile.is_driver %}
+                            <div class="card shadow-sm rounded-lg border-0 bg-light mt-4">
+                                <div class="card-body p-3">
+                                    <h6 class="mb-3 text-dark fw-bold">Driver Information</h6>
+                                    <div class="row g-3">
+                                        <div class="col-12 col-md-6">
+                                            <label class="form-label">Birth Date</label>
+                                            <input type="date" class="form-control" name="birthdate" value="{% if user.userprofile.birthdate %}{{ user.userprofile.birthdate|date:'Y-m-d' }}{% endif %}">
+                                        </div>
+                                        <div class="col-12 col-md-6">
+                                            <label class="form-label">Emergency Contact Name</label>
+                                            <input type="text" class="form-control" name="emergency_contact_name" value="{{ user.userprofile.emergency_contact_name }}">
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label">Emergency Contact Number</label>
+                                            <input type="tel" class="form-control" name="emergency_contact_number" value="{{ user.userprofile.emergency_contact_number }}">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -678,7 +754,9 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => {
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Network response was not ok');
+                });
             }
             return response.json();
         })
@@ -699,7 +777,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             // Show error toast
-            errorToastMessage.textContent = 'Error updating profile. Please try again.';
+            errorToastMessage.textContent = error.message || 'Error updating profile. Please try again.';
             errorToastInstance.show();
             console.error('Error:', error);
         })
@@ -754,9 +832,26 @@ function uploadAvatar(input) {
         formData.append('first_name', '{{ user.first_name }}');
         formData.append('last_name', '{{ user.last_name }}');
         formData.append('email', '{{ user.email }}');
-        formData.append('license_number', '{{ user.userprofile.license_number }}');
+        
+        // Make sure license number is properly formatted
+        const licenseNumber = '{{ user.userprofile.license_number|default:"" }}';
+        formData.append('license_number', licenseNumber);
+        
         formData.append('contact_number', '{{ user.userprofile.contact_number|default:"" }}');
         formData.append('address', '{{ user.userprofile.address|default:"" }}');
+        
+        // Add driver fields if they exist
+        if ('{{ user.userprofile.birthdate|date:"Y-m-d" }}' !== '') {
+            formData.append('birthdate', '{{ user.userprofile.birthdate|date:"Y-m-d" }}');
+        }
+        
+        if ('{{ user.userprofile.emergency_contact_name }}' !== '') {
+            formData.append('emergency_contact_name', '{{ user.userprofile.emergency_contact_name }}');
+        }
+        
+        if ('{{ user.userprofile.emergency_contact_number }}' !== '') {
+            formData.append('emergency_contact_number', '{{ user.userprofile.emergency_contact_number }}');
+        }
         
         fetch('{% url 'user_portal:edit_profile' %}', {
             method: 'POST',
@@ -767,7 +862,9 @@ function uploadAvatar(input) {
         })
         .then(response => {
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Network response was not ok');
+                });
             }
             return response.json();
         })
@@ -784,7 +881,7 @@ function uploadAvatar(input) {
         })
         .catch(error => {
             // Show error toast
-            document.getElementById('errorToastMessage').textContent = 'Error updating profile picture.';
+            document.getElementById('errorToastMessage').textContent = error.message || 'Error updating profile picture.';
             const errorToast = new bootstrap.Toast(document.getElementById('errorToast'));
             errorToast.show();
             

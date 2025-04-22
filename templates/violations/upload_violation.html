@@ -471,27 +471,54 @@
                                         <h6 class="mb-2">Traffic Violations Captured under NCAP</h6>
                                         <p class="small text-muted mb-3">These violations are subject to NCAP if detected by safety cameras. Each violation adds to the total penalty.</p>
                                         
+                                        <!-- Debug information - will be visible only for developers -->
+                                        <div class="alert alert-info mb-3" style="display: none;" id="debug_info">
+                                            <h6>Debug Information (Available Violation Types)</h6>
+                                            <ul>
+                                                {% if violation_types %}
+                                                    <li>Found {{ violation_types|length }} NCAP violation types:</li>
+                                                    <ul>
+                                                        {% for violation_type in violation_types %}
+                                                            <li>{{ violation_type.name }} (₱{{ violation_type.amount }}) - Category: {{ violation_type.category }}</li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                {% else %}
+                                                    <li>No NCAP violation types found in the database</li>
+                                                {% endif %}
+                                            </ul>
+                                            <button class="btn btn-sm btn-secondary" onclick="document.getElementById('debug_info').style.display = 'none';">Hide Debug Info</button>
+                                        </div>
+                                        <button class="btn btn-sm btn-outline-secondary mb-3" onclick="document.getElementById('debug_info').style.display = 'block';">Show Debug Info</button>
+                                        
                                         <!-- Multiple Violations Selection -->
                                         <div class="violation-selection-container mb-3">
                                             <div class="row">
                                                 <div class="col-md-8">
                                                     <select class="form-select" id="violation_selector">
                                                         <option value="">Select violation type to add</option>
-                                                        <option value="Beating the red light">Beating the red light</option>
-                                                        <option value="Illegal parking">Illegal parking</option>
-                                                        <option value="Disregarding traffic signs">Disregarding traffic signs (e.g., One-way, No U-turn, No left/right turn)</option>
-                                                        <option value="Entering restricted lanes">Entering restricted lanes (e.g., PUV/reserved lanes)</option>
-                                                        <option value="Stopping/parking on pedestrian lanes">Stopping/parking on pedestrian lanes or junction boxes</option>
-                                                        <option value="Overspeeding">Overspeeding (30 kph inside, 50 kph outside the Traffic Discipline Zone)</option>
-                                                        <option value="Failure to yield to pedestrians">Failure to yield to pedestrians at crosswalks</option>
-                                                        <option value="Blocking intersections">Blocking intersections</option>
-                                                        <option value="Reckless driving">Reckless driving</option>
-                                                        <option value="Driving on bicycle lanes">Driving on bicycle lanes or pedestrian walkways</option>
-                                                        <option value="Overtaking violations">Overtaking violations (e.g., on bridges or no overtaking zones)</option>
-                                                        <option value="Disregarding pedestrian right of way">Disregarding pedestrian right of way</option>
-                                                        <option value="Failure to follow marked lanes">Failure to follow marked lanes</option>
-                                                        <option value="Driving through funeral processions">Driving through or obstructing funeral processions</option>
-                                                        <option value="Driving without valid license">Driving without valid license/registration (if identifiable via camera/LTO database)</option>
+                                                        {% if violation_types %}
+                                                            {% for violation_type in violation_types %}
+                                                                <option value="{{ violation_type.name }}" data-amount="{{ violation_type.amount }}">
+                                                                    {{ violation_type.name }}
+                                                                </option>
+                                                            {% endfor %}
+                                                        {% elif violation_choices %}
+                                                            {% for code, name in violation_choices %}
+                                                                <option value="{{ name }}" data-amount="300">
+                                                                    {{ name }}
+                                                                </option>
+                                                            {% endfor %}
+                                                        {% else %}
+                                                            <!-- NCAP specific fallback options -->
+                                                            <option value="Beating the red light" data-amount="300">Beating the red light</option>
+                                                            <option value="Illegal parking" data-amount="300">Illegal parking</option>
+                                                            <option value="Overspeeding" data-amount="300">Overspeeding</option>
+                                                            <option value="No helmet" data-amount="300">No helmet</option>
+                                                            <option value="Counterflowing" data-amount="300">Counterflowing</option>
+                                                            <option value="Reckless driving" data-amount="300">Reckless driving</option>
+                                                            <option value="No license" data-amount="300">No license</option>
+                                                            <option value="No registration" data-amount="300">No registration</option>
+                                                        {% endif %}
                                                     </select>
                                                 </div>
                                                 <div class="col-md-4">
@@ -1740,6 +1767,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Select operator and populate fields
     function selectOperator(operator) {
+        // Debug the operator object to see all available properties
+        console.log('DEBUG OPERATOR OBJECT:', operator);
+        
         // Set selected operator ID
         selectedOperatorId.value = operator.id;
         
@@ -1804,10 +1834,61 @@ document.addEventListener('DOMContentLoaded', function() {
         // Populate PD Number in the operator section if it exists
         const operatorPdNumberField = document.getElementById('operator_pd_number');
         if (operatorPdNumberField) {
-            operatorPdNumberField.value = operator.po_number || '';
+            // Try all possible property names for PO number
+            const poNumber = operator.po_number || operator.new_pd_number || operator.pd_number || '';
+            console.log('DEBUGGING PO NUMBER FIELD:');
+            console.log('- operator.po_number:', operator.po_number);
+            console.log('- operator.new_pd_number:', operator.new_pd_number);
+            console.log('- operator.pd_number:', operator.pd_number);
+            console.log('- Field element found:', operatorPdNumberField ? 'YES' : 'NO');
+            console.log('- Field ID:', operatorPdNumberField ? operatorPdNumberField.id : 'N/A');
+            
+            // Set the value and trigger events
+            operatorPdNumberField.value = poNumber;
+            console.log('- Setting field value to:', poNumber);
             operatorPdNumberField.dispatchEvent(new Event('input', { bubbles: true }));
             operatorPdNumberField.dispatchEvent(new Event('change', { bubbles: true }));
             operatorPdNumberField.classList.add('is-valid');
+            
+            // Force the value again after a slight delay (sometimes needed for certain frameworks)
+            setTimeout(() => {
+                operatorPdNumberField.value = poNumber;
+                console.log('- Re-setting field value after delay to:', poNumber);
+            }, 100);
+            
+            // Add visual feedback for PO number
+            if (poNumber) {
+                // Add visual indicator that PO number was populated
+                const feedbackElement = document.createElement('div');
+                feedbackElement.className = 'valid-feedback d-block';
+                feedbackElement.textContent = 'PO Number auto-populated';
+                feedbackElement.style.color = '#198754';
+                feedbackElement.style.fontSize = '0.8rem';
+                
+                // Remove any existing feedback
+                const existingFeedback = operatorPdNumberField.parentNode.querySelector('.valid-feedback');
+                if (existingFeedback) {
+                    existingFeedback.remove();
+                }
+                
+                // Insert the feedback after the field
+                const parentElement = operatorPdNumberField.closest('.form-floating');
+                if (parentElement) {
+                    parentElement.appendChild(feedbackElement);
+                }
+            }
+        } else {
+            console.error('ERROR: operator_pd_number field not found in the DOM!');
+            
+            // Try to find the field by other means
+            const allInputs = document.querySelectorAll('input');
+            console.log('All input fields:', allInputs.length);
+            allInputs.forEach((input, index) => {
+                if (input.id.toLowerCase().includes('po') || input.id.toLowerCase().includes('pd') || 
+                    input.name.toLowerCase().includes('po') || input.name.toLowerCase().includes('pd')) {
+                    console.log(`Found potential PO/PD field: id=${input.id}, name=${input.name}, index=${index}`);
+                }
+            });
         }
         
         // Show success notification with SweetAlert
@@ -2018,17 +2099,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
-            // Recalculate penalty
+            // Toggle vehicle information section visibility
+            if (vehicleInfoSection) {
+                if (this.value === 'regular') {
+                    vehicleInfoSection.style.display = 'block';
+                } else if (this.value === 'potpot') {
+                    vehicleInfoSection.style.display = 'none';
+                }
+            }
+            
+            // Recalculate the penalty with the new vehicle type
             calculatePenalty();
+            
+            // Update the visual display of rates in the violation table
+            updateViolationRatesDisplay();
         });
     }
     
-    // Initialize the violation storage
+    // Initialize the violation storage - now with the originalRate field to store database rate
     window.violationTracker = {
         items: [],
-        addViolation: function(text, rate) {
+        addViolation: function(text, originalRate) {
             const id = 'violation_' + Date.now();
-            this.items.push({id, text, rate});
+            // Store both the original database rate and the adjusted rate (initialized as the same)
+            this.items.push({id, text, originalRate, rate: originalRate});
             return id;
         },
         removeViolation: function(id) {
@@ -2045,20 +2139,51 @@ document.addEventListener('DOMContentLoaded', function() {
         getCount: function() {
             return this.items.length;
         },
-        updateRates: function(newRate) {
-            this.items.forEach(v => v.rate = newRate);
+        // Apply vehicle type rate adjustment to all violations
+        updateRates: function(vehicleType) {
+            const multiplier = vehicleType === 'potpot' ? 0.167 : 1.0; // 50/300 = 0.167
+            
+            this.items.forEach(v => {
+                if (vehicleType === 'potpot') {
+                    // For potpot vehicles, either use the multiplier or cap at 50
+                    v.rate = Math.min(v.originalRate * multiplier, 50);
+                } else {
+                    // For regular vehicles, use the original rate from the database
+                    v.rate = v.originalRate;
+                }
+            });
         },
         getTotal: function() {
-            return this.items.reduce((sum, v) => sum + v.rate, 0);
+            return this.items.reduce((sum, v) => sum + parseFloat(v.rate), 0);
         }
     };
+    
+    // Function to update the display of rates in the table based on vehicle type
+    function updateViolationRatesDisplay() {
+        const vehicleType = vehicleTypeSelector ? vehicleTypeSelector.value : 'regular';
+        const violations = window.violationTracker.getViolations();
+        
+        // Update all rates based on the vehicle type
+        window.violationTracker.updateRates(vehicleType);
+        
+        // Update the displayed rates in the table
+        violations.forEach(violation => {
+            const row = document.getElementById(violation.id);
+            if (row) {
+                const rateCell = row.querySelector('td:nth-child(2)');
+                if (rateCell) {
+                    rateCell.textContent = `₱${parseFloat(violation.rate).toFixed(2)}`;
+                }
+            }
+        });
+    }
     
     // Create a standalone function to calculate and update the penalty
     function calculatePenalty() {
         console.log('[PENALTY] Calculating penalty');
         
         // Get values
-        const vehicleType = vehicleTypeSelector ? vehicleTypeSelector.value : null;
+        const vehicleType = vehicleTypeSelector ? vehicleTypeSelector.value : 'regular';
         const isTdzViolation = tdzViolationCheckbox && tdzViolationCheckbox.checked;
         const violations = window.violationTracker.getViolations();
         
@@ -2068,35 +2193,10 @@ document.addEventListener('DOMContentLoaded', function() {
             violationCount: violations.length
         });
         
-        // Get base rate based on vehicle type
-        let baseRate = 0;
-        if (vehicleType === 'potpot') {
-            baseRate = 50; // ₱50 for Pot-Pot vehicles
-            // Hide vehicle info section and show operator details for potpot vehicles
-            if (vehicleInfoSection) vehicleInfoSection.style.display = 'none';
-            if (document.getElementById('operator_details_section')) document.getElementById('operator_details_section').style.display = 'block';
-        } else if (vehicleType === 'regular') {
-            baseRate = 300; // ₱300 for regular vehicles
-            // Show vehicle info section and hide operator details for regular vehicles
-            if (vehicleInfoSection) vehicleInfoSection.style.display = 'block';
-            if (document.getElementById('operator_details_section')) document.getElementById('operator_details_section').style.display = 'none';
-        }
+        // Update all violation rates based on vehicle type
+        window.violationTracker.updateRates(vehicleType);
         
-        // Update all violation rates
-        window.violationTracker.updateRates(baseRate);
-        
-        // Update rates in the table
-        violations.forEach(violation => {
-            const row = document.getElementById(violation.id);
-            if (row) {
-                const rateCell = row.querySelector('td:nth-child(2)');
-                if (rateCell) {
-                    rateCell.textContent = `₱${baseRate.toFixed(2)}`;
-                }
-            }
-        });
-        
-        // Calculate total
+        // Calculate total based on the adjusted rates
         let totalPenalty = window.violationTracker.getTotal();
         console.log('[PENALTY] Base penalty before TDZ:', totalPenalty);
         
@@ -2174,14 +2274,9 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('[DEBUG] Adding violation');
         // Get selected violation from the selector
         const violationSelector = document.getElementById('violation_selector');
-        const violationText = violationSelector.options[violationSelector.selectedIndex].text;
-        const violationTypeInput = document.getElementById('violation_type');
-        const violationPenaltiesInput = document.getElementById('violation_penalties');
-        const selectedViolationsBody = document.getElementById('selected_violations_body');
+        const selectedOption = violationSelector.options[violationSelector.selectedIndex];
         
-        console.log('[DEBUG] Selected violation text:', violationText);
-        
-        if (!violationText || violationSelector.selectedIndex === 0) {
+        if (!selectedOption || violationSelector.selectedIndex === 0) {
             // Show error if no violation type is selected
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
@@ -2197,20 +2292,31 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Get the penalty rate based on vehicle type
-        let violationRate = 300; // Default rate
-        const vehicleTypeSelector = document.getElementById('vehicle_penalty_type');
-        if (vehicleTypeSelector) {
-            if (vehicleTypeSelector.value === 'potpot') {
-                violationRate = 50; // ₱50 for Pot-Pot vehicles
-            } else if (vehicleTypeSelector.value === 'regular') {
-                violationRate = 300; // ₱300 for regular vehicles
-            }
+        const violationText = selectedOption.text;
+        const violationTypeInput = document.getElementById('violation_type');
+        const violationPenaltiesInput = document.getElementById('violation_penalties');
+        const selectedViolationsBody = document.getElementById('selected_violations_body');
+        
+        console.log('[DEBUG] Selected violation text:', violationText);
+        
+        // Get the original amount directly from the data attribute
+        let originalRate = parseFloat(selectedOption.dataset.amount || 0);
+        if (isNaN(originalRate)) {
+            originalRate = 0;
         }
         
-        // Add to tracker
-        const violationId = window.violationTracker.addViolation(violationText, violationRate);
-        console.log('[DEBUG] Added violation:', violationText, 'with rate:', violationRate, 'ID:', violationId);
+        // Add to tracker with the original database rate
+        const violationId = window.violationTracker.addViolation(violationText, originalRate);
+        
+        // Apply vehicle type adjustment to the newly added violation
+        const vehicleType = vehicleTypeSelector ? vehicleTypeSelector.value : 'regular';
+        window.violationTracker.updateRates(vehicleType);
+        
+        // Get the adjusted rate for display
+        const violation = window.violationTracker.getViolations().find(v => v.id === violationId);
+        const adjustedRate = violation ? violation.rate : originalRate;
+        
+        console.log('[DEBUG] Added violation:', violationText, 'with originalRate:', originalRate, 'adjustedRate:', adjustedRate, 'ID:', violationId);
         
         // Hide the "no violations" row if it's visible
         const noViolationsRow = document.getElementById('no_violations_row');
@@ -2223,7 +2329,7 @@ document.addEventListener('DOMContentLoaded', function() {
         newRow.id = violationId;
         newRow.innerHTML = `
             <td>${violationText}</td>
-            <td>₱${violationRate.toFixed(2)}</td>
+            <td>₱${parseFloat(adjustedRate).toFixed(2)}</td>
             <td>
                 <button type="button" class="btn btn-sm btn-danger" onclick="removeViolation('${violationId}')">
                     <i class="fas fa-trash-alt"></i> Remove
@@ -2309,13 +2415,29 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Recalculate total
             calculatePenalty();
+            
+            // Show success notification
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Violation Removed',
+                    text: 'Violation has been removed from the list.',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            }
         }
     };
     
-    // Connect to add violation button
+    // Connect add button to the addViolation function
     const addViolationBtn = document.getElementById('add_violation_btn');
     if (addViolationBtn) {
         addViolationBtn.addEventListener('click', window.addViolation);
+        console.log('[PENALTY] Connected add violation button');
+    } else {
+        console.warn('[PENALTY] Add violation button not found!');
     }
     
     console.log('[PENALTY] Initialization complete');
@@ -2607,52 +2729,148 @@ window.printViolationForm = function(violationId) {
     }
 }
 
-// Add this JavaScript at the end of the file, just before the closing 
-</script> 
-<!-- tag
 // Operator selection functionality - auto-populate PO number when operator is selected
 document.addEventListener('DOMContentLoaded', function() {
-    // Check if we have operator search functionality
-    const operatorSearchField = document.getElementById('operator_search');
-    if (operatorSearchField) {
-        const operatorSearchResults = document.getElementById('operator_search_results');
+    console.log('Initializing operator PO number auto-population');
+    
+    // Function to update PO number field when an operator is selected
+    function updatePONumber(operator) {
+        console.log('Operator selected:', operator);
         const operatorPdNumberField = document.getElementById('operator_pd_number');
         
-        // Function to handle when an operator is selected
-        window.selectOperator = function(operatorId) {
-            // Fetch the operator details
-            fetch(`/operators/${operatorId}/details-json/`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    // Auto-populate the PO Number field with the operator's PO number
-                    if (operatorPdNumberField && data.operator && data.operator.po_number) {
-                        operatorPdNumberField.value = data.operator.po_number;
-                    }
-                })
-                .catch(error => {
-                    console.error("Error loading operator details:", error);
-                });
-        };
-        
-        // Add click event handlers to operator search results
-        if (operatorSearchResults) {
-            operatorSearchResults.addEventListener('click', function(e) {
-                // Find the closest parent with data-operator-id attribute
-                const operatorItem = e.target.closest('[data-operator-id]');
-                if (operatorItem) {
-                    const operatorId = operatorItem.getAttribute('data-operator-id');
-                    if (operatorId) {
-                        selectOperator(operatorId);
-                    }
+        if (operatorPdNumberField && operator) {
+            // Update the PO Number field with the operator's PO number
+            operatorPdNumberField.value = operator.po_number || '';
+            console.log('Updated operator_pd_number field with:', operator.po_number || '(empty)');
+            
+            // Dispatch events to trigger any listeners
+            operatorPdNumberField.dispatchEvent(new Event('input', { bubbles: true }));
+            operatorPdNumberField.dispatchEvent(new Event('change', { bubbles: true }));
+            
+            // Add visual feedback
+            if (operator.po_number) {
+                operatorPdNumberField.classList.add('is-valid');
+                
+                // Add a small check indicator next to the field
+                const feedbackElement = document.createElement('div');
+                feedbackElement.className = 'valid-feedback';
+                feedbackElement.textContent = 'PO Number auto-populated';
+                
+                // Remove any existing feedback
+                const existingFeedback = operatorPdNumberField.parentNode.querySelector('.valid-feedback');
+                if (existingFeedback) {
+                    existingFeedback.remove();
                 }
-            });
+                
+                // Add the new feedback
+                operatorPdNumberField.parentNode.appendChild(feedbackElement);
+            }
+        } else {
+            console.warn('Could not find operator_pd_number field or operator data is missing');
         }
     }
-}); -->
+    
+    // Override the selectOperator function to also update PO number
+    const originalSelectOperator = window.selectOperator;
+    window.selectOperator = function(operator) {
+        // Call the original function if it exists
+        if (typeof originalSelectOperator === 'function') {
+            originalSelectOperator(operator);
+        }
+        
+        // Update the PO number field
+        updatePONumber(operator);
+    };
+    
+    // Hook into the existing operator selection code
+    const operatorResults = document.getElementById('operatorResults');
+    if (operatorResults) {
+        console.log('Found operatorResults element, adding listener for PO number auto-population');
+        
+        // Use a mutation observer to watch for changes in the results container
+        const observer = new MutationObserver(function(mutations) {
+            // When the operator results are updated, add event listeners to results
+            const resultItems = operatorResults.querySelectorAll('.search-result-item');
+            resultItems.forEach(item => {
+                // Only add listener if it doesn't already have one
+                if (!item.hasAttribute('data-po-listener')) {
+                    item.setAttribute('data-po-listener', 'true');
+                    item.addEventListener('click', function() {
+                        // There's a delay before operator data is populated, so wait briefly
+                        setTimeout(() => {
+                            const operatorPdNumberField = document.getElementById('operator_pd_number');
+                            if (operatorPdNumberField && operatorPdNumberField.value === '') {
+                                // Try to extract PO number from the result item itself
+                                const poNumberMatch = item.innerHTML.match(/PO:\s*([^<]+)/);
+                                if (poNumberMatch && poNumberMatch[1]) {
+                                    operatorPdNumberField.value = poNumberMatch[1].trim();
+                                    console.log('Extracted PO number from result item:', operatorPdNumberField.value);
+                                    operatorPdNumberField.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                }
+                        }, 100);
+                    });
+    }
+            });
+        });
+        
+        // Start observing the results container for changes
+        observer.observe(operatorResults, { childList: true, subtree: true });
+    }
+});
+
+</script>
+
+{# Debug script for NCAP violation types - using a separate script tag for Django template tags #}
+<script>
+// Debug code to check if violation_types are properly loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Log the number of NCAP violation types
+    {% if violation_types %}
+    console.log("NCAP violation types found:", {{ violation_types|length }});
+    {% for violation_type in violation_types %}
+    console.log("Violation type: {{ violation_type.name }}, Amount: {{ violation_type.amount }}");
+    {% endfor %}
+    {% else %}
+    console.log("WARNING: No NCAP violation types were loaded from the server");
+    {% endif %}
+    
+    // Check if the violation selector is populated
+    const violationSelector = document.getElementById('violation_selector');
+    if (violationSelector) {
+        console.log("Violation selector options count:", violationSelector.options.length);
+        console.log("First option text:", violationSelector.options[0] ? violationSelector.options[0].text : "No options");
+        if (violationSelector.options.length > 1) {
+            console.log("Second option text:", violationSelector.options[1].text);
+        } else {
+            console.log("WARNING: Only the placeholder option exists in the dropdown!");
+            
+            // Add fallback NCAP violation types if only the placeholder exists
+            const defaultNCAPViolations = [
+                { name: "Beating the red light", amount: 300 },
+                { name: "Illegal parking", amount: 300 },
+                { name: "Overspeeding", amount: 300 },
+                { name: "No helmet", amount: 300 },
+                { name: "Counterflowing", amount: 300 },
+                { name: "Reckless driving", amount: 300 },
+                { name: "Driving through restricted lanes", amount: 300 },
+                { name: "Illegal U-turn", amount: 300 }
+            ];
+            
+            // Add these default options to the selector
+            defaultNCAPViolations.forEach(violation => {
+                const option = document.createElement('option');
+                option.value = violation.name;
+                option.text = violation.name;
+                option.dataset.amount = violation.amount;
+                violationSelector.appendChild(option);
+            });
+            
+            console.log("Added fallback NCAP violation types. New count:", violationSelector.options.length);
+        }
+    } else {
+        console.log("ERROR: violation_selector element not found in the DOM");
+    }
+});
 </script>
 {% endblock %}

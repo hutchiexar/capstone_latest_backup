@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
-from .models import VehicleRegistration, UserReport, UserNotification
+from .models import VehicleRegistration, UserReport, UserNotification, UserProfile, UserVehicle, UserPreferences, OperatorLookup, DriverApplication
 
 class VehicleRegistrationInline(admin.TabularInline):
     model = VehicleRegistration
@@ -59,6 +59,53 @@ class UserNotificationAdmin(admin.ModelAdmin):
     list_filter = ('is_read', 'type')
     search_fields = ('user__username', 'message')
     date_hierarchy = 'created_at'
+
+# Register UserProfile model
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'address', 'city', 'state', 'zip_code')
+    search_fields = ('user__username', 'address', 'city', 'state', 'zip_code')
+
+# Register UserVehicle model
+@admin.register(UserVehicle)
+class UserVehicleAdmin(admin.ModelAdmin):
+    list_display = ('user', 'vehicle', 'is_primary')
+    search_fields = ('user__username', 'vehicle__plate_number')
+
+# Register UserPreferences model
+@admin.register(UserPreferences)
+class UserPreferencesAdmin(admin.ModelAdmin):
+    list_display = ('user', 'notification_preference', 'language')
+    search_fields = ('user__username', 'notification_preference', 'language')
+
+# Register OperatorLookup model
+@admin.register(OperatorLookup)
+class OperatorLookupAdmin(admin.ModelAdmin):
+    list_display = ('name', 'type')
+    search_fields = ('name', 'type')
+
+# Register DriverApplication model
+@admin.register(DriverApplication)
+class DriverApplicationAdmin(admin.ModelAdmin):
+    list_display = ('user', 'status', 'submitted_at', 'processed_at', 'processed_by')
+    list_filter = ('status', 'submitted_at', 'processed_at')
+    search_fields = ('user__username', 'user__first_name', 'user__last_name', 'notes')
+    readonly_fields = ('submitted_at',)
+    raw_id_fields = ('user', 'processed_by')
+    date_hierarchy = 'submitted_at'
+    
+    fieldsets = (
+        (None, {
+            'fields': ('user', 'status', 'notes')
+        }),
+        ('Documents', {
+            'fields': ('cttmo_seminar_certificate', 'xray_results', 'medical_certificate', 
+                      'police_clearance', 'mayors_permit', 'other_documents')
+        }),
+        ('Processing Information', {
+            'fields': ('processed_by', 'processed_at', 'submitted_at')
+        }),
+    )
 
 # Unregister the default UserAdmin and register our custom one
 admin.site.unregister(User)

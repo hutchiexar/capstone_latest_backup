@@ -1,10 +1,13 @@
 from django.urls import path, include
 from django.contrib.auth.views import LogoutView
 from django.contrib.auth import views as auth_views
-from . import views
+from . import views, violation_type_views
+from .user_portal import views as user_portal_views
 from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
+from . import operator_views
+from traffic_violation_system.operator_views import operator_print_slip, operator_create_with_potpots, operator_enable, operator_print_own_slip
 
 urlpatterns = [
     # Landing Pages
@@ -124,14 +127,17 @@ urlpatterns = [
     # Operator Management
     path('operators/', views.operator_list, name='operator_list'),
     path('operators/<int:pk>/', views.operator_detail, name='operator_detail'),
-    path('operators/create/', views.operator_create, name='operator_create'),
+    path('operators/create/', operator_views.operator_create_with_potpots, name='operator_create'),
     path('operators/<int:pk>/update/', views.operator_update, name='operator_update'),
     path('operators/<int:pk>/delete/', views.operator_delete, name='operator_delete'),
+    path('operators/<int:pk>/enable/', operator_views.operator_enable, name='operator_enable'),
     path('operators/<int:operator_id>/vehicles/', views.operator_vehicles, name='operator_vehicles'),
     path('operators/import/', views.operator_import, name='operator_import'),
     path('operators/import/confirm/', views.operator_import_confirm, name='operator_import_confirm'),
     path('operators/export/excel/', views.operator_export_excel, name='operator_export_excel'),
     path('operators/template/excel/', views.operator_template_excel, name='operator_template_excel'),
+    path('operators/<int:pk>/print/', operator_print_slip, name='operator_print_slip'),
+    path('operator/print-slip/', operator_print_own_slip, name='operator_print_own_slip'),
     
     # Operator Application System
     path('operator/apply/', views.operator_apply, name='operator_apply'),
@@ -150,7 +156,8 @@ urlpatterns = [
     path('api/get-driver/', views.api_get_driver, name='api_get_driver'),
 
     # Vehicle and Driver Routes - fix to use operator_ prefix and appropriate view names
-    path('operator/vehicles/register/', views.operator_register_vehicle, name='operator_register_vehicle'),
+    path('operator/vehicles/', views.vehicle_list, name='vehicle_list'),
+    path('operator/vehicles/add/', views.operator_register_vehicle, name='add_vehicle'),
     path('operator/vehicles/<int:vehicle_id>/edit/', views.operator_edit_vehicle, name='edit_vehicle'),
     path('operator/vehicles/<int:vehicle_id>/delete/', views.operator_delete_vehicle, name='delete_vehicle'),
     path('operator/check-potpot-number/', views.check_potpot_number_unique, name='check_potpot_number_unique'),
@@ -169,7 +176,8 @@ urlpatterns = [
     path('management/drivers/template/', views.driver_template_excel, name='driver_template_excel'),
     path('management/drivers/create/', views.driver_create, name='driver_create'),
     path('management/drivers/<int:pk>/update/', views.driver_update, name='driver_update'),
-    path('management/drivers/<int:pk>/delete/', views.driver_delete, name='driver_delete'),
+    path('management/drivers/<int:pk>/delete/', views.driver_disable, name='driver_delete'),
+    path('management/drivers/<int:pk>/enable/', views.driver_enable, name='driver_enable'),
     path('management/drivers/<int:pk>/', views.driver_detail, name='driver_detail'),
     path('management/drivers/import/', views.driver_import, name='driver_import'),
 
@@ -179,6 +187,17 @@ urlpatterns = [
     path('management/reports/<int:report_id>/update-status/', views.admin_report_update_status, name='admin_report_update_status'),
     path('management/reports/<int:report_id>/view/', views.admin_report_view, name='admin_report_view'),
     path('management/reports/export/', views.admin_report_export, name='admin_report_export'),
+    path('management/reports/<int:report_id>/', views.admin_report_view, name='admin_report_detail'),
+    path('management/reports/<int:report_id>/update/', views.admin_report_update_status, name='admin_report_update'),
+    
+    # Violation Types Management
+    path('management/violation-types/', violation_type_views.violation_types, name='violation_types'),
+    path('management/violation-types/add/', violation_type_views.add_violation_type, name='add_violation_type'),
+    path('management/violation-types/edit/<int:type_id>/', violation_type_views.edit_violation_type, name='edit_violation_type'),
+    path('management/violation-types/delete/<int:type_id>/', violation_type_views.delete_violation_type, name='delete_violation_type'),
+    path('management/violation-types/export/', violation_type_views.export_violation_types, name='export_violation_types'),
+    
+    # News and Announcements
 
     # General driver route that redirects based on user role
     path('driver/', views.driver_list, name='driver_list'),

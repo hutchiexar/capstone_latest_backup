@@ -7,8 +7,8 @@ app_name = 'user_portal'
 urlpatterns = [
     path('dashboard/', views.user_dashboard, name='user_dashboard'),
     path('violations/', views.user_violations, name='user_violations'),
-    # Use the actual NCAP violations view instead of redirecting
-    path('ncap-violations/', views.user_ncap_violations, name='user_ncap_violations'),
+    # Redirect NCAP violations route to the main violations view
+    path('ncap-violations/', RedirectView.as_view(pattern_name='user_portal:user_violations'), name='user_ncap_violations'),
     path('ncap-violations/<int:violation_id>/print/', views.print_ncap_violation_form, name='print_ncap_violation_form'),
     path('notifications/', views.user_notifications, name='user_notifications'),
     path('violations/<int:violation_id>/', views.violation_detail, name='violation_detail'),
@@ -36,4 +36,14 @@ urlpatterns = [
     path('education/topic/<int:topic_id>/', views.education_topic_detail, name='education_topic_detail'),
     path('education/bookmarks/', views.education_bookmarks, name='education_bookmarks'),
     path('education/progress/', views.education_progress, name='education_progress'),
+    
+    # Driver Application Routes
+    path('driver/apply/', views.driver_apply, name='driver_apply'),
+    path('driver/application/status/', views.driver_application_status, name='driver_application_status'),
+    path('driver/id-card/', views.driver_id_card, name='driver_id_card'),
+    path('driver/<str:driver_id>/verify/', views.driver_id_verify, name='driver_id_verify'),
+    
+    # Admin Driver Application Management
+    path('admin/driver-applications/', views.driver_applications_manage, name='driver_applications_manage'),
+    path('admin/driver-application/<int:application_id>/review/', views.driver_application_review, name='driver_application_review'),
 ] 

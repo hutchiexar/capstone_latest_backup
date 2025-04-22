@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Verify Driver ID - CTTMO{% endblock %}
+
+{% block extra_css %}
+<style>
+    .verification-container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 30px 20px;
+    }
+    
+    .verification-card {
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+    
+    .verification-header {
+        padding: 20px;
+        text-align: center;
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #eaecef;
+    }
+    
+    .verification-header img {
+        height: 60px;
+        margin-bottom: 15px;
+    }
+    
+    .verification-header h1 {
+        font-size: 24px;
+        margin-bottom: 5px;
+        color: #333;
+    }
+    
+    .verification-header p {
+        font-size: 16px;
+        color: #666;
+        margin-bottom: 0;
+    }
+    
+    .verification-body {
+        padding: 30px 20px;
+        background-color: #fff;
+    }
+    
+    .verification-status {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    
+    .verification-status.valid {
+        color: #28a745;
+    }
+    
+    .verification-status.invalid {
+        color: #dc3545;
+    }
+    
+    .verification-status .icon {
+        font-size: 60px;
+        margin-bottom: 10px;
+    }
+    
+    .verification-status h2 {
+        font-size: 24px;
+        margin-bottom: 10px;
+    }
+    
+    .verification-status p {
+        font-size: 16px;
+        color: #666;
+    }
+    
+    .driver-info {
+        margin-top: 20px;
+    }
+    
+    .driver-info .row {
+        margin-bottom: 15px;
+        display: flex;
+    }
+    
+    .driver-info .label {
+        font-weight: bold;
+        flex: 0 0 40%;
+        color: #555;
+    }
+    
+    .driver-info .value {
+        flex: 0 0 60%;
+    }
+    
+    .driver-photo {
+        width: 120px;
+        height: 120px;
+        border-radius: 8px;
+        overflow: hidden;
+        margin: 0 auto 20px;
+        border: 1px solid #ddd;
+    }
+    
+    .driver-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .verification-footer {
+        padding: 15px 20px;
+        background-color: #f8f9fa;
+        border-top: 1px solid #eaecef;
+        text-align: center;
+        font-size: 14px;
+        color: #666;
+    }
+    
+    .verification-time {
+        font-size: 14px;
+        color: #888;
+        text-align: center;
+        margin-top: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="verification-container">
+    <div class="verification-card">
+        <div class="verification-header">
+            <img src="{% static 'img/cttmo_logo.png' %}" alt="CTTMO Logo" onerror="this.src='https://via.placeholder.com/60x60?text=CTTMO'">
+            <h1>Driver ID Verification</h1>
+            <p>City Transportation and Traffic Management Office</p>
+        </div>
+        
+        <div class="verification-body">
+            {% if is_valid %}
+                <div class="verification-status valid">
+                    <span class="material-icons icon">check_circle</span>
+                    <h2>Valid Driver ID</h2>
+                    <p>This is a legitimate CTTMO-issued driver identification card.</p>
+                </div>
+                
+                <div class="driver-photo">
+                    {% if profile.avatar %}
+                    <img src="{{ profile.avatar.url }}" alt="Driver Photo">
+                    {% else %}
+                    <img src="https://via.placeholder.com/120?text={{ driver.first_name.0 }}{{ driver.last_name.0 }}" alt="Driver Photo">
+                    {% endif %}
+                </div>
+                
+                <div class="driver-info">
+                    <div class="row">
+                        <div class="label">Driver ID:</div>
+                        <div class="value">{{ driver_id }}</div>
+                    </div>
+                    <div class="row">
+                        <div class="label">Name:</div>
+                        <div class="value">{{ driver.get_full_name }}</div>
+                    </div>
+                    <div class="row">
+                        <div class="label">Address:</div>
+                        <div class="value">{{ profile.address|default:"Not specified" }}</div>
+                    </div>
+                    <div class="row">
+                        <div class="label">Birth Date:</div>
+                        <div class="value">{% if profile.birthdate %}{{ profile.birthdate|date:"n/j/Y" }}{% else %}Not specified{% endif %}</div>
+                    </div>
+                    <div class="row">
+                        <div class="label">Contact:</div>
+                        <div class="value">
+                            {% if profile.contact_number %}
+                                {{ profile.contact_number }}
+                            {% elif profile.phone_number %}
+                                {{ profile.phone_number }}
+                            {% else %}
+                                Not specified
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="label">Issue Date:</div>
+                        <div class="value">{% if application.processed_at %}{{ application.processed_at|date:"F j, Y" }}{% else %}Not available{% endif %}</div>
+                    </div>
+                    
+                    {% if profile.emergency_contact_name %}
+                    <div class="row">
+                        <div class="label">Emergency Contact:</div>
+                        <div class="value">
+                            {{ profile.emergency_contact_name }}
+                            {% if profile.emergency_contact_number %}
+                                ({{ profile.emergency_contact_number }})
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="verification-status invalid">
+                    <span class="material-icons icon">error</span>
+                    <h2>Invalid Driver ID</h2>
+                    <p>The driver ID "{{ driver_id }}" is not recognized in our system.</p>
+                    
+                    <div style="margin-top: 20px; padding: 15px; background-color: #f8d7da; border-radius: 5px;">
+                        <p style="margin-bottom: 0; color: #721c24;">This may be a counterfeit identification card. Please report this to the CTTMO office immediately.</p>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <div class="verification-time">
+                Verification performed on: {{ now|date:"F j, Y g:i A" }}
+            </div>
+        </div>
+        
+        <div class="verification-footer">
+            For inquiries, please contact the CTTMO Office at (123) 456-7890 or email at cttmo@bayawan.gov.ph
+        </div>
+    </div>
+</div>
+{% endblock %} 

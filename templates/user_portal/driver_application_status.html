@@ -1,0 +1,424 @@
+{% extends 'user_portal/base_user.html' %}
+{% load static %}
+
+{% block title %}Driver Application Status - CTTMO User Portal{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Modern Color Palette */
+    :root {
+        --primary-color: #3563E9;
+        --primary-light: #EEF3FF;
+        --success-color: #0CAA1D;
+        --danger-color: #F53D3D;
+        --warning-color: #FFB800;
+        --info-color: #4DA7FF;
+        --dark-blue: #0F1C3F;
+        --neutral-gray: #737791;
+        --light-gray: #F6F7F9;
+        --white: #FFFFFF;
+    }
+
+    /* Card Styles */
+    .status-card {
+        border: none;
+        border-radius: 1rem;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+        margin-bottom: 1.5rem;
+    }
+
+    .status-card:hover {
+        box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.1);
+    }
+
+    /* Status Badge Styles */
+    .status-badge {
+        padding: 0.4rem 0.8rem;
+        border-radius: 50rem;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .status-pending {
+        background-color: var(--warning-color);
+        color: #fff;
+    }
+
+    .status-approved {
+        background-color: var(--success-color);
+        color: #fff;
+    }
+
+    .status-rejected {
+        background-color: var(--danger-color);
+        color: #fff;
+    }
+
+    /* Timeline Styles */
+    .application-timeline {
+        position: relative;
+        padding-left: 2rem;
+        margin-top: 1.5rem;
+    }
+
+    .timeline-item {
+        position: relative;
+        padding-bottom: 1.5rem;
+    }
+
+    .timeline-item:last-child {
+        padding-bottom: 0;
+    }
+
+    .timeline-item::before {
+        content: '';
+        width: 2px;
+        background-color: #dee2e6;
+        position: absolute;
+        left: -1rem;
+        top: 0;
+        bottom: 0;
+    }
+
+    .timeline-item:last-child::before {
+        bottom: 50%;
+    }
+
+    .timeline-marker {
+        width: 1.5rem;
+        height: 1.5rem;
+        border-radius: 50%;
+        background-color: var(--white);
+        border: 2px solid var(--primary-color);
+        position: absolute;
+        left: -1.75rem;
+        top: 0;
+    }
+
+    .timeline-marker.completed {
+        background-color: var(--primary-color);
+    }
+
+    .timeline-content {
+        padding: 0.75rem 1rem;
+        background-color: var(--light-gray);
+        border-radius: 0.5rem;
+    }
+
+    .timeline-title {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .timeline-date {
+        font-size: 0.85rem;
+        color: var(--neutral-gray);
+    }
+
+    /* Document Previews */
+    .document-preview-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .document-preview {
+        flex: 0 0 calc(50% - 1rem);
+        max-width: calc(50% - 1rem);
+        margin-bottom: 1rem;
+    }
+
+    .document-preview img {
+        width: 100%;
+        height: auto;
+        object-fit: contain;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .document-preview .document-title {
+        font-weight: 500;
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+
+    .empty-state-icon {
+        font-size: 4rem;
+        color: var(--neutral-gray);
+        margin-bottom: 1.5rem;
+    }
+
+    .empty-state-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state-text {
+        color: var(--neutral-gray);
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h3 mb-0">Driver Application Status</h1>
+                <div>
+                    <a href="{% url 'user_portal:user_dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            {% if applications %}
+                {% for application in applications %}
+                <div class="card status-card">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h2 class="h4 mb-0">Application #{{ application.id }}</h2>
+                            <span class="status-badge status-{{ application.status|lower }}">
+                                {{ application.get_status_display }}
+                            </span>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>Submitted:</strong> {{ application.submitted_at|date:"F j, Y, g:i a" }}</p>
+                                {% if application.processed_at %}
+                                <p class="mb-1"><strong>Processed:</strong> {{ application.processed_at|date:"F j, Y, g:i a" }}</p>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {% if application.processed_by %}
+                                <p class="mb-1"><strong>Processed by:</strong> {{ application.processed_by.get_full_name }}</p>
+                                {% endif %}
+                                {% if application.notes %}
+                                <p class="mb-1"><strong>Notes:</strong> {{ application.notes }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Application Timeline -->
+                        <h3 class="h5 mb-3">Application Timeline</h3>
+                        <div class="application-timeline">
+                            <div class="timeline-item">
+                                <div class="timeline-marker completed"></div>
+                                <div class="timeline-content">
+                                    <h5 class="timeline-title">Application Submitted</h5>
+                                    <p class="timeline-date">{{ application.submitted_at|date:"F j, Y, g:i a" }}</p>
+                                </div>
+                            </div>
+
+                            <div class="timeline-item">
+                                <div class="timeline-marker {% if application.status != 'PENDING' %}completed{% endif %}"></div>
+                                <div class="timeline-content">
+                                    <h5 class="timeline-title">Application Review</h5>
+                                    <p class="timeline-date">
+                                        {% if application.status != 'PENDING' %}
+                                            {{ application.processed_at|date:"F j, Y, g:i a" }}
+                                        {% else %}
+                                            In progress
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="timeline-item">
+                                <div class="timeline-marker {% if application.status == 'APPROVED' %}completed{% endif %}"></div>
+                                <div class="timeline-content">
+                                    <h5 class="timeline-title">Driver Status Activation</h5>
+                                    <p class="timeline-date">
+                                        {% if application.status == 'APPROVED' %}
+                                            {{ application.processed_at|date:"F j, Y, g:i a" }}
+                                        {% elif application.status == 'REJECTED' %}
+                                            Application rejected
+                                        {% else %}
+                                            Pending review
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Documents Section -->
+                        <h3 class="h5 mt-4 mb-3">Submitted Documents</h3>
+                        <div class="document-preview-container">
+                            {% if application.cttmo_seminar_certificate %}
+                            <div class="document-preview">
+                                <div class="card">
+                                    <div class="card-body p-2 text-center">
+                                        <h6 class="document-title">CTTMO Seminar Certificate</h6>
+                                        <a href="{{ application.cttmo_seminar_certificate.url }}" target="_blank" class="btn btn-sm btn-primary w-100">
+                                            <i class="fas fa-eye me-1"></i> View Document
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% if application.xray_results %}
+                            <div class="document-preview">
+                                <div class="card">
+                                    <div class="card-body p-2 text-center">
+                                        <h6 class="document-title">X-Ray Results</h6>
+                                        <a href="{{ application.xray_results.url }}" target="_blank" class="btn btn-sm btn-primary w-100">
+                                            <i class="fas fa-eye me-1"></i> View Document
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% if application.medical_certificate %}
+                            <div class="document-preview">
+                                <div class="card">
+                                    <div class="card-body p-2 text-center">
+                                        <h6 class="document-title">Medical Certificate</h6>
+                                        <a href="{{ application.medical_certificate.url }}" target="_blank" class="btn btn-sm btn-primary w-100">
+                                            <i class="fas fa-eye me-1"></i> View Document
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% if application.police_clearance %}
+                            <div class="document-preview">
+                                <div class="card">
+                                    <div class="card-body p-2 text-center">
+                                        <h6 class="document-title">Police Clearance</h6>
+                                        <a href="{{ application.police_clearance.url }}" target="_blank" class="btn btn-sm btn-primary w-100">
+                                            <i class="fas fa-eye me-1"></i> View Document
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% if application.mayors_permit %}
+                            <div class="document-preview">
+                                <div class="card">
+                                    <div class="card-body p-2 text-center">
+                                        <h6 class="document-title">Mayor's Permit</h6>
+                                        <a href="{{ application.mayors_permit.url }}" target="_blank" class="btn btn-sm btn-primary w-100">
+                                            <i class="fas fa-eye me-1"></i> View Document
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% if application.other_documents %}
+                            <div class="document-preview">
+                                <div class="card">
+                                    <div class="card-body p-2 text-center">
+                                        <h6 class="document-title">Other Supporting Documents</h6>
+                                        <a href="{{ application.other_documents.url }}" target="_blank" class="btn btn-sm btn-primary w-100">
+                                            <i class="fas fa-eye me-1"></i> View Document
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Status-specific information -->
+                        {% if application.status == 'PENDING' %}
+                        <div class="alert alert-warning mt-4">
+                            <div class="d-flex align-items-center">
+                                <span class="material-icons me-2">pending</span>
+                                <div>
+                                    <strong>Your application is being reviewed.</strong>
+                                    <p class="mb-0">This process typically takes 1-3 business days. You'll receive a notification once your application is processed.</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% elif application.status == 'APPROVED' %}
+                        <div class="alert alert-success d-flex align-items-start">
+                            <span class="material-icons me-3 mt-1">check_circle</span>
+                            <div>
+                                <h5 class="alert-heading mb-1">Application Approved</h5>
+                                <p class="mb-1">Congratulations! Your application has been approved. You can now access your driver ID card.</p>
+                                <a href="{% url 'user_portal:driver_id_card' %}" class="btn btn-success btn-sm mt-2">
+                                    <span class="material-icons me-1" style="font-size: 16px;">credit_card</span>
+                                    View ID Card
+                                </a>
+                            </div>
+                        </div>
+                        {% elif application.status == 'REJECTED' %}
+                        <div class="alert alert-danger mt-4">
+                            <div class="d-flex align-items-center">
+                                <span class="material-icons me-2">error</span>
+                                <div>
+                                    <strong>Your application has been rejected.</strong>
+                                    <p class="mb-0">
+                                        {% if application.notes %}
+                                        Reason: {{ application.notes }}
+                                        {% else %}
+                                        Please review the requirements and consider reapplying with updated documents.
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Action buttons based on status -->
+                        <div class="mt-4 text-end">
+                            {% if application.status == 'REJECTED' %}
+                            <a href="{% url 'user_portal:driver_apply' %}" class="btn btn-primary">
+                                <i class="fas fa-redo me-2"></i> Submit New Application
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="card status-card">
+                    <div class="card-body">
+                        <div class="empty-state">
+                            <span class="material-icons empty-state-icon">assignment_ind</span>
+                            <h3 class="empty-state-title">No Applications Found</h3>
+                            <p class="empty-state-text">You haven't submitted any driver applications yet. Apply now to become a registered driver and access additional features.</p>
+                            <a href="{% url 'user_portal:driver_apply' %}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i> Apply as Driver
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add animation to timeline
+        const timelineItems = document.querySelectorAll('.timeline-item');
+        timelineItems.forEach((item, index) => {
+            setTimeout(() => {
+                item.style.opacity = '1';
+            }, 300 * index);
+        });
+    });
+</script>
+{% endblock %} 

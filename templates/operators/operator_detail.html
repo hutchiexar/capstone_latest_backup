@@ -5,16 +5,25 @@
 
 {% block content %}
 <div class="container-fluid py-4">
-    <!-- Header Section -->
-    <div class="card shadow-sm border-0 rounded-3 mb-4">
+    <!-- Enhanced Header Section -->
+    <div class="card shadow border-0 rounded-3 mb-4 bg-gradient" style="background-color: #f8f9fa;">
         <div class="card-body p-4">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-                <div>
-                    <div class="d-flex align-items-center">
-                        <span class="material-icons me-2" style="color: var(--primary-color)">person</span>
-                        <h4 class="mb-0">Operator Details</h4>
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px; background-color: var(--primary-color);">
+                        <span class="material-icons text-white">person</span>
                     </div>
-                    <p class="text-muted mt-2 mb-0">View detailed information about the operator and associated P.O. numbers</p>
+                <div>
+                        <h4 class="mb-0 fw-bold">{{ operator.full_name }}</h4>
+                        <div class="d-flex align-items-center mt-1">
+                            <p class="text-muted mb-0">Operator ID: <span class="badge bg-secondary">{{ operator.new_pd_number }}</span></p>
+                            {% if operator.active %}
+                            <span class="badge bg-success ms-2 px-3">Active</span>
+                            {% else %}
+                            <span class="badge bg-danger ms-2 px-3">Inactive</span>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
                     <a href="{% url 'operator_list' %}" class="btn btn-outline-primary d-flex align-items-center px-3 py-2">
@@ -29,71 +38,137 @@
                         <span class="d-inline d-sm-none">Edit</span>
                     </a>
                     {% endif %}
+                    <button id="printButton" class="btn btn-outline-secondary d-flex align-items-center px-3 py-2">
+                        <span class="material-icons fs-5 me-2">print</span>
+                        <span class="d-none d-sm-inline">Print Details</span>
+                        <span class="d-inline d-sm-none">Print</span>
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Operator Info Card -->
-    <div class="row">
+    <!-- Stats Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-3 h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center me-3" style="width: 45px; height: 45px; background-color: rgba(var(--bs-primary-rgb), 0.1);">
+                            <span class="material-icons" style="color: var(--primary-color);">event</span>
+                        </div>
+                        <div>
+                            <p class="text-muted mb-0 small">Registration Date</p>
+                            <h5 class="mb-0 fw-bold">{{ operator.created_at|date:"F j, Y" }}</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-3 h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center me-3" style="width: 45px; height: 45px; background-color: rgba(var(--bs-success-rgb), 0.1);">
+                            <span class="material-icons text-success">directions_car</span>
+                        </div>
+                        <div>
+                            <p class="text-muted mb-0 small">Total Units</p>
+                            <h5 class="mb-0 fw-bold">{{ vehicles|length|default:"0" }}</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-3 h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center me-3" style="width: 45px; height: 45px; background-color: rgba(var(--bs-info-rgb), 0.1);">
+                            <span class="material-icons text-info">place</span>
+                        </div>
+                        <div>
+                            <p class="text-muted mb-0 small">Location</p>
+                            <h5 class="mb-0 fw-bold">{{ operator.address|truncatechars:25 }}</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Cards -->
+    <div class="row g-4">
         <div class="col-lg-6">
-            <div class="card shadow-sm border-0 rounded-3 mb-4">
+            <div class="card shadow-sm border-0 rounded-3 h-100">
                 <div class="card-header bg-transparent d-flex align-items-center px-4 py-3 border-bottom">
                     <span class="material-icons me-2" style="color: var(--primary-color); font-size: 24px;">person</span>
                     <h5 class="mb-0 fw-bold">Personal Information</h5>
                 </div>
                 <div class="card-body p-4">
-                    <div class="row mb-3">
+                    <div class="row mb-3 pb-2 border-bottom">
                         <div class="col-5 col-md-4 text-muted">Full Name:</div>
                         <div class="col-7 col-md-8 fw-medium">{{ operator.full_name }}</div>
                     </div>
-                    <div class="row mb-3">
+                    <div class="row mb-3 pb-2 border-bottom">
                         <div class="col-5 col-md-4 text-muted">Last Name:</div>
                         <div class="col-7 col-md-8">{{ operator.last_name }}</div>
                     </div>
-                    <div class="row mb-3">
+                    <div class="row mb-3 pb-2 border-bottom">
                         <div class="col-5 col-md-4 text-muted">First Name:</div>
                         <div class="col-7 col-md-8">{{ operator.first_name }}</div>
                     </div>
-                    <div class="row mb-3">
+                    <div class="row mb-3 pb-2 border-bottom">
                         <div class="col-5 col-md-4 text-muted">Middle Initial:</div>
                         <div class="col-7 col-md-8">{{ operator.middle_initial|default:"None" }}</div>
                     </div>
-                    <div class="row mb-3">
+                    <div class="row mb-3 pb-2 border-bottom">
                         <div class="col-5 col-md-4 text-muted">Address:</div>
                         <div class="col-7 col-md-8">{{ operator.address }}</div>
                     </div>
-                    <div class="row mb-3">
+                    <div class="row mb-3 pb-2 border-bottom">
                         <div class="col-5 col-md-4 text-muted">Old P.O. Number:</div>
-                        <div class="col-7 col-md-8">{{ operator.old_pd_number|default:"None" }}</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-5 col-md-4 text-muted">New P.O. Number:</div>
-                        <div class="col-7 col-md-8">{{ operator.new_pd_number }}</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-5 col-md-4 text-muted">Permit Operator Number:</div>
                         <div class="col-7 col-md-8">
-                            {% if operator.po_number %}
-                            <span class="badge bg-primary px-3 py-2 fs-6 fw-medium">{{ operator.po_number }}</span>
+                            {% if operator.old_pd_number %}
+                                <span class="badge bg-secondary">{{ operator.old_pd_number }}</span>
                             {% else %}
-                            <span class="badge bg-secondary px-3 py-2">Not assigned</span>
+                                <span class="text-muted">None</span>
                             {% endif %}
                         </div>
                     </div>
+                    <div class="row mb-3 pb-2 border-bottom">
+                        <div class="col-5 col-md-4 text-muted">P.O. Number:</div>
+                        <div class="col-7 col-md-8">
+                            <span class="badge bg-primary">{{ operator.new_pd_number }}</span>
+                        </div>
+                    </div>
                     <div class="row">
-                        <div class="col-5 col-md-4 text-muted">Registration Date:</div>
-                        <div class="col-7 col-md-8">{{ operator.created_at|date:"F j, Y" }}</div>
+                        <div class="col-5 col-md-4 text-muted">Status:</div>
+                        <div class="col-7 col-md-8">
+                            {% if operator.active %}
+                            <div class="d-flex align-items-center">
+                                <span class="material-icons text-success me-1 fs-5">check_circle</span>
+                                <span class="fw-medium">Active</span>
+                            </div>
+                            {% else %}
+                            <div class="d-flex align-items-center">
+                                <span class="material-icons text-danger me-1 fs-5">cancel</span>
+                                <span class="fw-medium">Inactive</span>
+                            </div>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-6">
-            <div class="card shadow-sm border-0 rounded-3 mb-4">
-                <div class="card-header bg-transparent d-flex align-items-center px-4 py-3 border-bottom">
+            <div class="card shadow-sm border-0 rounded-3 h-100">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center px-4 py-3 border-bottom">
+                    <div class="d-flex align-items-center">
                     <span class="material-icons me-2" style="color: var(--primary-color); font-size: 24px;">directions_car</span>
-                    <h5 class="mb-0 fw-bold">P.O. Numbers</h5>
+                        <h5 class="mb-0 fw-bold">Units</h5>
+                    </div>
                 </div>
                 <div class="card-body p-4">
                     {% if vehicles %}
@@ -102,16 +177,22 @@
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th class="border-top-0 px-4 py-3 fw-semibold">Old P.O. Number</th>
-                                    <th class="border-top-0 px-4 py-3 fw-semibold">New P.O. Number</th>
+                                    <th class="border-top-0 px-4 py-3 fw-semibold">Unit ID</th>
+                                    <th class="border-top-0 px-4 py-3 fw-semibold">P.O. Number</th>
+                                    <th class="border-top-0 px-4 py-3 fw-semibold">Vehicle Type</th>
                                     <th class="border-top-0 px-4 py-3 fw-semibold">Registration Date</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for vehicle in vehicles %}
                                 <tr>
-                                    <td class="px-4 py-3">{{ vehicle.old_pd_number|default:"None" }}</td>
-                                    <td class="fw-medium px-4 py-3">{{ vehicle.new_pd_number }}</td>
+                                    <td class="px-4 py-3">
+                                        <span class="badge bg-info">{{ vehicle.potpot_number|default:"N/A" }}</span>
+                                    </td>
+                                    <td class="fw-medium px-4 py-3">
+                                        <span class="badge bg-primary">{{ vehicle.new_pd_number }}</span>
+                                    </td>
+                                    <td class="px-4 py-3">{{ vehicle.vehicle_type|default:"Regular" }}</td>
                                     <td class="px-4 py-3">{{ vehicle.created_at|date:"F j, Y" }}</td>
                                 </tr>
                                 {% endfor %}
@@ -123,27 +204,40 @@
                     <div class="vehicle-cards d-block d-md-none">
                         {% for vehicle in vehicles %}
                         <div class="vehicle-card" data-vehicle-id="{{ vehicle.id }}">
-                            <div class="card mb-3">
-                                <div class="card-header d-flex justify-content-between align-items-center">
+                            <div class="card mb-3 border-0 shadow-sm">
+                                <div class="card-header d-flex justify-content-between align-items-center bg-light">
                                     <div>
-                                        <h6 class="mb-0 fw-bold">P.O. Number</h6>
+                                        <h6 class="mb-0 fw-bold">Unit #{{ forloop.counter }}</h6>
                                     </div>
+                                    <span class="badge bg-info">{{ vehicle.potpot_number|default:"N/A" }}</span>
                                 </div>
                                 <div class="card-body">
+                                    <div class="row mb-2">
+                                        <div class="col-5">
+                                            <small class="text-muted">P.O. Number:</small>
+                                        </div>
+                                        <div class="col-7">
+                                            <span class="badge bg-primary">{{ vehicle.new_pd_number }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-5">
+                                            <small class="text-muted">Vehicle Type:</small>
+                                        </div>
+                                        <div class="col-7">
+                                            {{ vehicle.vehicle_type|default:"Regular" }}
+                                        </div>
+                                    </div>
                                     <div class="row mb-2">
                                         <div class="col-5">
                                             <small class="text-muted">Old P.O.:</small>
                                         </div>
                                         <div class="col-7">
-                                            {{ vehicle.old_pd_number|default:"None" }}
-                                        </div>
-                                    </div>
-                                    <div class="row mb-2">
-                                        <div class="col-5">
-                                            <small class="text-muted">New P.O.:</small>
-                                        </div>
-                                        <div class="col-7 fw-medium">
-                                            {{ vehicle.new_pd_number }}
+                                            {% if vehicle.old_pd_number %}
+                                                {{ vehicle.old_pd_number }}
+                                            {% else %}
+                                                <span class="text-muted">None</span>
+                                            {% endif %}
                                         </div>
                                     </div>
                                     <div class="row">
@@ -154,16 +248,24 @@
                                             {{ vehicle.created_at|date:"M j, Y" }}
                                         </div>
                                     </div>
+                                    <div class="d-flex justify-content-end mt-3">
+                                        <a href="#" class="btn btn-sm btn-outline-primary">
+                                            <span class="material-icons me-1" style="font-size: 16px;">visibility</span>
+                                            <span>View Details</span>
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         {% endfor %}
                     </div>
                     {% else %}
-                    <div class="d-flex flex-column align-items-center py-5">
-                        <span class="material-icons" style="font-size: 64px; color: #c0c0c0;">directions_car_off</span>
-                        <p class="mt-3 mb-0 fs-5">No vehicles associated with this operator.</p>
-                        <p class="text-muted mt-2">This operator does not have any registered P.O. numbers yet.</p>
+                    <div class="d-flex flex-column align-items-center py-5 my-2">
+                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                            <span class="material-icons" style="font-size: 40px; color: #adb5bd;">directions_car_off</span>
+                        </div>
+                        <h5 class="fw-bold mb-2">No Vehicles Found</h5>
+                        <p class="text-muted text-center mb-3">This operator does not have any registered units yet.</p>
                     </div>
                     {% endif %}
                 </div>
@@ -173,6 +275,49 @@
 </div>
 
 <style>
+/* Enhanced Card Styles */
+.card {
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.card:hover {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Badge Styles */
+.badge {
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    padding: 0.35em 0.65em;
+    border-radius: 6px;
+}
+
+/* Table Styles */
+.table {
+    vertical-align: middle;
+    font-size: 0.95rem;
+}
+
+.table thead th {
+    font-weight: 600;
+    color: #495057;
+    background-color: #f8f9fa;
+    border-bottom: none;
+}
+
+.table tbody tr {
+    border-bottom: 1px solid #f1f1f1;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.03);
+}
+
 /* Mobile Card View Styles */
 .vehicle-card {
     margin-bottom: 15px;
@@ -180,25 +325,31 @@
 
 .vehicle-card .card {
     border: none;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
     overflow: hidden;
-    transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .vehicle-card .card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
 }
 
 .vehicle-card .card-header {
-    background-color: #f8f9fa;
-    padding: 12px 15px;
-    border-bottom: 1px solid #eaecef;
+    padding: 12px 16px;
 }
 
 .vehicle-card .card-body {
-    padding: 15px;
+    padding: 16px;
+}
+
+/* Status indicators */
+.status-active {
+    background-color: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+}
+
+.status-inactive {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
 }
 
 /* Responsive styles */
@@ -214,6 +365,8 @@
     /* Improve spacing on mobile */
     .row .mb-3:last-child {
         margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+        border-bottom: none !important;
     }
     
     /* Make badges more readable on mobile */
@@ -237,7 +390,294 @@
         font-size: 0.875rem;
     }
 }
+
+/* Print Styles */
+@media print {
+    /* General Print Settings */
+    @page {
+        size: A4;
+        margin: 0.5in;
+    }
+    
+    body {
+        font-family: 'Arial', 'Helvetica', sans-serif !important;
+        color: #000 !important;
+        background: #fff !important;
+        font-size: 12pt;
+        line-height: 1.5;
+    }
+    
+    /* Hide Navigation Elements and UI Components */
+    nav, footer, aside, .no-print, .btn, .material-icons {
+        display: none !important;
+    }
+    
+    /* Remove ALL card styling for print */
+    .card, .card:hover, .card-header, .card-body {
+        box-shadow: none !important;
+        transform: none !important;
+        border: none !important;
+        background: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        transition: none !important;
+    }
+    
+    /* Remove all decorative elements */
+    .rounded-circle, .bg-gradient, .shadow, .shadow-sm {
+        background: none !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+    }
+    
+    /* Hide all the cards and layout containers */
+    .container-fluid {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    /* Print Header */
+    #printHeader {
+        display: block !important;
+        text-align: center;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #000;
+    }
+    
+    /* Completely restructure the layout for print */
+    .row {
+        display: block !important;
+        margin: 0 !important;
+    }
+    
+    .col-lg-6, .col-md-4, .col {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: none !important;
+        padding: 0 !important;
+        margin-bottom: 10px !important;
+    }
+    
+    /* Convert badges to plain text */
+    .badge {
+        color: #000 !important;
+        background: none !important;
+        border: none !important;
+        font-weight: normal !important;
+        padding: 0 !important;
+    }
+    
+    /* Replace the card layouts with simple sections */
+    .stats-summary-print {
+        display: flex !important;
+        justify-content: space-between !important;
+        margin-bottom: 20px !important;
+        border-bottom: 1px solid #ddd !important;
+        padding-bottom: 10px !important;
+    }
+    
+    .stats-summary-print div {
+        margin-right: 20px !important;
+    }
+    
+    /* Personal info as simple fields */
+    .info-row {
+        margin-bottom: 5px !important;
+        display: block !important;
+    }
+    
+    .info-label {
+        font-weight: bold !important;
+        display: inline-block !important;
+        width: 140px !important;
+    }
+    
+    /* Table Styling for Print */
+    .table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin-top: 20px !important;
+        margin-bottom: 20px !important;
+    }
+    
+    .table th, .table td {
+        border: 1px solid #ddd !important;
+        padding: 8px !important;
+        text-align: left !important;
+    }
+    
+    .table thead th {
+        background-color: #f2f2f2 !important;
+        color: #000 !important;
+        font-weight: bold !important;
+    }
+    
+    /* Force show the desktop table and hide mobile elements */
+    .d-md-none, .d-none {
+        display: none !important;
+    }
+    
+    .d-none.d-md-block {
+        display: block !important;
+    }
+    
+    /* Section titles */
+    .section-title {
+        font-size: 14pt !important;
+        font-weight: bold !important;
+        margin: 20px 0 10px 0 !important;
+        border-bottom: 1px solid #ddd !important;
+        padding-bottom: 5px !important;
+    }
+    
+    /* Add Print Footer with Date */
+    .container-fluid::after {
+        content: "Printed on: " attr(data-print-date);
+        display: block;
+        text-align: right;
+        font-size: 10pt;
+        margin-top: 20px;
+        color: #666;
+    }
+    
+    /* Hide elements not needed in print */
+    .mb-4, .my-2, .py-5, .mt-3 {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    /* Create print-only sections */
+    .print-operator-info {
+        display: block !important;
+        margin-bottom: 20px !important;
+    }
+    
+    /* Format the operator name and ID at the top */
+    .print-operator-name {
+        font-size: 16pt !important;
+        font-weight: bold !important;
+        margin-bottom: 5px !important;
+    }
+    
+    .print-operator-id {
+        font-size: 10pt !important;
+        color: #666 !important;
+        margin-bottom: 15px !important;
+    }
+    
+    /* Complete restyle for print layout */
+    #printContent {
+        display: block !important;
+    }
+    
+    /* Hide everything initially, then show only what we want */
+    body > *:not(#printContent):not(#printHeader) {
+        display: none !important;
+    }
+}
+
+/* Print Only Elements */
+.print-only {
+    display: none;
+}
+
+@media print {
+    .print-only {
+        display: block !important;
+    }
+    
+    /* Create print-specific sections */
+    .print-summary {
+        display: flex !important;
+        justify-content: space-between !important;
+        width: 100% !important;
+        margin-bottom: 20px !important;
+    }
+    
+    .print-summary-item {
+        display: block !important;
+        margin-right: 20px !important;
+    }
+}
 </style>
+
+<!-- Print-only header that will only appear when printed -->
+<div id="printHeader" class="print-only">
+    <div class="header">
+        <div class="header-logos">
+            <img src="/static/images/logo.png" alt="Bayawan City Seal" class="header-logo left-logo" onerror="this.style.display='none'">
+            <div class="header-content">
+                <p class="header-subtitle">Republic of the Philippines</p>
+                <p class="header-subtitle">Province of Negros Oriental</p>
+                <p class="header-subtitle"><strong>CITY OF BAYAWAN</strong></p>
+                <p class="header-subtitle">City Transportation and Traffic Management Office</p>
+            </div>
+            <img src="/static/images/logo_ibayaw.png" alt="iBayaw Traffic Management Logo" class="header-logo right-logo" onerror="this.style.display='none'">
+        </div>
+        <div class="header-title">OPERATOR DETAIL REPORT</div>
+        <p id="printDate"></p>
+    </div>
+</div>
+
+<!-- Print-only content structure -->
+<div id="printContent" class="print-only">
+    <!-- Operator name and ID -->
+    <div class="print-operator-name">{{ operator.full_name }}</div>
+    <div class="print-operator-id">Operator ID: {{ operator.new_pd_number }} | Status: {% if operator.active %}Active{% else %}Inactive{% endif %}</div>
+    
+    <!-- Key stats summary -->
+    <div class="print-summary">
+        <div class="print-summary-item">
+            <strong>Registration Date</strong><br>
+            {{ operator.created_at|date:"F j, Y" }}
+        </div>
+        <div class="print-summary-item">
+            <strong>Total Units</strong><br>
+            {{ vehicles|length|default:"0" }}
+        </div>
+        <div class="print-summary-item">
+            <strong>Location</strong><br>
+            {{ operator.address }}
+        </div>
+    </div>
+    
+    <!-- Personal Information -->
+    <div class="section-title">Personal Information</div>
+    <div class="info-row"><span class="info-label">Last Name:</span> {{ operator.last_name }}</div>
+    <div class="info-row"><span class="info-label">First Name:</span> {{ operator.first_name }}</div>
+    <div class="info-row"><span class="info-label">Middle Initial:</span> {{ operator.middle_initial|default:"None" }}</div>
+    <div class="info-row"><span class="info-label">Address:</span> {{ operator.address }}</div>
+    <div class="info-row"><span class="info-label">Old P.O. Number:</span> {{ operator.old_pd_number|default:"None" }}</div>
+    <div class="info-row"><span class="info-label">P.O. Number:</span> {{ operator.new_pd_number }}</div>
+    
+    <!-- Vehicle List Table -->
+    <div class="section-title">Units</div>
+    {% if vehicles %}
+    <table>
+        <thead>
+            <tr>
+                <th>Unit ID (Potpot Number)</th>
+                <th>P.O. Number</th>
+                <th>Vehicle Type</th>
+                <th>Registration Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for vehicle in vehicles %}
+            <tr>
+                <td>{{ vehicle.potpot_number|default:"N/A" }}</td>
+                <td>{{ vehicle.new_pd_number }}</td>
+                <td>{{ vehicle.vehicle_type|default:"Regular" }}</td>
+                <td>{{ vehicle.created_at|date:"F j, Y" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No vehicles associated with this operator.</p>
+    {% endif %}
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -248,6 +688,450 @@
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl)
         });
+        
+        // Add animation to cards on page load
+        $('.card').addClass('animate__animated animate__fadeIn');
+        
+        // Print button functionality
+        $('#printButton').on('click', function() {
+            // Create a new iframe for printing
+            var printFrame = $('<iframe>', {
+                name: 'printFrame',
+                id: 'printFrame',
+                css: {
+                    position: 'fixed',
+                    top: '0',
+                    left: '0',
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                    zIndex: '9999',
+                    display: 'none'
+                }
+            }).appendTo('body');
+            
+            // When the iframe loads, populate it with print content and print
+            printFrame.on('load', function() {
+                var frameDoc = printFrame[0].contentDocument || printFrame[0].contentWindow.document;
+                frameDoc.open();
+                
+                // Build the print-friendly HTML
+                var printContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Operator Details - {{ operator.full_name }}</title>
+                    <style>
+                        @page {
+                            size: A4;
+                            margin: 0.5in;
+                        }
+                        body {
+                            font-family: Arial, Helvetica, sans-serif;
+                            font-size: 11pt;
+                            line-height: 1.4;
+                            color: #000;
+                            margin: 0;
+                            padding: 0;
+                        }
+                        .header {
+                            text-align: center;
+                            border-bottom: 1px solid #000;
+                            padding-bottom: 10px;
+                            margin-bottom: 20px;
+                        }
+                        .header-logos {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            margin-bottom: 5px;
+                            padding: 10px 20px;
+                        }
+                        .header-logo {
+                            width: 80px;
+                            height: 80px;
+                            object-fit: contain;
+                        }
+                        .left-logo {
+                            margin-right: 20px;
+                        }
+                        .right-logo {
+                            margin-left: 20px;
+                        }
+                        .header-content {
+                            flex: 1;
+                            text-align: center;
+                        }
+                        .header-title {
+                            font-size: 14pt;
+                            font-weight: bold;
+                            margin: 5px 0;
+                            text-transform: uppercase;
+                            color: #fff;
+                            background-color: #2c3e50;
+                            padding: 5px 0;
+                        }
+                        .header-subtitle {
+                            font-size: 9pt;
+                            margin: 3px 0;
+                        }
+                        .operator-name {
+                            font-size: 16pt;
+                            font-weight: bold;
+                            margin-bottom: 5px;
+                        }
+                        .operator-id {
+                            font-size: 10pt;
+                            color: #333;
+                            margin-bottom: 15px;
+                        }
+                        .summary {
+                            display: flex;
+                            justify-content: space-between;
+                            margin-bottom: 15px;
+                            border-bottom: 1px solid #ddd;
+                            padding-bottom: 5px;
+                        }
+                        .summary-item {
+                            width: 33%;
+                        }
+                        .summary-label {
+                            font-weight: bold;
+                            display: block;
+                            margin-bottom: 3px;
+                            font-size: 10pt;
+                        }
+                        .summary-value {
+                            font-size: 11pt;
+                        }
+                        .section-title {
+                            font-size: 12pt;
+                            font-weight: bold;
+                            margin: 15px 0 5px 0;
+                            border-bottom: 1px solid #ddd;
+                            padding-bottom: 3px;
+                        }
+                        .info-row {
+                            margin-bottom: 4px;
+                            display: flex;
+                        }
+                        .info-label {
+                            font-weight: bold;
+                            width: 120px;
+                            font-size: 10pt;
+                        }
+                        .info-value {
+                            flex: 1;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin: 10px 0;
+                        }
+                        th, td {
+                            border: 1px solid #ddd;
+                            padding: 6px;
+                            text-align: left;
+                            font-size: 10pt;
+                        }
+                        th {
+                            background-color: #f2f2f2;
+                            font-weight: bold;
+                        }
+                        .footer {
+                            margin-top: 20px;
+                            font-size: 8pt;
+                            color: #666;
+                            text-align: right;
+                            border-top: 1px solid #ddd;
+                            padding-top: 5px;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div class="header-logos">
+                            <img src="/static/images/logo.png" alt="Bayawan City Seal" class="header-logo left-logo">
+                            <div class="header-content">
+                                <p class="header-subtitle">Republic of the Philippines</p>
+                                <p class="header-subtitle">Province of Negros Oriental</p>
+                                <p class="header-subtitle"><strong>CITY OF BAYAWAN</strong></p>
+                                <p class="header-subtitle">City Transportation and Traffic Management Office</p>
+                            </div>
+                            <img src="/static/images/logo_ibayaw.png" alt="iBayaw Traffic Management Logo" class="header-logo right-logo">
+                        </div>
+                        <div class="header-title">OPERATOR DETAIL REPORT</div>
+                        <p>${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                    
+                    <div class="operator-name">{{ operator.full_name }}</div>
+                    <div class="operator-id">Operator ID: {{ operator.new_pd_number }} | Status: {% if operator.active %}Active{% else %}Inactive{% endif %}</div>
+                    
+                    <div class="summary">
+                        <div class="summary-item">
+                            <span class="summary-label">Registration Date</span>
+                            <span class="summary-value">{{ operator.created_at|date:"F j, Y" }}</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Total Units</span>
+                            <span class="summary-value">{{ vehicles|length|default:"0" }}</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Location</span>
+                            <span class="summary-value">{{ operator.address|truncatechars:50 }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="section-title">Personal Information</div>
+                    <div class="info-row">
+                        <span class="info-label">Last Name:</span>
+                        <span class="info-value">{{ operator.last_name }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">First Name:</span>
+                        <span class="info-value">{{ operator.first_name }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Middle Initial:</span>
+                        <span class="info-value">{{ operator.middle_initial|default:"None" }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Address:</span>
+                        <span class="info-value">{{ operator.address }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Old P.O. Number:</span>
+                        <span class="info-value">{{ operator.old_pd_number|default:"None" }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">P.O. Number:</span>
+                        <span class="info-value">{{ operator.new_pd_number }}</span>
+                    </div>
+                    
+                    <div class="section-title">Units</div>
+                    {% if vehicles %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Unit ID (Potpot Number)</th>
+                                <th>P.O. Number</th>
+                                <th>Vehicle Type</th>
+                                <th>Registration Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for vehicle in vehicles %}
+                            <tr>
+                                <td>{{ vehicle.potpot_number|default:"N/A" }}</td>
+                                <td>{{ vehicle.new_pd_number }}</td>
+                                <td>{{ vehicle.vehicle_type|default:"Regular" }}</td>
+                                <td>{{ vehicle.created_at|date:"F j, Y" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p>No vehicles associated with this operator.</p>
+                    {% endif %}
+                    
+                    <div class="footer">
+                        Generated on: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })} | 
+                        Document ID: OP-{{ operator.id }}-${new Date().toISOString().substr(0, 10).replace(/-/g, '')}
+                    </div>
+                </body>
+                </html>
+                `;
+                
+                frameDoc.write(printContent);
+                frameDoc.close();
+                
+                // Give the browser a moment to render the content
+                setTimeout(function() {
+                    // Print the iframe content
+                    printFrame[0].contentWindow.focus();
+                    printFrame[0].contentWindow.print();
+                    
+                    // Remove the iframe after printing (or after print is canceled)
+                    $(printFrame[0].contentWindow).on('afterprint', function() {
+                        printFrame.remove();
+                    });
+                }, 500);
+            });
+            
+            // Trigger iframe load
+            printFrame.attr('src', 'about:blank');
+        });
     });
 </script>
+
+<style>
+    /* Additional print styles to match the operator_print_slip.html */
+    @media print {
+        /* Reset for print view - hide everything first */
+        body * {
+            visibility: hidden;
+        }
+        
+        /* Then show only what we want to print */
+        #printHeader, #printContent, #printHeader *, #printContent * {
+            visibility: visible;
+        }
+        
+        /* Position the print content at the top of the page */
+        #printHeader, #printContent {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+        }
+        
+        /* Hide the print button and other UI controls */
+        .no-print, #printButton, nav, footer, .btn {
+            display: none !important;
+        }
+        
+        /* Header styling for print */
+        .header {
+            text-align: center;
+            border-bottom: 1px solid #000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            background-color: #f8f8f8 !important;
+            display: block !important;
+        }
+        
+        .header-content {
+            padding: 10px 0;
+        }
+        
+        .header-logos {
+            display: flex !important;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+            padding: 10px 20px;
+        }
+        
+        .header-logo {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+        }
+        
+        .header-content {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .header-title {
+            font-size: 14pt;
+            font-weight: bold;
+            margin: 5px 0;
+            text-transform: uppercase;
+            color: #fff !important;
+            background-color: #2c3e50 !important;
+            padding: 5px 0;
+            display: block !important;
+        }
+        
+        .header-subtitle {
+            font-size: 9pt;
+            margin: 3px 0;
+            display: block !important;
+        }
+        
+        /* Fine-tune the print-content layout */
+        #printContent {
+            padding: 0.5in;
+            background-color: white !important;
+            color: black !important;
+            font-family: Arial, sans-serif !important;
+            font-size: 12pt !important;
+            line-height: 1.4 !important;
+        }
+        
+        .print-operator-name {
+            font-size: 16pt !important;
+            font-weight: bold !important;
+            margin-bottom: 5px !important;
+            display: block !important;
+        }
+        
+        .print-operator-id {
+            font-size: 10pt !important;
+            color: #333 !important;
+            margin-bottom: 15px !important;
+            display: block !important;
+        }
+        
+        .print-summary {
+            display: flex !important;
+            justify-content: space-between !important;
+            margin-bottom: 15px !important;
+            border-bottom: 1px solid #ddd !important;
+            padding-bottom: 10px !important;
+        }
+        
+        .print-summary-item {
+            width: 33% !important;
+            display: block !important;
+        }
+        
+        .section-title {
+            font-size: 12pt !important;
+            font-weight: bold !important;
+            margin: 15px 0 5px 0 !important;
+            border-bottom: 1px solid #ddd !important;
+            padding-bottom: 3px !important;
+            display: block !important;
+        }
+        
+        .info-row {
+            margin-bottom: 4px !important;
+            display: flex !important;
+        }
+        
+        .info-label {
+            font-weight: bold !important;
+            width: 120px !important;
+            font-size: 10pt !important;
+        }
+        
+        /* Update table style for print */
+        table.table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            margin: 10px 0 !important;
+            display: table !important;
+            visibility: visible !important;
+        }
+        
+        table.table thead, table.table tbody, table.table tr {
+            display: table-header-group !important;
+            display: table-row-group !important;
+            display: table-row !important;
+            visibility: visible !important;
+        }
+        
+        table.table th, table.table td {
+            border: 1px solid #ddd !important;
+            padding: 6px !important;
+            text-align: left !important;
+            font-size: 10pt !important;
+            display: table-cell !important;
+            visibility: visible !important;
+        }
+        
+        /* Force table to be visible */
+        .table-responsive {
+            overflow: visible !important;
+            display: block !important;
+            width: 100% !important;
+        }
+        
+        .d-none.d-md-block {
+            display: block !important;
+        }
+    }
+</style>
 {% endblock %} 

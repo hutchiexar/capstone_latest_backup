@@ -3148,6 +3148,9 @@
                                     <a href="{% url 'operator_applications_manage' %}" class="list-group-item submenu-item {% if 'operator/applications/manage' in request.path %}active{% endif %}">
                                         <span class="material-icons">approval</span>Applications
                                     </a>
+                                    <a href="{% url 'user_portal:driver_applications_manage' %}" class="list-group-item submenu-item {% if 'driver/applications' in request.path %}active{% endif %}">
+                                        <span class="material-icons">local_taxi</span>Driver Applications
+                                    </a>
                                     <a href="{% url 'admin_driver_list' %}" class="list-group-item submenu-item {% if 'driver' in request.path %}active{% endif %}">
                                         <span class="material-icons">person</span>Drivers
                                     </a>
@@ -3155,6 +3158,9 @@
                             </div>
                             <a href="{% url 'admin_report_list' %}" class="list-group-item {% if 'management/reports' in request.path %}active{% endif %}">
                                 <span class="material-icons">report_problem</span>User Reports
+                            </a>
+                            <a href="{% url 'violation_types' %}" class="list-group-item {% if 'management/violation-types' in request.path %}active{% endif %}">
+                                <span class="material-icons">paid</span>Violation Types
                             </a>
                             <!-- Educational Materials submenu - REPLACED -->
                         </div>
@@ -3186,6 +3192,9 @@
                         <div class="sidebar-section-title">Management</div>
                         <div class="list-group list-group-flush">
                             <!-- Management menu items will go here -->
+                            <a href="{% url 'violation_types' %}" class="list-group-item {% if 'violation_types' in request.path %}active{% endif %}">
+                                <span class="material-icons">paid</span>Violation Types
+                            </a>
                         </div>
                     </div>
                     {% endif %}
@@ -3993,7 +4002,7 @@
         function markAnnouncementSeen(announcementId) {
             console.log("Marking announcement as seen:", announcementId);
             
-            fetch(`/api/announcements/${announcementId}/seen/`, {
+            fetch(`/api/announcements/${announcementId}/mark-seen/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

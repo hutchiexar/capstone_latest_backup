@@ -1,0 +1,991 @@
+{% extends 'user_portal/base_user.html' %}
+{% load static %}
+
+{% block title %}Driver ID Card - CTTMO User Portal{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Card container styles */
+    .id-card-container {
+        width: 100%;
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .id-cards-row {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 30px;
+    }
+    
+    .id-card {
+        position: relative;
+        width: 100%;
+        max-width: 480px;
+        height: 700px;
+        border-radius: 14px;
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+        margin-bottom: 30px;
+        overflow: hidden;
+        background-color: #fff;
+    }
+    
+    /* Side tabs */
+    .card-side {
+        text-align: center;
+        font-weight: 600;
+        margin-bottom: 10px;
+        font-size: 16px;
+        color: #333;
+        position: relative;
+        padding-bottom: 5px;
+    }
+    
+    .card-side:after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        height: 3px;
+        width: 40px;
+        background-color: #3498db;
+        border-radius: 3px;
+    }
+    
+    /* Card faces */
+    .id-card-front, .id-card-back {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        border-radius: 12px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        background-color: #fff;
+        padding-bottom: 15px;
+    }
+    
+    /* Card header styles */
+    .id-card-header {
+        background-color: #2c3e50;
+        padding: 12px 10px;
+        text-align: center;
+        position: relative;
+    }
+    
+    .card-header-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 5px;
+    }
+    
+    .header-logo {
+        display: flex;
+        align-items: center;
+    }
+    
+    .logo-img {
+        height: 50px;
+        width: 50px;
+        border-radius: 50%;
+        background-color: white;
+        padding: 2px;
+        object-fit: contain;
+    }
+    
+    .header-center {
+        text-align: center;
+        flex: 1;
+    }
+    
+    .header-title {
+        font-size: 12px;
+        color: #fff;
+        margin: 0;
+        line-height: 1.3;
+    }
+    
+    .header-subtitle {
+        font-size: 14px;
+        color: #fff;
+        font-weight: bold;
+        margin: 2px 0;
+        line-height: 1.3;
+    }
+    
+    .header-office {
+        font-size: 10px;
+        color: #fff;
+        margin: 0;
+        line-height: 1.3;
+    }
+    
+    .id-card-title {
+        color: #fff;
+        font-size: 20px;
+        font-weight: bold;
+        text-transform: uppercase;
+        margin: 10px 0 0;
+        letter-spacing: 0.5px;
+    }
+    
+    /* Card body styles */
+    .id-card-body {
+        flex: 1;
+        padding: 24px;
+        padding-bottom: 15px;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .id-card-content {
+        display: flex;
+        margin-bottom: 20px;
+    }
+    
+    .id-card-photo {
+        width: 220px;
+        height: 220px;
+        border: 3px solid #2c3e50;
+        border-radius: 5px;
+        overflow: hidden;
+        background-color: #f5f5f5;
+        position: relative;
+    }
+    
+    .id-card-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    /* Remove the watermark on photo */
+    /* Remove the scribbled effect on photo */
+    .id-card-photo:after {
+        display: none; /* Hide the watermark overlay */
+    }
+    
+    .id-number-section {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding-left: 20px;
+    }
+    
+    .driver-number-display {
+        font-size: 100px;
+        color: #e74c3c;
+        font-weight: bold;
+        line-height: 1;
+        margin-bottom: 8px;
+    }
+    
+    .driver-type-label {
+        font-size: 14px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    /* Validity box styling for driver ID display */
+    .validity-box {
+        padding: 6px 10px;
+        text-align: center;
+        width: 100%;
+        margin-top: 12px;
+        background-color: transparent;
+    }
+    
+    .validity-title {
+        display: block;
+        font-size: 12px;
+        color: #2c3e50;
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        margin-bottom: 3px;
+    }
+    
+    .validity-value {
+        display: block;
+        font-size: 16px;
+        font-weight: bold;
+        color: #e74c3c;
+        margin-bottom: 3px;
+    }
+    
+    .validity-box .badge {
+        display: inline-block;
+        padding: 4px 6px;
+        font-size: 11px;
+        background-color: transparent;
+    }
+    
+    .validity-box .bg-danger {
+        color: #dc3545;
+        background-color: transparent;
+    }
+    
+    .validity-box .bg-warning {
+        color: #ffc107;
+        background-color: transparent;
+    }
+    
+    .validity-box .bg-success {
+        color: #28a745;
+        background-color: transparent;
+    }
+    
+    .info-section {
+        margin-bottom: 15px;
+    }
+    
+    .info-label {
+        font-size: 12px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 5px;
+    }
+    
+    .driver-name {
+        font-size: 28px;
+        font-weight: bold;
+        text-transform: uppercase;
+        color: #2c3e50;
+        margin: 0;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .driver-address {
+        font-size: 20px;
+        color: #34495e;
+        line-height: 1.3;
+    }
+    
+    /* Styles for the new bottom validity container */
+    .validity-bottom-container {
+        display: flex;
+        justify-content: center;
+        margin-top: auto;
+        margin-bottom: 15px;
+    }
+    
+    .validity-bottom-box {
+        display: inline-block;
+        border: 2px solid #e74c3c;
+        border-radius: 8px;
+        padding: 8px 25px;
+        text-align: center;
+        background-color: #fff;
+    }
+    
+    .validity-bottom-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #2c3e50;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 3px;
+    }
+    
+    .validity-bottom-date {
+        font-size: 22px;
+        font-weight: bold;
+        color: #e74c3c;
+    }
+    
+    /* Driver validity styles */
+    .driver-validity {
+        display: flex;
+        align-items: center;
+        font-size: 22px;
+        color: #2c3e50;
+        margin-bottom: 8px;
+    }
+    
+    .driver-validity .validity-label {
+        font-weight: 600;
+        margin-right: 8px;
+    }
+    
+    .driver-validity .validity-date {
+        color: #e74c3c;
+        font-weight: bold;
+        margin-right: 10px;
+    }
+    
+    .driver-validity .badge {
+        font-size: 12px;
+        padding: 5px 10px;
+        border-radius: 4px;
+    }
+    
+    /* Card footer styles */
+    .id-card-footer {
+        padding: 10px;
+        font-size: 14px;
+        background-color: #f5f5f7;
+        border-top: 1px solid #eee;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-top: auto; /* Push to bottom of flex container */
+    }
+    
+    .validity-label {
+        font-weight: bold;
+        color: #333;
+        margin-right: 5px;
+    }
+    
+    .validity-date {
+        color: #e74c3c;
+        margin-right: 5px;
+    }
+    
+    .id-card-footer .badge {
+        font-size: 10px;
+        padding: 4px 6px;
+        border-radius: 4px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    /* Back card styles */
+    .back-header {
+        position: relative;
+        text-align: center;
+        font-size: 14px;
+        font-weight: bold;
+        margin: 10px 0;
+        padding: 6px 0;
+        color: #2c3e50;
+        text-transform: uppercase;
+        background-color: rgba(44, 62, 80, 0.03);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+    
+    .back-header:after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60px;
+        height: 2px;
+        background-color: #e74c3c;
+        border-radius: 2px;
+    }
+    
+    .personal-details {
+        border: 1px solid #eee;
+        border-radius: 6px;
+        padding: 15px;
+        margin: 12px 15px;
+        background-color: #fff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    
+    .personal-details-title {
+        display: flex;
+        align-items: center;
+        font-weight: bold;
+        font-size: 12px;
+        color: #2c3e50;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+    }
+    
+    .personal-details-title::before {
+        content: '';
+        display: inline-block;
+        width: 4px;
+        height: 14px;
+        background-color: #e74c3c;
+        margin-right: 6px;
+        border-radius: 2px;
+    }
+    
+    .personal-details-row {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 6px;
+        font-size: 12px;
+        line-height: 1.3;
+    }
+    
+    .personal-details-label {
+        display: flex;
+        align-items: center;
+        font-weight: 600;
+        color: #555;
+        flex: 1;
+    }
+    
+    .personal-details-value {
+        flex: 1.2;
+        text-align: right;
+        color: #333;
+        word-break: break-word;
+    }
+    
+    .qr-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 15px 0;
+    }
+    
+    .qr-code {
+        width: 140px;
+        height: 140px;
+        background-color: white;
+        padding: 5px;
+        border-radius: 5px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .qr-label {
+        font-size: 11px;
+        color: #7f8c8d;
+        margin-top: 5px;
+        text-align: center;
+    }
+    
+    .back-signatures {
+        padding: 12px 15px 15px;
+        text-align: center;
+        font-size: 11px;
+        color: #2c3e50;
+        margin: 0 12px 15px;
+        background-color: rgba(44, 62, 80, 0.02);
+        border-radius: 6px;
+    }
+    
+    .primary-signature {
+        text-align: center;
+        margin-bottom: 18px;
+        padding-top: 5px;
+    }
+    
+    .signature-row {
+        display: flex;
+        justify-content: space-around;
+        margin-top: 5px;
+    }
+    
+    .signature-item {
+        flex: 1;
+        text-align: center;
+        padding: 0 8px;
+    }
+    
+    .signature-line {
+        position: relative;
+        border-top: 1px solid #2c3e50;
+        width: 90%;
+        margin: 20px auto 3px;
+    }
+    
+    .signature-line:before {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: 0;
+        width: 100%;
+        border-top: 1px dashed rgba(44, 62, 80, 0.2);
+    }
+    
+    .official-name {
+        font-size: 12px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin: 3px 0 0;
+    }
+    
+    .official-title {
+        font-size: 10px;
+        color: #7f8c8d;
+        margin-top: 1px;
+    }
+    
+    /* Modify back card components layout for better fit */
+    .back-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        justify-content: space-between;
+        padding-bottom: 10px;
+    }
+    
+    .back-footer {
+        background-color: #f5f5f7;
+        border-top: 1px solid #eee;
+        padding: 8px 10px;
+        font-size: 10px;
+        color: #666;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: auto; /* Push to bottom of flex container */
+    }
+    
+    .back-footer .material-icons {
+        font-size: 10px;
+        margin-right: 4px;
+        color: #e74c3c;
+    }
+    
+    /* Add styling for separator */
+    .info-separator {
+        border-top: 1px dashed #ddd;
+        margin: 6px 0;
+    }
+    
+    /* Print button */
+    .id-card-controls {
+        margin-top: 20px;
+        display: flex;
+        justify-content: center;
+    }
+    
+    .print-button {
+        background-color: #2c3e50;
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        font-weight: 600;
+        font-size: 16px;
+    }
+    
+    .print-button:hover {
+        background-color: #1a252f;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .id-cards-row {
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .id-card {
+            margin-bottom: 40px;
+        }
+    }
+    
+    /* Print styles */
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        
+        .id-card-container, .id-card-container * {
+            visibility: visible;
+        }
+        
+        .id-card-container {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .id-cards-row {
+            flex-direction: row;
+            gap: 10px;
+        }
+        
+        .id-card {
+            width: 3.5in;
+            height: 5.8in;
+            page-break-inside: avoid;
+            margin: 0;
+            box-shadow: none;
+        }
+        
+        .card-side, .id-card-controls {
+            display: none;
+        }
+    }
+    
+    /* Add icon styles and enhance visual hierarchy for the back of the card */
+    /* Icon styles for information rows */
+    .info-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        background-color: rgba(44, 62, 80, 0.1);
+        border-radius: 50%;
+        margin-right: 6px;
+        flex-shrink: 0;
+    }
+    
+    .info-icon i {
+        font-size: 10px;
+        color: #2c3e50;
+    }
+    
+    /* Enhanced back card layout */
+    .id-card-back {
+        position: relative;
+        background-color: #fff;
+        background-image: 
+            radial-gradient(circle at 10% 10%, rgba(227, 242, 253, 0.5) 6%, transparent 6%),
+            radial-gradient(circle at 90% 90%, rgba(227, 242, 253, 0.5) 6%, transparent 6%);
+    }
+    
+    .back-header {
+        position: relative;
+        text-align: center;
+        font-size: 14px;
+        font-weight: bold;
+        margin: 10px 0;
+        padding: 6px 0;
+        color: #2c3e50;
+        text-transform: uppercase;
+        background-color: rgba(44, 62, 80, 0.03);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+    
+    .back-header:after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60px;
+        height: 2px;
+        background-color: #e74c3c;
+        border-radius: 2px;
+    }
+    
+    /* Enhance personal details section */
+    .personal-details {
+        border: 1px solid #eee;
+        border-radius: 6px;
+        padding: 12px;
+        margin: 8px 12px;
+        background-color: #fff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    
+    .personal-details-title {
+        display: flex;
+        align-items: center;
+        font-weight: bold;
+        font-size: 12px;
+        color: #2c3e50;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+    }
+    
+    .personal-details-title::before {
+        content: '';
+        display: inline-block;
+        width: 4px;
+        height: 14px;
+        background-color: #e74c3c;
+        margin-right: 6px;
+        border-radius: 2px;
+    }
+    
+    .personal-details-row {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 8px;
+        font-size: 13px;
+        line-height: 1.4;
+    }
+    
+    .personal-details-label {
+        display: flex;
+        align-items: center;
+        font-weight: 600;
+        color: #555;
+        flex: 1;
+    }
+    
+    .personal-details-value {
+        flex: 1.2;
+        text-align: right;
+        color: #333;
+        word-break: break-word;
+    }
+    
+    /* Card back footer */
+    .back-footer {
+        background-color: #f5f5f7;
+        border-top: 1px solid #eee;
+        padding: 8px 10px;
+        font-size: 10px;
+        color: #666;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: auto; /* Push to bottom of flex container */
+    }
+    
+    .back-footer .material-icons {
+        font-size: 10px;
+        margin-right: 4px;
+        color: #e74c3c;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-md-12 text-center">
+            <h1 class="h3 mb-3">POTPOT Driver ID Card</h1>
+            <p class="text-muted">View both sides of your ID card</p>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="id-card-container">
+                <div class="id-cards-row">
+                    <!-- Front of the ID card -->
+                    <div class="id-card">
+                        <div class="card-side">Front Side</div>
+                        <div class="id-card-front">
+                            <div class="id-card-header">
+                                <div class="card-header-content">
+                                    <div class="header-logo">
+                                        <img src="{% static 'images/logo.png' %}" alt="City Seal" class="logo-img" onerror="this.src='https://via.placeholder.com/40?text=City'">
+                                    </div>
+                                    
+                                    <div class="header-center">
+                                        <div class="header-title">Republic of the Philippines</div>
+                                        <div class="header-title">Province of Negros Oriental</div>
+                                        <div class="header-subtitle">CITY OF BAYAWAN</div>
+                                        <div class="header-office">City Transportation and Traffic Management Office</div>
+                                    </div>
+                                    
+                                    <div class="header-logo">
+                                        <img src="{% static 'images/logo_ibayaw.png' %}" alt="CTTMO Logo" class="logo-img" onerror="this.src='https://via.placeholder.com/40?text=CTTMO'">
+                                    </div>
+                                </div>
+                                
+                                <div class="id-card-title">POTPOT IDENTIFICATION CARD</div>
+                            </div>
+                            
+                            <div class="id-card-body">
+                                <div class="id-card-content">
+                                    <div class="id-card-photo">
+                                        {% if profile.avatar %}
+                                        <img src="{{ profile.avatar.url }}" alt="Driver Photo">
+                                        {% else %}
+                                        <img src="https://via.placeholder.com/200x200/ffffff/cccccc?text=PHOTO" alt="Driver Photo">
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="id-number-section">
+                                        <div class="driver-number-display">
+                                            {% if driver_id|length > 3 %}
+                                                {{ driver_id|slice:"-3:" }}
+                                            {% else %}
+                                                {{ driver_id }}
+                                            {% endif %}
+                                        </div>
+                                        <div class="driver-type-label">POTPOT DRIVER NUMBER</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="info-section">
+                                    <div class="info-label">FULL NAME</div>
+                                    <div class="driver-name">{{ user.first_name|upper }} {{ user.last_name|upper }}</div>
+                                </div>
+                                
+                                <div class="info-section">
+                                    <div class="info-label">ADDRESS</div>
+                                    <div class="driver-address">{{ profile.address|upper }}</div>
+                                </div>
+
+                                <!-- Add validity date at the bottom of the card -->
+                                <div class="validity-bottom-container">
+                                    <div class="validity-bottom-box">
+                                        <div class="validity-bottom-label">VALID UNTIL</div>
+                                        <div class="validity-bottom-date">{{ expiry_date|date:"m-d-Y" }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="id-card-footer">
+                                <div class="text-center small w-100">
+                                    <span class="validity-label">Valid until:</span>
+                                    <span class="validity-date">{{ expiry_date|date:"m-d-Y" }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Back of the ID card -->
+                    <div class="id-card">
+                        <div class="card-side">Back Side</div>
+                        <div class="id-card-back">
+                            <div class="back-header">DRIVER IDENTIFICATION DETAILS</div>
+                            
+                            <div class="back-content">
+                                <div class="personal-details">
+                                    <div class="personal-details-title">Personal Information</div>
+                                    <div class="personal-details-row">
+                                        <span class="personal-details-label">
+                                            <span class="info-icon"><i class="material-icons" style="font-size: 10px;">badge</i></span>
+                                            Driver ID:
+                                        </span>
+                                        <span class="personal-details-value">
+                                            {% if driver_id|length > 3 %}
+                                                {{ driver_id|slice:"-3:" }}
+                                            {% else %}
+                                                {{ driver_id }}
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    
+                                    <!-- Add validity date information to the back side -->
+                                    <div class="personal-details-row">
+                                        <span class="personal-details-label">
+                                            <span class="info-icon"><i class="material-icons" style="font-size: 10px;">event</i></span>
+                                            Valid until:
+                                        </span>
+                                        <span class="personal-details-value">
+                                            {{ expiry_date|date:"m-d-Y" }}
+                                            {% if is_expired %}
+                                                <span class="badge bg-danger small">Expired</span>
+                                            {% elif is_expiring_soon %}
+                                                <span class="badge bg-warning small">Expiring Soon</span>
+                                            {% else %}
+                                                <span class="badge bg-success small">Valid</span>
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    
+                                    <div class="personal-details-row">
+                                        <span class="personal-details-label">
+                                            <span class="info-icon"><i class="material-icons" style="font-size: 10px;">cake</i></span>
+                                            Birth Date:
+                                        </span>
+                                        <span class="personal-details-value">{% if profile.birthdate %}{{ profile.birthdate|date:"n/j/Y" }}{% else %}N/A{% endif %}</span>
+                                    </div>
+                                    
+                                    <div class="personal-details-row">
+                                        <span class="personal-details-label">
+                                            <span class="info-icon"><i class="material-icons" style="font-size: 10px;">phone</i></span>
+                                            Contact:
+                                        </span>
+                                        <span class="personal-details-value">
+                                            {% if profile.contact_number %}
+                                                {{ profile.contact_number }}
+                                            {% elif profile.phone_number %}
+                                                {{ profile.phone_number }}
+                                            {% else %}
+                                                N/A
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    
+                                    <div class="info-separator"></div>
+                                    
+                                    <div class="personal-details-row">
+                                        <span class="personal-details-label">
+                                            <span class="info-icon"><i class="material-icons" style="font-size: 10px;">emergency</i></span>
+                                            Emergency:
+                                        </span>
+                                        <span class="personal-details-value">
+                                            {% if profile.emergency_contact_name %}
+                                                {{ profile.emergency_contact_name }}
+                                                {% if profile.emergency_contact_number %}
+                                                    <br>{{ profile.emergency_contact_number }}
+                                                {% endif %}
+                                            {% elif application.emergency_contact %}
+                                                {{ application.emergency_contact }}
+                                            {% else %}
+                                                N/A
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div class="qr-container">
+                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ qr_data|urlencode }}" alt="QR Code" class="qr-code">
+                                    <div class="qr-label">Scan to verify driver information</div>
+                                </div>
+                                
+                                <div class="back-signatures">
+                                    <div class="primary-signature">
+                                        <div class="signature-line"></div>
+                                        <div class="official-name">EDILBERTO B. EURAOBA II</div>
+                                        <div class="official-title">CTTMO Officer</div>
+                                    </div>
+                                    
+                                    <div class="signature-row">
+                                        <div class="signature-item">
+                                            <div class="signature-line"></div>
+                                            <div class="official-name">CINDY H. SALIMBAGAT</div>
+                                            <div class="official-title">CPSO Officer</div>
+                                        </div>
+                                        
+                                        <div class="signature-item">
+                                            <div class="signature-line"></div>
+                                            <div class="official-name">JOHN T. RAYMOND JR.</div>
+                                            <div class="official-title">City Mayor</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="back-footer">
+                                <span class="material-icons" style="font-size: 10px;">info</span>
+                                If found, please return to CTTMO Office • Valid until: {{ expiry_date|date:"m-d-Y" }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="id-card-controls">
+                    <button class="print-button" id="printButton">Print ID Card</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const printButton = document.getElementById('printButton');
+        
+        // Print cards when button is clicked
+        printButton.addEventListener('click', function() {
+            window.print();
+        });
+    });
+</script>
+{% endblock %} 

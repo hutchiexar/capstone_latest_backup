@@ -124,19 +124,43 @@
                     </div>
                     
                     <div class="col-12 col-md-6">
-                        <label for="{{ form.new_pd_number.id_for_label }}" class="form-label">New PD Number <span class="text-danger">*</span></label>
+                        <label for="{{ form.new_pd_number.id_for_label }}" class="form-label">New PD Number</label>
                         <div class="input-group">
                             <span class="input-group-text"><span class="material-icons fs-5">numbers</span></span>
-                            {{ form.new_pd_number }}
+                            <input type="text" name="new_pd_number" id="{{ form.new_pd_number.id_for_label }}" class="form-control bg-light" readonly placeholder="Auto-generated">
                         </div>
-                        {% if form.new_pd_number.errors %}
-                        <div class="text-danger mt-1 small">
-                            {% for error in form.new_pd_number.errors %}
-                            {{ error }}
-                            {% endfor %}
+                        <div class="form-text">This field will be automatically generated (format: XXX)</div>
+                    </div>
+                </div>
+                
+                <!-- PD Number Auto-generation Note -->
+                <div class="alert alert-info mt-3">
+                    <div class="d-flex">
+                        <span class="material-icons me-2">info</span>
+                        <div>
+                            <strong>Automatic Number Generation</strong>
+                            <p class="mb-0 small">The following information will be automatically generated for this driver:</p>
+                            <ul class="mb-0 mt-1 small">
+                                <li><strong>PD Number:</strong> A unique identifier in XXX format</li>
+                                <li><strong>Validity Period:</strong> 1 year from the creation date</li>
+                            </ul>
                         </div>
-                        {% endif %}
-                        <div class="form-text">Must start with D prefix (e.g., D-12345)</div>
+                    </div>
+                </div>
+                
+                <!-- Validity Section -->
+                <div class="row g-3 mt-3">
+                    <div class="col-12">
+                        <label class="form-label">Validity Period</label>
+                        <div class="alert alert-light border p-3">
+                            <div class="d-flex align-items-center">
+                                <span class="material-icons me-2 text-primary">event</span>
+                                <div>
+                                    <p class="mb-0"><strong>1 Year Validity</strong></p>
+                                    <p class="mb-0 small text-muted">This driver's record will be valid for 1 year from the creation date. The system will automatically calculate the expiration date.</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 

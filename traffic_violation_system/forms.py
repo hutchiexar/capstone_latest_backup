@@ -137,15 +137,23 @@ class ViolationForm(forms.ModelForm):
 class OperatorForm(forms.ModelForm):
     class Meta:
         model = Operator
-        fields = ['last_name', 'first_name', 'middle_initial', 'address', 'old_pd_number', 'new_pd_number']
+        fields = ['first_name', 'last_name', 'middle_initial', 'address', 'old_pd_number', 'new_pd_number', 'po_number']
         widgets = {
-            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last Name'}),
-            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First Name'}),
-            'middle_initial': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'M.I.'}),
-            'address': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Address', 'rows': 3}),
-            'old_pd_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Old P.O. No.'}),
-            'new_pd_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'New P.O. No.'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter first name'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter last name'}),
+            'middle_initial': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter middle initial'}),
+            'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Enter address'}),
+            'old_pd_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter old P.D. number'}),
+            'new_pd_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter new P.D. number'}),
+            'po_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter permit operator number'}),
         }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Make these fields not required since they'll be auto-generated
+        self.fields['new_pd_number'].required = False
+        self.fields['old_pd_number'].required = False
+        self.fields['po_number'].required = False
 
 class ImportOperatorsForm(forms.Form):
     file = forms.FileField(
@@ -293,7 +301,7 @@ class DriverForm(forms.ModelForm):
             'middle_initial': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'M.I.'}),
             'address': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Address', 'rows': 3}),
             'old_pd_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Previous PD number if available'}),
-            'new_pd_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'D-XXXXX'}),
+            'new_pd_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Auto-generated', 'readonly': True}),
             'license_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Driver license number'}),
             'contact_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Contact number'}),
             'emergency_contact': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Emergency contact name'}),

@@ -611,32 +611,39 @@
 
     <!-- Violations Section -->
     <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-white">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
             <h5 class="card-title mb-0">My Violations</h5>
+            <div class="btn-group">
+                <a href="{% url 'user_portal:user_violations' %}" class="btn btn-sm btn-outline-primary">
+                    Regular
+                </a>
+                <a href="{% url 'user_portal:user_ncap_violations' %}" class="btn btn-sm btn-outline-primary">
+                    NCAP
+                </a>
+            </div>
         </div>
         <div class="card-body">
-            <!-- Two tabs for Regular and NCAP violations -->
+            <!-- Violations Tab Nav -->
             <ul class="nav nav-tabs mb-3" id="violationsTab" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="regular-tab" data-bs-toggle="tab" 
-                            data-bs-target="#regular-violations" type="button" role="tab" 
-                            aria-controls="regular-violations" aria-selected="true">
+                    <button class="nav-link active" id="regular-violations-tab" data-bs-toggle="tab" data-bs-target="#regular-violations" 
+                            type="button" role="tab" aria-controls="regular-violations" aria-selected="true">
                         Regular Violations
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="ncap-tab" data-bs-toggle="tab" 
-                            data-bs-target="#ncap-violations" type="button" role="tab" 
-                            aria-controls="ncap-violations" aria-selected="false">
+                    <button class="nav-link" id="ncap-violations-tab" data-bs-toggle="tab" data-bs-target="#ncap-violations" 
+                            type="button" role="tab" aria-controls="ncap-violations" aria-selected="false">
                         NCAP Violations
                     </button>
                 </li>
             </ul>
             
+            <!-- Tab Content -->
             <div class="tab-content" id="violationsTabContent">
                 <!-- Regular Violations Tab -->
-                <div class="tab-pane fade show active" id="regular-violations" role="tabpanel" aria-labelledby="regular-tab">
-                    {% if recent_regular_violations %}
+                <div class="tab-pane fade show active" id="regular-violations" role="tabpanel" aria-labelledby="regular-violations-tab">
+                    {% if recent_violations %}
                     <div class="table-responsive">
                         <table class="table table-hover align-middle">
                             <thead class="table-light">
@@ -649,9 +656,10 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for violation in recent_regular_violations %}
+                                {% for violation in recent_violations %}
+                                {% if not violation.image and not violation.driver_photo and not violation.vehicle_photo and not violation.secondary_photo %}
                                 <tr>
-                                    <td>{{ violation.violation_date }}</td>
+                                    <td>{{ violation.violation_date|date:"M d, Y" }}</td>
                                     <td>{{ violation.violation_type }}</td>
                                     <td>
                                         <span class="badge
@@ -672,14 +680,10 @@
                                         </a>
                                     </td>
                                 </tr>
+                                {% endif %}
                                 {% endfor %}
                             </tbody>
                         </table>
-                    </div>
-                    <div class="text-center mt-3">
-                        <a href="{% url 'user_portal:user_violations' %}" class="btn btn-outline-primary">
-                            <i class="fas fa-list me-1"></i> View All Regular Violations
-                        </a>
                     </div>
                     {% else %}
                     <div class="text-center py-4">
@@ -691,8 +695,8 @@
                 </div>
                 
                 <!-- NCAP Violations Tab -->
-                <div class="tab-pane fade" id="ncap-violations" role="tabpanel" aria-labelledby="ncap-tab">
-                    {% if recent_ncap_violations %}
+                <div class="tab-pane fade" id="ncap-violations" role="tabpanel" aria-labelledby="ncap-violations-tab">
+                    {% if recent_violations %}
                     <div class="table-responsive">
                         <table class="table table-hover align-middle">
                             <thead class="table-light">
@@ -701,13 +705,15 @@
                                     <th>Violation</th>
                                     <th>Status</th>
                                     <th>Penalty</th>
+                                    <th>Evidence</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for violation in recent_ncap_violations %}
+                                {% for violation in recent_violations %}
+                                {% if violation.image or violation.driver_photo or violation.vehicle_photo or violation.secondary_photo %}
                                 <tr>
-                                    <td>{{ violation.violation_date }}</td>
+                                    <td>{{ violation.violation_date|date:"M d, Y" }}</td>
                                     <td>{{ violation.violation_type }}</td>
                                     <td>
                                         <span class="badge
@@ -723,27 +729,39 @@
                                     </td>
                                     <td>₱{{ violation.fine_amount|floatformat:2 }}</td>
                                     <td>
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-camera me-1"></i> NCAP
+                                        </span>
+                                    </td>
+                                    <td>
                                         <a href="{% url 'user_portal:violation_detail' violation.id %}" class="btn btn-sm btn-primary">
                                             <i class="fas fa-info-circle me-1"></i> Details
                                         </a>
                                     </td>
                                 </tr>
+                                {% endif %}
                                 {% endfor %}
                             </tbody>
                         </table>
-                    </div>
-                    <div class="text-center mt-3">
-                        <a href="{% url 'user_portal:user_ncap_violations' %}" class="btn btn-outline-primary">
-                            <i class="fas fa-list me-1"></i> View All NCAP Violations
-                        </a>
                     </div>
                     {% else %}
                     <div class="text-center py-4">
                         <img src="{% static 'images/no-violations.svg' %}" alt="No violations" style="height: 120px;" class="mb-3">
                         <h5>No NCAP Violations Found</h5>
-                        <p class="text-muted">You don't have any NCAP traffic violations on record.</p>
+                        <p class="text-muted">You don't have any NCAP camera violations on record.</p>
                     </div>
                     {% endif %}
+                </div>
+            </div>
+            
+            <div class="text-center mt-3">
+                <div class="btn-group" role="group">
+                    <a href="{% url 'user_portal:user_violations' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-list me-1"></i> All Regular Violations
+                    </a>
+                    <a href="{% url 'user_portal:user_ncap_violations' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-camera me-1"></i> All NCAP Violations
+                    </a>
                 </div>
             </div>
         </div>
@@ -881,6 +899,23 @@ document.addEventListener('DOMContentLoaded', function() {
             // Clean up URL after showing message
             const url = new URL(window.location.href);
             url.searchParams.delete('report');
+            window.history.replaceState({}, document.title, url);
+        }
+        
+        // Handle driver application submission success
+        if (urlParams.get('driver_application') === 'success') {
+            // Show success message using SweetAlert
+            Swal.fire({
+                icon: 'success',
+                title: 'Application Submitted!',
+                text: 'Your driver application has been submitted successfully! You\'ll be notified when it\'s processed.',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#3563E9'
+            });
+            
+            // Clean up URL after showing message
+            const url = new URL(window.location.href);
+            url.searchParams.delete('driver_application');
             window.history.replaceState({}, document.title, url);
         }
     });

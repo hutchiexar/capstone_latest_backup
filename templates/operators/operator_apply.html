@@ -581,6 +581,47 @@
                                 {% endif %}
                             </div>
                             
+                            <!-- Vehicle Type Dropdown -->
+                            <div class="mb-4">
+                                <div class="file-upload-label">
+                                    <span class="material-icons">commute</span>
+                                    Vehicle Type
+                                </div>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <span class="material-icons">directions_car</span>
+                                    </span>
+                                    <select name="vehicle_type" id="id_vehicle_type" class="form-select">
+                                        <option value="Potpot">Potpot</option>
+                                        <option value="Jeepney">Jeepney</option>
+                                        <option value="Tricycle">Tricycle</option>
+                                    </select>
+                                </div>
+                                <div class="form-text text-muted mt-1">
+                                    <small>Select the type of vehicle you want to register</small>
+                                </div>
+                            </div>
+                            
+                            <!-- Number of Units/Potpot -->
+                            <div class="mb-4">
+                                <div class="file-upload-label">
+                                    <span class="material-icons">directions_car</span>
+                                    Number of Units
+                                </div>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <span class="material-icons">directions_car</span>
+                                    </span>
+                                    <input type="number" name="number_of_units" id="id_number_of_units" class="form-control" min="1" max="100" value="1" placeholder="Enter number of units">
+                                </div>
+                                <div class="form-text text-muted mt-1">
+                                    <small>If approved, each unit will get a unique identifier (format: XXX)</small>
+                                </div>
+                            </div>
+                            
+                            <!-- Potpot preview will be inserted here by JavaScript -->
+                            <div id="potpot-preview-container" class="mt-3"></div>
+                            
                             <div class="d-flex justify-content-end mt-4">
                                 <a href="{% url 'user_portal:user_dashboard' %}" class="btn btn-outline-secondary me-2">
                                     <span class="material-icons">close</span>
@@ -687,6 +728,128 @@ document.addEventListener('DOMContentLoaded', function() {
             // The change event on the input will handle the visual update
         });
     });
+    
+    // Handle number of units change
+    $('#id_number_of_units').on('change keyup', function() {
+        const numUnits = parseInt($(this).val()) || 0;
+        
+        // Validate the number of units
+        if (numUnits > 100) {
+            $(this).val(100);
+            showAlert('warning', 'Maximum 100 units allowed.');
+            return updatePotpotPreview();
+        } else if (numUnits < 0) {
+            $(this).val(1);
+            return updatePotpotPreview();
+        }
+        
+        updatePotpotPreview();
+    });
+
+    // Handle vehicle type change
+    $('#id_vehicle_type').on('change', function() {
+        updatePotpotPreview();
+    });
+
+    // Function to show an alert message
+    function showAlert(type, message) {
+        const alertHTML = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                <span class="material-icons fs-5 align-middle me-1">${type === 'warning' ? 'warning' : 'info'}</span>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        `;
+        
+        // Remove any existing alerts
+        $('.alert-dismissible').remove();
+        
+        // Insert the alert before the form
+        $('form').before(alertHTML);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            $('.alert-dismissible').alert('close');
+        }, 5000);
+    }
+    
+    // Initialize potpot preview
+    updatePotpotPreview();
+
+    // Function to update the potpot number preview
+    function updatePotpotPreview() {
+        const numUnits = parseInt($('#id_number_of_units').val()) || 0;
+        const vehicleType = $('#id_vehicle_type').val() || 'Potpot';
+        let previewHTML = '';
+        
+        // Get the appropriate icon based on vehicle type
+        let vehicleIcon = 'directions_car';
+        if (vehicleType === 'Jeepney') {
+            vehicleIcon = 'directions_bus';
+        } else if (vehicleType === 'Tricycle') {
+            vehicleIcon = 'two_wheeler';
+        }
+        
+        // Clear the preview container
+        $('#potpot-preview-container').empty();
+        
+        if (numUnits > 0) {
+            previewHTML = '<div class="card border-0 shadow-sm rounded-3">';
+            previewHTML += '<div class="card-header bg-transparent d-flex align-items-center px-4 py-3 border-bottom">';
+            previewHTML += '<span class="material-icons me-2" style="color: var(--primary-color); font-size: 24px;">preview</span>';
+            previewHTML += '<h5 class="mb-0 fw-bold">Vehicle Preview</h5>';
+            previewHTML += '</div>';
+            previewHTML += '<div class="card-body p-4">';
+            
+            // Add explanation about system-wide uniqueness
+            previewHTML += `
+                <div class="alert alert-info mb-4">
+                    <div class="d-flex align-items-start">
+                        <span class="material-icons me-3 mt-1">info</span>
+                        <div>
+                            <p class="mb-1"><strong>System-wide unique ${vehicleType} numbers</strong></p>
+                            <p class="mb-0">If your application is approved, the system will automatically assign ${numUnits} sequential ${vehicleType.toLowerCase()} numbers. Each ${vehicleType.toLowerCase()} will have a unique XXX format number (e.g., 001, 002, 045, 123, etc.) that is not used by any other vehicle in the system.</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            previewHTML += '<div class="row">';
+            
+            // Show sample format but not actual numbers
+            for (let i = 1; i <= Math.min(numUnits, 12); i++) {
+                previewHTML += `
+                    <div class="col-md-3 col-sm-4 col-6 mb-3">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body p-2 text-center">
+                                <span class="material-icons text-primary mb-1">${vehicleIcon}</span>
+                                <div class="badge bg-primary p-2 w-100 fs-6">XXX</div>
+                                <div class="mt-1">
+                                    <small class="text-muted">${vehicleType}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (numUnits > 12) {
+                previewHTML += `
+                    <div class="col-12 mt-2">
+                        <div class="alert alert-info py-2 mb-0">
+                            <span class="material-icons fs-6 align-middle me-1">info</span>
+                            ${numUnits - 12} more units will be created with unique sequential IDs.
+                        </div>
+                    </div>
+                `;
+            }
+            
+            previewHTML += '</div></div></div>';
+            
+            // Append the preview to the container
+            $('#potpot-preview-container').html(previewHTML);
+        }
+    }
 });
 </script>
 {% endblock %} 

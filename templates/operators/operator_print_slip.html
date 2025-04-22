@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operator Details - {{ operator.full_name }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 0.5in;
+        }
+        
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 11pt;
+            line-height: 1.4;
+            color: #000;
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* Header styling */
+        .header {
+            text-align: center;
+            border-bottom: 1px solid #000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            position: relative;
+            background-color: #f8f8f8;
+        }
+        
+        .header-content {
+            padding: 10px 0;
+        }
+        
+        .header-logos {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+            padding: 10px 20px;
+        }
+        
+        .header-logo {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+        }
+        
+        .left-logo {
+            margin-right: 20px;
+        }
+        
+        .right-logo {
+            margin-left: 20px;
+        }
+        
+        .header-content {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .header h2 {
+            margin: 5px 0;
+            font-size: 18pt;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .header p {
+            margin: 0;
+            font-size: 10pt;
+        }
+        
+        .header-title {
+            font-size: 14pt;
+            font-weight: bold;
+            margin: 5px 0;
+            text-transform: uppercase;
+            color: #fff;
+            background-color: #2c3e50;
+            padding: 5px 0;
+        }
+        
+        .header-subtitle {
+            font-size: 9pt;
+            margin: 3px 0;
+        }
+        
+        /* Operator Info styling */
+        .operator-name {
+            font-size: 16pt;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .operator-id {
+            font-size: 10pt;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        /* Summary section */
+        .summary {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        
+        .summary-item {
+            width: 33%;
+        }
+        
+        .summary-label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 3px;
+            font-size: 10pt;
+        }
+        
+        .summary-value {
+            font-size: 11pt;
+        }
+        
+        /* Section styling */
+        .section-title {
+            font-size: 12pt;
+            font-weight: bold;
+            margin: 15px 0 5px 0;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 3px;
+        }
+        
+        /* Information rows */
+        .info-row {
+            margin-bottom: 4px;
+            display: flex;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            width: 120px;
+            font-size: 10pt;
+        }
+        
+        .info-value {
+            flex: 1;
+        }
+        
+        /* Table styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 6px;
+            text-align: left;
+            font-size: 10pt;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        
+        tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        /* Footer */
+        .footer {
+            margin-top: 20px;
+            font-size: 8pt;
+            color: #666;
+            text-align: right;
+            border-top: 1px solid #ddd;
+            padding-top: 5px;
+        }
+        
+        /* Action buttons styling */
+        .action-buttons-container {
+            margin: 30px auto;
+            text-align: center;
+            width: 100%;
+            clear: both;
+        }
+        
+        .button-row {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 0 auto;
+            max-width: 800px;
+        }
+        
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-weight: 500;
+            font-size: 14px;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            color: white;
+            min-width: 180px;
+            max-width: 220px;
+        }
+        
+        .print-btn {
+            background-color: #3f51b5;
+        }
+        
+        .return-btn {
+            background-color: #6c757d;
+        }
+        
+        .btn-icon {
+            margin-right: 8px;
+        }
+        
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            
+            body {
+                padding: 0;
+                margin: 0;
+            }
+            
+            .container {
+                padding: 0;
+                margin: 0;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .button-row {
+                flex-direction: column;
+                align-items: center;
+                gap: 10px;
+            }
+            
+            .action-btn {
+                width: 90%;
+                max-width: 280px;
+            }
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+        
+        .my-4 {
+            margin-top: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .mx-2 {
+            margin-left: 0.5rem;
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Official Header with government seals -->
+    <div class="header">
+        <div class="header-logos">
+            <img src="/static/images/logo.png" alt="Bayawan City Seal" class="header-logo left-logo" onerror="this.style.display='none'">
+            <div class="header-content">
+                <p class="header-subtitle">Republic of the Philippines</p>
+                <p class="header-subtitle">Province of Negros Oriental</p>
+                <p class="header-subtitle"><strong>CITY OF BAYAWAN</strong></p>
+                <p class="header-subtitle">City Transportation and Traffic Management Office</p>
+            </div>
+            <img src="/static/images/logo_ibayaw.png" alt="iBayaw Traffic Management Logo" class="header-logo right-logo" onerror="this.style.display='none'">
+        </div>
+        <div class="header-title">OPERATOR APPLICATION SLIP</div>
+        <p>{{ current_date|date:"F j, Y, g:i A" }}</p>
+    </div>
+    
+    <!-- Operator Basic Info -->
+    <div class="operator-name">{{ operator.full_name }}</div>
+    <div class="operator-id">Operator ID: {{ operator.new_pd_number }} | Status: {% if operator.active %}Active{% else %}Inactive{% endif %}</div>
+    
+    <!-- Summary Stats -->
+    <div class="summary">
+        <div class="summary-item">
+            <span class="summary-label">Registration Date</span>
+            <span class="summary-value">{{ operator.created_at|date:"F j, Y" }}</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Total Units</span>
+            <span class="summary-value">{{ vehicles|length|default:"0" }}</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Location</span>
+            <span class="summary-value">{{ operator.address|truncatechars:50 }}</span>
+        </div>
+    </div>
+    
+    <!-- Personal Information -->
+    <div class="section-title">Personal Information</div>
+    <div class="info-row">
+        <span class="info-label">Last Name:</span>
+        <span class="info-value">{{ operator.last_name }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">First Name:</span>
+        <span class="info-value">{{ operator.first_name }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Middle Initial:</span>
+        <span class="info-value">{{ operator.middle_initial|default:"None" }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Address:</span>
+        <span class="info-value">{{ operator.address }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Old P.O. Number:</span>
+        <span class="info-value">{{ operator.old_pd_number|default:"None" }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">P.O. Number:</span>
+        <span class="info-value">{{ operator.new_pd_number }}</span>
+    </div>
+    
+    <!-- Units Table -->
+    <div class="row" style="margin-top: 30px;">
+        <div class="col-md-12 text-left">
+            <h2 class="text-center mb-4" style="margin-top: 20px;color:#444; font-size: 20px;"><strong>Units</strong></h2>
+            <hr/>
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped" id="units_table">
+                    <thead class="thead-primary">
+                        <tr>
+                            <th>Vehicle Type</th>
+                            <th>Potpot No.</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if vehicles %}
+                            {% for vehicle in vehicles %}
+                                <tr>
+                                    <td>{{ vehicle.vehicle_type }}</td>
+                                    <td>{{ vehicle.potpot_number }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="2">No Units Found</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action buttons container with side-by-side buttons -->
+    <div class="action-buttons-container no-print">
+        <div class="button-row">
+            <button id="returnBtn" class="action-btn return-btn" onclick="window.location.href='{% url 'operator_dashboard' %}'">
+                Return to Dashboard
+            </button>
+            <button id="printBtn" class="action-btn print-btn">
+                Print Document
+            </button>
+        </div>
+    </div>
+    
+    <!-- Print Footer -->
+    <div class="footer">
+        Generated on: {{ current_date|date:"F j, Y - g:i A" }} | 
+        Document ID: OP-{{ operator.id }}-{{ current_date|date:"Ymd" }}
+    </div>
+
+    <script>
+        // Wait for the page to load, then trigger the print dialog automatically
+        window.addEventListener('DOMContentLoaded', function() {
+            // Print button event listener
+            document.getElementById('printBtn').addEventListener('click', function() {
+                window.print();
+            });
+
+            // Set a timeout to trigger printing automatically
+            setTimeout(function() {
+                window.print();
+            }, 500);
+        });
+    </script>
+</body>
+</html> 

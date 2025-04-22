@@ -436,7 +436,7 @@
                         </div>
                     </div>
                     
-                    <!-- Documents Section -->
+                    <!-- Application Documents Section -->
                     <div class="p-4 border-bottom">
                         <div class="d-flex align-items-center mb-4">
                             <span class="material-icons text-primary me-2 fs-4">description</span>
@@ -444,6 +444,28 @@
                         </div>
                         <div id="documentsSection" class="row g-4 justify-content-start">
                             <!-- Documents will be inserted here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Vehicle Information Section -->
+                    <div class="p-4 border-bottom">
+                        <div class="d-flex align-items-center mb-4">
+                            <span class="material-icons text-primary me-2 fs-4">commute</span>
+                            <h5 class="fw-bold m-0">Vehicle Information</h5>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small mb-1">Vehicle Type</label>
+                                    <p class="mb-0 fw-medium" id="vehicleType">--</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small mb-1">Number of Units</label>
+                                    <p class="mb-0 fw-medium" id="numberOfUnits">--</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -611,6 +633,26 @@
                         document.getElementById('applicantPhone').textContent = user.phone_number || '--';
                         document.getElementById('companyName').textContent = application.company_name || '--';
                         document.getElementById('applicantAddress').textContent = user.address || '--';
+                        
+                        // Populate vehicle information
+                        document.getElementById('vehicleType').textContent = application.vehicle_type || 'Potpot';
+                        
+                        // Set number of units with badge
+                        const numberOfUnits = application.number_of_units || 1;
+                        let badgeClass = 'bg-primary';
+                        
+                        // Determine badge color based on number of units
+                        if (numberOfUnits > 50) {
+                            badgeClass = 'bg-danger';
+                        } else if (numberOfUnits > 20) {
+                            badgeClass = 'bg-warning text-dark';
+                        } else if (numberOfUnits > 10) {
+                            badgeClass = 'bg-info';
+                        }
+                        
+                        document.getElementById('numberOfUnits').innerHTML = `
+                            ${numberOfUnits} <span class="badge ${badgeClass} ms-2">${numberOfUnits} unit${numberOfUnits > 1 ? 's' : ''}</span>
+                        `;
                         
                         // Populate documents section
                         const documentsSection = document.getElementById('documentsSection');

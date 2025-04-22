@@ -54,7 +54,7 @@
                 <h5 class="mb-0 fw-bold">Operators List</h5>
             </div>
             <div class="search-container flex-grow-1 flex-md-grow-0" style="max-width: 360px;">
-                <form method="GET" action="{% url 'operator_list' %}" class="d-flex">
+                <form method="GET" action="{% url 'operator_list' %}" class="d-flex flex-column">
                     <div class="input-group">
                         <input type="text" class="form-control" name="q" id="operatorSearch" placeholder="Search operators..." 
                                value="{{ query }}" aria-label="Search operators">
@@ -67,6 +67,14 @@
                         </a>
                         {% endif %}
                     </div>
+                    {% if user.userprofile.role == 'ADMIN' %}
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" id="showInactive" name="show_inactive" value="true" {% if show_inactive %}checked{% endif %} onChange="this.form.submit()">
+                        <label class="form-check-label" for="showInactive">
+                            Show inactive operators
+                        </label>
+                    </div>
+                    {% endif %}
                 </form>
             </div>
         </div>
@@ -79,18 +87,26 @@
                         <tr>
                             <th style="width: 20%;" class="px-4 py-3 fw-semibold">Last Name</th>
                             <th style="width: 20%;" class="px-4 py-3 fw-semibold">First Name</th>
-                            <th style="width: 10%;" class="px-4 py-3 fw-semibold">M.I.</th>
-                            <th style="width: 35%;" class="px-4 py-3 fw-semibold">Address</th>
+                            <th style="width: 8%;" class="px-4 py-3 fw-semibold">M.I.</th>
+                            <th style="width: 30%;" class="px-4 py-3 fw-semibold">Address</th>
+                            <th style="width: 7%;" class="px-4 py-3 fw-semibold">Status</th>
                             <th style="width: 15%;" class="px-4 py-3 text-end fw-semibold">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for operator in operators %}
-                        <tr>
+                        <tr{% if not operator.active %} class="table-secondary"{% endif %}>
                             <td class="fw-medium px-4 py-3">{{ operator.last_name }}</td>
                             <td class="px-4 py-3">{{ operator.first_name }}</td>
                             <td class="px-4 py-3">{% if operator.middle_initial and operator.middle_initial != 'nan' %}{{ operator.middle_initial }}{% else %}none{% endif %}</td>
                             <td class="px-4 py-3">{{ operator.address }}</td>
+                            <td class="px-4 py-3">
+                                {% if operator.active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </td>
                             <td class="px-4 py-3 text-end">
                                 <div class="action-buttons">
                                     <!-- Desktop view action buttons -->
@@ -107,12 +123,21 @@
                                     </a>
                                     {% endif %}
                                     {% if user.userprofile.role == 'ADMIN' %}
+                                    {% if operator.active %}
                                     <button type="button" 
-                                       class="btn btn-danger action-btn"
-                                       title="Delete Operator"
-                                       onclick="confirmDelete({{ operator.id }}, '{{ operator.last_name|escapejs }} {{ operator.first_name|escapejs }}')">
-                                        <span class="material-icons">delete</span>
+                                       class="btn btn-warning action-btn"
+                                       title="Disable Operator"
+                                       onclick="confirmDisable({{ operator.id }}, '{{ operator.last_name|escapejs }} {{ operator.first_name|escapejs }}')">
+                                        <span class="material-icons">block</span>
                                     </button>
+                                    {% else %}
+                                    <button type="button" 
+                                       class="btn btn-success action-btn"
+                                       title="Enable Operator"
+                                       onclick="confirmEnable({{ operator.id }}, '{{ operator.last_name|escapejs }} {{ operator.first_name|escapejs }}')">
+                                        <span class="material-icons">check_circle</span>
+                                    </button>
+                                    {% endif %}
                                     {% endif %}
                                 </div>
                             </td>
@@ -136,7 +161,7 @@
             <div class="operator-cards d-block d-md-none">
                 {% for operator in operators %}
                 <div class="operator-card" data-operator-id="{{ operator.id }}">
-                    <div class="card mb-3">
+                    <div class="card mb-3{% if not operator.active %} border-danger{% endif %}">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="mb-0 fw-bold">{{ operator.last_name }}, {{ operator.first_name }}</h6>
@@ -144,6 +169,9 @@
                                 <small class="text-muted">M.I.: {{ operator.middle_initial }}</small>
                                 {% endif %}
                             </div>
+                            {% if not operator.active %}
+                            <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
                         </div>
                         <div class="card-body">
                             <div class="row mb-2">
@@ -171,12 +199,21 @@
                                 </a>
                                 {% endif %}
                                 {% if user.userprofile.role == 'ADMIN' %}
+                                {% if operator.active %}
                                 <button type="button" 
-                                   class="btn mobile-action-btn btn-delete"
-                                   onclick="confirmDelete({{ operator.id }}, '{{ operator.last_name|escapejs }} {{ operator.first_name|escapejs }}')">
-                                    <span class="material-icons">delete</span>
-                                    <span class="view-text">Delete</span>
+                                   class="btn mobile-action-btn btn-warning"
+                                   onclick="confirmDisable({{ operator.id }}, '{{ operator.last_name|escapejs }} {{ operator.first_name|escapejs }}')">
+                                    <span class="material-icons">block</span>
+                                    <span class="view-text">Disable</span>
                                 </button>
+                                {% else %}
+                                <button type="button" 
+                                   class="btn mobile-action-btn btn-success"
+                                   onclick="confirmEnable({{ operator.id }}, '{{ operator.last_name|escapejs }} {{ operator.first_name|escapejs }}')">
+                                    <span class="material-icons">check_circle</span>
+                                    <span class="view-text">Enable</span>
+                                </button>
+                                {% endif %}
                                 {% endif %}
                             </div>
                         </div>
@@ -201,7 +238,7 @@
                         {% if operators.has_previous %}
                         <li class="page-item">
                             <a class="page-link rounded d-flex align-items-center justify-content-center" 
-                               href="?page=1{% if query %}&q={{ query }}{% endif %}" 
+                               href="?page=1{% if query %}&q={{ query }}{% endif %}{% if show_inactive %}&show_inactive=true{% endif %}" 
                                aria-label="First"
                                style="width: 32px; height: 32px;">
                                 <span class="material-icons" style="font-size: 18px;">first_page</span>
@@ -209,7 +246,7 @@
                         </li>
                         <li class="page-item">
                             <a class="page-link rounded d-flex align-items-center justify-content-center" 
-                               href="?page={{ operators.previous_page_number }}{% if query %}&q={{ query }}{% endif %}" 
+                               href="?page={{ operators.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if show_inactive %}&show_inactive=true{% endif %}" 
                                aria-label="Previous"
                                style="width: 32px; height: 32px;">
                                 <span class="material-icons" style="font-size: 18px;">chevron_left</span>
@@ -244,7 +281,7 @@
                             {% elif i > operators.number|add:'-3' and i < operators.number|add:'3' %}
                             <li class="page-item">
                                 <a class="page-link rounded d-flex align-items-center justify-content-center" 
-                                   href="?page={{ i }}{% if query %}&q={{ query }}{% endif %}"
+                                   href="?page={{ i }}{% if query %}&q={{ query }}{% endif %}{% if show_inactive %}&show_inactive=true{% endif %}"
                                    style="width: 32px; height: 32px;">{{ i }}</a>
                             </li>
                             {% endif %}
@@ -2052,6 +2089,142 @@
                 </div>
             </div>
         `;
+    }
+
+    // Function to confirm disabling an operator
+    function confirmDisable(operatorId, operatorName) {
+        Swal.fire({
+            title: 'Disable Operator',
+            html: `Are you sure you want to disable <strong>${operatorName}</strong>?<br><br>
+                  <div class="alert alert-warning">
+                      <i class="material-icons me-2" style="vertical-align: middle;">warning</i>
+                      This action will mark the operator as inactive. The operator will no longer be available for assignments, but their historical data will be preserved.
+                  </div>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Disable Operator',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#ffc107',
+            cancelButtonColor: '#6c757d',
+            reverseButtons: true,
+            focusCancel: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Show loading state
+                Swal.fire({
+                    title: 'Disabling...',
+                    html: 'Please wait while we disable the operator.',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                
+                // Send POST request using fetch API
+                fetch(`/operators/${operatorId}/delete/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ id: operatorId })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        Swal.fire({
+                            title: 'Disabled!',
+                            text: 'The operator has been disabled successfully.',
+                            icon: 'success',
+                            confirmButtonColor: '#2563eb'
+                        }).then(() => {
+                            // Reload the page to update the list
+                            window.location.reload();
+                        });
+                    } else {
+                        return response.json().then(data => {
+                            throw new Error(data.error || 'Failed to disable operator');
+                        });
+                    }
+                })
+                .catch(error => {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: error.message || 'An error occurred while disabling the operator.',
+                        icon: 'error',
+                        confirmButtonColor: '#2563eb'
+                    });
+                });
+            }
+        });
+    }
+    
+    // Function to confirm enabling an operator
+    function confirmEnable(operatorId, operatorName) {
+        Swal.fire({
+            title: 'Enable Operator',
+            html: `Are you sure you want to enable <strong>${operatorName}</strong>?<br><br>
+                  <div class="alert alert-info">
+                      <i class="material-icons me-2" style="vertical-align: middle;">info</i>
+                      This action will mark the operator as active. The operator will be available for assignments again.
+                  </div>`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Enable Operator',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#198754',
+            cancelButtonColor: '#6c757d',
+            reverseButtons: true,
+            focusCancel: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Show loading state
+                Swal.fire({
+                    title: 'Enabling...',
+                    html: 'Please wait while we enable the operator.',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                
+                // Use the dedicated enable endpoint
+                fetch(`/operators/${operatorId}/enable/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ "id": operatorId })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        Swal.fire({
+                            title: 'Enabled!',
+                            text: 'The operator has been enabled successfully.',
+                            icon: 'success',
+                            confirmButtonColor: '#2563eb'
+                        }).then(() => {
+                            // Reload the page to update the list
+                            window.location.reload();
+                        });
+                    } else {
+                        return response.json().then(data => {
+                            throw new Error(data.error || 'Failed to enable operator');
+                        });
+                    }
+                })
+                .catch(error => {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: error.message || 'An error occurred while enabling the operator.',
+                        icon: 'error',
+                        confirmButtonColor: '#2563eb'
+                    });
+                });
+            }
+        });
     }
 </script>
 

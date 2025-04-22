@@ -88,6 +88,55 @@
                     </div>
                 </div>
                 
+                <!-- Vehicle Information Section -->
+                <div class="mt-4">
+                    <h5 class="fw-bold mb-3 d-flex align-items-center border-bottom pb-2">
+                        <span class="material-icons me-2" style="color: var(--primary-color); font-size: 22px;">directions_car</span>
+                        Vehicle Information
+                    </h5>
+                    
+                    <div class="row g-3">
+                        <!-- Vehicle Type Dropdown -->
+                        <div class="col-12 col-md-6">
+                            <label for="id_vehicle_type" class="form-label">Vehicle Type <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><span class="material-icons fs-5">commute</span></span>
+                                <select name="vehicle_type" id="id_vehicle_type" class="form-select">
+                                    <option value="Potpot" selected>Potpot</option>
+                                    <option value="Tricycle">Tricycle</option>
+                                    <option value="Jeepney">Jeepney</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-text text-muted mt-1">
+                                <small>Select the type of vehicle for all units to be created</small>
+                            </div>
+                        </div>
+
+                        <!-- Number of Units/Potpot -->
+                        <div class="col-12 col-md-6">
+                            <label for="id_number_of_units" class="form-label">Number of Units <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><span class="material-icons fs-5">directions_car</span></span>
+                                <input type="number" name="number_of_units" id="id_number_of_units" class="form-control" min="1" max="100" value="1" placeholder="Enter number of units">
+                            </div>
+                            <div class="form-text text-muted mt-1">
+                                <small>Each unit will get a unique identification number (format: XXX)</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Potpot preview will be inserted here by JavaScript -->
+                    <div id="potpot-preview-container" class="mt-3"></div>
+                </div>
+                
+                <!-- Contact Information Section -->
+                <div class="mt-4">
+                    <h5 class="fw-bold mb-3 d-flex align-items-center border-bottom pb-2">
+                        <span class="material-icons me-2" style="color: var(--primary-color); font-size: 22px;">contact_mail</span>
+                        Contact Information
+                    </h5>
+                    
                 <!-- Address -->
                 <div class="mt-3">
                     <label for="{{ form.address.id_for_label }}" class="form-label">Address <span class="text-danger">*</span></label>
@@ -102,40 +151,56 @@
                         {% endfor %}
                     </div>
                     {% endif %}
+                    </div>
                 </div>
                 
-                <div class="row g-3 mt-2">
+                <!-- System Information Section -->
+                <div class="mt-4">
+                    <h5 class="fw-bold mb-3 d-flex align-items-center border-bottom pb-2">
+                        <span class="material-icons me-2" style="color: var(--primary-color); font-size: 22px;">numbers</span>
+                        System Information
+                    </h5>
+                
+                    <div class="row g-3">
                     <!-- Old P.D. Number -->
-                    <div class="col-12 col-md-6">
-                        <label for="{{ form.old_pd_number.id_for_label }}" class="form-label">Old P.D. Number</label>
+                        <div class="col-12 col-md-6">
+                        <label for="{{ form.old_pd_number.id_for_label }}" class="form-label">Old P.O. Number</label>
                         <div class="input-group">
                             <span class="input-group-text"><span class="material-icons fs-5">history</span></span>
-                            {{ form.old_pd_number }}
+                            <input type="text" name="old_pd_number" id="{{ form.old_pd_number.id_for_label }}" class="form-control bg-light" readonly placeholder="Leave blank">
                         </div>
-                        {% if form.old_pd_number.errors %}
-                        <div class="text-danger mt-1 small">
-                            {% for error in form.old_pd_number.errors %}
-                            {{ error }}
-                            {% endfor %}
+                        <div class="form-text text-muted mt-1">
+                            <small>This field will remain blank</small>
                         </div>
-                        {% endif %}
                     </div>
                     
                     <!-- New P.D. Number -->
-                    <div class="col-12 col-md-6">
-                        <label for="{{ form.new_pd_number.id_for_label }}" class="form-label">New P.D. Number <span class="text-danger">*</span></label>
+                        <div class="col-12 col-md-6">
+                        <label for="{{ form.new_pd_number.id_for_label }}" class="form-label">P.O. Number</label>
                         <div class="input-group">
                             <span class="input-group-text"><span class="material-icons fs-5">numbers</span></span>
-                            {{ form.new_pd_number }}
+                            <input type="text" name="new_pd_number" id="{{ form.new_pd_number.id_for_label }}" class="form-control bg-light" readonly placeholder="Auto-generated">
                         </div>
-                        {% if form.new_pd_number.errors %}
-                        <div class="text-danger mt-1 small">
-                            {% for error in form.new_pd_number.errors %}
-                            {{ error }}
-                            {% endfor %}
+                        <div class="form-text text-muted mt-1">
+                            <small>This field will be automatically generated</small>
                         </div>
-                        {% endif %}
                     </div>
+                </div>
+                
+                <!-- PO Number Auto-generation Note -->
+                <div class="alert alert-info mt-3">
+                    <div class="d-flex">
+                        <span class="material-icons me-2">info</span>
+                        <div>
+                            <strong>Automatic Number Generation</strong>
+                            <p class="mb-0 small">The following unique number will be automatically generated for this operator:</p>
+                            <ul class="mb-0 mt-1 small">
+                                <li><strong>P.O. Number:</strong> A unique identifier in XXX format</li>
+                            </ul>
+                            <p class="mt-1 mb-0 small text-muted">The number is sequentially assigned and guaranteed to be unique across the system.</p>
+                        </div>
+                    </div>
+                </div>
                 </div>
                 
                 <div class="mt-4 d-flex justify-content-end flex-wrap gap-2">
@@ -149,6 +214,22 @@
                     </button>
                 </div>
             </form>
+
+            <!-- Server-side processing note -->
+            <div class="alert alert-light border mt-4">
+                <h6 class="d-flex align-items-center">
+                    <span class="material-icons text-primary me-2">lightbulb</span>
+                    Server-side Processing Information
+                </h6>
+                <p class="mb-0 small">
+                    When the form is submitted, the server will create:
+                    <ol class="mb-0 small">
+                        <li>One Operator record with the provided information</li>
+                        <li>Multiple Vehicle records (based on "Number of Units" value) with automatically generated potpot numbers</li>
+                        <li>Each potpot number will follow the format "XXX" (e.g., 001, 002, 003, etc.)</li>
+                    </ol>
+                </p>
+            </div>
         </div>
     </div>
 </div>
@@ -240,6 +321,157 @@
             if (e.which == 13) { // Enter key
                 $('form').submit();
             }
+        });
+
+        // Handle number of units change
+        $('#id_number_of_units').on('change keyup', function() {
+            const numUnits = parseInt($(this).val()) || 0;
+            
+            // Validate the number of units
+            if (numUnits > 100) {
+                $(this).val(100);
+                showAlert('warning', 'Maximum 100 units allowed.');
+                return updatePotpotPreview();
+            } else if (numUnits < 0) {
+                $(this).val(1);
+                return updatePotpotPreview();
+            }
+            
+            updatePotpotPreview();
+        });
+
+        // Function to show an alert message
+        function showAlert(type, message) {
+            const alertHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    <span class="material-icons fs-5 align-middle me-1">${type === 'warning' ? 'warning' : 'info'}</span>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            
+            // Remove any existing alerts
+            $('.alert-dismissible').remove();
+            
+            // Insert the alert before the form
+            $('form').before(alertHTML);
+            
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+                $('.alert-dismissible').alert('close');
+            }, 5000);
+        }
+
+        // Initialize potpot preview
+        updatePotpotPreview();
+
+        // Function to update the potpot number preview
+        function updatePotpotPreview() {
+            const numUnits = parseInt($('#id_number_of_units').val()) || 0;
+            const vehicleType = $('#id_vehicle_type').val();
+            let previewHTML = '';
+            
+            // Clear the preview container
+            $('#potpot-preview-container').empty();
+            
+            if (numUnits > 0) {
+                previewHTML = '<div class="card border-0 shadow-sm rounded-3">';
+                previewHTML += '<div class="card-header bg-transparent d-flex align-items-center px-4 py-3 border-bottom">';
+                previewHTML += '<span class="material-icons me-2" style="color: var(--primary-color); font-size: 24px;">preview</span>';
+                previewHTML += `<h5 class="mb-0 fw-bold">${vehicleType} Numbers Preview</h5>`;
+                previewHTML += '</div>';
+                previewHTML += '<div class="card-body p-4">';
+                
+                // Add explanation about system-wide uniqueness
+                previewHTML += `
+                    <div class="alert alert-info mb-4">
+                        <div class="d-flex align-items-start">
+                            <span class="material-icons me-3 mt-1">info</span>
+                            <div>
+                                <p class="mb-1"><strong>System-wide unique ${vehicleType.toLowerCase()} numbers</strong></p>
+                                <p class="mb-0">The system will automatically assign ${numUnits} sequential ${vehicleType.toLowerCase()} numbers starting from the highest existing number in the database + 1. Each ${vehicleType.toLowerCase()} will have a unique XXX format number (e.g., 001, 002, 045, 123, etc.) that is not used by any other vehicle in the system.</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                previewHTML += '<div class="row">';
+                
+                // Determine the icon based on vehicle type
+                let vehicleIcon = 'directions_car';
+                if (vehicleType === 'Jeepney') {
+                    vehicleIcon = 'airport_shuttle';
+                } else if (vehicleType === 'Tricycle') {
+                    vehicleIcon = 'moped';
+                } else if (vehicleType === 'Potpot') {
+                    vehicleIcon = 'pedal_bike';
+                }
+                
+                // Show sample format but not actual numbers
+                for (let i = 1; i <= Math.min(numUnits, 12); i++) {
+                    previewHTML += `
+                        <div class="col-md-3 col-sm-4 col-6 mb-3">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body p-2 text-center">
+                                    <span class="material-icons text-primary mb-1">${vehicleIcon}</span>
+                                    <div class="badge bg-primary p-2 w-100 fs-6">XXX</div>
+                                    <div class="mt-1">
+                                        <small class="text-muted">Unique ID</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                if (numUnits > 12) {
+                    previewHTML += `
+                        <div class="col-12 mt-2">
+                            <div class="alert alert-info py-2 mb-0">
+                                <span class="material-icons fs-6 align-middle me-1">info</span>
+                                ${numUnits - 12} more units will be created with unique sequential IDs.
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                previewHTML += '</div></div></div>';
+                
+                // Append the preview to the container
+                $('#potpot-preview-container').html(previewHTML);
+            }
+        }
+        
+        // Also update preview when vehicle type changes
+        $('#id_vehicle_type').on('change', function() {
+            updatePotpotPreview();
+        });
+        
+        // Function to update server-side processing note
+        function updateServerSideNote() {
+            const vehicleType = $('#id_vehicle_type').val();
+            
+            // Find the second list item in the server-side processing note and update it
+            const processingList = $('.alert-light.border ol.small');
+            if (processingList.length) {
+                const listItems = processingList.find('li');
+                if (listItems.length >= 2) {
+                    $(listItems[1]).html(`Multiple Vehicle records (based on "Number of Units" value) with automatically generated ${vehicleType.toLowerCase()} numbers and the selected vehicle type (${vehicleType})`);
+                    
+                    // Also update the third list item
+                    if (listItems.length >= 3) {
+                        $(listItems[2]).html(`Each ${vehicleType.toLowerCase()} number will follow the format "XXX" (e.g., 001, 002, 003, etc.)`);
+                    }
+                }
+            }
+        }
+        
+        // Call the update function initially
+        updateServerSideNote();
+        
+        // Update the note when the vehicle type changes
+        $('#id_vehicle_type').on('change', function() {
+            updateServerSideNote();
         });
     });
 </script>

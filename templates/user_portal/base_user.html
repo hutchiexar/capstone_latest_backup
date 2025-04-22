@@ -852,71 +852,65 @@
             
             <div class="collapse navbar-collapse" id="navbarContent">
                 <ul class="navbar-nav main-nav mx-auto mb-2 mb-lg-0 justify-content-center">
-                    <li class="nav-item">
+                    <li class="nav-item {% if request.resolver_match.url_name == 'user_dashboard' %}active{% endif %}">
                         <a class="nav-link {% if request.resolver_match.url_name == 'user_dashboard' %}active{% endif %}" href="{% url 'user_portal:user_dashboard' %}" aria-label="Dashboard" tabindex="0">
                             <span class="material-symbols-rounded nav-icon">dashboard</span>
-                            <span>Dashboard</span>
+                            <span class="nav-text">Dashboard</span>
                         </a>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name == 'user_violations' or request.resolver_match.url_name == 'user_ncap_violations' %}active{% endif %}" href="#" id="violationsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="My Violations" tabindex="0">
+                        <a class="nav-link dropdown-toggle {% if 'violations' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" tabindex="0">
                             <span class="material-symbols-rounded nav-icon">gavel</span>
-                            <span>My Violations</span>
+                            <span>Violations</span>
                         </a>
-                        <ul class="dropdown-menu" aria-labelledby="violationsDropdown">
+                        <ul class="dropdown-menu">
                             <li>
-                                <a class="dropdown-item {% if request.resolver_match.url_name == 'user_violations' %}active{% endif %}" href="{% url 'user_portal:user_violations' %}">
-                                    <span class="material-symbols-rounded">description</span>
-                                    <span>Regular Violations</span>
+                                <a class="dropdown-item {% if request.resolver_match.url_name == 'user_violations' %}active{% endif %}" href="{% url 'user_portal:user_violations' %}" tabindex="0">
+                                    <span class="material-symbols-rounded">list</span>
+                                    Regular Violations
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item {% if request.resolver_match.url_name == 'user_ncap_violations' %}active{% endif %}" href="{% url 'user_portal:user_ncap_violations' %}">
+                                <a class="dropdown-item {% if request.resolver_match.url_name == 'user_ncap_violations' %}active{% endif %}" href="{% url 'user_portal:user_ncap_violations' %}" tabindex="0">
                                     <span class="material-symbols-rounded">photo_camera</span>
-                                    <span>NCAP Violations</span>
+                                    NCAP Violations
                                 </a>
                             </li>
                         </ul>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'file_report' %}active{% endif %}" href="{% url 'user_portal:file_report' %}" aria-label="File Report" tabindex="0">
-                            <span class="material-symbols-rounded nav-icon">report</span>
-                            <span>File Report</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'vehicle_list' %}active{% endif %}" href="{% url 'user_portal:vehicle_list' %}" aria-label="My Vehicles" tabindex="0">
+                    <li class="nav-item {% if request.resolver_match.url_name == 'vehicle_list' or request.resolver_match.url_name == 'register_vehicle' or request.resolver_match.url_name == 'vehicle_detail' or request.resolver_match.url_name == 'vehicle_edit' %}active{% endif %}">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'vehicle_list' or request.resolver_match.url_name == 'register_vehicle' or request.resolver_match.url_name == 'vehicle_detail' or request.resolver_match.url_name == 'vehicle_edit' %}active{% endif %}" href="{% url 'user_portal:vehicle_list' %}" aria-label="My Vehicles" tabindex="0">
                             <span class="material-symbols-rounded nav-icon">directions_car</span>
-                            <span>My Vehicles</span>
+                            <span class="nav-text">My Vehicles</span>
                         </a>
                     </li>
                     <!-- Educational Materials Navigation -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="educationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <li class="nav-item dropdown {% if 'educational:' in request.resolver_match.view_name %}active{% endif %}">
+                        <a class="nav-link dropdown-toggle {% if 'educational:' in request.resolver_match.view_name %}active{% endif %}" href="#" id="educationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <span class="material-icons">menu_book</span>
                             <span>Educational Materials</span>
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="educationDropdown">
                             <li>
-                                <a class="dropdown-item" href="{% url 'educational:landing_page' %}">
+                                <a class="dropdown-item {% if request.resolver_match.url_name == 'landing_page' %}active{% endif %}" href="{% url 'educational:landing_page' %}">
                                     <span class="material-icons">school</span>
                                     <span>Start Learning</span>
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item" href="{% url 'educational:quiz_list' %}">
+                                <a class="dropdown-item {% if request.resolver_match.url_name == 'quiz_list' %}active{% endif %}" href="{% url 'educational:quiz_list' %}">
                                     <span class="material-icons">quiz</span>
                                     <span>Quizzes</span>
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item" href="{% url 'educational:user_bookmarks' %}">
+                                <a class="dropdown-item {% if request.resolver_match.url_name == 'user_bookmarks' %}active{% endif %}" href="{% url 'educational:user_bookmarks' %}">
                                     <span class="material-icons">bookmark</span>
                                     <span>My Bookmarks</span>
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item" href="{% url 'educational:user_progress' %}">
+                                <a class="dropdown-item {% if request.resolver_match.url_name == 'user_progress' %}active{% endif %}" href="{% url 'educational:user_progress' %}">
                                     <span class="material-icons">trending_up</span>
                                     <span>My Progress</span>
                                 </a>
@@ -939,28 +933,36 @@
                         </a>
                     </li>
                     {% endif %}
+                    {% if user.is_authenticated and not user.userprofile.is_driver %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'driver_apply' %}active{% endif %}" href="{% url 'user_portal:driver_apply' %}" aria-label="Apply as Driver" tabindex="0">
+                            <span class="material-symbols-rounded nav-icon">drive_eta</span>
+                            <span>Apply as Driver</span>
+                        </a>
+                    </li>
+                    {% endif %}
                     {% if user.is_staff %}
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Admin" tabindex="0">
+                    <li class="nav-item dropdown {% if 'admin:' in request.resolver_match.view_name or request.resolver_match.url_name == 'user_management' or request.resolver_match.url_name == 'regular_users_list' %}active{% endif %}">
+                        <a class="nav-link dropdown-toggle {% if 'admin:' in request.resolver_match.view_name or request.resolver_match.url_name == 'user_management' or request.resolver_match.url_name == 'regular_users_list' %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Admin" tabindex="0">
                             <span class="material-symbols-rounded nav-icon">admin_panel_settings</span>
                             <span>Admin</span>
                         </a>
                         <ul class="dropdown-menu">
                             <li>
-                                <a class="dropdown-item" href="{% url 'admin:index' %}" target="_blank" tabindex="0">
+                                <a class="dropdown-item {% if 'admin:' in request.resolver_match.view_name %}active{% endif %}" href="{% url 'admin:index' %}" target="_blank" tabindex="0">
                                     <span class="material-symbols-rounded">admin_panel_settings</span>
                                     Admin Panel
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item" href="{% url 'user_portal:user_management' %}" tabindex="0">
+                                <a class="dropdown-item {% if request.resolver_match.url_name == 'user_management' %}active{% endif %}" href="{% url 'user_portal:user_management' %}" tabindex="0">
                                     <span class="material-symbols-rounded">manage_accounts</span>
                                     User Management
                                 </a>
                             </li>
                             {% if user.userprofile.role in 'ADMIN,SUPERVISOR,ENFORCER' %}
                             <li>
-                                <a class="dropdown-item" href="{% url 'user_portal:regular_users_list' %}" tabindex="0">
+                                <a class="dropdown-item {% if request.resolver_match.url_name == 'regular_users_list' %}active{% endif %}" href="{% url 'user_portal:regular_users_list' %}" tabindex="0">
                                     <span class="material-symbols-rounded">people</span>
                                     Regular Users
                                 </a>
@@ -1030,45 +1032,45 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-lg-end" aria-labelledby="userDropdown">
                             <li>
-                                <a class="dropdown-item" href="{% url 'user_portal:user_profile' %}" tabindex="0">
+                                <a class="dropdown-item {% if request.resolver_match.url_name == 'user_profile' %}active{% endif %}" href="{% url 'user_portal:user_profile' %}" tabindex="0">
                                     <span class="material-symbols-rounded">person</span>
                                     My Profile
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item" href="{% url 'user_portal:user_settings' %}" tabindex="0">
+                                <a class="dropdown-item {% if request.resolver_match.url_name == 'user_settings' %}active{% endif %}" href="{% url 'user_portal:user_settings' %}" tabindex="0">
                                     <span class="material-symbols-rounded">settings</span>
                                     Settings
                                 </a>
                             </li>
                             <!-- Educational Materials Links -->
                             <li>
-                                <a class="dropdown-item" href="{% url 'educational:topic_list' %}" tabindex="0">
+                                <a class="dropdown-item {% if request.resolver_match.url_name == 'topic_list' %}active{% endif %}" href="{% url 'educational:topic_list' %}" tabindex="0">
                                     <span class="material-symbols-rounded">menu_book</span>
                                     Browse Topics
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item" href="{% url 'educational:quiz_list' %}" tabindex="0">
+                                <a class="dropdown-item {% if request.resolver_match.url_name == 'quiz_list' %}active{% endif %}" href="{% url 'educational:quiz_list' %}" tabindex="0">
                                     <span class="material-symbols-rounded">quiz</span>
                                     Quizzes
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item" href="{% url 'educational:user_bookmarks' %}" tabindex="0">
+                                <a class="dropdown-item {% if request.resolver_match.url_name == 'user_bookmarks' %}active{% endif %}" href="{% url 'educational:user_bookmarks' %}" tabindex="0">
                                     <span class="material-symbols-rounded">bookmarks</span>
                                     My Bookmarks
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item" href="{% url 'educational:user_progress' %}" tabindex="0">
+                                <a class="dropdown-item {% if request.resolver_match.url_name == 'user_progress' %}active{% endif %}" href="{% url 'educational:user_progress' %}" tabindex="0">
                                     <span class="material-symbols-rounded">trending_up</span>
                                     My Progress
                                 </a>
                             </li>
                             {% if user.userprofile.is_operator %}
                             <li>
-                                <a class="dropdown-item" href="{% url 'operator_dashboard' %}" tabindex="0">
+                                <a class="dropdown-item {% if request.resolver_match.url_name == 'operator_dashboard' %}active{% endif %}" href="{% url 'operator_dashboard' %}" tabindex="0">
                                     <span class="material-symbols-rounded">dashboard</span>
                                     Operator Dashboard
                                 </a>
@@ -1076,9 +1078,17 @@
                             {% endif %}
                             {% if not user.userprofile.is_operator %}
                             <li>
-                                <a class="dropdown-item" href="{% url 'operator_apply' %}" tabindex="0">
+                                <a class="dropdown-item {% if request.resolver_match.url_name == 'operator_apply' %}active{% endif %}" href="{% url 'operator_apply' %}" tabindex="0">
                                     <span class="material-symbols-rounded">business</span>
                                     Apply as Operator
+                                </a>
+                            </li>
+                            {% endif %}
+                            {% if user.is_authenticated and not user.userprofile.is_driver %}
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.resolver_match.url_name == 'driver_apply' %}active{% endif %}" href="{% url 'user_portal:driver_apply' %}" aria-label="Apply as Driver" tabindex="0">
+                                    <span class="material-symbols-rounded nav-icon">drive_eta</span>
+                                    <span>Apply as Driver</span>
                                 </a>
                             </li>
                             {% endif %}

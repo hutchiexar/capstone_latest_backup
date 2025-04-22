@@ -76,11 +76,13 @@
                 <thead class="table-light">
                     <tr>
                         <th style="width: 5%;" class="px-4 py-3 fw-semibold">#</th>
-                        <th style="width: 20%;" class="px-4 py-3 fw-semibold">Driver Name</th>
-                        <th style="width: 25%;" class="px-4 py-3 fw-semibold">Address</th>
+                        <th style="width: 18%;" class="px-4 py-3 fw-semibold">Driver Name</th>
+                        <th style="width: 10%;" class="px-4 py-3 fw-semibold">Status</th>
+                        <th style="width: 18%;" class="px-4 py-3 fw-semibold">Address</th>
                         <th style="width: 10%;" class="px-4 py-3 fw-semibold">Old PD Number</th>
                         <th style="width: 10%;" class="px-4 py-3 fw-semibold">New PD Number</th>
-                        <th style="width: 15%;" class="px-4 py-3 fw-semibold">Operator</th>
+                        <th style="width: 10%;" class="px-4 py-3 fw-semibold">Operator</th>
+                        <th style="width: 10%;" class="px-4 py-3 fw-semibold">Expires</th>
                         <th style="width: 15%;" class="px-4 py-3 text-end fw-semibold">Actions</th>
                     </tr>
                 </thead>
@@ -89,39 +91,66 @@
                     <tr>
                         <td class="px-4 py-3">{{ forloop.counter }}</td>
                         <td class="fw-medium px-4 py-3">{{ driver.last_name }}, {{ driver.first_name }} {% if driver.middle_initial %}{{ driver.middle_initial }}{% endif %}</td>
+                        <td class="px-4 py-3">
+                            {% if driver.active %}
+                            <span class="badge bg-success">Active</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                        </td>
                         <td class="px-4 py-3">{{ driver.address }}</td>
                         <td class="px-4 py-3">{% if driver.old_pd_number and driver.old_pd_number != 'New' %}{{ driver.old_pd_number }}{% else %}none{% endif %}</td>
                         <td class="px-4 py-3">{{ driver.new_pd_number }}</td>
                         <td class="px-4 py-3">{{ driver.operator|default:"-" }}</td>
+                        <td class="px-4 py-3">
+                            {% if driver.expiration_date %}
+                            <span class="badge {% if driver.expiration_status == 'EXPIRED' %}bg-danger{% elif driver.expiration_status == 'EXPIRING_SOON' %}bg-warning{% else %}bg-success{% endif %}">
+                                {{ driver.expiration_date|date:"M d, Y" }}
+                            </span>
+                            {% else %}
+                            <span class="badge bg-secondary">Unknown</span>
+                            {% endif %}
+                        </td>
                         <td class="px-4 py-3 text-end">
                             <div class="action-buttons">
                                 <button type="button" 
-                                   class="btn btn-action btn-view"
-                                   data-bs-toggle="tooltip" 
-                                   data-bs-placement="top"
-                                   data-driver-id="{{ driver.id }}"
-                                   onclick="showDriverDetail('{% url 'driver_detail' driver.id %}')"
-                                   title="View Details">
+                                    class="btn btn-action btn-view"
+                                    data-bs-toggle="tooltip" 
+                                    data-bs-placement="top"
+                                    data-driver-id="{{ driver.id }}"
+                                    onclick="showDriverDetail('{% url 'driver_detail' driver.id %}')"
+                                    title="View Details">
                                     <span class="material-icons" style="font-size: 18px;">visibility</span>
                                 </button>
                                 {% if user.userprofile.role == 'ADMIN' or user.userprofile.role == 'SUPERVISOR' %}
                                 <a href="{% url 'driver_update' driver.id %}" 
-                                   class="btn btn-action btn-edit" 
-                                   data-bs-toggle="tooltip" 
-                                   data-bs-placement="top" 
-                                   title="Edit Driver">
+                                    class="btn btn-action btn-edit" 
+                                    data-bs-toggle="tooltip" 
+                                    data-bs-placement="top" 
+                                    title="Edit Driver">
                                     <span class="material-icons" style="font-size: 18px;">edit</span>
                                 </a>
                                 {% endif %}
                                 {% if user.userprofile.role == 'ADMIN' %}
-                                <button type="button" 
-                                   class="btn btn-action btn-delete" 
-                                   data-bs-toggle="tooltip" 
-                                   data-bs-placement="top" 
-                                   onclick="confirmDelete({{ driver.id }}, '{{ driver.last_name|escapejs }}, {{ driver.first_name|escapejs }}')"
-                                   title="Delete Driver">
-                                    <span class="material-icons" style="font-size: 18px;">delete</span>
-                                </button>
+                                    {% if driver.active %}
+                                    <button type="button" 
+                                        class="btn btn-action btn-delete" 
+                                        data-bs-toggle="tooltip" 
+                                        data-bs-placement="top" 
+                                        onclick="confirmDelete({{ driver.id }}, '{{ driver.last_name|escapejs }}, {{ driver.first_name|escapejs }}')"
+                                        title="Disable Driver">
+                                        <span class="material-icons" style="font-size: 18px;">block</span>
+                                    </button>
+                                    {% else %}
+                                    <button type="button" 
+                                        class="btn btn-action btn-enable" 
+                                        data-bs-toggle="tooltip" 
+                                        data-bs-placement="top" 
+                                        onclick="confirmEnable({{ driver.id }}, '{{ driver.last_name|escapejs }}, {{ driver.first_name|escapejs }}')"
+                                        title="Enable Driver">
+                                        <span class="material-icons" style="font-size: 18px;">check_circle</span>
+                                    </button>
+                                    {% endif %}
                                 {% endif %}
                             </div>
                         </td>
@@ -146,12 +175,14 @@
                     {% for i in '12345678910' %}
                     <div class="skeleton-row">
                         <div class="skeleton-cell" style="width: 5%;"></div>
-                        <div class="skeleton-cell" style="width: 20%;"></div>
-                        <div class="skeleton-cell" style="width: 25%;"></div>
+                        <div class="skeleton-cell" style="width: 18%;"></div>
+                        <div class="skeleton-cell" style="width: 10%;"></div>
+                        <div class="skeleton-cell" style="width: 18%;"></div>
                         <div class="skeleton-cell" style="width: 10%;"></div>
                         <div class="skeleton-cell" style="width: 10%;"></div>
-                        <div class="skeleton-cell" style="width: 15%;"></div>
-                        <div class="skeleton-cell" style="width: 15%;"></div>
+                        <div class="skeleton-cell" style="width: 10%;"></div>
+                        <div class="skeleton-cell" style="width: 10%;"></div>
+                        <div class="skeleton-cell" style="width: 10%;"></div>
                     </div>
                     {% endfor %}
                 </div>
@@ -168,6 +199,13 @@
                             <h6 class="mb-0 fw-bold">{{ driver.last_name }}, {{ driver.first_name }}</h6>
                             {% if driver.middle_initial %}
                             <small class="text-muted">M.I.: {{ driver.middle_initial }}</small>
+                            {% endif %}
+                        </div>
+                        <div>
+                            {% if driver.active %}
+                            <span class="badge bg-success">Active</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
                             {% endif %}
                         </div>
                     </div>
@@ -199,7 +237,7 @@
                         </div>
                         {% endif %}
                         {% if driver.operator %}
-                        <div class="row">
+                        <div class="row mb-2">
                             <div class="col-4">
                                 <small class="text-muted">Operator:</small>
                             </div>
@@ -208,29 +246,52 @@
                             </div>
                         </div>
                         {% endif %}
+                        <div class="row">
+                            <div class="col-4">
+                                <small class="text-muted">Expires:</small>
+                            </div>
+                            <div class="col-8">
+                                {% if driver.expiration_date %}
+                                <span class="badge {% if driver.expiration_status == 'EXPIRED' %}bg-danger{% elif driver.expiration_status == 'EXPIRING_SOON' %}bg-warning{% else %}bg-success{% endif %}">
+                                    {{ driver.expiration_date|date:"M d, Y" }}
+                                </span>
+                                {% else %}
+                                <span class="badge bg-secondary">Unknown</span>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
                     <div class="card-footer p-2">
                         <div class="mobile-actions">
                             <button type="button" 
-                               class="btn mobile-action-btn btn-view"
-                               onclick="showDriverDetail('{% url 'driver_detail' driver.id %}')">
+                                class="btn mobile-action-btn btn-view"
+                                onclick="showDriverDetail('{% url 'driver_detail' driver.id %}')">
                                 <span class="material-icons" style="font-size: 18px;">visibility</span>
                                 <span>View</span>
                             </button>
                             {% if user.userprofile.role == 'ADMIN' or user.userprofile.role == 'SUPERVISOR' %}
                             <a href="{% url 'driver_update' driver.id %}" 
-                               class="btn mobile-action-btn btn-edit">
+                                class="btn mobile-action-btn btn-edit">
                                 <span class="material-icons" style="font-size: 18px;">edit</span>
                                 <span>Edit</span>
                             </a>
                             {% endif %}
                             {% if user.userprofile.role == 'ADMIN' %}
-                            <button type="button" 
-                               class="btn mobile-action-btn btn-delete"
-                               onclick="confirmDelete({{ driver.id }}, '{{ driver.last_name|escapejs }}, {{ driver.first_name|escapejs }}')">
-                                <span class="material-icons" style="font-size: 18px;">delete</span>
-                                <span>Delete</span>
-                            </button>
+                                {% if driver.active %}
+                                <button type="button" 
+                                    class="btn mobile-action-btn btn-delete"
+                                    onclick="confirmDelete({{ driver.id }}, '{{ driver.last_name|escapejs }}, {{ driver.first_name|escapejs }}')">
+                                    <span class="material-icons" style="font-size: 18px;">block</span>
+                                    <span>Disable</span>
+                                </button>
+                                {% else %}
+                                <button type="button" 
+                                    class="btn mobile-action-btn btn-enable"
+                                    onclick="confirmEnable({{ driver.id }}, '{{ driver.last_name|escapejs }}, {{ driver.first_name|escapejs }}')">
+                                    <span class="material-icons" style="font-size: 18px;">check_circle</span>
+                                    <span>Enable</span>
+                                </button>
+                                {% endif %}
                             {% endif %}
                         </div>
                     </div>
@@ -476,6 +537,18 @@
             font-size: 0.8rem;
         }
     }
+
+    /* Add CSS for the enable button */
+    .btn-enable {
+        color: #198754; /* Bootstrap success color */
+        background-color: rgba(25, 135, 84, 0.1);
+    }
+    .btn-enable:hover {
+        background-color: rgba(25, 135, 84, 0.2);
+    }
+    .mobile-action-btn.btn-enable {
+        background-color: #198754;
+    }
 </style>
 
 <script>
@@ -516,17 +589,17 @@
     // Function to confirm deletion using SweetAlert2
     function confirmDelete(driverId, driverName) {
         Swal.fire({
-            title: 'Delete Driver',
-            html: `Are you sure you want to delete <strong>${driverName}</strong>?<br><br>
-                  <div class="alert alert-danger">
+            title: 'Disable Driver',
+            html: `Are you sure you want to disable <strong>${driverName}</strong>?<br><br>
+                  <div class="alert alert-warning">
                       <i class="material-icons me-2" style="vertical-align: middle;">warning</i>
-                      This action cannot be undone. All information associated with this driver will be permanently deleted.
+                      This action will mark the driver as inactive. The driver will no longer be available for assignments, but their historical data will be preserved.
                   </div>`,
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'Delete Driver',
+            confirmButtonText: 'Disable Driver',
             cancelButtonText: 'Cancel',
-            confirmButtonColor: '#dc3545',
+            confirmButtonColor: '#ffc107',
             cancelButtonColor: '#6c757d',
             reverseButtons: true,
             focusCancel: true
@@ -534,8 +607,8 @@
             if (result.isConfirmed) {
                 // Show loading state
                 Swal.fire({
-                    title: 'Deleting...',
-                    html: 'Please wait while we delete the driver.',
+                    title: 'Disabling...',
+                    html: 'Please wait while we disable the driver.',
                     allowOutsideClick: false,
                     allowEscapeKey: false,
                     didOpen: () => {
@@ -543,8 +616,8 @@
                     }
                 });
                 
-                // Send DELETE request using fetch API
-                fetch(`/drivers/${driverId}/delete/`, {
+                // Send POST request using fetch API
+                fetch(`/management/drivers/${driverId}/delete/`, {
                     method: 'POST',
                     headers: {
                         'X-CSRFToken': getCookie('csrftoken'),
@@ -553,10 +626,14 @@
                     body: JSON.stringify({ id: driverId })
                 })
                 .then(response => {
+                    // Log response details for debugging
+                    console.log('Response status:', response.status);
+                    console.log('Response headers:', response.headers);
+                    
                     if (response.ok) {
                         Swal.fire({
-                            title: 'Deleted!',
-                            text: 'The driver has been deleted successfully.',
+                            title: 'Disabled!',
+                            text: 'The driver has been disabled successfully.',
                             icon: 'success',
                             confirmButtonColor: '#2563eb'
                         }).then(() => {
@@ -565,16 +642,16 @@
                         });
                     } else {
                         return response.json().then(data => {
-                            throw new Error(data.error || 'Failed to delete driver');
+                            throw new Error(data.error || 'An error occurred while disabling the driver.');
                         });
                     }
                 })
                 .catch(error => {
                     Swal.fire({
                         title: 'Error!',
-                        text: error.message || 'An error occurred while deleting the driver.',
+                        text: error.message || 'An error occurred while disabling the driver.',
                         icon: 'error',
-                        confirmButtonColor: '#2563eb'
+                        confirmButtonColor: '#dc3545'
                     });
                 });
             }
@@ -603,734 +680,84 @@
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl)
         });
-        
-        // Initialize Micromodal
-        MicroModal.init({
-            openTrigger: 'data-micromodal-trigger',
-            closeTrigger: 'data-micromodal-close',
-            disableFocus: false,
-            disableScroll: true,
-            awaitOpenAnimation: true,
-            awaitCloseAnimation: true
-        });
     });
     
     // Show driver detail in modal
     function showDriverDetail(driverUrl) {
-        // Get modal content element
-        const modalContent = document.getElementById('modal-driver-detail-content');
-        
-        // Show loading spinner in the modal
-        modalContent.innerHTML = `
-            <div class="text-center py-5">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <p class="mt-3">Loading driver details...</p>
-            </div>
-        `;
-        
-        // Show the modal using Micromodal
-        MicroModal.show('modal-driver-detail');
-        
-        // Extract driver ID from URL for direct edit link
-        const driverId = driverUrl.split('/').filter(Boolean).pop();
-        
-        // Fetch driver details
-        fetch(driverUrl)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Server returned ${response.status} ${response.statusText}`);
-                }
-                return response.text();
-            })
-            .then(html => {
-                // Parse the HTML to extract content
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                
-                // Extract driver details from the parsed HTML
-                const driverInfo = extractDriverInfo(doc);
-                
-                // Update modal title with driver name
-                document.getElementById('modal-driver-detail-title').textContent = 
-                    `Driver Details: ${driverInfo.fullName || driverInfo.lastName + ', ' + driverInfo.firstName}`;
-                
-                // Update modal content with extracted details
-                modalContent.innerHTML = createDriverDetailHTML(driverInfo);
-                
-                // Add buttons to modal footer
-                const footerElement = document.querySelector('#modal-driver-detail .modal__footer');
-                
-                // Check if the user has permissions
-                const hasEditPermission = document.querySelectorAll('.btn-edit').length > 0;
-                const hasDeletePermission = document.querySelectorAll('.btn-delete').length > 0;
-                
-                let footerHTML = '';
-                
-                // Delete Driver button intentionally removed as requested
-                
-                if (hasEditPermission) {
-                    footerHTML += `
-                        <a href="javascript:void(0)" onclick="redirectToDriverUpdate('${driverId}')" class="modal__btn modal__btn-primary">
-                            <span class="material-icons me-1" style="font-size: 18px;">edit</span> Edit Driver
-                        </a>
-                    `;
-                }
-                
-                footerHTML += `
-                    <button class="modal__btn" data-micromodal-close aria-label="Close this dialog window">Close</button>
-                `;
-                
-                footerElement.innerHTML = footerHTML;
-            })
-            .catch(error => {
-                // Show error message in the modal
-                modalContent.innerHTML = `
-                    <div class="alert alert-danger">
-                        <p>Error loading driver details:</p>
-                        <p>${error.message}</p>
-                    </div>
-                `;
-            });
+        // Directly redirect to the driver detail page
+        window.location.href = driverUrl;
     }
-    
-    function extractDriverInfo(doc) {
-        // Extract driver information from the detail page
-        const driverInfo = {
-            fullName: '',
-            lastName: '',
-            firstName: '',
-            middleInitial: '',
-            address: '',
-            oldPdNumber: '',
-            newPdNumber: '',
-            operator: '',
-            registrationDate: ''
-        };
-        
-        // Find all rows with label/value pairs
-        const rows = doc.querySelectorAll('.card-body .row');
-        
-        rows.forEach(row => {
-            const label = row.querySelector('.text-muted');
-            if (!label) return;
-            
-            const labelText = label.textContent.trim();
-            const valueElement = row.querySelector('.col-md-8') || row.querySelector('.col-8');
-            const value = valueElement ? valueElement.textContent.trim() : '';
-            
-            // Map the label to the corresponding property
-            if (labelText.includes('Full Name')) {
-                driverInfo.fullName = value;
-            } else if (labelText.includes('Last Name')) {
-                driverInfo.lastName = value;
-            } else if (labelText.includes('First Name')) {
-                driverInfo.firstName = value;
-            } else if (labelText.includes('Middle Initial')) {
-                driverInfo.middleInitial = value;
-            } else if (labelText.includes('Address')) {
-                driverInfo.address = value;
-            } else if (labelText.includes('Old PD Number')) {
-                driverInfo.oldPdNumber = value;
-            } else if (labelText.includes('New PD Number')) {
-                driverInfo.newPdNumber = value;
-            } else if (labelText.includes('Operator')) {
-                driverInfo.operator = value;
-            } else if (labelText.includes('Registration Date')) {
-                driverInfo.registrationDate = value;
+
+    // Function to confirm enabling using SweetAlert2
+    function confirmEnable(driverId, driverName) {
+        Swal.fire({
+            title: 'Enable Driver',
+            html: `Are you sure you want to enable <strong>${driverName}</strong>?<br><br>
+                  <div class="alert alert-success">
+                      <i class="material-icons me-2" style="vertical-align: middle;">info</i>
+                      This action will mark the driver as active. The driver will be available for assignments again.
+                  </div>`,
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: 'Enable Driver',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#198754',
+            cancelButtonColor: '#6c757d',
+            reverseButtons: true,
+            focusCancel: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Show loading state
+                Swal.fire({
+                    title: 'Enabling...',
+                    html: 'Please wait while we enable the driver.',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                
+                // Send POST request using fetch API
+                fetch(`/management/drivers/${driverId}/enable/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ id: driverId })
+                })
+                .then(response => {
+                    // Log response details for debugging
+                    console.log('Response status:', response.status);
+                    console.log('Response headers:', response.headers);
+                    
+                    if (response.ok) {
+                        Swal.fire({
+                            title: 'Enabled!',
+                            text: 'The driver has been enabled successfully.',
+                            icon: 'success',
+                            confirmButtonColor: '#2563eb'
+                        }).then(() => {
+                            // Reload the page to update the list
+                            window.location.reload();
+                        });
+                    } else {
+                        return response.json().then(data => {
+                            throw new Error(data.error || 'An error occurred while enabling the driver.');
+                        });
+                    }
+                })
+                .catch(error => {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: error.message || 'An error occurred while enabling the driver.',
+                        icon: 'error',
+                        confirmButtonColor: '#dc3545'
+                    });
+                });
             }
         });
-        
-        return driverInfo;
-    }
-    
-    function createDriverDetailHTML(driverInfo) {
-        return `
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="card border-0 shadow-sm mb-3">
-                        <div class="card-header bg-transparent d-flex align-items-center px-4 py-3 border-bottom">
-                            <span class="material-icons me-2" style="color: var(--primary-color); font-size: 24px;">person</span>
-                            <h5 class="mb-0 fw-bold">Personal Information</h5>
-                        </div>
-                        <div class="card-body p-4">
-                            <div class="row mb-3">
-                                <div class="col-5 col-md-4 text-muted">Full Name:</div>
-                                <div class="col-7 col-md-8">${driverInfo.firstName} ${driverInfo.middleInitial ? driverInfo.middleInitial + '.' : ''} ${driverInfo.lastName}</div>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-5 col-md-4 text-muted">Last Name:</div>
-                                <div class="col-7 col-md-8">${driverInfo.lastName}</div>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-5 col-md-4 text-muted">First Name:</div>
-                                <div class="col-7 col-md-8">${driverInfo.firstName}</div>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-5 col-md-4 text-muted">Middle Initial:</div>
-                                <div class="col-7 col-md-8">${driverInfo.middleInitial || 'none'}</div>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-5 col-md-4 text-muted">Address:</div>
-                                <div class="col-7 col-md-8">${driverInfo.address}</div>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-5 col-md-4 text-muted">Old PD Number:</div>
-                                <div class="col-7 col-md-8">${driverInfo.oldPdNumber || 'None'}</div>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-5 col-md-4 text-muted">New PD Number:</div>
-                                <div class="col-7 col-md-8">${driverInfo.newPdNumber}</div>
-                            </div>
-                            ${driverInfo.operator ? `
-                            <div class="row mb-3">
-                                <div class="col-5 col-md-4 text-muted">Operator:</div>
-                                <div class="col-7 col-md-8">${driverInfo.operator}</div>
-                            </div>` : ''}
-                            ${driverInfo.registrationDate ? `
-                            <div class="row">
-                                <div class="col-5 col-md-4 text-muted">Registration Date:</div>
-                                <div class="col-7 col-md-8">${driverInfo.registrationDate}</div>
-                            </div>` : ''}
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-md-6">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-transparent d-flex align-items-center px-4 py-3 border-bottom">
-                            <span class="material-icons me-2" style="color: var(--primary-color); font-size: 24px;">description</span>
-                            <h5 class="mb-0 fw-bold">License Details</h5>
-                        </div>
-                        <div class="card-body p-4">
-                            <div class="text-center py-5">
-                                <div class="mb-4">
-                                    <span class="material-icons" style="font-size: 60px; color: #ccc;">credit_card</span>
-                                </div>
-                                <h5 class="mb-3">No license details available.</h5>
-                                <p class="text-muted">This section will display any license information associated with this driver.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
     }
 </script>
-
-<!-- Driver Detail Modal using Micromodal.js -->
-<div class="modal micromodal-slide" id="modal-driver-detail" aria-hidden="true">
-    <div class="modal__overlay" tabindex="-1" data-micromodal-close>
-        <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="modal-driver-detail-title">
-            <header class="modal__header">
-                <h2 class="modal__title" id="modal-driver-detail-title">
-                    Driver Details
-                </h2>
-                <button class="modal__close" aria-label="Close modal" data-micromodal-close></button>
-            </header>
-            <main class="modal__content" id="modal-driver-detail-content">
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="mt-3">Loading driver details...</p>
-                </div>
-            </main>
-            <footer class="modal__footer">
-                <button class="modal__btn" data-micromodal-close aria-label="Close this dialog window">Close</button>
-            </footer>
-        </div>
-    </div>
-</div>
-
-<style>
-/* Table Styles */
-.table-responsive {
-    border-radius: 8px;
-    overflow: hidden;
-    max-height: calc(100vh - 330px);
-    overflow-y: auto;
-}
-
-/* Custom scrollbar styles */
-.table-responsive::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-.table-responsive::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
-}
-
-.table-responsive::-webkit-scrollbar-thumb {
-    background: #ccc;
-    border-radius: 4px;
-}
-
-.table-responsive::-webkit-scrollbar-thumb:hover {
-    background: #999;
-}
-
-/* Keep table header visible */
-.table thead th {
-    position: sticky;
-    top: 0;
-    background-color: #f8f9fa;
-    z-index: 1;
-}
-
-/* Ensure proper spacing */
-.card-body {
-    padding: 1rem !important;
-}
-
-.table {
-    margin-bottom: 0;
-}
-
-/* Table header shadow for visual separation */
-.table thead th {
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.table {
-    font-size: 0.95rem;
-}
-
-.table th {
-    font-weight: 600;
-    background-color: #f8f9fa;
-    border-bottom: 2px solid #e9ecef;
-    position: sticky;
-    top: 0;
-    z-index: 1;
-}
-
-/* Action Buttons */
-.btn-action {
-    width: 35px;
-    height: 35px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-}
-
-.btn-action i, .btn-action .material-icons {
-    font-size: 1.1rem;
-}
-
-/* View Button */
-.btn-view {
-    color: var(--primary-color);
-    border-color: #e9ecef;
-    background-color: #fff;
-}
-
-.btn-view:hover {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-    color: white;
-}
-
-/* Edit Button */
-.btn-edit {
-    color: #f59e0b;
-    border-color: #e9ecef;
-    background-color: #fff;
-}
-
-.btn-edit:hover {
-    background-color: #f59e0b;
-    border-color: #f59e0b;
-    color: white;
-}
-
-/* Delete Button */
-.btn-delete {
-    color: #f64e60;
-    border-color: #e9ecef;
-    background-color: #fff;
-}
-
-.btn-delete:hover {
-    background-color: #f64e60;
-    border-color: #f64e60;
-    color: white;
-}
-
-/* Action buttons container */
-.action-buttons {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: flex-end;
-}
-
-/* Mobile Card View Styles */
-.driver-card {
-    margin-bottom: 15px;
-}
-
-.driver-card .card {
-    border: none;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.driver-card .card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-}
-
-.driver-card .card-header {
-    background-color: #f8f9fa;
-    padding: 12px 15px;
-    border-bottom: 1px solid #eaecef;
-}
-
-.driver-card .card-body {
-    padding: 15px;
-}
-
-.driver-card .card-footer {
-    background-color: #f8f9fa;
-    padding: 12px 15px;
-    border-top: 1px solid #eaecef;
-}
-
-/* Mobile action buttons */
-.mobile-actions {
-    display: flex;
-    width: 100%;
-    justify-content: space-between;
-    gap: 2%;
-}
-
-.mobile-action-btn {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 0;
-    border-radius: 4px;
-    font-size: 0.875rem;
-    gap: 5px;
-    transition: all 0.2s;
-    border: none;
-    color: white;
-    text-align: center;
-}
-
-.mobile-action-btn:hover {
-    opacity: 0.95;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-.mobile-action-btn:active {
-    opacity: 1;
-    transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.mobile-action-btn.btn-view {
-    background-color: var(--primary-color, #2563eb);
-}
-
-.mobile-action-btn.btn-edit {
-    background-color: #f59e0b;
-}
-
-.mobile-action-btn.btn-delete {
-    background-color: #ef4444;
-}
-
-.mobile-action-btn span {
-    font-weight: 500;
-    font-size: 0.85rem;
-    color: white;
-}
-
-/* Empty state for mobile */
-.empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 3rem 1rem;
-    text-align: center;
-}
-
-/* Responsive styles */
-@media (max-width: 768px) {
-    .card-body {
-        padding: 0.75rem !important;
-    }
-    
-    .search-container {
-        width: 100%;
-        max-width: 100%;
-        margin-top: 0.75rem;
-    }
-    
-    .pagination-container {
-        overflow-x: auto;
-        padding: 0.5rem 0;
-        -webkit-overflow-scrolling: touch;
-    }
-    
-    .pagination {
-        flex-wrap: nowrap;
-        min-width: max-content;
-    }
-    
-    /* For very small screens */
-    @media (max-width: 360px) {
-        .mobile-action-btn {
-            padding: 6px 0;
-        }
-        
-        .mobile-action-btn span {
-            font-size: 0.8rem;
-        }
-        
-        .mobile-action-btn .material-icons {
-            font-size: 16px !important;
-        }
-        
-        .card-header h6 {
-            font-size: 0.95rem;
-        }
-    }
-}
-
-/**************************\
-  Micromodal.js Styles
-\**************************/
-
-.modal {
-  font-family: -apple-system, BlinkMacSystemFont, avenir next, avenir, helvetica neue,
-    helvetica, ubuntu, roboto, noto, segoe ui, arial, sans-serif;
-}
-
-.modal__overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
-}
-
-.modal__container {
-  background-color: #fff;
-  padding: 20px;
-  max-width: 1000px;
-  width: 90%;
-  max-height: 90vh;
-  border-radius: 10px;
-  overflow-y: auto;
-  box-sizing: border-box;
-  box-shadow: 0 15px 30px 0 rgba(0, 0, 0, 0.11),
-    0 5px 15px 0 rgba(0, 0, 0, 0.08);
-}
-
-.modal__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #eaeaea;
-  padding-bottom: 15px;
-}
-
-.modal__title {
-  margin-top: 0;
-  margin-bottom: 0;
-  font-weight: 600;
-  font-size: 1.25rem;
-  line-height: 1.25;
-  color: var(--primary-color, #00449e);
-  box-sizing: border-box;
-}
-
-.modal__close {
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  position: relative;
-  width: 25px;
-  height: 25px;
-}
-
-.modal__close:before,
-.modal__close:after {
-  content: '';
-  position: absolute;
-  width: 2px;
-  height: 18px;
-  background-color: #333;
-  top: 3px;
-  left: 11px;
-}
-
-.modal__close:before {
-  transform: rotate(45deg);
-}
-
-.modal__close:after {
-  transform: rotate(-45deg);
-}
-
-.modal__content {
-  margin-top: 1rem;
-  margin-bottom: 1rem;
-  line-height: 1.5;
-  color: rgba(0, 0, 0, 0.8);
-}
-
-.modal__btn {
-  font-size: 0.875rem;
-  padding: 0.5rem 1rem;
-  background-color: #e6e6e6;
-  color: rgba(0, 0, 0, 0.8);
-  border-radius: 0.25rem;
-  border: 0;
-  cursor: pointer;
-  line-height: 1;
-  margin-right: 0.5rem;
-  display: inline-flex;
-  align-items: center;
-  text-decoration: none;
-  min-width: 120px;
-  justify-content: center;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.modal__btn:hover {
-  background-color: #d4d4d4;
-  text-decoration: none;
-  color: rgba(0, 0, 0, 0.9);
-}
-
-.modal__footer {
-  display: flex;
-  gap: 10px;
-  border-top: 1px solid #eaeaea;
-  padding-top: 15px;
-}
-
-.modal__btn-primary {
-  background-color: var(--primary-color, #2563eb);
-  color: #fff;
-  font-weight: 500;
-  padding: 0.625rem 1.25rem;
-  transition: all 0.2s ease;
-  border-radius: 0.375rem;
-  text-decoration: none;
-}
-
-.modal__btn-primary:hover {
-  background-color: var(--primary-color-dark, #1d4ed8);
-  color: #fff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  text-decoration: none;
-}
-
-.modal__btn-primary:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.modal__btn-danger {
-  background-color: #dc3545;
-  color: #fff;
-  font-weight: 500;
-  padding: 0.625rem 1.25rem;
-  transition: all 0.2s ease;
-  border-radius: 0.375rem;
-  text-decoration: none;
-  min-width: 120px;
-  justify-content: center;
-}
-
-.modal__btn-danger:hover {
-  background-color: #bb2d3b;
-  color: #fff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  text-decoration: none;
-}
-
-.modal__btn-danger:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.micromodal-slide {
-  display: none;
-}
-
-.micromodal-slide.is-open {
-  display: block;
-}
-
-.micromodal-slide[aria-hidden="false"] .modal__overlay {
-  animation: mmfadeIn .3s cubic-bezier(0, 0, .2, 1);
-}
-
-.micromodal-slide[aria-hidden="false"] .modal__container {
-  animation: mmslideIn .3s cubic-bezier(0, 0, .2, 1);
-}
-
-.micromodal-slide[aria-hidden="true"] .modal__overlay {
-  animation: mmfadeOut .3s cubic-bezier(0, 0, .2, 1);
-}
-
-.micromodal-slide[aria-hidden="true"] .modal__container {
-  animation: mmslideOut .3s cubic-bezier(0, 0, .2, 1);
-}
-
-.micromodal-slide .modal__container,
-.micromodal-slide .modal__overlay {
-  will-change: transform;
-}
-
-@keyframes mmfadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes mmfadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-
-@keyframes mmslideIn {
-  from { transform: translateY(15%); }
-  to { transform: translateY(0); }
-}
-
-@keyframes mmslideOut {
-  from { transform: translateY(0); }
-  to { transform: translateY(-10%); }
-}
-
-/* Custom styles for driver detail modal */
-#modal-driver-detail .modal__container {
-  max-width: 90%;
-  width: 1000px;
-}
-</style>
 {% endblock %} 

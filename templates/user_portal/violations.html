@@ -1,7 +1,7 @@
 {% extends 'user_portal/base_user.html' %}
 {% load static %}
 
-{% block title %}My Regular Violations - CTTMO User Portal{% endblock %}
+{% block title %}My Violations - CTTMO User Portal{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -353,262 +353,268 @@
 
 {% block content %}
 <div class="container py-3 py-md-5 violations-container">
-    <!-- Loading Skeleton (hidden when data is loaded) -->
-    <div id="violations-skeleton" style="display: none;">
-    <div class="row mb-4">
-        <div class="col-12">
-                <div class="card shadow-lg rounded-xl">
-                <div class="card-body p-4">
-                        <div class="d-flex align-items-center">
-                            <div class="text-skeleton rounded-lg me-3" style="width: 64px; height: 64px;"></div>
-                            <div>
-                                <div class="text-skeleton" style="width: 200px; height: 28px;"></div>
-                                <div class="text-skeleton mt-2" style="width: 300px;"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card shadow-lg rounded-xl">
-                    <div class="card-body p-0">
-                        <div class="text-skeleton" style="width: 100%; height: 300px;"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Violations Content -->
-    <div id="violations-content">
-        <!-- Header Section -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card violations-card shadow-lg rounded-xl">
-                    <div class="card-body p-4">
-                        <div class="d-flex justify-content-between align-items-center header-section">
-                            <div class="d-flex align-items-center">
-                                <div class="header-icon">
-                                    <span class="material-icons" style="font-size: 32px; color: var(--primary-color);">
-                                        gavel
-                                    </span>
-                                </div>
-                                <div class="header-title">
-                                    <h1 class="mb-1 fw-bold">My Regular Violations</h1>
-                                    <p class="text-muted mb-0">View and manage your direct traffic violations (excludes NCAP camera violations)</p>
-                                </div>
-                            </div>
-                            <div class="d-flex gap-3 header-controls">
-                                <div class="filter-dropdown">
-                                    <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                        <span class="material-icons me-2" style="font-size: 20px;">filter_list</span>
-                                    {% if current_status %}
-                                        {{ current_status|title }}
-                                    {% else %}
-                                        All Status
-                                    {% endif %}
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li>
-                                        <a class="dropdown-item {% if not current_status %}active{% endif %}" href="{% url 'user_portal:user_violations' %}">
-                                            All Status
-                                        </a>
-                                    </li>
-                                    {% for status_code, status_label in status_choices.items %}
-                                    <li>
-                                        <a class="dropdown-item {% if current_status == status_code %}active{% endif %}" 
-                                           href="{% url 'user_portal:user_violations' %}?status={{ status_code }}">
-                                            {{ status_label }}
-                                        </a>
-                                    </li>
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                            <form class="search-form" method="get">
-                                    <div class="position-relative">
-                                    <input type="text" 
-                                           class="form-control" 
-                                           placeholder="Search violations..." 
-                                           name="search" 
-                                           value="{{ request.GET.search }}">
-                                        <button class="btn" type="submit">
-                                            <span class="material-icons" style="color: white;">search</span>
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Violations List -->
     <div class="row">
         <div class="col-12">
             <div class="card violations-card shadow-lg rounded-xl">
-                <div class="card-body p-0">
-                    <div class="table-responsive table-container d-none d-md-block">
-                        <table class="table violations-table table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Date</th>
-                                    <th>Violation</th>
-                                    <th>Status</th>
-                                    <th>Penalty</th>
-                                    <th>Images</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for violation in violations %}
-                                <tr>
-                                    <td>{{ violation.id }}</td>
-                                    <td>{{ violation.violation_date|date:"M d, Y" }}</td>
-                                    <td>{{ violation.violation_type }}</td>
-                                    <td>
-                                        <span class="status-badge
-                                            {% if violation.status == 'PENDING' %}status-badge-pending
-                                            {% elif violation.status == 'APPROVED' %}status-badge-approved
-                                            {% elif violation.status == 'ADJUDICATED' %}status-badge-adjudicated
-                                            {% elif violation.status == 'PAID' %}status-badge-paid
-                                            {% elif violation.status == 'DISMISSED' %}status-badge-dismissed
-                                            {% else %}status-badge-other{% endif %}
-                                        ">
-                                            {{ violation.get_status_display }}
-                                        </span>
-                                    </td>
-                                    <td>₱{{ violation.fine_amount|floatformat:2 }}</td>
-                                    <td>
-                                        {% if violation.image or violation.driver_photo or violation.vehicle_photo or violation.secondary_photo %}
-                                        <button class="btn btn-sm btn-outline-primary view-images" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#imageModal"
-                                                data-violation-id="{{ violation.id }}">
-                                            <i class="fas fa-images me-1"></i> View
-                                        </button>
-                                        {% else %}
-                                        <span class="text-muted">N/A</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <a href="{% url 'user_portal:violation_detail' violation.id %}" class="btn btn-sm btn-primary">
-                                            <i class="fas fa-info-circle me-1"></i> Details
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                        <td colspan="7">
-                                            <div class="empty-state">
-                                                <div class="empty-state-icon">
-                                                    <span class="material-icons" style="font-size: 32px; color: var(--primary-color);">check_circle</span>
-                                                </div>
-                                                <h6 class="mb-1 fw-bold" style="font-size: 1.1rem;">No Violations Found</h6>
-                                                <p class="text-muted mb-0">You don't have any recorded traffic violations</p>
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="header-icon">
+                            <span class="material-icons" style="font-size: 2rem; color: var(--primary-color);">list_alt</span>
+                        </div>
+                        <div>
+                            <h4 class="card-title fw-bold mb-1">My Violations</h4>
+                            <p class="text-muted mb-0">View and manage all your traffic violations (both direct and NCAP violations)</p>
+                        </div>
+                    </div>
+
+                    <!-- Alert for information -->
+                    <div class="alert alert-info mb-4">
+                        <div class="d-flex">
+                            <span class="material-icons me-2">info</span>
+                            <div>
+                                <h6 class="alert-heading mb-1">All Traffic Violations</h6>
+                                <p class="mb-0">This page displays all your traffic violations, including both direct citations and NCAP (Non-Contact Apprehension Program) violations captured by traffic cameras.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Search and Filter Form -->
+                    <form method="get" class="mb-4 row g-3">
+                        <div class="col-md-4">
+                            <div class="input-group">
+                                <input type="text" name="search" class="form-control" placeholder="Search violations..." value="{{ search_query }}">
+                                <button class="btn btn-outline-secondary" type="submit">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <select name="status" class="form-select" onchange="this.form.submit()">
+                                <option value="" {% if not status_filter %}selected{% endif %}>All Statuses</option>
+                                <option value="PENDING" {% if status_filter == 'PENDING' %}selected{% endif %}>Pending</option>
+                                <option value="APPROVED" {% if status_filter == 'APPROVED' %}selected{% endif %}>Approved</option>
+                                <option value="ADJUDICATED" {% if status_filter == 'ADJUDICATED' %}selected{% endif %}>Adjudicated</option>
+                                <option value="PAID" {% if status_filter == 'PAID' %}selected{% endif %}>Paid</option>
+                                <option value="DISMISSED" {% if status_filter == 'DISMISSED' %}selected{% endif %}>Dismissed</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            {% if search_query or status_filter %}
+                            <a href="{% url 'user_portal:user_violations' %}" class="btn btn-secondary">Reset Filters</a>
+                            {% endif %}
+                        </div>
+                    </form>
+
+                    <!-- Loading Skeleton (hidden when data is loaded) -->
+                    <div id="violations-skeleton" style="display: none;">
+                    <div class="row mb-4">
+                        <div class="col-12">
+                                <div class="card shadow-lg rounded-xl">
+                                <div class="card-body p-4">
+                                        <div class="d-flex align-items-center">
+                                            <div class="text-skeleton rounded-lg me-3" style="width: 64px; height: 64px;"></div>
+                                            <div>
+                                                <div class="text-skeleton" style="width: 200px; height: 28px;"></div>
+                                                <div class="text-skeleton mt-2" style="width: 300px;"></div>
+                                            </div>
                                         </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card shadow-lg rounded-xl">
+                                    <div class="card-body p-0">
+                                        <div class="text-skeleton" style="width: 100%; height: 300px;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Violations Content -->
+                    <div id="violations-content">
+                        <!-- Violations List -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card violations-card shadow-lg rounded-xl">
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive table-container d-none d-md-block">
+                                            <table class="table violations-table table table-hover">
+                                                <thead>
+                                                    <tr>
+                                                        <th>ID</th>
+                                                        <th>Date</th>
+                                                        <th>Violation</th>
+                                                        <th>Status</th>
+                                                        <th>Penalty</th>
+                                                        <th>Images</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for violation in violations %}
+                                                    <tr>
+                                                        <td>{{ violation.id }}</td>
+                                                        <td>{{ violation.violation_date|date:"M d, Y" }}</td>
+                                                        <td>{{ violation.violation_type }}</td>
+                                                        <td>
+                                                            <span class="status-badge
+                                                                {% if violation.status == 'PENDING' %}status-badge-pending
+                                                                {% elif violation.status == 'APPROVED' %}status-badge-approved
+                                                                {% elif violation.status == 'ADJUDICATED' %}status-badge-adjudicated
+                                                                {% elif violation.status == 'PAID' %}status-badge-paid
+                                                                {% elif violation.status == 'DISMISSED' %}status-badge-dismissed
+                                                                {% else %}status-badge-other{% endif %}
+                                                            ">
+                                                                {{ violation.get_status_display }}
+                                                            </span>
+                                                        </td>
+                                                        <td>₱{{ violation.fine_amount|floatformat:2 }}</td>
+                                                        <td>
+                                                            {% if violation.image or violation.driver_photo or violation.vehicle_photo or violation.secondary_photo %}
+                                                            <button class="btn btn-sm btn-outline-primary view-images" 
+                                                                    data-bs-toggle="modal" 
+                                                                    data-bs-target="#imageModal"
+                                                                    data-violation-id="{{ violation.id }}">
+                                                                <i class="fas fa-images me-1"></i> View
+                                                            </button>
+                                                            {% else %}
+                                                            <span class="text-muted">N/A</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            <a href="{% url 'user_portal:violation_detail' violation.id %}" class="btn btn-sm btn-primary">
+                                                                <i class="fas fa-info-circle me-1"></i> Details
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                    {% empty %}
+                                                    <tr>
+                                                        <td colspan="7">
+                                                            <div class="empty-state">
+                                                                <div class="empty-state-icon">
+                                                                    <span class="material-icons" style="font-size: 32px; color: var(--primary-color);">check_circle</span>
+                                                                </div>
+                                                                <h6 class="mb-1 fw-bold" style="font-size: 1.1rem;">No Violations Found</h6>
+                                                                <p class="text-muted mb-0">You don't have any recorded traffic violations</p>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        <!-- Mobile Card View -->
+                                        <div class="d-md-none mt-4">
+                                            {% for violation in violations %}
+                                            <div class="card mb-3 shadow-sm">
+                                                <div class="card-header d-flex justify-content-between align-items-center">
+                                                    <span class="fw-bold">ID: {{ violation.id }}</span>
+                                                    <span class="status-badge 
+                                                        {% if violation.status == 'PENDING' %}status-badge-pending
+                                                        {% elif violation.status == 'APPROVED' %}status-badge-approved
+                                                        {% elif violation.status == 'ADJUDICATED' %}status-badge-adjudicated
+                                                        {% elif violation.status == 'PAID' %}status-badge-paid
+                                                        {% elif violation.status == 'DISMISSED' %}status-badge-dismissed
+                                                        {% else %}status-badge-other{% endif %}
+                                                    ">
+                                                        {{ violation.get_status_display }}
+                                                    </span>
+                                                </div>
+                                                <div class="card-body">
+                                                    <h6 class="card-title">{{ violation.violation_type }}</h6>
+                                                    <p class="card-text text-muted">{{ violation.violation_date|date:"M d, Y" }}</p>
+                                                    <p class="card-text"><strong>Penalty:</strong> ₱{{ violation.fine_amount|floatformat:2 }}</p>
+                                                    
+                                                    <div class="d-flex flex-wrap gap-2 mt-3">
+                                                        {% if violation.image or violation.driver_photo or violation.vehicle_photo or violation.secondary_photo %}
+                                                        <button class="btn btn-sm btn-outline-primary view-images" 
+                                                                data-bs-toggle="modal" 
+                                                                data-bs-target="#imageModal"
+                                                                data-violation-id="{{ violation.id }}">
+                                                            <i class="fas fa-images me-1"></i> View Images
+                                                        </button>
+                                                        {% endif %}
+                                                        
+                                                        <a href="{% url 'user_portal:violation_detail' violation.id %}" class="btn btn-sm btn-primary">
+                                                            <i class="fas fa-info-circle me-1"></i> Details
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% empty %}
+                                            <div class="card mb-3 shadow-sm">
+                                                <div class="card-body text-center py-5">
+                                                    <div class="empty-state">
+                                                        <div class="empty-state-icon">
+                                                            <span class="material-icons" style="font-size: 32px; color: var(--primary-color);">check_circle</span>
+                                                        </div>
+                                                        <h6 class="mb-1 fw-bold" style="font-size: 1.1rem;">No Violations Found</h6>
+                                                        <p class="text-muted mb-0">You don't have any recorded traffic violations</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if violations.has_other_pages %}
+                            <div class="row">
+                            <div class="col-12">
+                                    <nav aria-label="Violations pagination">
+                                    <ul class="pagination justify-content-center">
+                                        {% if violations.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ violations.previous_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                                    <span class="material-icons" style="font-size: 20px;">chevron_left</span>
+                                            </a>
+                                        </li>
+                                        {% else %}
+                                        <li class="page-item disabled">
+                                                <span class="page-link">
+                                                    <span class="material-icons" style="font-size: 20px;">chevron_left</span>
+                                                </span>
+                                        </li>
+                                        {% endif %}
+
+                                        {% for num in violations.paginator.page_range %}
+                                        <li class="page-item {% if violations.number == num %}active{% endif %}">
+                                            <a class="page-link" href="?page={{ num }}{% if current_status %}&status={{ current_status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                                {{ num }}
+                                            </a>
+                                        </li>
+                                        {% endfor %}
+
+                                        {% if violations.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ violations.next_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                                    <span class="material-icons" style="font-size: 20px;">chevron_right</span>
+                                            </a>
+                                        </li>
+                                        {% else %}
+                                        <li class="page-item disabled">
+                                                <span class="page-link">
+                                                    <span class="material-icons" style="font-size: 20px;">chevron_right</span>
+                                                </span>
+                                        </li>
+                                        {% endif %}
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Mobile Card View -->
-    <div class="d-md-none mt-4">
-        {% for violation in violations %}
-        <div class="card mb-3 shadow-sm">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span class="fw-bold">ID: {{ violation.id }}</span>
-                <span class="status-badge 
-                    {% if violation.status == 'PENDING' %}status-badge-pending
-                    {% elif violation.status == 'APPROVED' %}status-badge-approved
-                    {% elif violation.status == 'ADJUDICATED' %}status-badge-adjudicated
-                    {% elif violation.status == 'PAID' %}status-badge-paid
-                    {% elif violation.status == 'DISMISSED' %}status-badge-dismissed
-                    {% else %}status-badge-other{% endif %}
-                ">
-                    {{ violation.get_status_display }}
-                </span>
-            </div>
-            <div class="card-body">
-                <h6 class="card-title">{{ violation.violation_type }}</h6>
-                <p class="card-text text-muted">{{ violation.violation_date|date:"M d, Y" }}</p>
-                <p class="card-text"><strong>Penalty:</strong> ₱{{ violation.fine_amount|floatformat:2 }}</p>
-                
-                <div class="d-flex flex-wrap gap-2 mt-3">
-                    {% if violation.image or violation.driver_photo or violation.vehicle_photo or violation.secondary_photo %}
-                    <button class="btn btn-sm btn-outline-primary view-images" 
-                            data-bs-toggle="modal" 
-                            data-bs-target="#imageModal"
-                            data-violation-id="{{ violation.id }}">
-                        <i class="fas fa-images me-1"></i> View Images
-                    </button>
-                    {% endif %}
-                    
-                    <a href="{% url 'user_portal:violation_detail' violation.id %}" class="btn btn-sm btn-primary">
-                        <i class="fas fa-info-circle me-1"></i> Details
-                    </a>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-
-    <!-- Pagination -->
-    {% if violations.has_other_pages %}
-        <div class="row">
-        <div class="col-12">
-                <nav aria-label="Violations pagination">
-                <ul class="pagination justify-content-center">
-                    {% if violations.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ violations.previous_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
-                                <span class="material-icons" style="font-size: 20px;">chevron_left</span>
-                        </a>
-                    </li>
-                    {% else %}
-                    <li class="page-item disabled">
-                            <span class="page-link">
-                                <span class="material-icons" style="font-size: 20px;">chevron_left</span>
-                            </span>
-                    </li>
-                    {% endif %}
-
-                    {% for num in violations.paginator.page_range %}
-                    <li class="page-item {% if violations.number == num %}active{% endif %}">
-                        <a class="page-link" href="?page={{ num }}{% if current_status %}&status={{ current_status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
-                            {{ num }}
-                        </a>
-                    </li>
-                    {% endfor %}
-
-                    {% if violations.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ violations.next_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
-                                <span class="material-icons" style="font-size: 20px;">chevron_right</span>
-                        </a>
-                    </li>
-                    {% else %}
-                    <li class="page-item disabled">
-                            <span class="page-link">
-                                <span class="material-icons" style="font-size: 20px;">chevron_right</span>
-                            </span>
-                    </li>
-                    {% endif %}
-                </ul>
-            </nav>
-        </div>
-    </div>
-    {% endif %}
     </div>
 </div>
 

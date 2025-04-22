@@ -3,8 +3,9 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Sum, Count, Q
-from .models import UserNotification, UserReport, VehicleRegistration, OperatorViolationLookup
-from traffic_violation_system.models import Violation, Violator, Operator, OperatorApplication
+from decimal import Decimal
+from .models import UserNotification, UserReport, VehicleRegistration, OperatorViolationLookup, DriverApplication
+from traffic_violation_system.models import Violation, Violator, Operator, OperatorApplication, Driver
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 from django.http import HttpResponseNotAllowed, JsonResponse, HttpResponseRedirect, HttpResponse
@@ -12,7 +13,7 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.contrib.auth.models import User
 from django.urls import reverse
 from django.db.utils import IntegrityError
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.utils.timesince import timesince
 from traffic_violation_system.educational.models import (
     EducationalCategory, 
@@ -23,60 +24,64 @@ from traffic_violation_system.educational.models import (
 )
 from django.template.loader import render_to_string
 import json
+import re
 
 @login_required
 def user_dashboard(request):
-    """
-    Displays the user dashboard with a summary of the user's violations and payment history.
-    """
+    """View for the user dashboard, showing a summary of violations, vehicles, and other user info."""
+    
+    # Get the current user and their profile
     user = request.user
-    license_number = user.userprofile.license_number
+    profile = user.userprofile
     
     # Get violations linked to this user's license number and user account
-    violations = Violation.objects.filter(
-        Q(violator__license_number=license_number) | Q(user_account=user)
+    all_violations = Violation.objects.filter(
+        Q(violator__license_number=profile.license_number) | Q(user_account=user)
     ).order_by('-violation_date')
     
-    # Separate violations into NCAP and regular for counting
-    # NCAP violations are identified by having ANY type of image attached
-    ncap_violations = violations.filter(
-        Q(image__isnull=False) | 
-        Q(driver_photo__isnull=False) | 
-        Q(vehicle_photo__isnull=False) | 
-        Q(secondary_photo__isnull=False)
-    )
+    # Get the 5 most recent violations for the dashboard
+    recent_violations = all_violations[:5]
     
-    # Regular violations are those without any images
-    regular_violations = violations.filter(
-        Q(image__isnull=True) & 
-        Q(driver_photo__isnull=True) & 
-        Q(vehicle_photo__isnull=True) & 
-        Q(secondary_photo__isnull=True)
-    )
+    # Count total and active violations
+    total_violations_count = all_violations.count()
+    active_violations_count = all_violations.filter(
+        Q(status='PENDING') | Q(status='APPROVED') | Q(status='ADJUDICATED')
+    ).count()
     
-    # Get recent violations for dashboard display (limited to the most recent 10)
-    recent_violations = violations[:10]
+    # Sum of amounts for paid violations
+    total_paid = all_violations.filter(status='PAID').aggregate(
+        total=Sum('fine_amount')
+    )['total'] or Decimal('0.00')
     
-    # Count violations by status
-    pending_count = violations.filter(status='PENDING').count()
-    paid_count = violations.filter(status='PAID').count()
+    # Calculate violations due soon (within 7 days)
+    seven_days_from_now = timezone.now().date() + timedelta(days=7)
+    due_soon_count = all_violations.filter(
+        Q(status='PENDING') | Q(status='APPROVED') | Q(status='ADJUDICATED'),
+        payment_due_date__lte=seven_days_from_now,
+        payment_due_date__gte=timezone.now().date()
+    ).count()
     
-    # Calculate total amount paid and due
-    total_paid = violations.filter(status='PAID').aggregate(Sum('fine_amount'))['fine_amount__sum'] or 0
-    total_due = violations.exclude(status='PAID').aggregate(Sum('fine_amount'))['fine_amount__sum'] or 0
+    # Get the user's vehicles
+    vehicles = VehicleRegistration.objects.filter(user=user)
+    
+    # Get recent notifications
+    recent_notifications = UserNotification.objects.filter(
+        user=user
+    ).order_by('-created_at')[:3]
     
     context = {
-        'title': 'Dashboard',
-        'total_violations': violations.count(),
-        'regular_violations_count': regular_violations.count(),
-        'ncap_violations_count': ncap_violations.count(),
-        'pending_count': pending_count,
-        'paid_count': paid_count,
+        'profile': profile,
+        'total_violations_count': total_violations_count,
+        'active_violations_count': active_violations_count,
         'total_paid': total_paid,
-        'total_due': total_due,
+        'due_soon_count': due_soon_count,
         'recent_violations': recent_violations,
-        'recent_regular_violations': regular_violations[:5],
-        'recent_ncap_violations': ncap_violations[:5],
+        'vehicles': vehicles,
+        'recent_notifications': recent_notifications,
+        # Handle unread notification count for the notification badge
+        'unread_notification_count': UserNotification.objects.filter(
+            user=user, is_read=False
+        ).count(),
     }
     
     return render(request, 'user_portal/dashboard.html', context)
@@ -84,7 +89,7 @@ def user_dashboard(request):
 @login_required
 def user_violations(request):
     """
-    Display a list of all regular user violations (excluding NCAP violations with camera evidence).
+    Display a list of all user violations (includes both regular and NCAP violations).
     """
     user = request.user
     license_number = user.userprofile.license_number
@@ -93,15 +98,6 @@ def user_violations(request):
     violations = Violation.objects.filter(
         Q(violator__license_number=license_number) | Q(user_account=user)
     ).order_by('-violation_date')
-    
-    # Filter to only include regular violations (without any images)
-    # NCAP violations are identified by having photos/images
-    violations = violations.filter(
-        Q(image__isnull=True) & 
-        Q(driver_photo__isnull=True) & 
-        Q(vehicle_photo__isnull=True) & 
-        Q(secondary_photo__isnull=True)
-    )
     
     # Search functionality
     search_query = request.GET.get('search', '')
@@ -138,7 +134,7 @@ def user_violations(request):
         pass  # No action needed
     
     context = {
-        'title': 'My Regular Violations',
+        'title': 'My Violations',
         'violations': violations_page,
         'search_query': search_query,
         'status_filter': status_filter,
@@ -1163,28 +1159,341 @@ def education_progress(request):
 
 @login_required
 def print_ncap_violation_form(request, violation_id):
-    """View for printing a NCAP violation form/ticket for a user"""
+    """
+    Generate a printable PDF version of an NCAP violation form for the user.
+    """
+    try:
+        # Try to find the violation either by license number or user account
+        user = request.user
+        license_number = user.userprofile.license_number
+        
+        try:
+            violation = Violation.objects.get(
+                id=violation_id,
+                violator__license_number=license_number
+            )
+        except Violation.DoesNotExist:
+            violation = get_object_or_404(
+                Violation,
+                id=violation_id,
+                user_account=user
+            )
+        
+        # Check if it's really an NCAP violation (has photos)
+        has_photos = bool(violation.image or violation.driver_photo or 
+                         violation.vehicle_photo or violation.secondary_photo)
+        
+        if not has_photos:
+            messages.error(request, "This is not an NCAP violation and cannot be printed with this form.")
+            return redirect('user_portal:user_violations')
+        
+        # Pass the violation to the template for printing
+        context = {
+            'violation': violation,
+            'user': user,
+            'print_mode': True,
+        }
+        
+        return render(request, 'violations/ncap_print_form.html', context)
+        
+    except Exception as e:
+        messages.error(request, f"Error generating printable form: {str(e)}")
+        return redirect('user_portal:user_violations')
+
+@login_required
+def driver_apply(request):
+    """
+    View for users to apply as a driver by submitting required documents.
+    This view handles both GET requests (display application form) and POST requests (submit application).
+    """
     user = request.user
-    license_number = user.userprofile.license_number
     
-    # Try to get the violation linked to this user by license number or user account
-    violation = get_object_or_404(
-        Violation.objects.filter(
-            Q(violator__license_number=license_number) | Q(user_account=user)
-        ),
-        id=violation_id
-    )
+    # Check if user has already submitted an application that's pending or approved
     
-    # Verify this is an NCAP violation (with images)
-    is_ncap = bool(violation.image) or bool(violation.driver_photo) or bool(violation.vehicle_photo) or bool(violation.secondary_photo)
+    # Check if user already has an active application
+    existing_applications = DriverApplication.objects.filter(
+        user=user
+    ).exclude(status='REJECTED')
     
-    if not is_ncap:
-        messages.error(request, "The requested violation is not an NCAP violation.")
-        return redirect('user_portal:user_ncap_violations')
+    if existing_applications.exists():
+        # Redirect to application status page if already applied
+        return redirect('user_portal:driver_application_status')
+    
+    if request.method == 'POST':
+        # Process the form submission
+        try:
+            # Get form data
+            cttmo_seminar_certificate = request.FILES.get('cttmo_seminar_certificate')
+            xray_results = request.FILES.get('xray_results')
+            medical_certificate = request.FILES.get('medical_certificate')
+            police_clearance = request.FILES.get('police_clearance')
+            mayors_permit = request.FILES.get('mayors_permit')
+            other_documents = request.FILES.get('other_documents')
+            
+            # Validate required fields
+            if not all([cttmo_seminar_certificate, xray_results, medical_certificate, police_clearance, mayors_permit]):
+                messages.error(request, "Please provide all required documents.")
+                return render(request, 'user_portal/driver_application_form.html')
+            
+            # Create the application
+            application = DriverApplication(
+                user=user,
+                cttmo_seminar_certificate=cttmo_seminar_certificate,
+                xray_results=xray_results,
+                medical_certificate=medical_certificate,
+                police_clearance=police_clearance,
+                mayors_permit=mayors_permit,
+                other_documents=other_documents
+            )
+            application.save()
+            
+            # Create a notification for admins
+            admin_users = User.objects.filter(is_staff=True)
+            for admin_user in admin_users:
+                UserNotification.objects.create(
+                    user=admin_user,
+                    type='SYSTEM',
+                    message=f"New driver application submitted by {user.get_full_name()} (ID: {application.id})",
+                    reference_id=application.id
+                )
+            
+            # Create a confirmation notification for the user
+            UserNotification.objects.create(
+                user=user,
+                type='SYSTEM',
+                message="Your driver application has been submitted and is pending review.",
+                reference_id=application.id
+            )
+            
+            messages.success(request, "Your application has been submitted successfully and is pending review.")
+            return redirect('user_portal:driver_application_status')
+            
+        except Exception as e:
+            messages.error(request, f"An error occurred while submitting your application: {str(e)}")
+            return render(request, 'user_portal/driver_application_form.html')
+    
+    # Display the application form for GET requests
+    return render(request, 'user_portal/driver_application_form.html')
+
+@login_required
+def driver_application_status(request):
+    """
+    View for users to check the status of their driver applications.
+    """
+    user = request.user
+    
+    # Retrieve all applications for this user, ordered by submission date (newest first)
+    applications = DriverApplication.objects.filter(user=user).order_by('-submitted_at')
     
     context = {
-        'violation': violation,
-        'now': timezone.now()
+        'applications': applications,
     }
     
-    return render(request, 'violations/ncap_print_form.html', context) 
+    return render(request, 'user_portal/driver_application_status.html', context)
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def driver_applications_manage(request):
+    """
+    Admin view to manage driver applications.
+    This view displays both pending and processed applications.
+    """
+    # Get all pending applications
+    pending_applications = DriverApplication.objects.filter(status='PENDING').order_by('-submitted_at')
+    
+    # Get processed applications (approved or rejected)
+    processed_applications = DriverApplication.objects.exclude(status='PENDING').order_by('-processed_at')
+    
+    context = {
+        'pending_applications': pending_applications,
+        'processed_applications': processed_applications,
+    }
+    
+    return render(request, 'user_portal/admin/driver_applications_manage.html', context)
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def driver_application_review(request, application_id):
+    """
+    Admin view to review a specific driver application.
+    Handles both GET requests (view application details) and POST requests (approve/reject application).
+    """
+    application = get_object_or_404(DriverApplication, id=application_id)
+    
+    # For AJAX requests to get application details
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        if request.method == 'GET':
+            # Return application details as JSON
+            user_data = {
+                'full_name': application.user.get_full_name(),
+                'username': application.user.username,
+                'email': application.user.email,
+                'phone_number': getattr(application.user.userprofile, 'phone_number', ''),
+                'address': getattr(application.user.userprofile, 'address', ''),
+            }
+            
+            application_data = {
+                'id': application.id,
+                'status': application.status,
+                'submitted_at': application.submitted_at.isoformat(),
+                'processed_at': application.processed_at.isoformat() if application.processed_at else None,
+                'notes': application.notes,
+                'processed_by': application.processed_by.get_full_name() if application.processed_by else None,
+            }
+            
+            documents_data = {
+                'cttmo_seminar_certificate': application.cttmo_seminar_certificate.url if application.cttmo_seminar_certificate else None,
+                'xray_results': application.xray_results.url if application.xray_results else None,
+                'medical_certificate': application.medical_certificate.url if application.medical_certificate else None,
+                'police_clearance': application.police_clearance.url if application.police_clearance else None,
+                'mayors_permit': application.mayors_permit.url if application.mayors_permit else None,
+                'other_documents': application.other_documents.url if application.other_documents else None,
+            }
+            
+            return JsonResponse({
+                'success': True,
+                'user': user_data,
+                'application': application_data,
+                'documents': documents_data,
+            })
+        
+        elif request.method == 'POST':
+            # Process application approval/rejection
+            status = request.POST.get('status')
+            notes = request.POST.get('notes', '')
+            
+            if status not in ['APPROVED', 'REJECTED']:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Invalid status. Must be either APPROVED or REJECTED.'
+                })
+            
+            if status == 'REJECTED' and not notes:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Please provide a reason for rejection.'
+                })
+            
+            # Update the application
+            application.mark_as_processed(request.user, status, notes)
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'Application has been {status.lower()}.',
+                'redirect': reverse('user_portal:driver_applications_manage')
+            })
+    
+    # For regular page requests to view the application
+    context = {
+        'application': application,
+    }
+    
+    return render(request, 'user_portal/admin/driver_application_review.html', context)
+
+@login_required
+def driver_id_card(request):
+    """
+    Generate a driver ID card for approved drivers.
+    Shows both front and back views with a QR code on the back.
+    """
+    user = request.user
+    profile = user.userprofile
+    
+    # Check if user is an approved driver
+    if not profile.is_driver:
+        messages.error(request, "You are not an approved driver. Please apply to become a driver first.")
+        return redirect('user_portal:driver_apply')
+    
+    # Get the latest approved application
+    try:
+        application = DriverApplication.objects.filter(
+            user=user,
+            status='APPROVED'
+        ).latest('processed_at')
+    except DriverApplication.DoesNotExist:
+        messages.error(request, "No approved driver application found.")
+        return redirect('user_portal:user_dashboard')
+    
+    # Try to get the Driver record to get the PD number
+    try:
+        driver = Driver.objects.filter(
+            first_name=user.first_name,
+            last_name=user.last_name
+        ).first()
+        
+        pd_number = driver.new_pd_number if driver else f"PD-{application.id:03d}"
+    except Exception as e:
+        # Fallback if we can't get the driver record
+        pd_number = f"PD-{application.id:03d}"
+    
+    # QR code data - URL to the driver's public profile
+    qr_data = f"{request.build_absolute_uri('/')[:-1]}/driver/{pd_number}/verify"
+    
+    context = {
+        'user': user,
+        'profile': profile,
+        'application': application,
+        'driver_id': pd_number,
+        'qr_data': qr_data,
+        'issue_date': application.processed_at.date(),
+        'expiry_date': application.processed_at.date().replace(year=application.processed_at.date().year + 1)
+    }
+    
+    return render(request, 'user_portal/driver_id_card.html', context)
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def driver_id_verify(request, driver_id):
+    """
+    Verify a driver's identity using their ID number.
+    This is the endpoint that the QR code points to.
+    """
+    try:
+        # Try to find by Driver.new_pd_number first
+        try:
+            from traffic_violation_system.models import Driver
+            driver_record = Driver.objects.get(new_pd_number=driver_id)
+            
+            # Now try to find the user associated with this driver
+            from django.contrib.auth.models import User
+            driver = User.objects.filter(
+                first_name=driver_record.first_name,
+                last_name=driver_record.last_name
+            ).first()
+            
+            if not driver:
+                raise User.DoesNotExist("No matching user found for driver")
+                
+        except (Driver.DoesNotExist, User.DoesNotExist):
+            # Try to find by application ID from the legacy format (PD-{application.id:03d})
+            try:
+                # Extract the application ID from the driver_id if it follows the legacy format
+                match = re.match(r'PD-(\d+)', driver_id)
+                
+                if match:
+                    app_id = int(match.group(1))
+                    application = DriverApplication.objects.get(id=app_id, status='APPROVED')
+                    driver = application.user
+                else:
+                    raise DriverApplication.DoesNotExist("Invalid driver ID format")
+            except (ValueError, DriverApplication.DoesNotExist):
+                raise Exception("Driver not found")
+        
+        context = {
+            'driver': driver,
+            'driver_id': driver_id,
+            'is_valid': True,
+            'profile': driver.userprofile,
+            'application': DriverApplication.objects.filter(user=driver, status='APPROVED').latest('processed_at'),
+            'now': timezone.now(),
+            'driver_record': driver_record if 'driver_record' in locals() else None
+        }
+    except Exception as e:
+        context = {
+            'is_valid': False,
+            'driver_id': driver_id,
+            'now': timezone.now(),
+            'error': str(e)
+        }
+    
+    return render(request, 'user_portal/driver_id_verify.html', context) 

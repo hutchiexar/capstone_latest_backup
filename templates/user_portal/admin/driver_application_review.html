@@ -1,0 +1,518 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Review Driver Application - CTTMO Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Modern Color Palette */
+    :root {
+        --primary-color: #3563E9;
+        --primary-light: #EEF3FF;
+        --success-color: #0CAA1D;
+        --danger-color: #F53D3D;
+        --warning-color: #FFB800;
+        --info-color: #4DA7FF;
+        --dark-blue: #0F1C3F;
+        --neutral-gray: #737791;
+        --light-gray: #F6F7F9;
+        --white: #FFFFFF;
+    }
+
+    /* Card Design */
+    .review-card {
+        border: none;
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+        margin-bottom: 1.5rem;
+    }
+
+    .review-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Document Preview Styles */
+    .document-preview-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .document-preview {
+        flex: 0 0 calc(50% - 1rem);
+        max-width: calc(50% - 1rem);
+        margin-bottom: 1.5rem;
+    }
+
+    .document-preview img {
+        width: 100%;
+        height: auto;
+        max-height: 400px;
+        object-fit: contain;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .document-preview .document-title {
+        font-weight: 500;
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .document-actions {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 0.5rem;
+    }
+
+    /* Section Styling */
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--dark-blue);
+        margin-bottom: 1rem;
+        border-bottom: 1px solid var(--light-gray);
+        padding-bottom: 0.5rem;
+    }
+
+    /* User Info */
+    .user-info {
+        padding: 1.5rem;
+        background-color: var(--light-gray);
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .user-info-item {
+        margin-bottom: 0.5rem;
+    }
+
+    .user-info-item strong {
+        color: var(--dark-blue);
+    }
+
+    /* Action Buttons */
+    .btn-approve {
+        background-color: var(--success-color);
+        border-color: var(--success-color);
+        color: white;
+    }
+
+    .btn-approve:hover {
+        background-color: #09991a;
+        border-color: #09991a;
+        color: white;
+    }
+
+    .btn-reject {
+        background-color: var(--danger-color);
+        border-color: var(--danger-color);
+        color: white;
+    }
+
+    .btn-reject:hover {
+        background-color: #e42d2d;
+        border-color: #e42d2d;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h3 mb-0">Review Driver Application</h1>
+                <div>
+                    <a href="{% url 'user_portal:driver_applications_manage' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i> Back to Applications
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <!-- Applicant Information Card -->
+            <div class="card review-card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Applicant Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="user-avatar text-center mb-3">
+                        <span class="material-icons display-1 text-primary">account_circle</span>
+                    </div>
+                    <div class="user-info-item">
+                        <strong>Name:</strong> {{ application.user.get_full_name }}
+                    </div>
+                    <div class="user-info-item">
+                        <strong>Username:</strong> {{ application.user.username }}
+                    </div>
+                    <div class="user-info-item">
+                        <strong>Email:</strong> {{ application.user.email }}
+                    </div>
+                    {% if application.user.userprofile.phone_number %}
+                    <div class="user-info-item">
+                        <strong>Phone:</strong> {{ application.user.userprofile.phone_number }}
+                    </div>
+                    {% endif %}
+                    {% if application.user.userprofile.address %}
+                    <div class="user-info-item">
+                        <strong>Address:</strong> {{ application.user.userprofile.address }}
+                    </div>
+                    {% endif %}
+                    <div class="user-info-item">
+                        <strong>Application Date:</strong> {{ application.submitted_at|date:"F j, Y, g:i a" }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Application Status Card -->
+            <div class="card review-card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Application Status</h5>
+                </div>
+                <div class="card-body">
+                    {% if application.status == 'PENDING' %}
+                    <div class="alert alert-warning">
+                        <div class="d-flex align-items-center">
+                            <span class="material-icons me-2">pending</span>
+                            <strong>Pending Review</strong>
+                        </div>
+                        <p class="mb-0 mt-2">This application is waiting for your review and decision.</p>
+                    </div>
+                    
+                    <div class="d-grid gap-2 mt-3">
+                        <button type="button" class="btn btn-approve" id="approveBtn">
+                            <i class="fas fa-check me-2"></i> Approve Application
+                        </button>
+                        <button type="button" class="btn btn-reject" id="rejectBtn">
+                            <i class="fas fa-times me-2"></i> Reject Application
+                        </button>
+                    </div>
+                    {% elif application.status == 'APPROVED' %}
+                    <div class="alert alert-success">
+                        <div class="d-flex align-items-center">
+                            <span class="material-icons me-2">check_circle</span>
+                            <strong>Approved</strong>
+                        </div>
+                        <p class="mb-0 mt-2">This application was approved on {{ application.processed_at|date:"F j, Y" }}</p>
+                        {% if application.processed_by %}
+                        <p class="mb-0 mt-1">Processed by: {{ application.processed_by.get_full_name }}</p>
+                        {% endif %}
+                    </div>
+                    {% elif application.status == 'REJECTED' %}
+                    <div class="alert alert-danger">
+                        <div class="d-flex align-items-center">
+                            <span class="material-icons me-2">cancel</span>
+                            <strong>Rejected</strong>
+                        </div>
+                        <p class="mb-0 mt-2">This application was rejected on {{ application.processed_at|date:"F j, Y" }}</p>
+                        {% if application.processed_by %}
+                        <p class="mb-0 mt-1">Processed by: {{ application.processed_by.get_full_name }}</p>
+                        {% endif %}
+                        {% if application.notes %}
+                        <div class="mt-2">
+                            <strong>Reason:</strong>
+                            <p class="mb-0">{{ application.notes }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <!-- Documents Review Card -->
+            <div class="card review-card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Document Review</h5>
+                </div>
+                <div class="card-body">
+                    <div class="section-title">Required Documents</div>
+                    
+                    <div class="document-preview-container">
+                        {% if application.cttmo_seminar_certificate %}
+                        <div class="document-preview">
+                            <h6 class="document-title">CTTMO Seminar Certificate</h6>
+                            <div class="document-embed">
+                                {% if application.cttmo_seminar_certificate.url|slice:"-4:" == ".pdf" %}
+                                <div class="ratio ratio-16x9">
+                                    <iframe src="{{ application.cttmo_seminar_certificate.url }}" allowfullscreen></iframe>
+                                </div>
+                                {% else %}
+                                <img src="{{ application.cttmo_seminar_certificate.url }}" alt="CTTMO Seminar Certificate">
+                                {% endif %}
+                            </div>
+                            <div class="document-actions mt-2">
+                                <a href="{{ application.cttmo_seminar_certificate.url }}" class="btn btn-sm btn-primary" target="_blank">
+                                    <i class="fas fa-eye me-1"></i> View Full Size
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if application.xray_results %}
+                        <div class="document-preview">
+                            <h6 class="document-title">X-Ray Results</h6>
+                            <div class="document-embed">
+                                {% if application.xray_results.url|slice:"-4:" == ".pdf" %}
+                                <div class="ratio ratio-16x9">
+                                    <iframe src="{{ application.xray_results.url }}" allowfullscreen></iframe>
+                                </div>
+                                {% else %}
+                                <img src="{{ application.xray_results.url }}" alt="X-Ray Results">
+                                {% endif %}
+                            </div>
+                            <div class="document-actions mt-2">
+                                <a href="{{ application.xray_results.url }}" class="btn btn-sm btn-primary" target="_blank">
+                                    <i class="fas fa-eye me-1"></i> View Full Size
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if application.medical_certificate %}
+                        <div class="document-preview">
+                            <h6 class="document-title">Medical Certificate</h6>
+                            <div class="document-embed">
+                                {% if application.medical_certificate.url|slice:"-4:" == ".pdf" %}
+                                <div class="ratio ratio-16x9">
+                                    <iframe src="{{ application.medical_certificate.url }}" allowfullscreen></iframe>
+                                </div>
+                                {% else %}
+                                <img src="{{ application.medical_certificate.url }}" alt="Medical Certificate">
+                                {% endif %}
+                            </div>
+                            <div class="document-actions mt-2">
+                                <a href="{{ application.medical_certificate.url }}" class="btn btn-sm btn-primary" target="_blank">
+                                    <i class="fas fa-eye me-1"></i> View Full Size
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if application.police_clearance %}
+                        <div class="document-preview">
+                            <h6 class="document-title">Police Clearance</h6>
+                            <div class="document-embed">
+                                {% if application.police_clearance.url|slice:"-4:" == ".pdf" %}
+                                <div class="ratio ratio-16x9">
+                                    <iframe src="{{ application.police_clearance.url }}" allowfullscreen></iframe>
+                                </div>
+                                {% else %}
+                                <img src="{{ application.police_clearance.url }}" alt="Police Clearance">
+                                {% endif %}
+                            </div>
+                            <div class="document-actions mt-2">
+                                <a href="{{ application.police_clearance.url }}" class="btn btn-sm btn-primary" target="_blank">
+                                    <i class="fas fa-eye me-1"></i> View Full Size
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if application.mayors_permit %}
+                        <div class="document-preview">
+                            <h6 class="document-title">Mayor's Permit</h6>
+                            <div class="document-embed">
+                                {% if application.mayors_permit.url|slice:"-4:" == ".pdf" %}
+                                <div class="ratio ratio-16x9">
+                                    <iframe src="{{ application.mayors_permit.url }}" allowfullscreen></iframe>
+                                </div>
+                                {% else %}
+                                <img src="{{ application.mayors_permit.url }}" alt="Mayor's Permit">
+                                {% endif %}
+                            </div>
+                            <div class="document-actions mt-2">
+                                <a href="{{ application.mayors_permit.url }}" class="btn btn-sm btn-primary" target="_blank">
+                                    <i class="fas fa-eye me-1"></i> View Full Size
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if application.other_documents %}
+                    <div class="section-title">Additional Documents</div>
+                    <div class="document-preview-container">
+                        <div class="document-preview">
+                            <h6 class="document-title">Other Supporting Documents</h6>
+                            <div class="document-embed">
+                                {% if application.other_documents.url|slice:"-4:" == ".pdf" %}
+                                <div class="ratio ratio-16x9">
+                                    <iframe src="{{ application.other_documents.url }}" allowfullscreen></iframe>
+                                </div>
+                                {% else %}
+                                <img src="{{ application.other_documents.url }}" alt="Supporting Documents">
+                                {% endif %}
+                            </div>
+                            <div class="document-actions mt-2">
+                                <a href="{{ application.other_documents.url }}" class="btn btn-sm btn-primary" target="_blank">
+                                    <i class="fas fa-eye me-1"></i> View Full Size
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rejection Notes Modal -->
+<div class="modal fade" id="rejectionNotesModal" tabindex="-1" aria-labelledby="rejectionNotesModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="rejectionNotesModalLabel">Rejection Reason</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="rejectionForm">
+                    <div class="mb-3">
+                        <label for="rejectionNotes" class="form-label">Reason for rejection:</label>
+                        <textarea class="form-control" id="rejectionNotes" rows="4" required></textarea>
+                        <div class="form-text">This information will be sent to the applicant.</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmRejectBtn">Confirm Rejection</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get application ID from the URL
+    const applicationId = window.location.pathname.split('/').filter(Boolean).pop();
+    
+    // Handle approve button click
+    document.getElementById('approveBtn')?.addEventListener('click', function() {
+        Swal.fire({
+            title: 'Approve Application',
+            text: 'Are you sure you want to approve this driver application?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Approve',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#0CAA1D',
+            cancelButtonColor: '#6c757d'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                processApplication('APPROVED');
+            }
+        });
+    });
+    
+    // Handle reject button click
+    document.getElementById('rejectBtn')?.addEventListener('click', function() {
+        // Show rejection notes modal
+        const rejectionModal = new bootstrap.Modal(document.getElementById('rejectionNotesModal'));
+        rejectionModal.show();
+    });
+    
+    // Handle confirm rejection button click
+    document.getElementById('confirmRejectBtn')?.addEventListener('click', function() {
+        const notes = document.getElementById('rejectionNotes').value.trim();
+        
+        if (!notes) {
+            // Validate notes
+            Swal.fire({
+                title: 'Notes Required',
+                text: 'Please provide a reason for rejecting the application.',
+                icon: 'warning',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+        
+        // Close the rejection notes modal
+        const rejectionModal = bootstrap.Modal.getInstance(document.getElementById('rejectionNotesModal'));
+        rejectionModal.hide();
+        
+        // Process the rejection
+        processApplication('REJECTED', notes);
+    });
+    
+    // Function to process the application (approve or reject)
+    function processApplication(status, notes = '') {
+        if (!applicationId) return;
+        
+        // Show loading
+        Swal.fire({
+            title: 'Processing...',
+            text: 'Please wait while we process the application.',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        // Send AJAX request to process the application
+        fetch(`{% url 'user_portal:driver_application_review' 0 %}`.replace('/0/', `/${applicationId}/`), {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: `status=${status}&notes=${encodeURIComponent(notes)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                Swal.fire({
+                    title: 'Success',
+                    text: data.message,
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    // Redirect to the applications list
+                    window.location.href = data.redirect || "{% url 'user_portal:driver_applications_manage' %}";
+                });
+            } else {
+                // Show error
+                Swal.fire({
+                    title: 'Error',
+                    text: data.message || 'An error occurred while processing the application.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error processing application:', error);
+            Swal.fire({
+                title: 'Error',
+                text: 'An error occurred while processing the application. Please try again.',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        });
+    }
+    
+    // Helper function to get CSRF token
+    function getCsrfToken() {
+        const cookieValue = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('csrftoken='))
+            ?.split('=')[1];
+        return cookieValue || '';
+    }
+});
+</script>
+{% endblock %} 

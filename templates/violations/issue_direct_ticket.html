@@ -2,6 +2,11 @@
 {% load static %}
 
 {% block content %}
+<!-- Add violation types JSON data for JavaScript use -->
+<script>
+    const violationTypesJSON = '{{ violation_types_json|safe }}';
+</script>
+
 <div class="container-fluid py-4">
     <!-- Progress Steps -->
     <div class="progress-container mb-4">
@@ -202,18 +207,36 @@
                         <div class="col-lg-4">
                             <div class="info-card">
                                 <h5 class="section-title">Violation Type</h5>
-                                <div class="violations-list">
-                                    {% for code, label in violation_choices %}
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" 
-                                               name="violation_type[]" 
-                                               value="{{ label }}" 
-                                               id="violation_{{ code }}">
-                                        <label class="form-check-label" for="violation_{{ code }}">
-                                            {{ label }}
-                                        </label>
-                                    </div>
+                                <!-- New minimal violation selection UI -->
+                                <div class="minimal-violation-container">
+                                    <!-- Modified to place dropdown and button in vertical layout -->
+                                    <div class="select-wrapper mb-3">
+                                        <select class="minimal-select" id="violation_selector">
+                                            <option value="">Select violation type to add</option>
+                                            {% for violation_type in violation_types %}
+                                                {% if not violation_type.is_ncap %}
+                                                    <option value="{{ violation_type.name }}" 
+                                                            data-amount="{{ violation_type.amount }}"
+                                                            data-category="{{ violation_type.category }}">
+                                                        {{ violation_type.name }}
+                                                    </option>
+                                                {% endif %}
                                     {% endfor %}
+                                        </select>
+                                </div>
+                                    
+                                    <button type="button" class="add-btn-full" id="add_violation_btn">
+                                        <i class="fas fa-plus me-2"></i> Add Violation
+                                    </button>
+                                    
+                                    <!-- Minimal violations list -->
+                                    <div class="minimal-violations-list mt-4" id="minimal_violations_list">
+                                        <!-- Selected violations will be added here via JavaScript -->
+                                    </div>
+                                    
+                                    <div id="no_violations_message" class="no-violations">
+                                        No violations selected yet
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1508,6 +1531,1001 @@
         max-height: 30vh !important;
     }
 }
+
+/* Improved violation list styles */
+.violation-selection-container {
+    margin-bottom: 1rem;
+}
+
+.violation-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    overflow: hidden;
+}
+
+.violation-list:empty {
+    display: none;
+}
+
+.violation-list li {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    background-color: #f8fafc;
+}
+
+.violation-list li:last-child {
+    border-bottom: none;
+}
+
+.violation-list li:hover {
+    background-color: #f1f5f9;
+}
+
+.violation-list .violation-name {
+    flex-grow: 1;
+    font-weight: 500;
+    margin-right: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.violation-list .violation-amount {
+    display: inline-block;
+    background-color: #3b82f6;
+    color: white;
+    padding: 0.15rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-right: 8px;
+    min-width: 4rem;
+    text-align: center;
+}
+
+.violation-list .remove-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    border: none;
+    background-color: #f87171;
+    color: white;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.violation-list .remove-btn:hover {
+    background-color: #ef4444;
+}
+
+#no_violations_message {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+}
+
+/* Enhanced violation selection interface */
+.section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #4361ee;
+}
+
+.violation-selection-container {
+    margin-bottom: 1rem;
+}
+
+.violation-selection-container .d-flex {
+    gap: 0.5rem;
+}
+
+.violation-selection-container .form-select {
+    border-radius: 0.5rem;
+    border: 1px solid #d1d5db;
+    box-shadow: none;
+    padding: 0.625rem 1rem;
+    font-size: 0.95rem;
+}
+
+.violation-selection-container .btn-primary {
+    background-color: #4361ee;
+    border-color: #4361ee;
+    border-radius: 0.5rem;
+    width: 3rem;
+    height: 2.5rem;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.violation-selection-container .btn-primary:hover {
+    background-color: #3a56d4;
+}
+
+/* Improved violation list styles */
+.violation-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.violation-list:empty {
+    display: none;
+}
+
+.violation-list li {
+    padding: 0.75rem 1rem;
+    border: 1px solid #e4e7eb;
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    background-color: #f8fafc;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    transition: all 0.2s;
+}
+
+.violation-list li:hover {
+    background-color: #f1f5f9;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.07);
+}
+
+.violation-list .violation-name {
+    flex-grow: 1;
+    font-weight: 500;
+    color: #1f2937;
+    margin-right: 0.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.violation-list .text-muted {
+    font-size: 0.8rem;
+    font-weight: normal;
+    color: #6b7280 !important;
+}
+
+.violation-list .violation-amount {
+    display: inline-block;
+    background-color: #4361ee;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 2rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-right: 0.5rem;
+    min-width: 5rem;
+    text-align: center;
+}
+
+.violation-list .remove-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    border: none;
+    background-color: #f87171;
+    color: white;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    flex-shrink: 0;
+}
+
+.violation-list .remove-btn:hover {
+    background-color: #ef4444;
+}
+
+#no_violations_message {
+    background-color: #f8fafc;
+    border: 1px solid #e4e7eb;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    font-size: 0.9rem;
+    text-align: center;
+    color: #6b7280;
+}
+
+/* Improve mobile responsiveness */
+@media (max-width: 768px) {
+    .violation-list li {
+        padding: 0.625rem 0.875rem;
+    }
+    
+    .violation-list .violation-name {
+        font-size: 0.9rem;
+        max-width: 150px;
+    }
+    
+    .violation-list .violation-amount {
+        padding: 0.2rem 0.5rem;
+        font-size: 0.8rem;
+        min-width: 4rem;
+    }
+    
+    .violation-list .remove-btn {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .section-title {
+        font-size: 1.1rem;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.5rem;
+    }
+    
+    .violation-selection-container .form-select,
+    .violation-selection-container .btn-primary {
+        font-size: 0.875rem;
+        height: 2.25rem;
+    }
+    
+    .violation-list .violation-name {
+        font-size: 0.85rem;
+        max-width: 120px;
+    }
+    
+    .violation-list .text-muted {
+        font-size: 0.7rem;
+    }
+    
+    .violation-list .violation-amount {
+        font-size: 0.75rem;
+        padding: 0.15rem 0.4rem;
+        min-width: 3.5rem;
+    }
+    
+    #no_violations_message {
+        font-size: 0.8rem;
+        padding: 0.75rem;
+    }
+}
+
+/* Reset some existing styles */
+.info-card {
+    padding: 1.75rem;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.07);
+    border-radius: 12px;
+    background-color: white;
+    margin-bottom: 1.5rem;
+}
+
+/* Mobile-first section headers with blue underline */
+.section-title {
+    color: #333;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1.75rem;
+    padding-bottom: 0.75rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #4361ee;
+}
+
+/* Minimal violation container */
+.minimal-violation-container {
+    margin-bottom: 1.5rem;
+    padding: 0.5rem 0;
+}
+
+/* Selection row with cleaner elements */
+.selection-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+/* Select wrapper for better control */
+.select-wrapper {
+    width: 100%;
+}
+
+/* Full-width add button style */
+.add-btn-full {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 3rem;
+    border: none;
+    border-radius: 0.75rem;
+    background-color: #4361ee;
+    color: white;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+    padding: 0.75rem 1rem;
+    box-shadow: 0 2px 4px rgba(67, 97, 238, 0.25);
+}
+
+.add-btn-full:hover {
+    background-color: #3a56d4;
+    box-shadow: 0 4px 8px rgba(67, 97, 238, 0.35);
+}
+
+.add-btn-full:active {
+    transform: translateY(1px);
+    box-shadow: 0 1px 2px rgba(67, 97, 238, 0.2);
+}
+
+/* Minimal select style */
+.minimal-select {
+    width: 100%;
+    padding: 0.875rem 1.25rem;
+    border: 1px solid #e4e7eb;
+    border-radius: 0.75rem;
+    background-color: white;
+    font-size: 1rem;
+    color: #333;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    height: auto;
+    line-height: 1.5;
+}
+
+.minimal-select:focus {
+    outline: none;
+    border-color: #4361ee;
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+}
+
+/* Add button style */
+.add-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 2.75rem;
+    border: none;
+    border-radius: 0.5rem;
+    background-color: #4361ee;
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.add-btn:hover {
+    background-color: #3a56d4;
+}
+
+/* Minimal violations list */
+.minimal-violations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+/* Violation item style */
+.violation-item {
+    display: flex;
+    align-items: center;
+    padding: 0.875rem 1.125rem;
+    border-radius: 0.75rem;
+    background-color: #f8fafc;
+    border: 1px solid #e4e7eb;
+    transition: transform 0.3s ease, opacity 0.3s ease, box-shadow 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 0.625rem;
+}
+
+.violation-item:hover {
+    box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+}
+
+.violation-item .name {
+    flex: 1;
+    font-size: 0.95rem;
+    color: #333;
+    white-space: normal;  /* Allow text to wrap by default */
+    overflow: hidden;
+    max-height: 2.8em;  /* Allow for ~2 lines of text */
+    line-height: 1.4;
+    padding-right: 1.5rem;  /* Increased padding to avoid text hitting delete button */
+    position: relative;
+}
+
+.violation-item .auto-added {
+    font-size: 0.8rem;
+    color: #6b7280;
+    font-weight: normal;
+    margin-left: 0.25rem;
+}
+
+.violation-item .delete-btn-container {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-right: 0.875rem;
+}
+
+.violation-item .delete-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    min-width: 2rem;
+    min-height: 2rem;
+    border: none;
+    border-radius: 50%;
+    background-color: #f87171;
+    color: white;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 1px 3px rgba(248, 113, 113, 0.2);
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+    z-index: 2;
+}
+
+.violation-item .delete-btn:hover {
+    background-color: #ef4444;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.25);
+}
+
+.violation-item .delete-btn:active {
+    transform: scale(0.95);
+    background-color: #dc2626;
+}
+
+/* Enhanced touchable area */
+.violation-item .delete-btn:before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    bottom: -10px;
+    z-index: -1;
+}
+
+/* No violations message - improved empty state */
+.no-violations {
+    text-align: center;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    background-color: #f8fafc;
+    border: 1px solid #e4e7eb;
+    color: #6b7280;
+    font-size: 0.95rem;
+    margin-top: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.no-violations:before {
+    content: '';
+    display: block;
+    width: 3rem;
+    height: 3rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' /%3E%3C/svg%3E");
+    background-size: cover;
+    margin-bottom: 0.75rem;
+    opacity: 0.6;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .info-card {
+        padding: 1.5rem;
+    }
+    
+    .section-title {
+        font-size: 1.125rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .add-btn-full {
+        min-height: 2.875rem;
+    }
+    
+    .violation-item {
+        padding: 0.9rem 1rem;
+    }
+    
+    .violation-item .delete-btn {
+        width: 2.25rem;
+        height: 2.25rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .info-card {
+        padding: 1.25rem;
+        border-radius: 10px;
+    }
+    
+    .section-title {
+        font-size: 1.05rem;
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.625rem;
+    }
+    
+    .minimal-select {
+        font-size: 0.95rem;
+        padding: 0.75rem 1rem;
+    }
+    
+    .add-btn-full {
+        font-size: 0.95rem;
+        min-height: 2.75rem;
+    }
+    
+    .violation-item {
+        padding: 0.75rem 1rem;
+    }
+    
+    .violation-item .name {
+        font-size: 0.9rem;
+        letter-spacing: 0.01em;
+        line-height: 1.4;
+        max-height: 2.8em;
+    }
+    
+    .violation-item .delete-btn {
+        width: 2.5rem; /* Larger for mobile */
+        height: 2.5rem; /* Larger for mobile */
+    }
+    
+    .no-violations {
+        font-size: 0.9rem;
+        padding: 1.25rem;
+    }
+}
+
+/* Add indicator for touch-friendly design */
+@media (hover: none) {
+    .violation-item .delete-btn:after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: transparent;
+        border-radius: inherit;
+    }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .info-card {
+        padding: 1.5rem;
+    }
+    
+    .section-title {
+        font-size: 1.125rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .add-btn-full {
+        min-height: 2.875rem;
+    }
+    
+    .violation-item {
+        padding: 0.9rem 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .info-card {
+        padding: 1.25rem;
+        border-radius: 10px;
+    }
+    
+    .section-title {
+        font-size: 1.05rem;
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.625rem;
+    }
+    
+    .minimal-select {
+        font-size: 0.95rem;
+        padding: 0.75rem 1rem;
+    }
+    
+    .add-btn-full {
+        font-size: 0.95rem;
+        min-height: 2.75rem;
+    }
+    
+    .violation-item {
+        padding: 0.75rem 1rem;
+    }
+    
+    .violation-item .name {
+        font-size: 0.9rem;
+        letter-spacing: 0.01em;
+        line-height: 1.4;
+        max-height: 2.8em;
+    }
+    
+    .violation-item .delete-btn {
+        width: 2.5rem; /* Larger for mobile */
+        height: 2.5rem; /* Larger for mobile */
+    }
+    
+    .no-violations {
+        font-size: 0.9rem;
+        padding: 1.25rem;
+    }
+}
+
+/* No violations message */
+.no-violations {
+    text-align: center;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    background-color: #f8fafc;
+    border: 1px solid #e4e7eb;
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+/* Mobile optimizations */
+@media (max-width: 576px) {
+    .info-card {
+        padding: 1rem;
+    }
+    
+    .section-title {
+        font-size: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .minimal-select {
+        font-size: 0.85rem;
+        padding: 0.625rem 0.875rem;
+    }
+    
+    .add-btn {
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+    
+    .violation-item {
+        padding: 0.625rem 0.75rem;
+    }
+    
+    .violation-item .name {
+        font-size: 0.85rem;
+        max-width: 150px;
+    }
+    
+    .violation-item .amount {
+        font-size: 0.75rem;
+        padding: 0.3rem 0.6rem;
+        min-width: 4rem;
+    }
+}
+
+// Replace the existing addViolation function with this improved one
+function addViolationToMinimalList(name, amount, category, autoAdded = false) {
+    const violationsList = document.getElementById('minimal_violations_list');
+    const noViolationsMsg = document.getElementById('no_violations_message');
+    
+    if (!violationsList) return;
+    
+    // Check if this violation is already added
+    const existingItems = violationsList.querySelectorAll('.violation-item');
+    for (const item of existingItems) {
+        if (item.getAttribute('data-name') === name) {
+            // Show error with animation
+            const toast = document.createElement('div');
+            toast.className = 'toast-message';
+            toast.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i>This violation is already added';
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+            return;
+        }
+    }
+    
+    // Create the violation item
+    const item = document.createElement('div');
+    item.className = 'violation-item';
+    item.setAttribute('data-name', name);
+    item.setAttribute('data-amount', amount);
+    item.setAttribute('data-category', category);
+    
+    // Add tooltip for mobile
+    item.title = name;
+    
+    if (autoAdded) {
+        item.setAttribute('data-auto-added', 'true');
+    }
+    
+    // Create hidden input for form submission
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.name = 'violation_type[]';
+    hiddenInput.value = name;
+    item.appendChild(hiddenInput);
+    
+    // Create the name display
+    const nameElement = document.createElement('div');
+    nameElement.className = 'name';
+    if (autoAdded) {
+        nameElement.innerHTML = `${name} <span class="auto-added">(auto-added)</span>`;
+    } else {
+        nameElement.textContent = name;
+    }
+    item.appendChild(nameElement);
+    
+    // Create a wrapper for the delete button
+    const deleteContainer = document.createElement('div');
+    deleteContainer.className = 'delete-btn-container';
+    
+    // Create the delete button with enhanced touch target
+    const deleteButton = document.createElement('button');
+    deleteButton.className = 'delete-btn';
+    deleteButton.innerHTML = '<i class="fas fa-times"></i>';
+    deleteButton.title = 'Remove violation';
+    deleteButton.setAttribute('aria-label', 'Remove ' + name);
+    deleteButton.addEventListener('click', function(e) {
+        e.stopPropagation(); // Prevent event bubbling
+        
+        // Add animated deletion
+        item.style.opacity = '0';
+        item.style.transform = 'translateX(10px)';
+        
+        setTimeout(() => {
+            // Add shake animation to the container if this was the last item
+            if (violationsList.children.length === 1) {
+                violationsList.classList.add('empty-shake');
+                setTimeout(() => violationsList.classList.remove('empty-shake'), 500);
+            }
+            
+            item.remove();
+            
+            // If auto-added unlicensed driver is removed, uncheck the box
+            if (autoAdded && name === "Unlicensed Driver") {
+                const noLicenseCheckbox = document.getElementById('noLicense');
+                if (noLicenseCheckbox && noLicenseCheckbox.checked) {
+                    noLicenseCheckbox.checked = false;
+                }
+            }
+            
+            // Update UI
+            if (violationsList.children.length === 0) {
+                noViolationsMsg.style.display = 'block';
+                // Fade in the no violations message
+                noViolationsMsg.style.opacity = '0';
+                setTimeout(() => {
+                    noViolationsMsg.style.opacity = '1';
+                }, 10);
+            }
+            
+            // Update total
+            updateViolationTotal();
+        }, 300);
+    });
+    
+    deleteContainer.appendChild(deleteButton);
+    item.appendChild(deleteContainer);
+    
+    // Add with animation
+    item.style.opacity = '0';
+    item.style.transform = 'translateY(10px)';
+    violationsList.appendChild(item);
+    
+    // Show the item
+    setTimeout(() => {
+        item.style.opacity = '1';
+        item.style.transform = 'translateY(0)';
+    }, 10);
+    
+    // Hide no violations message
+    if (noViolationsMsg) {
+        noViolationsMsg.style.display = 'none';
+    }
+    
+    // Update total
+    updateViolationTotal();
+}
+
+// Add CSS for toast messages and animations
+const styleElement = document.createElement('style');
+styleElement.textContent = `
+    .toast-message {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: #f87171;
+        color: white;
+        padding: 0.75rem 1.25rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        z-index: 1050;
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: opacity 0.3s, transform 0.3s;
+    }
+    
+    .toast-message.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    
+    @keyframes empty-shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+    }
+    
+    .empty-shake {
+        animation: empty-shake 0.5s ease-in-out;
+    }
+
+    .violation-item {
+        transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+    
+    .no-violations {
+        transition: opacity 0.3s ease;
+    }
+`;
+document.head.appendChild(styleElement);
+
+// Update the handleNoLicenseSelection function to use our improved function
+function handleNoLicenseSelection(isChecked) {
+    const unlicensedDriverViolation = "Unlicensed Driver";
+    
+    if (isChecked) {
+        // Check if already added
+        const violationsList = document.getElementById('minimal_violations_list');
+        if (!violationsList) return;
+        
+        const existingItems = violationsList.querySelectorAll('.violation-item');
+        for (const item of existingItems) {
+            if (item.getAttribute('data-name') === unlicensedDriverViolation) {
+                return; // Already added
+            }
+        }
+        
+        // Find in dropdown
+        const violationSelector = document.getElementById('violation_selector');
+        let found = false;
+        let violationAmount = "500"; // Default amount
+        let violationCategory = "LICENSING"; // Default category
+        
+        if (violationSelector) {
+            for (let i = 0; i < violationSelector.options.length; i++) {
+                if (violationSelector.options[i].value === unlicensedDriverViolation) {
+                    found = true;
+                    violationAmount = violationSelector.options[i].getAttribute('data-amount');
+                    violationCategory = violationSelector.options[i].getAttribute('data-category');
+                    break;
+                }
+            }
+        }
+        
+        // Add to list
+        addViolationToMinimalList(unlicensedDriverViolation, violationAmount, violationCategory, true);
+    } else {
+        // Remove if auto-added
+        const violationsList = document.getElementById('minimal_violations_list');
+        if (!violationsList) return;
+        
+        const items = violationsList.querySelectorAll('.violation-item');
+        for (const item of items) {
+            if (item.getAttribute('data-name') === unlicensedDriverViolation && 
+                item.getAttribute('data-auto-added') === 'true') {
+                
+                // Add animation before removing
+                item.style.opacity = '0';
+                item.style.transform = 'translateX(10px)';
+                
+                setTimeout(() => {
+                    item.remove();
+                    
+                    // Update UI and calculations
+                    const noViolationsMsg = document.getElementById('no_violations_message');
+                    if (noViolationsMsg && violationsList.children.length === 0) {
+                        noViolationsMsg.style.display = 'block';
+                        // Fade in the no violations message
+                        noViolationsMsg.style.opacity = '0';
+                        setTimeout(() => {
+                            noViolationsMsg.style.opacity = '1';
+                        }, 10);
+                    }
+                    
+                    updateViolationTotal();
+                }, 300);
+                
+                break;
+            }
+        }
+    }
+}
+</style>
+
+<!-- Add additional styles for the enhanced mobile interface -->
+<style>
+    .toast-message {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: #f87171;
+        color: white;
+        padding: 0.75rem 1.25rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        z-index: 1050;
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: opacity 0.3s, transform 0.3s;
+    }
+    
+    .toast-message.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    
+    @keyframes empty-shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+    }
+    
+    .empty-shake {
+        animation: empty-shake 0.5s ease-in-out;
+    }
+
+    .violation-item {
+        transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+    
+    .no-violations {
+        transition: opacity 0.3s ease;
+}
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
@@ -1584,12 +2602,37 @@ function validateStep(step) {
 
     // Special validation for step 2 (violations)
     if (step === 1) {
-        const selectedViolations = document.querySelectorAll('input[name="violation_type[]"]:checked');
+        // Update: Check for violations in minimal_violations_list which is used in the new UI
+        const selectedViolations = document.querySelectorAll('#minimal_violations_list .violation-item');
+        console.log('Validating violations: found', selectedViolations.length, 'violations in minimal_violations_list');
+        
         if (selectedViolations.length === 0) {
             isValid = false;
-            alert('Please select at least one violation type');
+            // Show error message
+            const errorMsg = document.getElementById('no_violations_message');
+            if (errorMsg) {
+                errorMsg.textContent = 'Please select at least one violation type';
+                errorMsg.style.color = 'var(--bs-danger)';
+                errorMsg.style.fontWeight = 'bold';
+                errorMsg.style.display = 'block';
+            } else {
+                alert('Please select at least one violation type');
+            }
+        } else {
+            // Reset error message if violations are selected
+            const errorMsg = document.getElementById('no_violations_message');
+            if (errorMsg) {
+                errorMsg.textContent = 'No violations selected yet';
+                errorMsg.style.color = '';
+                errorMsg.style.fontWeight = '';
+            }
+            
+            // Update the violation amount when validating step 2
+            if (typeof updateViolationTotal === 'function') {
+                console.log('Updating violation total during validation');
+                updateViolationTotal();
+            }
         }
-        // Remove automatic recalculation during validation
     }
 
     return isValid;
@@ -2343,20 +3386,27 @@ document.getElementById('ticketForm').addEventListener('submit', async function(
         // Create a new FormData object
         const formData = new FormData(this);
         
-        // Get all checked violation types and ensure they're added to formData
-        const selectedViolations = document.querySelectorAll('input[name="violation_type[]"]:checked');
+        // Get all selected violations from the new UI
+        const selectedViolations = document.querySelectorAll('#minimal_violations_list .violation-item');
         
         // Debug log for violation types
-        console.log('Selected violation types:', Array.from(selectedViolations).map(v => v.value));
+        console.log('Selected violation types:', Array.from(selectedViolations).map(v => v.getAttribute('data-name')));
         
-        // Remove any existing violation_type[] entries (may not be necessary but just to be safe)
-        // This is because FormData might not properly handle array-like field names
+        // Remove any existing violation_type[] entries
         formData.delete('violation_type[]');
         
+        // Check if we have any violations selected
+        if (selectedViolations.length === 0) {
+            console.error('No violations selected!');
+            alert('Please select at least one violation type');
+            return; // Stop form submission
+        }
+        
         // Explicitly add each selected violation type to formData
-        selectedViolations.forEach(checkbox => {
-            formData.append('violation_type[]', checkbox.value);
-            console.log('Added violation type to formData:', checkbox.value);
+        selectedViolations.forEach(item => {
+            const violationName = item.getAttribute('data-name');
+            formData.append('violation_type[]', violationName);
+            console.log('Added violation type to formData:', violationName);
         });
         
         // Store enforcer info in sessionStorage for future use
@@ -3769,21 +4819,16 @@ document.addEventListener('DOMContentLoaded', function() {
 window.addEventListener('load', function() {
     console.log('Window loaded, attaching direct event listeners');
     
-    // Attach click listeners to all violation checkboxes
-    document.querySelectorAll('input[name="violation_type[]"]').forEach(checkbox => {
-        checkbox.addEventListener('click', function() {
-            console.log('Violation checkbox clicked:', this.value, 'Checked:', this.checked);
-            updateViolationTotal();
-        });
-    });
-    
     // Attach click listener to TDZ checkbox
     const tdzCheckbox = document.getElementById('is_tdz_violation');
     if (tdzCheckbox) {
+        console.log('Found TDZ checkbox, attaching click listener');
         tdzCheckbox.addEventListener('click', function() {
             console.log('TDZ checkbox clicked, checked:', this.checked);
             updateViolationTotal();
         });
+    } else {
+        console.error('TDZ checkbox not found!');
     }
     
     // Check for fine_amount element
@@ -3800,90 +4845,154 @@ window.addEventListener('load', function() {
 
 // Alternative implementation to calculate total fine amount
 function updateViolationTotal() {
+    // Get the fine amount element
+    const fineAmountEl = document.getElementById('fine_amount');
+    if (!fineAmountEl) {
+        console.error('Fine amount element not found!');
+        return;
+    }
+    
     // Default fine amount for unlisted violations
     const DEFAULT_FINE = 300;
     
-    // Updated fine amounts based on the new penalty table - same as in updateFineAmount
-    const fineAmounts = {
-        'Jaywalking': 200,
-        'No Seat Belt': 200,
-        'Speeding': 300,
-        'Illegal Parking': 250,
-        'Obstruction': 250,
-        'Reckless Driving': 300,
-        'Unlicensed Driver': 500,
-        'Permitting Hitching': 500,
-        'No License': 100,
-        'DUI': 300,
-        'Using Phone While Driving': 300,
-        'Disobedience to Traffic Control': 200,
-        'Smoking While Driving': 200,
-        'Improper Use of Horn/Muffler': 250,
-        'Failure to Give Way to Pedestrian': 200,
-        'Driving Through Funeral Procession': 200,
-        'Unauthorized Sirens/Lights': 300,
-        'Driving on Reserved Lanes': 100,
-        'No Early Warning Device': 200,
-        'Defective Lights': 250,
-        'Tampered/Fake Plates': 200,
-        'Unregistered MV': 500,
-        'No Loading/Unloading Violation': 100,
-        'Sports Activities on Streets': 300,
-        'Throwing Objects on Road': 300,
-        'Drying Products on Roads': 300,
-        'Unauthorized Signs': 200,
-        'No Franchise/Fare Matrix': 175,
-        'Overloading': 250,
-        'Out-of-Route Operation': 275,
-        'Unsecured Cargo': 200,
-        'Dirty PUV': 150,
-        'Improper Attire on Motorcycle': 200,
-        'Entering Prohibited Zones': 250,
-        'Refusal to Convey': 250,
-        'Discourteous Driver': 200,
-        'Expired OR/CR': 300,
-        'No Permit': 250,
-        'Overcharging': 250,
-        'Defective Muffler': 250,
-        'Dilapidated': 300,
-        'Others': 300
-    };
+    // Get all selected violations
+    const selectedViolations = document.querySelectorAll('#selected_violations li');
+    let totalAmount = 0;
     
-    // Get all checked violation checkboxes
-    const checkedViolations = document.querySelectorAll('input[name="violation_type[]"]:checked');
-    console.log('Checked violations count:', checkedViolations.length);
+    // Check if TDZ checkbox is checked - Fix: use is_tdz_violation instead of is_tdz
+    const isTdzChecked = document.getElementById('is_tdz_violation') && document.getElementById('is_tdz_violation').checked;
+    console.log('TDZ checkbox state:', isTdzChecked, document.getElementById('is_tdz_violation'));
     
-    // Calculate total fine
-    let totalFine = 0;
-    checkedViolations.forEach(function(checkbox) {
-        const violationType = checkbox.value;
-        const amount = fineAmounts[violationType] !== undefined ? fineAmounts[violationType] : DEFAULT_FINE;
-        console.log(`Adding fine for ${violationType}: ${amount}`);
-        totalFine += amount;
+    // Fetch violation types from the server if not already cached
+    if (!window.violationTypesCache) {
+        // Use a synchronous approach for immediate calculation
+        // Try to find violation type data on the page first (might be passed from server)
+        const violationTypesData = window.violationTypesData || [];
+        
+        if (violationTypesData.length > 0) {
+            window.violationTypesCache = violationTypesData;
+        } else {
+            // Default to original hardcoded values if server data not available
+            window.violationTypesCache = [
+                { name: 'Jaywalking', amount: 200 },
+                { name: 'No Seat Belt', amount: 200 },
+                { name: 'Speeding', amount: 300 },
+                { name: 'Illegal Parking', amount: 250 },
+                { name: 'Obstruction', amount: 250 },
+                { name: 'Reckless Driving', amount: 300 },
+                { name: 'Unlicensed Driver', amount: 500 },
+                { name: 'Permitting Hitching', amount: 500 },
+                { name: 'No License', amount: 100 },
+                { name: 'DUI', amount: 300 },
+                { name: 'Using Phone While Driving', amount: 300 },
+                { name: 'Disobedience to Traffic Control', amount: 200 },
+                { name: 'Smoking While Driving', amount: 200 },
+                { name: 'Improper Use of Horn/Muffler', amount: 250 },
+                { name: 'Failure to Give Way to Pedestrian', amount: 200 },
+                { name: 'Driving Through Funeral Procession', amount: 200 },
+                { name: 'Unauthorized Sirens/Lights', amount: 300 },
+                { name: 'Driving on Reserved Lanes', amount: 100 },
+                { name: 'No Early Warning Device', amount: 200 },
+                { name: 'Defective Lights', amount: 250 },
+                { name: 'Tampered/Fake Plates', amount: 200 },
+                { name: 'Unregistered MV', amount: 500 },
+                { name: 'No Loading/Unloading Violation', amount: 100 },
+                { name: 'Sports Activities on Streets', amount: 300 },
+                { name: 'Throwing Objects on Road', amount: 300 },
+                { name: 'Drying Products on Roads', amount: 300 },
+                { name: 'Unauthorized Signs', amount: 200 },
+                { name: 'No Franchise/Fare Matrix', amount: 175 },
+                { name: 'Overloading', amount: 250 },
+                { name: 'Out-of-Route Operation', amount: 275 },
+                { name: 'Unsecured Cargo', amount: 200 },
+                { name: 'Dirty PUV', amount: 150 },
+                { name: 'Improper Attire on Motorcycle', amount: 200 },
+                { name: 'Entering Prohibited Zones', amount: 250 },
+                { name: 'Refusal to Convey', amount: 250 },
+                { name: 'Discourteous Driver', amount: 200 },
+                { name: 'Expired OR/CR', amount: 300 },
+                { name: 'No Permit', amount: 250 },
+                { name: 'Overcharging', amount: 250 },
+                { name: 'Defective Muffler', amount: 250 },
+                { name: 'Dilapidated', amount: 300 },
+                { name: 'Others', amount: 300 }
+            ];
+    
+            // Initiate an async fetch for future use
+            fetch('/management/violation-types/api/list/')
+                .then(response => response.json())
+                .then(data => {
+                    window.violationTypesCache = data;
+                    console.log('Violation types loaded from server');
+                    // Recalculate after data is fetched
+                    updateViolationTotal();
+                })
+                .catch(error => {
+                    console.error('Error fetching violation types:', error);
+                });
+        }
+    }
+    
+    // Convert violation types to a map for easier lookup
+    const violationAmounts = {};
+    window.violationTypesCache.forEach(vt => {
+        violationAmounts[vt.name] = parseFloat(vt.amount);
     });
     
-    // Apply TDZ multiplier if checked
-    const isTdzViolation = document.getElementById('is_tdz_violation')?.checked || false;
-    if (isTdzViolation) {
-        console.log('TDZ violation checked, doubling fine');
-        totalFine *= 2;
-    }
-    
-    console.log('Final total fine:', totalFine);
-    
-    // Update fine amount field
-    const fineAmountField = document.getElementById('fine_amount');
-    if (fineAmountField) {
-        fineAmountField.value = totalFine;
-        console.log('Updated fine amount field with value:', totalFine);
+    // Calculate total from selected violations
+    selectedViolations.forEach(violation => {
+        const violationText = violation.textContent.trim();
+        let amount = DEFAULT_FINE;
         
-        // Trigger a change event on the field to ensure any validation is triggered
-        const event = new Event('change', { bubbles: true });
-        fineAmountField.dispatchEvent(event);
-    } else {
-        console.error('Could not find fine amount field!');
+        // Look up the amount for this violation
+        for (const name in violationAmounts) {
+            if (violationText.includes(name)) {
+                amount = violationAmounts[name];
+                break;
+            }
+        }
+        
+        // Check if we have a custom amount stored in the data attribute
+        const customAmount = violation.getAttribute('data-amount');
+        if (customAmount) {
+            amount = parseFloat(customAmount);
+        }
+        
+        totalAmount += amount;
+    });
+    
+    // Apply TDZ multiplier - Fix: use 2.0 multiplier instead of 1.5
+    if (isTdzChecked) {
+        console.log('TDZ is checked - DOUBLING total from', totalAmount, 'to', totalAmount * 2);
+        totalAmount *= 2.0; // Double the fine amount for TDZ violations
     }
+    
+    // Update the fine amount display
+    fineAmountEl.value = totalAmount.toFixed(2);
+    
+    // Also update any total display elements
+    const totalDisplay = document.getElementById('total_fine_display');
+    if (totalDisplay) {
+        totalDisplay.textContent = '₱' + totalAmount.toFixed(2);
+    }
+    
+    console.log('Total amount calculated:', totalAmount, 'TDZ applied:', isTdzChecked);
 }
+
+// Load violation types when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if we have violation types in the page context first
+    if (!window.violationTypesData && typeof violationTypesJSON !== 'undefined') {
+        try {
+            window.violationTypesData = JSON.parse(violationTypesJSON);
+        } catch (e) {
+            console.error('Error parsing violation types JSON:', e);
+        }
+    }
+    
+    // Initial calculation
+    updateViolationTotal();
+});
 
 document.addEventListener('DOMContentLoaded', function() {
     // Enhanced scan license button
@@ -3915,5 +5024,773 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+// Violation type selection handling
+document.addEventListener('DOMContentLoaded', function() {
+    const violationSelector = document.getElementById('violation_selector');
+    const addViolationBtn = document.getElementById('add_violation_btn');
+    const selectedViolationsList = document.getElementById('selected_violations');
+    const noViolationsMessage = document.getElementById('no_violations_message');
+    
+    // Add violation to the selected list
+    function addViolation() {
+        const violationSelect = document.getElementById('violation_selector');
+        if (!violationSelect.value) return;
+        
+        const selectedOption = violationSelect.options[violationSelect.selectedIndex];
+        const violationName = selectedOption.value;
+        const violationAmount = selectedOption.getAttribute('data-amount');
+        const violationCategory = selectedOption.getAttribute('data-category');
+        
+        // Check if violation is already added
+        const existingViolations = document.querySelectorAll('#selected_violations li');
+        for (const item of existingViolations) {
+            if (item.getAttribute('data-name') === violationName) {
+                // Show alert or toast that violation is already added
+                alert('This violation is already added');
+                return;
+            }
+        }
+        
+        // Create list item with improved styling
+        const listItem = document.createElement('li');
+        listItem.setAttribute('data-name', violationName);
+        listItem.setAttribute('data-amount', violationAmount);
+        listItem.setAttribute('data-category', violationCategory);
+        
+        // Create hidden input for form submission
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'violation_type[]';
+        hiddenInput.value = violationName;
+        listItem.appendChild(hiddenInput);
+        
+        // Create violation name span
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'violation-name';
+        nameSpan.textContent = violationName;
+        listItem.appendChild(nameSpan);
+        
+        // Create amount badge
+        const amountBadge = document.createElement('span');
+        amountBadge.className = 'violation-amount';
+        amountBadge.textContent = '₱' + parseFloat(violationAmount).toFixed(2);
+        listItem.appendChild(amountBadge);
+        
+        // Create remove button
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'remove-btn';
+        removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+        removeBtn.title = 'Remove violation';
+        removeBtn.addEventListener('click', function() {
+            listItem.remove();
+            updateNoViolationsMessage();
+            updateViolationTotal();
+        });
+        listItem.appendChild(removeBtn);
+        
+        // Add to list
+        selectedViolationsList.appendChild(listItem);
+        
+        // Hide "no violations" message
+        updateNoViolationsMessage();
+        
+        // Reset selector
+        violationSelect.value = '';
+        
+        // Update total amount
+        updateViolationTotal();
+    }
+    
+    // Update visibility of "no violations" message
+    function updateNoViolationsMessage() {
+        if (selectedViolationsList.children.length > 0) {
+            noViolationsMessage.style.display = 'none';
+        } else {
+            noViolationsMessage.style.display = 'block';
+        }
+    }
+    
+    // Add event listeners
+    addViolationBtn.addEventListener('click', addViolation);
+    violationSelector.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addViolation();
+        }
+    });
+    
+    // Initialize
+    updateNoViolationsMessage();
+});
+
+// ... existing code ...
+// Handle no license checkbox
+document.addEventListener('DOMContentLoaded', function() {
+    const noLicenseCheckbox = document.getElementById('noLicense');
+    if (noLicenseCheckbox) {
+        noLicenseCheckbox.addEventListener('change', function() {
+            handleNoLicenseSelection(this.checked);
+        });
+    }
+
+    // Function to handle adding/removing the unlicensed driver violation
+    function handleNoLicenseSelection(isChecked) {
+        const unlicensedDriverViolation = "Unlicensed Driver";
+        
+        if (isChecked) {
+            // First check if it's already added
+            const existingViolations = document.querySelectorAll('#selected_violations li');
+            for (const item of existingViolations) {
+                if (item.getAttribute('data-name') === unlicensedDriverViolation) {
+                    // Already added, no need to add again
+                    return;
+                }
+            }
+            
+            // Find the violation in the dropdown
+            const violationSelector = document.getElementById('violation_selector');
+            let found = false;
+            let violationAmount = "500"; // Default amount if not found in dropdown
+            let violationCategory = "LICENSING"; // Default category
+            
+            for (let i = 0; i < violationSelector.options.length; i++) {
+                if (violationSelector.options[i].value === unlicensedDriverViolation) {
+                    found = true;
+                    violationAmount = violationSelector.options[i].getAttribute('data-amount');
+                    violationCategory = violationSelector.options[i].getAttribute('data-category');
+                    break;
+                }
+            }
+            
+            // Add unlicensed driver to the list
+            addViolationToList(unlicensedDriverViolation, violationAmount, violationCategory, true);
+            
+        } else {
+            // Remove unlicensed driver from the list if it was automatically added
+            const violations = document.querySelectorAll('#selected_violations li');
+            for (const item of violations) {
+                if (item.getAttribute('data-name') === unlicensedDriverViolation && 
+                    item.getAttribute('data-auto-added') === 'true') {
+                    item.remove();
+                    // Update UI and calculations
+                    updateNoViolationsMessage();
+                    updateViolationTotal();
+                    break;
+                }
+            }
+        }
+    }
+
+    // Helper function to add a violation to the list
+    function addViolationToList(name, amount, category, autoAdded = false) {
+        const selectedViolationsList = document.getElementById('selected_violations');
+        if (!selectedViolationsList) return;
+        
+        // Create list item
+        const listItem = document.createElement('li');
+        listItem.setAttribute('data-name', name);
+        listItem.setAttribute('data-amount', amount);
+        listItem.setAttribute('data-category', category);
+        if (autoAdded) {
+            listItem.setAttribute('data-auto-added', 'true');
+        }
+        
+        // Create hidden input for form submission
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'violation_type[]';
+        hiddenInput.value = name;
+        listItem.appendChild(hiddenInput);
+        
+        // Create violation name span with enhanced styling
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'violation-name';
+        
+        if (autoAdded) {
+            nameSpan.innerHTML = name + ' <small class="text-muted">(auto-added)</small>';
+        } else {
+            nameSpan.textContent = name;
+        }
+        listItem.appendChild(nameSpan);
+        
+        // Create amount badge with enhanced styling
+        const amountBadge = document.createElement('span');
+        amountBadge.className = 'violation-amount';
+        amountBadge.textContent = '₱' + parseFloat(amount).toFixed(2);
+        listItem.appendChild(amountBadge);
+        
+        // Create remove button with enhanced styling
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'remove-btn';
+        removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+        removeBtn.title = 'Remove violation';
+        removeBtn.addEventListener('click', function() {
+            // Add a subtle fade-out animation before removing
+            listItem.style.opacity = '0';
+            listItem.style.transform = 'translateX(10px)';
+            
+            setTimeout(() => {
+                listItem.remove();
+                
+                // If this was an auto-added unlicensed driver violation, uncheck the no license box
+                if (autoAdded && name === "Unlicensed Driver") {
+                    const noLicenseCheckbox = document.getElementById('noLicense');
+                    if (noLicenseCheckbox && noLicenseCheckbox.checked) {
+                        noLicenseCheckbox.checked = false;
+                    }
+                }
+                
+                updateNoViolationsMessage();
+                updateViolationTotal();
+            }, 200); // Match this with the CSS transition duration
+        });
+        listItem.appendChild(removeBtn);
+        
+        // Add to list with animation
+        listItem.style.opacity = '0';
+        listItem.style.transform = 'translateY(10px)';
+        selectedViolationsList.appendChild(listItem);
+        
+        // Trigger animation
+        setTimeout(() => {
+            listItem.style.opacity = '1';
+            listItem.style.transform = 'translateY(0)';
+        }, 10);
+        
+        // Update UI and totals
+        updateNoViolationsMessage();
+        updateViolationTotal();
+    }
+    
+    // Update for current state (in case page is refreshed with checkbox already checked)
+    if (noLicenseCheckbox && noLicenseCheckbox.checked) {
+        handleNoLicenseSelection(true);
+    }
+});
+// ... existing code ...
+
+// Replace the existing addViolation or addViolationToList function with this improved one
+function addViolationToMinimalList(name, amount, category, autoAdded = false) {
+    const violationsList = document.getElementById('minimal_violations_list');
+    const noViolationsMsg = document.getElementById('no_violations_message');
+    
+    if (!violationsList) return;
+    
+    // Check if this violation is already added
+    const existingItems = violationsList.querySelectorAll('.violation-item');
+    for (const item of existingItems) {
+        if (item.getAttribute('data-name') === name) {
+            // Already exists, don't add duplicate
+            alert('This violation is already added');
+            return;
+        }
+    }
+    
+    // Create the violation item
+    const item = document.createElement('div');
+    item.className = 'violation-item';
+    item.setAttribute('data-name', name);
+    item.setAttribute('data-amount', amount);
+    item.setAttribute('data-category', category);
+    
+    if (autoAdded) {
+        item.setAttribute('data-auto-added', 'true');
+    }
+    
+    // Create hidden input for form submission
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.name = 'violation_type[]';
+    hiddenInput.value = name;
+    item.appendChild(hiddenInput);
+    
+    // Create the name display
+    const nameElement = document.createElement('div');
+    nameElement.className = 'name';
+    if (autoAdded) {
+        nameElement.innerHTML = `${name} <span class="auto-added">(auto-added)</span>`;
+    } else {
+        nameElement.textContent = name;
+    }
+    item.appendChild(nameElement);
+    
+    // Create the delete button
+    const deleteButton = document.createElement('button');
+    deleteButton.className = 'delete-btn';
+    deleteButton.innerHTML = '<i class="fas fa-times"></i>';
+    deleteButton.title = 'Remove violation';
+    deleteButton.addEventListener('click', function() {
+        item.style.opacity = '0';
+        setTimeout(() => {
+            item.remove();
+            
+            // If auto-added unlicensed driver is removed, uncheck the box
+            if (autoAdded && name === "Unlicensed Driver") {
+                const noLicenseCheckbox = document.getElementById('noLicense');
+                if (noLicenseCheckbox && noLicenseCheckbox.checked) {
+                    noLicenseCheckbox.checked = false;
+                }
+            }
+            
+            // Update UI
+            if (violationsList.children.length === 0) {
+                noViolationsMsg.style.display = 'block';
+            }
+            
+            // Update total
+            updateViolationTotal();
+        }, 200);
+    });
+    item.appendChild(deleteButton);
+    
+    // Add with animation
+    item.style.opacity = '0';
+    violationsList.appendChild(item);
+    
+    // Show the item
+    setTimeout(() => {
+        item.style.opacity = '1';
+    }, 10);
+    
+    // Hide no violations message
+    if (noViolationsMsg) {
+        noViolationsMsg.style.display = 'none';
+    }
+    
+    // Update total
+    updateViolationTotal();
+}
+
+// Update our document ready handler to use the new function
+document.addEventListener('DOMContentLoaded', function() {
+    const violationSelector = document.getElementById('violation_selector');
+    const addViolationBtn = document.getElementById('add_violation_btn');
+    
+    // Function to handle adding a violation from the dropdown
+    function addSelectedViolation() {
+        const selector = document.getElementById('violation_selector');
+        if (!selector.value) {
+            // Show feedback
+            selector.classList.add('border-danger');
+            setTimeout(() => {
+                selector.classList.remove('border-danger');
+            }, 1500);
+            return;
+        }
+        
+        const option = selector.options[selector.selectedIndex];
+        const name = option.value;
+        const amount = option.getAttribute('data-amount');
+        const category = option.getAttribute('data-category');
+        
+        addViolationToMinimalList(name, amount, category);
+        
+        // Reset selector with animation
+        selector.classList.add('bg-light');
+        setTimeout(() => {
+            selector.selectedIndex = 0;
+            selector.classList.remove('bg-light');
+        }, 200);
+        
+        // Add visual feedback for button
+        addViolationBtn.classList.add('active');
+        setTimeout(() => {
+            addViolationBtn.classList.remove('active');
+        }, 200);
+    }
+    
+    // Add event listeners
+    if (addViolationBtn) {
+        addViolationBtn.addEventListener('click', addSelectedViolation);
+    }
+    
+    if (violationSelector) {
+        violationSelector.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addSelectedViolation();
+            }
+        });
+    }
+    
+    // Update the no license checkbox handler to use our new function
+    const noLicenseCheckbox = document.getElementById('noLicense');
+    if (noLicenseCheckbox) {
+        noLicenseCheckbox.addEventListener('change', function() {
+            handleNoLicenseSelection(this.checked);
+        });
+    }
+    
+    // Function to handle adding/removing unlicensed driver violation
+    function handleNoLicenseSelection(isChecked) {
+        const unlicensedDriverViolation = "Unlicensed Driver";
+        
+        if (isChecked) {
+            // Check if already added
+            const violationsList = document.getElementById('minimal_violations_list');
+            if (!violationsList) return;
+            
+            const existingItems = violationsList.querySelectorAll('.violation-item');
+            for (const item of existingItems) {
+                if (item.getAttribute('data-name') === unlicensedDriverViolation) {
+                    return; // Already added
+                }
+            }
+            
+            // Find in dropdown
+            const violationSelector = document.getElementById('violation_selector');
+            let found = false;
+            let violationAmount = "500"; // Default amount
+            let violationCategory = "LICENSING"; // Default category
+            
+            if (violationSelector) {
+                for (let i = 0; i < violationSelector.options.length; i++) {
+                    if (violationSelector.options[i].value === unlicensedDriverViolation) {
+                        found = true;
+                        violationAmount = violationSelector.options[i].getAttribute('data-amount');
+                        violationCategory = violationSelector.options[i].getAttribute('data-category');
+                        break;
+                    }
+                }
+            }
+            
+            // Add to list
+            addViolationToMinimalList(unlicensedDriverViolation, violationAmount, violationCategory, true);
+        } else {
+            // Remove if auto-added
+            const violationsList = document.getElementById('minimal_violations_list');
+            if (!violationsList) return;
+            
+            const items = violationsList.querySelectorAll('.violation-item');
+            for (const item of items) {
+                if (item.getAttribute('data-name') === unlicensedDriverViolation && 
+                    item.getAttribute('data-auto-added') === 'true') {
+                    
+                    // Add animation before removing
+                    item.style.opacity = '0';
+                    item.style.transform = 'translateX(10px)';
+                    
+                    setTimeout(() => {
+                        item.remove();
+                        
+                        // Update UI and calculations
+                        const noViolationsMsg = document.getElementById('no_violations_message');
+                        if (noViolationsMsg && violationsList.children.length === 0) {
+                            noViolationsMsg.style.display = 'block';
+                            // Fade in the no violations message
+                            noViolationsMsg.style.opacity = '0';
+                            setTimeout(() => {
+                                noViolationsMsg.style.opacity = '1';
+                            }, 10);
+                        }
+                        
+                        updateViolationTotal();
+                    }, 300);
+                    
+                    break;
+                }
+            }
+        }
+    }
+    
+    // Check initial state
+    if (noLicenseCheckbox && noLicenseCheckbox.checked) {
+        handleNoLicenseSelection(true);
+    }
+});
+
+// Replace the existing addViolation function with this improved one
+function addViolationToMinimalList(name, amount, category, autoAdded = false) {
+    const violationsList = document.getElementById('minimal_violations_list');
+    const noViolationsMsg = document.getElementById('no_violations_message');
+    
+    if (!violationsList) return;
+    
+    // Check if this violation is already added
+    const existingItems = violationsList.querySelectorAll('.violation-item');
+    for (const item of existingItems) {
+        if (item.getAttribute('data-name') === name) {
+            // Show error with animation
+            const toast = document.createElement('div');
+            toast.className = 'toast-message';
+            toast.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i>This violation is already added';
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+            return;
+        }
+    }
+    
+    // Create the violation item
+    const item = document.createElement('div');
+    item.className = 'violation-item';
+    item.setAttribute('data-name', name);
+    item.setAttribute('data-amount', amount);
+    item.setAttribute('data-category', category);
+    
+    // Add tooltip for mobile
+    item.title = name;
+    
+    if (autoAdded) {
+        item.setAttribute('data-auto-added', 'true');
+    }
+    
+    // Create hidden input for form submission
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.name = 'violation_type[]';
+    hiddenInput.value = name;
+    item.appendChild(hiddenInput);
+    
+    // Create the name display
+    const nameElement = document.createElement('div');
+    nameElement.className = 'name';
+    if (autoAdded) {
+        nameElement.innerHTML = `${name} <span class="auto-added">(auto-added)</span>`;
+    } else {
+        nameElement.textContent = name;
+    }
+    item.appendChild(nameElement);
+    
+    // Create a wrapper for the delete button
+    const deleteContainer = document.createElement('div');
+    deleteContainer.className = 'delete-btn-container';
+    
+    // Create the delete button with enhanced touch target
+    const deleteButton = document.createElement('button');
+    deleteButton.className = 'delete-btn';
+    deleteButton.innerHTML = '<i class="fas fa-times"></i>';
+    deleteButton.title = 'Remove violation';
+    deleteButton.setAttribute('aria-label', 'Remove ' + name);
+    deleteButton.addEventListener('click', function(e) {
+        e.stopPropagation(); // Prevent event bubbling
+        
+        // Add animated deletion
+        item.style.opacity = '0';
+        item.style.transform = 'translateX(10px)';
+        
+        setTimeout(() => {
+            // Add shake animation to the container if this was the last item
+            if (violationsList.children.length === 1) {
+                violationsList.classList.add('empty-shake');
+                setTimeout(() => violationsList.classList.remove('empty-shake'), 500);
+            }
+            
+            item.remove();
+            
+            // If auto-added unlicensed driver is removed, uncheck the box
+            if (autoAdded && name === "Unlicensed Driver") {
+                const noLicenseCheckbox = document.getElementById('noLicense');
+                if (noLicenseCheckbox && noLicenseCheckbox.checked) {
+                    noLicenseCheckbox.checked = false;
+                }
+            }
+            
+            // Update UI
+            if (violationsList.children.length === 0) {
+                noViolationsMsg.style.display = 'block';
+                // Fade in the no violations message
+                noViolationsMsg.style.opacity = '0';
+                setTimeout(() => {
+                    noViolationsMsg.style.opacity = '1';
+                }, 10);
+            }
+            
+            // Update total
+            updateViolationTotal();
+        }, 300);
+    });
+    
+    deleteContainer.appendChild(deleteButton);
+    item.appendChild(deleteContainer);
+    
+    // Add with animation
+    item.style.opacity = '0';
+    item.style.transform = 'translateY(10px)';
+    violationsList.appendChild(item);
+    
+    // Show the item
+    setTimeout(() => {
+        item.style.opacity = '1';
+        item.style.transform = 'translateY(0)';
+    }, 10);
+    
+    // Hide no violations message
+    if (noViolationsMsg) {
+        noViolationsMsg.style.display = 'none';
+    }
+    
+    // Update total
+    updateViolationTotal();
+}
+
+// Add toast message styles programmatically
+document.addEventListener('DOMContentLoaded', function() {
+    // Create styles for toast messages and animations if they don't exist yet
+    if (!document.getElementById('toast-message-styles')) {
+        const styleElement = document.createElement('style');
+        styleElement.id = 'toast-message-styles';
+        styleElement.textContent = `
+            .toast-message {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background-color: #f87171;
+                color: white;
+                padding: 0.75rem 1.25rem;
+                border-radius: 0.5rem;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                z-index: 1050;
+                opacity: 0;
+                transform: translateY(-10px);
+                transition: opacity 0.3s, transform 0.3s;
+            }
+            
+            .toast-message.show {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            
+            @keyframes empty-shake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-5px); }
+                75% { transform: translateX(5px); }
+            }
+            
+            .empty-shake {
+                animation: empty-shake 0.5s ease-in-out;
+            }
+        `;
+        document.head.appendChild(styleElement);
+    }
+});
+
+// Update the updateViolationTotal function to use the new structure
+function updateViolationTotal() {
+    // Get the fine amount element
+    const fineAmountEl = document.getElementById('fine_amount');
+    if (!fineAmountEl) {
+        console.error('Fine amount element not found!');
+        return;
+    }
+    
+    // Default fine amount for unlisted violations
+    const DEFAULT_FINE = 300;
+    
+    // Get all selected violations - FIXED: Now check BOTH old and new UI formats
+    let totalAmount = 0;
+    let selectedViolations = [];
+    
+    // Try new format first (minimal-violations-list with violation-item)
+    const newFormatViolations = document.querySelectorAll('#minimal_violations_list .violation-item');
+    if (newFormatViolations && newFormatViolations.length > 0) {
+        console.log('Using new format UI, found violations:', newFormatViolations.length);
+        selectedViolations = newFormatViolations;
+    } else {
+        // Fall back to old format (selected_violations with li)
+        const oldFormatViolations = document.querySelectorAll('#selected_violations li');
+        console.log('Using old format UI, found violations:', oldFormatViolations.length);
+        selectedViolations = oldFormatViolations;
+    }
+    
+    console.log('Total selected violations count:', selectedViolations.length);
+    
+    // Check if TDZ checkbox is checked
+    const isTdzChecked = document.getElementById('is_tdz_violation') && document.getElementById('is_tdz_violation').checked;
+    console.log('TDZ checkbox state:', isTdzChecked);
+    
+    // Calculate total from selected violations
+    selectedViolations.forEach(violation => {
+        let amount = DEFAULT_FINE;
+        
+        // Try to get amount from data attribute (new format)
+        const amountAttr = violation.getAttribute('data-amount');
+        if (amountAttr) {
+            amount = parseFloat(amountAttr);
+            console.log('Using data-amount attribute:', amount);
+        } else {
+            // Try to extract from text content (old format)
+            const violationText = violation.textContent.trim();
+            
+            // Only search in cached types if needed
+            if (window.violationTypesCache) {
+                // Look up the amount for this violation
+                for (const vt of window.violationTypesCache) {
+                    if (violationText.includes(vt.name)) {
+                        amount = parseFloat(vt.amount);
+                        console.log('Found amount from cache:', amount, 'for', vt.name);
+                        break;
+                    }
+                }
+            }
+        }
+        
+        console.log('Adding violation amount:', amount);
+        totalAmount += amount;
+    });
+    
+    console.log('Total before TDZ multiplier:', totalAmount);
+    
+    // Apply TDZ multiplier if checked
+    if (isTdzChecked) {
+        console.log('TDZ is checked - DOUBLING total from', totalAmount, 'to', totalAmount * 2);
+        totalAmount *= 2.0;
+    }
+    
+    // Update the fine amount display
+    console.log('Setting final amount:', totalAmount.toFixed(2));
+    fineAmountEl.value = totalAmount.toFixed(2);
+    
+    // Also update any total display elements
+    const totalDisplay = document.getElementById('total_fine_display');
+    if (totalDisplay) {
+        totalDisplay.textContent = '₱' + totalAmount.toFixed(2);
+    }
+    
+    return totalAmount; // Return value for testing
+}
+
+// Make sure TDZ checkbox has a reliable event listener
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, setting up TDZ checkbox listener');
+    setupTdzCheckboxListener();
+});
+
+// Separate function to setup TDZ checkbox
+function setupTdzCheckboxListener() {
+    // Add direct event listener to TDZ checkbox
+    const tdzCheckbox = document.getElementById('is_tdz_violation');
+    if (tdzCheckbox) {
+        console.log('Setting up TDZ checkbox listener');
+        
+        // Remove previous click listeners
+        const newTdzCheckbox = tdzCheckbox.cloneNode(true);
+        tdzCheckbox.parentNode.replaceChild(newTdzCheckbox, tdzCheckbox);
+        
+        // Add event listener using multiple events for reliability
+        newTdzCheckbox.addEventListener('change', function() {
+            console.log('TDZ checkbox changed, new state:', this.checked);
+            setTimeout(updateViolationTotal, 0); // Use timeout to ensure it runs after state change
+        });
+        
+        // Also add click handler as backup
+        newTdzCheckbox.addEventListener('click', function() {
+            console.log('TDZ checkbox clicked, pending state:', this.checked);
+            setTimeout(updateViolationTotal, 0); // Use timeout to ensure it runs after state change
+        });
+    } else {
+        console.error('TDZ checkbox not found for listener setup!');
+    }
+}
 </script>
 {% endblock %}

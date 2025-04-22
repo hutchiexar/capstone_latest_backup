@@ -1,0 +1,3662 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<!-- Add violation types JSON data for JavaScript use -->
+<script>
+    const violationTypesJSON = '{{ violation_types_json|safe }}';
+</script>
+
+<div class="container-fluid py-4">
+    <!-- Progress Steps -->
+    <div class="progress-container mb-4">
+        <div class="progress">
+            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+        </div>
+        <div class="steps-container">
+            <div class="step active" data-step="1">
+                <div class="step-circle">1</div>
+                <div class="step-label">Violator Info</div>
+            </div>
+            <div class="step" data-step="2">
+                <div class="step-circle">2</div>
+                <div class="step-label">Violation Details</div>
+            </div>
+            <div class="step" data-step="3">
+                <div class="step-circle">3</div>
+                <div class="step-label">Signature</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Container -->
+    <div class="card shadow-sm border-0 rounded-3">
+        <!-- Card header with white background -->
+        <div class="card-header bg-white py-3">
+            <div class="d-flex align-items-center">
+                <span class="material-icons me-2" style="color: var(--primary-color)">gavel</span>
+                <h4 class="m-0">Issue Violation Ticket</h4>
+            </div>
+        </div>
+
+        <!-- Alert container for repeat violator warnings -->
+        <div id="violatorAlertsContainer" class="px-4 pt-3"></div>
+
+        <!-- Card body with responsive improvements -->
+        <div class="card-body p-4">
+            <form method="POST" id="ticketForm" class="needs-validation" novalidate>
+                {% csrf_token %}
+                <!-- Hidden field to store user ID if violator is a registered user -->
+                <input type="hidden" id="user_account_id" name="user_account_id" value="">
+                <input type="hidden" id="violator_source" name="violator_source" value="">
+                
+                <!-- Step 1: Violator Information -->
+                <div class="form-step active" id="step1">
+                    <div class="row g-4">
+                        <div class="col-lg-4">
+                            <div class="info-card">
+                                <h5 class="section-title">License Information</h5>
+                                
+                                <!-- Add unlicensed driver option -->
+                                <div class="form-check mb-3">
+                                    <input type="checkbox" class="form-check-input" id="noLicense" name="no_license">
+                                    <label class="form-check-label" for="noLicense">
+                                        Driver has no license
+                                    </label>
+                                </div>
+
+                                <div id="licenseInputGroup">
+                                    <div class="form-floating mb-3">
+                                        <input type="text" class="form-control autocomplete-input" id="license_number" name="license_number" 
+                                               pattern="[A-Z0-9]{3}-[0-9]{2}-[0-9]{6}" title="Format: XXX-XX-XXXXXX">
+                                        <label for="license_number">License Number</label>
+                                        <div class="form-text">Format: XXX-XX-XXXXXX (e.g., G12-24-001899)</div>
+                                        <div class="autocomplete-dropdown" id="license_dropdown"></div>
+                                    </div>
+
+                                    <!-- Add camera scanner button -->
+                                    <button type="button" id="scanLicense" class="btn btn-primary scan-button mb-3 w-100 d-flex align-items-center justify-content-center gap-2">
+                                        <span class="material-icons">camera_alt</span>
+                                        <span>Scan License</span>
+                                    </button>
+
+                                    <!-- Add camera feed modal -->
+                                    <div class="modal fade" id="cameraModal" tabindex="-1">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content border-0 shadow">
+                                                <div class="modal-header bg-white text-dark border-0">
+                                                    <h5 class="modal-title d-flex align-items-center">
+                                                        <span class="material-icons align-middle me-2">camera_alt</span>
+                                                        <span id="scannerTitle">Document Scanner</span>
+                                                    </h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body p-0">
+                                                    <div class="camera-container position-relative">
+                                                        <!-- Improved scanning overlay -->
+                                                        <div id="scanningOverlay" class="scanning-overlay" style="display: none;">
+                                                            <div class="scanning-line"></div>
+                                                            <div class="corner-markers">
+                                                                <div class="corner-marker top-left"></div>
+                                                                <div class="corner-marker top-right"></div>
+                                                                <div class="corner-marker bottom-left"></div>
+                                                                <div class="corner-marker bottom-right"></div>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <!-- Camera elements -->
+                                                        <video id="cameraFeed" class="w-100" style="display: none;"></video>
+                                                        <canvas id="cameraCanvas" class="w-100" style="display: none;"></canvas>
+                                                        
+                                                        <!-- Improved status messages -->
+                                                        <div id="cameraPermissionMsg" class="camera-message text-center py-5">
+                                                            <div class="d-flex flex-column align-items-center">
+                                                                <div class="spinner-border text-primary mb-3" role="status">
+                                                                    <span class="visually-hidden">Loading camera...</span>
+                                                                </div>
+                                                                <p class="mb-1 fw-bold">Accessing Camera...</p>
+                                                                <p class="text-muted mb-0">Please allow camera access if prompted</p>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <div id="scanningMsg" class="camera-message text-center py-5" style="display: none;">
+                                                            <div class="d-flex flex-column align-items-center">
+                                                                <div class="spinner-border text-primary mb-3" role="status">
+                                                                    <span class="visually-hidden">Processing...</span>
+                                                                </div>
+                                                                <p class="fw-bold mb-1">Processing document...</p>
+                                                                <p class="text-muted mb-0 scanning-text">Please hold still</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- Scan instructions -->
+                                                    <div class="scanner-instructions bg-light p-3">
+                                                        <div class="d-flex align-items-start">
+                                                            <span class="material-icons text-primary me-2">tips_and_updates</span>
+                                                            <div>
+                                                                <p class="mb-1 fw-bold">Tips for better scanning:</p>
+                                                                <ul class="mb-0 ps-3 small text-muted">
+                                                                    <li>Ensure good lighting and avoid glare</li>
+                                                                    <li>Place document on flat surface</li>
+                                                                    <li>Make sure all text is visible and readable</li>
+                                                                    <li>Keep camera steady while scanning</li>
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer border-0">
+                                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                                        <span class="material-icons align-middle me-1" style="font-size: 18px;">close</span>
+                                                        Cancel
+                                                    </button>
+                                                    <button type="button" class="btn btn-primary" id="captureImage">
+                                                        <span class="material-icons align-middle me-1" style="font-size: 18px;">photo_camera</span>
+                                                        Capture
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-8">
+                            <div class="info-card">
+                                <h5 class="section-title">Personal Information</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control autocomplete-input" id="first_name" name="first_name" required>
+                                            <label for="first_name">First Name</label>
+                                            <div class="autocomplete-dropdown" id="first_name_dropdown"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control autocomplete-input" id="last_name" name="last_name" required>
+                                            <label for="last_name">Last Name</label>
+                                            <div class="autocomplete-dropdown" id="last_name_dropdown"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="tel" class="form-control" id="phone_number" name="phone_number" required
+                                                   pattern="[0-9]{11}" title="Please enter a valid 11-digit phone number">
+                                            <label for="phone_number">Phone Number</label>
+                                            <div class="form-text">11-digit number (e.g., 09123456789)</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-floating">
+                                            <textarea class="form-control" id="address" name="address" style="height: 100px" required></textarea>
+                                            <label for="address">Complete Address</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Violation Details -->
+                <div class="form-step" id="step2" style="display: none;">
+                    <div class="row g-4">
+                        <div class="col-lg-4">
+                            <div class="info-card">
+                                <h5 class="section-title">Violation Type</h5>
+                                <!-- New minimal violation selection UI -->
+                                <div class="minimal-violation-container">
+                                    <!-- Modified to place dropdown and button in vertical layout -->
+                                    <div class="select-wrapper mb-3">
+                                        <select class="minimal-select" id="violation_selector">
+                                            <option value="">Select violation type to add</option>
+                                            {% for violation_type in violation_types %}
+                                                {% if not violation_type.is_ncap %}
+                                                    <option value="{{ violation_type.name }}" 
+                                                            data-amount="{{ violation_type.amount }}"
+                                                            data-category="{{ violation_type.category }}">
+                                                        {{ violation_type.name }}
+                                                    </option>
+                                                {% endif %}
+                                    {% endfor %}
+                                        </select>
+                                </div>
+                                    
+                                    <button type="button" class="add-btn-full" id="add_violation_btn">
+                                        <i class="fas fa-plus me-2"></i> Add Violation
+                                    </button>
+                                    
+                                    <!-- Minimal violations list -->
+                                    <div class="minimal-violations-list mt-4" id="minimal_violations_list">
+                                        <!-- Selected violations will be added here via JavaScript -->
+                                    </div>
+                                    
+                                    <div id="no_violations_message" class="no-violations">
+                                        No violations selected yet
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-8">
+                            <div class="info-card">
+                                <h5 class="section-title">Vehicle Information</h5>
+                                <!-- Scan button removed -->
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="vehicle_type" name="vehicle_type" required>
+                                            <label for="vehicle_type">Type/Make of Vehicle</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <select class="form-select" id="classification" name="classification" required>
+                                                <option value="">Select classification</option>
+                                                {% for code, label in vehicle_classifications %}
+                                                <option value="{{ code }}">{{ label }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <label for="classification">Classification</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="plate_number" name="plate_number">
+                                            <label for="plate_number">Plate Number (Optional)</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="color" name="color" required>
+                                            <label for="color">Vehicle Color</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="registration_number" name="registration_number">
+                                            <label for="registration_number">Registration Number (Optional)</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="date" class="form-control" id="registration_date" name="registration_date">
+                                            <label for="registration_date">Registration Date (Optional)</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <h5 class="section-title mt-4">Vehicle Owner</h5>
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="vehicle_owner" name="vehicle_owner" required>
+                                            <label for="vehicle_owner">Vehicle Owner</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-floating">
+                                            <textarea class="form-control" id="vehicle_owner_address" name="vehicle_owner_address" style="height: 100px" required></textarea>
+                                            <label for="vehicle_owner_address">Vehicle Owner Address</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <h5 class="section-title mt-4">Violation Details</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-8">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="location" name="location" required>
+                                            <label for="location">Location of Violation</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-floating">
+                                            <input type="number" class="form-control" id="fine_amount" name="fine_amount" required min="0">
+                                            <label for="fine_amount">Fine Amount (₱)</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row g-3 mt-2">
+                                    <div class="col-12">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="is_tdz_violation" name="is_tdz_violation">
+                                            <label class="form-check-label" for="is_tdz_violation">
+                                                <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                                This violation occurred in a Traffic Discipline Zone (TDZ)
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Signature -->
+                <div class="form-step" id="step3" style="display: none;">
+                    <div class="row g-4">
+                        <div class="col-lg-4">
+                            <div class="info-card">
+                                <h5 class="section-title">Signature Options</h5>
+                                <div class="form-check mb-4">
+                                    <input class="form-check-input" type="checkbox" id="noSignature" name="no_signature">
+                                    <label class="form-check-label" for="noSignature">
+                                        <i class="fas fa-exclamation-circle text-warning me-2"></i>
+                                        Violator refused to sign
+                                    </label>
+                                </div>
+                                <div id="refusalNoteArea" style="display: none;">
+                                    <div class="form-floating">
+                                        <textarea class="form-control" id="refusalNote" name="refusal_note" 
+                                                style="height: 100px"></textarea>
+                                        <label for="refusalNote">Reason for Signature Refusal</label>
+                                    </div>
+                                </div>
+
+                                <!-- Add Enforcer Information Section -->
+                                <h5 class="section-title mt-4">Enforcer Information</h5>
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="enforcer_name" name="enforcer_name" required 
+                                           value="{{ request.user.get_full_name }}" readonly
+                                           data-enforcer-name="{{ request.user.get_full_name }}">
+                                    <label for="enforcer_name">Enforcer Name</label>
+                                </div>
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="enforcer_id" name="enforcer_id" required 
+                                           value="{{ request.user.userprofile.enforcer_id }}" readonly
+                                           data-enforcer-id="{{ request.user.userprofile.enforcer_id }}">
+                                    <label for="enforcer_id">Enforcer ID</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-8">
+                            <div class="info-card">
+                                <h5 class="section-title">Violator's Signature</h5>
+                                <div id="signatureArea">
+                                    <div class="signature-pad-container">
+                                        <canvas id="signatureCanvas"></canvas>
+                                        <div class="signature-pad-message">Please sign inside the box</div>
+                                    </div>
+                                    <div class="mt-3">
+                                        <button type="button" class="btn btn-outline-secondary" id="clearSignature">
+                                            <i class="fas fa-eraser me-2"></i>Clear
+                                        </button>
+                                    </div>
+                                    <input type="hidden" name="signature_data" id="signatureData">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Buttons -->
+                <div class="d-flex justify-content-between mt-4 pt-3 border-top">
+                    <button type="button" class="btn btn-outline-secondary prev-step" style="display: none;">
+                        <span class="material-icons me-2">arrow_back</span>Previous
+                    </button>
+                    <button type="button" class="btn btn-primary next-step">
+                        Next<span class="material-icons ms-2">arrow_forward</span>
+                    </button>
+                    <button type="submit" class="btn btn-success submit-btn" style="display: none;">
+                        <span class="material-icons me-2">gavel</span>Issue Ticket
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Progress Steps */
+.progress-container {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+    margin-bottom: 1.5rem;
+}
+
+.progress {
+    height: 4px;
+    background-color: #e9ecef;
+}
+
+.progress-bar {
+    background-color: var(--primary-color);
+    transition: width 0.3s ease;
+}
+
+.steps-container {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+    position: relative;
+}
+
+.step {
+    text-align: center;
+    flex: 1;
+    position: relative;
+}
+
+.step-circle {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 0.5rem;
+    font-weight: 600;
+    color: #6c757d;
+    transition: all 0.3s ease;
+}
+
+.step.active .step-circle {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.step.completed .step-circle {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.step-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    transition: color 0.3s ease;
+}
+
+.step.active .step-label {
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+/* Mobile responsiveness improvements */
+@media (max-width: 768px) {
+    .progress-container {
+        padding: 1rem;
+    }
+    
+    .step-circle {
+        width: 30px;
+        height: 30px;
+        font-size: 0.85rem;
+    }
+    
+    .step-label {
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .progress-container {
+        padding: 0.75rem;
+    }
+    
+    .step-circle {
+        width: 25px;
+        height: 25px;
+        font-size: 0.8rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .steps-container {
+        margin-top: 0.5rem;
+    }
+    
+    .step-label {
+        font-size: 0.65rem;
+    }
+}
+
+/* Improve card styles for all screen sizes */
+.card {
+    border: none;
+    transition: box-shadow 0.3s ease;
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+.info-card {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    height: 100%;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+}
+
+.info-card:hover {
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+}
+
+.section-title {
+    color: var(--text-dark);
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+/* Improve form controls for better mobile experience */
+.form-floating {
+    margin-bottom: 1rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.25);
+}
+
+/* Enhance violations list for better mobile usability */
+.violations-list {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.form-check {
+    margin-bottom: 0.75rem;
+    padding: 0.5rem;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.form-check:hover {
+    background-color: #e9ecef;
+}
+
+.form-check-label {
+    padding-left: 0.25rem;
+    user-select: none;
+}
+
+.form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Responsive adjustments for different screen sizes */
+@media (max-width: 992px) {
+    .info-card {
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .section-title {
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .card-body {
+        padding: 1.25rem;
+    }
+    
+    .info-card {
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+    }
+    
+    .section-title {
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .violations-list {
+        max-height: 300px;
+        padding: 0.75rem;
+    }
+    
+    .form-check {
+        margin-bottom: 0.5rem;
+        padding: 0.4rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .info-card {
+        padding: 1rem;
+        border-radius: 10px;
+    }
+    
+    .section-title {
+        font-size: 1rem;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.4rem;
+    }
+    
+    .violations-list {
+        max-height: 250px;
+        padding: 0.5rem;
+    }
+    
+    .form-check {
+        padding: 0.3rem;
+        margin-bottom: 0.4rem;
+    }
+    
+    .form-floating label {
+        font-size: 0.9rem;
+    }
+    
+    .form-text {
+        font-size: 0.7rem;
+    }
+    
+    .btn {
+        padding: 0.4rem 1rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* Improve alert container and violation details styling */
+#violatorAlertsContainer {
+    display: block;
+    position: relative;
+    z-index: 1000;
+    margin-bottom: 1rem;
+}
+
+.repeat-violator-alert {
+    display: block !important;
+    margin-bottom: 15px !important;
+    border-radius: 8px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    animation: pulse-warning 2s infinite;
+}
+
+.violation-details-container {
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 6px;
+    max-height: 150px;
+    overflow-y: auto;
+    background-color: rgba(255, 248, 230, 0.5);
+    scrollbar-width: thin;
+}
+
+.violation-details-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.violation-details-container::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.05);
+    border-radius: 3px;
+}
+
+.violation-details-container::-webkit-scrollbar-thumb {
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 3px;
+}
+
+.violation-item {
+    transition: background-color 0.2s;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.violation-item:last-child {
+    border-bottom: none;
+}
+
+.violation-item:hover {
+    background-color: rgba(255, 193, 7, 0.1);
+}
+
+#toggleViolationDetails {
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    color: #856404;
+    font-weight: 500;
+}
+
+#toggleViolationDetails:hover {
+    color: #533f04;
+    transform: translateY(-1px);
+}
+
+/* Make buttons more touch-friendly on mobile */
+@media (max-width: 768px) {
+    .btn {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .prev-step, .next-step, .submit-btn {
+        width: auto;
+        min-width: 120px;
+    }
+    
+    /* Fix spacing between buttons on mobile */
+    .d-flex.justify-content-between.mt-4.pt-3.border-top {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    /* Improve violation details display on mobile */
+    .violation-item h6 {
+        font-size: 0.85rem;
+    }
+    
+    .violation-item p {
+        font-size: 0.8rem;
+    }
+    
+    .violation-item small {
+        font-size: 0.7rem;
+    }
+    
+    /* Adjust badge sizes */
+    .badge {
+        font-size: 0.7rem;
+        padding: 0.25em 0.5em;
+    }
+    
+    /* Add extra spacing around violation checkboxes */
+    .violations-list .form-check {
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .violations-list .form-check-input {
+        margin-top: 0.2rem;
+    }
+    
+    /* Make sure scroll works well on touch devices */
+    .violations-list {
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* Fix navigation button appearance on small screens */
+@media (max-width: 480px) {
+    .d-flex.justify-content-between.mt-4.pt-3.border-top {
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .prev-step, .next-step, .submit-btn {
+        width: 100%;
+        margin: 0;
+    }
+    
+    /* Fix alert display on very small screens */
+    .repeat-violator-alert {
+        padding: 0.75rem;
+    }
+    
+    .repeat-violator-alert .material-icons {
+        font-size: 20px;
+    }
+    
+    .repeat-violator-alert strong {
+        font-size: 0.9rem;
+    }
+    
+    /* Ensure form fits on small screens */
+    .form-floating {
+        margin-bottom: 0.75rem;
+    }
+    
+    .form-floating > .form-control {
+        padding-top: 1.2rem;
+        height: calc(3rem + 2px);
+    }
+    
+    .form-floating > label {
+        padding: 0.5rem 0.75rem;
+    }
+}
+
+/* Cards */
+.info-card {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    height: 100%;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+}
+
+.section-title {
+    color: var(--text-dark);
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+/* Form Controls */
+.form-floating {
+    margin-bottom: 1rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.25);
+}
+
+.violations-list {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.form-check {
+    margin-bottom: 0.75rem;
+    padding: 0.5rem;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.form-check:hover {
+    background-color: #e9ecef;
+}
+
+/* Signature Pad */
+.signature-pad-container {
+    width: 100%;
+    height: 200px;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    touch-action: none;
+    background-color: white;
+}
+
+.signature-pad-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #adb5bd;
+    font-size: 1rem;
+    pointer-events: none;
+    opacity: 0.7;
+    text-align: center;
+    width: 100%;
+    z-index: 1;
+}
+
+#signatureCanvas {
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 2;
+}
+
+@media (max-width: 768px) {
+    .signature-pad-container {
+        height: 150px;
+    }
+    
+    .signature-pad-message {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .signature-pad-container {
+        height: 120px;
+    }
+}
+
+/* Autocomplete styles */
+.autocomplete-input {
+    position: relative;
+}
+
+.autocomplete-dropdown {
+    position: absolute;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    z-index: 1050;
+    display: none;
+}
+
+.autocomplete-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s;
+}
+
+.autocomplete-item:hover,
+.autocomplete-item.active {
+    background-color: #f8f9fa;
+}
+
+.autocomplete-item .highlight {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.autocomplete-details {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 3px;
+}
+
+.source-badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: 500;
+}
+
+.source-badge.violator {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+.source-badge.user {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.autocomplete-error {
+    background-color: #f8d7da;
+    border-radius: 4px;
+    font-size: 0.875rem;
+}
+
+/* Signature Pad */
+#signatureCanvas {
+    width: 100%;
+    height: 100%;
+    background-color: white;
+    touch-action: none;
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+@media (max-width: 768px) {
+    .signature-pad-container {
+        height: 150px;
+    }
+}
+
+/* Buttons */
+.btn {
+    padding: 0.5rem 1.5rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .info-card {
+        margin-bottom: 1.5rem;
+    }
+
+    .step-label {
+        font-size: 0.75rem;
+    }
+
+    #scanLicense {
+        display: flex !important;
+    }
+}
+
+/* Camera Modal Styles */
+.camera-container {
+    background-color: #000;
+    min-height: 250px;
+    max-height: 50vh;
+    overflow: hidden;
+    border-radius: 0;
+}
+
+.camera-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+    z-index: 10;
+}
+
+/* Scanning Animation */
+.scanning-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.scanning-line {
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    background: rgba(13, 110, 253, 0.6);
+    box-shadow: 0 0 10px rgba(13, 110, 253, 0.8), 0 0 20px rgba(13, 110, 253, 0.6);
+    animation: scan 2s linear infinite;
+}
+
+@keyframes scan {
+    0% {
+        top: 0;
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        top: 100%;
+        opacity: 1;
+    }
+}
+
+/* Corner Markers */
+.corner-markers {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.corner-marker {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border: 2px solid #0d6efd;
+    border-radius: 2px;
+}
+
+.top-left {
+    top: 15px;
+    left: 15px;
+    border-right: none;
+    border-bottom: none;
+}
+
+.top-right {
+    top: 15px;
+    right: 15px;
+    border-left: none;
+    border-bottom: none;
+}
+
+.bottom-left {
+    bottom: 15px;
+    left: 15px;
+    border-right: none;
+    border-top: none;
+}
+
+.bottom-right {
+    bottom: 15px;
+    right: 15px;
+    border-left: none;
+    border-top: none;
+}
+
+/* Camera Feed */
+#cameraFeed, #cameraCanvas {
+    background: #000;
+    max-height: 50vh;
+    object-fit: cover;
+}
+
+/* Processing Animation */
+.scanning-text {
+    margin-top: 10px;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+/* Modal Enhancements */
+.modal-content {
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.modal-header {
+    border-bottom: none;
+    padding: 1rem 1.5rem;
+}
+
+.modal-footer {
+    border-top: 1px solid rgba(0,0,0,0.1);
+    padding: 1rem 1.5rem;
+}
+
+.camera-instructions {
+    color: #6c757d;
+}
+
+.license-badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: 500;
+    margin-right: 5px;
+}
+
+.license-badge.has-license {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.license-badge.no-license {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Add this new style at the end of the CSS block */
+.autocomplete-input-selected {
+    background-color: #f7f9fc;
+}
+
+.autocomplete-dropdown-hidden {
+    display: none !important;
+}
+
+/* Repeat Violator Alert */
+#violatorAlertsContainer {
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+}
+
+.repeat-violator-alert {
+    animation: pulse-warning 2s infinite;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-left: 4px solid #ffc107;
+    font-weight: 500;
+}
+
+.violation-details-container {
+    max-height: 150px;
+    overflow-y: auto;
+    margin-bottom: 5px;
+}
+
+.violation-item {
+    transition: background-color 0.2s;
+}
+
+.violation-item:hover {
+    background-color: rgba(255, 193, 7, 0.1);
+}
+
+#toggleViolationDetails {
+    transition: transform 0.2s;
+}
+
+#toggleViolationDetails:hover {
+    transform: scale(1.2);
+}
+
+@keyframes pulse-warning {
+    0% { 
+        box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4); 
+    }
+    70% { 
+        box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); 
+    }
+    100% { 
+        box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); 
+    }
+}
+
+/* Scanner Button Improvements */
+.scan-button {
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+}
+
+.scan-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 12px rgba(0,0,0,0.15);
+}
+
+.scan-button .material-icons {
+    font-size: 20px;
+}
+
+/* Camera Container Styles */
+.camera-container {
+    background-color: #000;
+    min-height: 250px;
+    max-height: 50vh;
+    overflow: hidden;
+    border-radius: 0;
+}
+
+/* Enhanced Scanning Animation */
+.scanning-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.scanning-line {
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    background: rgba(13, 110, 253, 0.6);
+    box-shadow: 0 0 10px rgba(13, 110, 253, 0.8), 0 0 20px rgba(13, 110, 253, 0.6);
+    animation: scan 2s linear infinite;
+}
+
+@keyframes scan {
+    0% {
+        top: 0;
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        top: 100%;
+        opacity: 1;
+    }
+}
+
+/* Enhanced Corner Markers */
+.corner-markers {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.corner-marker {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border: 2px solid #0d6efd;
+    border-radius: 2px;
+}
+
+.top-left {
+    top: 15px;
+    left: 15px;
+    border-right: none;
+    border-bottom: none;
+}
+
+.top-right {
+    top: 15px;
+    right: 15px;
+    border-left: none;
+    border-bottom: none;
+}
+
+.bottom-left {
+    bottom: 15px;
+    left: 15px;
+    border-right: none;
+    border-top: none;
+}
+
+.bottom-right {
+    bottom: 15px;
+    right: 15px;
+    border-left: none;
+    border-top: none;
+}
+
+/* Camera UI Messages */
+.camera-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    color: white;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    z-index: 10;
+}
+
+/* Responsive improvements for mobile */
+@media (max-width: 768px) {
+    .info-card {
+        padding: 1.25rem;
+    }
+    
+    .form-floating label {
+        font-size: 0.9rem;
+    }
+    
+    .scan-button {
+        width: 100%;
+        margin-bottom: 15px;
+        padding: 10px;
+    }
+    
+    .camera-container {
+        min-height: 200px;
+        max-height: 40vh;
+    }
+    
+    #cameraFeed, #cameraCanvas {
+        max-height: 40vh;
+    }
+    
+    .corner-marker {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .scanner-instructions ul {
+        font-size: 0.75rem;
+    }
+    
+    .modal-dialog {
+        margin: 0.5rem;
+        max-width: 95%;
+    }
+    
+    .modal-body {
+        padding: 0 !important;
+    }
+    
+    .camera-message {
+        width: 95%;
+    }
+    
+    .camera-message .material-icons {
+        font-size: 36px !important;
+    }
+    
+    .scanner-instructions {
+        padding: 0.75rem !important;
+    }
+    
+    .scanner-instructions ul {
+        padding-left: 1rem !important;
+    }
+    
+    .modal-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    .modal-footer {
+        padding: 0.75rem 1rem;
+    }
+    
+    #previewImage {
+        max-height: 40vh !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .progress-container {
+        padding: 1rem;
+    }
+    
+    .step-label {
+        display: none;
+    }
+    
+    .card-body {
+        padding: 1rem !important;
+    }
+    
+    .card-header h4 {
+        font-size: 1.2rem;
+    }
+    
+    .modal-footer {
+        flex-direction: column;
+    }
+    
+    .modal-footer button {
+        width: 100%;
+        margin: 0.25rem 0 !important;
+    }
+    
+    .modal-dialog {
+        margin: 0.25rem auto;
+        max-width: 98%;
+    }
+    
+    .camera-container {
+        min-height: 180px;
+        max-height: 35vh;
+    }
+    
+    #cameraFeed, #cameraCanvas {
+        max-height: 35vh;
+    }
+    
+    .corner-marker {
+        width: 15px;
+        height: 15px;
+    }
+    
+    .top-left, .bottom-left {
+        left: 8px;
+    }
+    
+    .top-right, .bottom-right {
+        right: 8px;
+    }
+    
+    .top-left, .top-right {
+        top: 8px;
+    }
+    
+    .bottom-left, .bottom-right {
+        bottom: 8px;
+    }
+    
+    .scanner-instructions p {
+        font-size: 0.85rem;
+        margin-bottom: 0.25rem !important;
+    }
+    
+    .scanner-instructions ul li {
+        font-size: 0.7rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .alert-info {
+        padding: 0.5rem;
+    }
+    
+    #previewImage {
+        max-height: 30vh !important;
+    }
+}
+
+/* Improved violation list styles */
+.violation-selection-container {
+    margin-bottom: 1rem;
+}
+
+.violation-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    overflow: hidden;
+}
+
+.violation-list:empty {
+    display: none;
+}
+
+.violation-list li {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    background-color: #f8fafc;
+}
+
+.violation-list li:last-child {
+    border-bottom: none;
+}
+
+.violation-list li:hover {
+    background-color: #f1f5f9;
+}
+
+.violation-list .violation-name {
+    flex-grow: 1;
+    font-weight: 500;
+    margin-right: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.violation-list .violation-amount {
+    display: inline-block;
+    background-color: #3b82f6;
+    color: white;
+    padding: 0.15rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-right: 8px;
+    min-width: 4rem;
+    text-align: center;
+}
+
+.violation-list .remove-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    border: none;
+    background-color: #f87171;
+    color: white;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.violation-list .remove-btn:hover {
+    background-color: #ef4444;
+}
+
+#no_violations_message {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+}
+
+/* Enhanced violation selection interface */
+.section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #4361ee;
+}
+
+.violation-selection-container {
+    margin-bottom: 1rem;
+}
+
+.violation-selection-container .d-flex {
+    gap: 0.5rem;
+}
+
+.violation-selection-container .form-select {
+    border-radius: 0.5rem;
+    border: 1px solid #d1d5db;
+    box-shadow: none;
+    padding: 0.625rem 1rem;
+    font-size: 0.95rem;
+}
+
+.violation-selection-container .btn-primary {
+    background-color: #4361ee;
+    border-color: #4361ee;
+    border-radius: 0.5rem;
+    width: 3rem;
+    height: 2.5rem;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.violation-selection-container .btn-primary:hover {
+    background-color: #3a56d4;
+}
+
+/* Improved violation list styles */
+.violation-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.violation-list:empty {
+    display: none;
+}
+
+.violation-list li {
+    padding: 0.75rem 1rem;
+    border: 1px solid #e4e7eb;
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    background-color: #f8fafc;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    transition: all 0.2s;
+}
+
+.violation-list li:hover {
+    background-color: #f1f5f9;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.07);
+}
+
+.violation-list .violation-name {
+    flex-grow: 1;
+    font-weight: 500;
+    color: #1f2937;
+    margin-right: 0.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.violation-list .text-muted {
+    font-size: 0.8rem;
+    font-weight: normal;
+    color: #6b7280 !important;
+}
+
+.violation-list .violation-amount {
+    display: inline-block;
+    background-color: #4361ee;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 2rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-right: 0.5rem;
+    min-width: 5rem;
+    text-align: center;
+}
+
+.violation-list .remove-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    border: none;
+    background-color: #f87171;
+    color: white;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    flex-shrink: 0;
+}
+
+.violation-list .remove-btn:hover {
+    background-color: #ef4444;
+}
+
+#no_violations_message {
+    background-color: #f8fafc;
+    border: 1px solid #e4e7eb;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    font-size: 0.9rem;
+    text-align: center;
+    color: #6b7280;
+}
+
+/* Improve mobile responsiveness */
+@media (max-width: 768px) {
+    .violation-list li {
+        padding: 0.625rem 0.875rem;
+    }
+    
+    .violation-list .violation-name {
+        font-size: 0.9rem;
+        max-width: 150px;
+    }
+    
+    .violation-list .violation-amount {
+        padding: 0.2rem 0.5rem;
+        font-size: 0.8rem;
+        min-width: 4rem;
+    }
+    
+    .violation-list .remove-btn {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .section-title {
+        font-size: 1.1rem;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.5rem;
+    }
+    
+    .violation-selection-container .form-select,
+    .violation-selection-container .btn-primary {
+        font-size: 0.875rem;
+        height: 2.25rem;
+    }
+    
+    .violation-list .violation-name {
+        font-size: 0.85rem;
+        max-width: 120px;
+    }
+    
+    .violation-list .text-muted {
+        font-size: 0.7rem;
+    }
+    
+    .violation-list .violation-amount {
+        font-size: 0.75rem;
+        padding: 0.15rem 0.4rem;
+        min-width: 3.5rem;
+    }
+    
+    #no_violations_message {
+        font-size: 0.8rem;
+        padding: 0.75rem;
+    }
+}
+
+/* Reset some existing styles */
+.info-card {
+    padding: 1.75rem;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.07);
+    border-radius: 12px;
+    background-color: white;
+    margin-bottom: 1.5rem;
+}
+
+/* Mobile-first section headers with blue underline */
+.section-title {
+    color: #333;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1.75rem;
+    padding-bottom: 0.75rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #4361ee;
+}
+
+/* Minimal violation container */
+.minimal-violation-container {
+    margin-bottom: 1.5rem;
+    padding: 0.5rem 0;
+}
+
+/* Selection row with cleaner elements */
+.selection-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+/* Select wrapper for better control */
+.select-wrapper {
+    width: 100%;
+}
+
+/* Full-width add button style */
+.add-btn-full {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 3rem;
+    border: none;
+    border-radius: 0.75rem;
+    background-color: #4361ee;
+    color: white;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+    padding: 0.75rem 1rem;
+    box-shadow: 0 2px 4px rgba(67, 97, 238, 0.25);
+}
+
+.add-btn-full:hover {
+    background-color: #3a56d4;
+    box-shadow: 0 4px 8px rgba(67, 97, 238, 0.35);
+}
+
+.add-btn-full:active {
+    transform: translateY(1px);
+    box-shadow: 0 1px 2px rgba(67, 97, 238, 0.2);
+}
+
+/* Minimal select style */
+.minimal-select {
+    width: 100%;
+    padding: 0.875rem 1.25rem;
+    border: 1px solid #e4e7eb;
+    border-radius: 0.75rem;
+    background-color: white;
+    font-size: 1rem;
+    color: #333;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    height: auto;
+    line-height: 1.5;
+}
+
+.minimal-select:focus {
+    outline: none;
+    border-color: #4361ee;
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+}
+
+/* Add button style */
+.add-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 2.75rem;
+    border: none;
+    border-radius: 0.5rem;
+    background-color: #4361ee;
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.add-btn:hover {
+    background-color: #3a56d4;
+}
+
+/* Minimal violations list */
+.minimal-violations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+/* Violation item style */
+.violation-item {
+    display: flex;
+    align-items: center;
+    padding: 0.875rem 1.125rem;
+    border-radius: 0.75rem;
+    background-color: #f8fafc;
+    border: 1px solid #e4e7eb;
+    transition: transform 0.3s ease, opacity 0.3s ease, box-shadow 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 0.625rem;
+}
+
+.violation-item:hover {
+    box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+}
+
+.violation-item .name {
+    flex: 1;
+    font-size: 0.95rem;
+    color: #333;
+    white-space: normal;  /* Allow text to wrap by default */
+    overflow: hidden;
+    max-height: 2.8em;  /* Allow for ~2 lines of text */
+    line-height: 1.4;
+    padding-right: 1.5rem;  /* Increased padding to avoid text hitting delete button */
+    position: relative;
+}
+
+.violation-item .auto-added {
+    font-size: 0.8rem;
+    color: #6b7280;
+    font-weight: normal;
+    margin-left: 0.25rem;
+}
+
+.violation-item .delete-btn-container {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-right: 0.875rem;
+}
+
+.violation-item .delete-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    min-width: 2rem;
+    min-height: 2rem;
+    border: none;
+    border-radius: 50%;
+    background-color: #f87171;
+    color: white;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 1px 3px rgba(248, 113, 113, 0.2);
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+    z-index: 2;
+}
+
+.violation-item .delete-btn:hover {
+    background-color: #ef4444;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.25);
+}
+
+.violation-item .delete-btn:active {
+    transform: scale(0.95);
+    background-color: #dc2626;
+}
+
+/* Enhanced touchable area */
+.violation-item .delete-btn:before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    bottom: -10px;
+    z-index: -1;
+}
+
+/* No violations message - improved empty state */
+.no-violations {
+    text-align: center;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    background-color: #f8fafc;
+    border: 1px solid #e4e7eb;
+    color: #6b7280;
+    font-size: 0.95rem;
+    margin-top: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.no-violations:before {
+    content: '';
+    display: block;
+    width: 3rem;
+    height: 3rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' /%3E%3C/svg%3E");
+    background-size: cover;
+    margin-bottom: 0.75rem;
+    opacity: 0.6;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .info-card {
+        padding: 1.5rem;
+    }
+    
+    .section-title {
+        font-size: 1.125rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .add-btn-full {
+        min-height: 2.875rem;
+    }
+    
+    .violation-item {
+        padding: 0.9rem 1rem;
+    }
+    
+    .violation-item .delete-btn {
+        width: 2.25rem;
+        height: 2.25rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .info-card {
+        padding: 1.25rem;
+        border-radius: 10px;
+    }
+    
+    .section-title {
+        font-size: 1.05rem;
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.625rem;
+    }
+    
+    .minimal-select {
+        font-size: 0.95rem;
+        padding: 0.75rem 1rem;
+    }
+    
+    .add-btn-full {
+        font-size: 0.95rem;
+        min-height: 2.75rem;
+    }
+    
+    .violation-item {
+        padding: 0.75rem 1rem;
+    }
+    
+    .violation-item .name {
+        font-size: 0.9rem;
+        letter-spacing: 0.01em;
+        line-height: 1.4;
+        max-height: 2.8em;
+    }
+    
+    .violation-item .delete-btn {
+        width: 2.5rem; /* Larger for mobile */
+        height: 2.5rem; /* Larger for mobile */
+    }
+    
+    .no-violations {
+        font-size: 0.9rem;
+        padding: 1.25rem;
+    }
+}
+
+/* Add indicator for touch-friendly design */
+@media (hover: none) {
+    .violation-item .delete-btn:after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: transparent;
+        border-radius: inherit;
+    }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .info-card {
+        padding: 1.5rem;
+    }
+    
+    .section-title {
+        font-size: 1.125rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .add-btn-full {
+        min-height: 2.875rem;
+    }
+    
+    .violation-item {
+        padding: 0.9rem 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .info-card {
+        padding: 1.25rem;
+        border-radius: 10px;
+    }
+    
+    .section-title {
+        font-size: 1.05rem;
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.625rem;
+    }
+    
+    .minimal-select {
+        font-size: 0.95rem;
+        padding: 0.75rem 1rem;
+    }
+    
+    .add-btn-full {
+        font-size: 0.95rem;
+        min-height: 2.75rem;
+    }
+    
+    .violation-item {
+        padding: 0.75rem 1rem;
+    }
+    
+    .violation-item .name {
+        font-size: 0.9rem;
+        letter-spacing: 0.01em;
+        line-height: 1.4;
+        max-height: 2.8em;
+    }
+    
+    .violation-item .delete-btn {
+        width: 2.5rem; /* Larger for mobile */
+        height: 2.5rem; /* Larger for mobile */
+    }
+    
+    .no-violations {
+        font-size: 0.9rem;
+        padding: 1.25rem;
+    }
+}
+
+/* No violations message */
+.no-violations {
+    text-align: center;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    background-color: #f8fafc;
+    border: 1px solid #e4e7eb;
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+/* Mobile optimizations */
+@media (max-width: 576px) {
+    .info-card {
+        padding: 1rem;
+    }
+    
+    .section-title {
+        font-size: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .minimal-select {
+        font-size: 0.85rem;
+        padding: 0.625rem 0.875rem;
+    }
+    
+    .add-btn {
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+    
+    .violation-item {
+        padding: 0.625rem 0.75rem;
+    }
+    
+    .violation-item .name {
+        font-size: 0.85rem;
+        max-width: 150px;
+    }
+    
+    .violation-item .amount {
+        font-size: 0.75rem;
+        padding: 0.3rem 0.6rem;
+        min-width: 4rem;
+    }
+}
+
+// Replace the existing addViolation function with this improved one
+function addViolationToMinimalList(name, amount, category, autoAdded = false) {
+    const violationsList = document.getElementById('minimal_violations_list');
+    const noViolationsMsg = document.getElementById('no_violations_message');
+    
+    if (!violationsList) return;
+    
+    // Check if this violation is already added
+    const existingItems = violationsList.querySelectorAll('.violation-item');
+    for (const item of existingItems) {
+        if (item.getAttribute('data-name') === name) {
+            // Show error with animation
+            const toast = document.createElement('div');
+            toast.className = 'toast-message';
+            toast.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i>This violation is already added';
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+            return;
+        }
+    }
+    
+    // Create the violation item
+    const item = document.createElement('div');
+    item.className = 'violation-item';
+    item.setAttribute('data-name', name);
+    item.setAttribute('data-amount', amount);
+    item.setAttribute('data-category', category);
+    
+    // Add tooltip for mobile
+    item.title = name;
+    
+    if (autoAdded) {
+        item.setAttribute('data-auto-added', 'true');
+    }
+    
+    // Create hidden input for form submission
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.name = 'violation_type[]';
+    hiddenInput.value = name;
+    item.appendChild(hiddenInput);
+    
+    // Create the name display
+    const nameElement = document.createElement('div');
+    nameElement.className = 'name';
+    if (autoAdded) {
+        nameElement.innerHTML = `${name} <span class="auto-added">(auto-added)</span>`;
+    } else {
+        nameElement.textContent = name;
+    }
+    item.appendChild(nameElement);
+    
+    // Create a wrapper for the delete button
+    const deleteContainer = document.createElement('div');
+    deleteContainer.className = 'delete-btn-container';
+    
+    // Create the delete button with enhanced touch target
+    const deleteButton = document.createElement('button');
+    deleteButton.className = 'delete-btn';
+    deleteButton.innerHTML = '<i class="fas fa-times"></i>';
+    deleteButton.title = 'Remove violation';
+    deleteButton.setAttribute('aria-label', 'Remove ' + name);
+    deleteButton.addEventListener('click', function(e) {
+        e.stopPropagation(); // Prevent event bubbling
+        
+        // Add animated deletion
+        item.style.opacity = '0';
+        item.style.transform = 'translateX(10px)';
+        
+        setTimeout(() => {
+            // Add shake animation to the container if this was the last item
+            if (violationsList.children.length === 1) {
+                violationsList.classList.add('empty-shake');
+                setTimeout(() => violationsList.classList.remove('empty-shake'), 500);
+            }
+            
+            item.remove();
+            
+            // If auto-added unlicensed driver is removed, uncheck the box
+            if (autoAdded && name === "Unlicensed Driver") {
+                const noLicenseCheckbox = document.getElementById('noLicense');
+                if (noLicenseCheckbox && noLicenseCheckbox.checked) {
+                    noLicenseCheckbox.checked = false;
+                }
+            }
+            
+            // Update UI
+            if (violationsList.children.length === 0) {
+                noViolationsMsg.style.display = 'block';
+                // Fade in the no violations message
+                noViolationsMsg.style.opacity = '0';
+                setTimeout(() => {
+                    noViolationsMsg.style.opacity = '1';
+                }, 10);
+            }
+            
+            // Update total
+            updateViolationTotal();
+        }, 300);
+    });
+    
+    deleteContainer.appendChild(deleteButton);
+    item.appendChild(deleteContainer);
+    
+    // Add with animation
+    item.style.opacity = '0';
+    item.style.transform = 'translateY(10px)';
+    violationsList.appendChild(item);
+    
+    // Show the item
+    setTimeout(() => {
+        item.style.opacity = '1';
+        item.style.transform = 'translateY(0)';
+    }, 10);
+    
+    // Hide no violations message
+    if (noViolationsMsg) {
+        noViolationsMsg.style.display = 'none';
+    }
+    
+    // Update total
+    updateViolationTotal();
+}
+
+// Add CSS for toast messages and animations
+const styleElement = document.createElement('style');
+styleElement.textContent = `
+    .toast-message {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: #f87171;
+        color: white;
+        padding: 0.75rem 1.25rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        z-index: 1050;
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: opacity 0.3s, transform 0.3s;
+    }
+    
+    .toast-message.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    
+    @keyframes empty-shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+    }
+    
+    .empty-shake {
+        animation: empty-shake 0.5s ease-in-out;
+    }
+
+    .violation-item {
+        transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+    
+    .no-violations {
+        transition: opacity 0.3s ease;
+    }
+`;
+document.head.appendChild(styleElement);
+
+// Update the handleNoLicenseSelection function to use our improved function
+function handleNoLicenseSelection(isChecked) {
+    const unlicensedDriverViolation = "Unlicensed Driver";
+    
+    if (isChecked) {
+        // Check if already added
+        const violationsList = document.getElementById('minimal_violations_list');
+        if (!violationsList) return;
+        
+        const existingItems = violationsList.querySelectorAll('.violation-item');
+        for (const item of existingItems) {
+            if (item.getAttribute('data-name') === unlicensedDriverViolation) {
+                return; // Already added
+            }
+        }
+        
+        // Find in dropdown
+        const violationSelector = document.getElementById('violation_selector');
+        let found = false;
+        let violationAmount = "500"; // Default amount
+        let violationCategory = "LICENSING"; // Default category
+        
+        if (violationSelector) {
+            for (let i = 0; i < violationSelector.options.length; i++) {
+                if (violationSelector.options[i].value === unlicensedDriverViolation) {
+                    found = true;
+                    violationAmount = violationSelector.options[i].getAttribute('data-amount');
+                    violationCategory = violationSelector.options[i].getAttribute('data-category');
+                    break;
+                }
+            }
+        }
+        
+        // Add to list
+        addViolationToMinimalList(unlicensedDriverViolation, violationAmount, violationCategory, true);
+    } else {
+        // Remove if auto-added
+        const violationsList = document.getElementById('minimal_violations_list');
+        if (!violationsList) return;
+        
+        const items = violationsList.querySelectorAll('.violation-item');
+        for (const item of items) {
+            if (item.getAttribute('data-name') === unlicensedDriverViolation && 
+                item.getAttribute('data-auto-added') === 'true') {
+                
+                // Add animation before removing
+                item.style.opacity = '0';
+                item.style.transform = 'translateX(10px)';
+                
+                setTimeout(() => {
+                    item.remove();
+                    
+                    // Update UI and calculations
+                    const noViolationsMsg = document.getElementById('no_violations_message');
+                    if (noViolationsMsg && violationsList.children.length === 0) {
+                        noViolationsMsg.style.display = 'block';
+                        // Fade in the no violations message
+                        noViolationsMsg.style.opacity = '0';
+                        setTimeout(() => {
+                            noViolationsMsg.style.opacity = '1';
+                        }, 10);
+                    }
+                    
+                    updateViolationTotal();
+                }, 300);
+                
+                break;
+            }
+        }
+    }
+}
+
+/* Fix for form field accessibility issues */
+.form-floating input,
+.form-floating select,
+.form-floating textarea {
+    z-index: 10 !important;  /* Ensure inputs are on top */
+    opacity: 1 !important;   /* Ensure inputs are visible */
+    pointer-events: auto !important; /* Ensure inputs receive mouse events */
+}
+
+/* Ensure labels don't block input interaction */
+.form-floating label {
+    pointer-events: none !important; /* Prevent label from capturing clicks */
+}
+
+/* Fix any overlay issues */
+.autocomplete-dropdown {
+    z-index: 1000 !important; /* Keep dropdowns above other elements */
+}
+
+/* Ensure inputs are not disabled */
+input:not([type="button"]):not([type="submit"]), 
+select, 
+textarea {
+    background-color: #fff !important;
+    user-select: text !important;
+}
+
+/* Fix stacking context issues */
+.form-step {
+    isolation: isolate; /* Create a new stacking context */
+}
+</style>
+
+<!-- Add additional styles for the enhanced mobile interface -->
+<style>
+    .toast-message {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: #f87171;
+        color: white;
+        padding: 0.75rem 1.25rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        z-index: 1050;
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: opacity 0.3s, transform 0.3s;
+    }
+    
+    .toast-message.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    
+    @keyframes empty-shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+    }
+    
+    .empty-shake {
+        animation: empty-shake 0.5s ease-in-out;
+    }
+
+    .violation-item {
+        transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+    
+    .no-violations {
+        transition: opacity 0.3s ease;
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+
+<script>
+// Make sure SweetAlert2 is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof Swal === 'undefined') {
+        console.log('Loading SweetAlert2');
+        // Add SweetAlert2 library 
+        const sweetAlertScript = document.createElement('script');
+        sweetAlertScript.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js';
+        sweetAlertScript.async = true;
+        document.head.appendChild(sweetAlertScript);
+        
+        // Add SweetAlert2 styles
+        const sweetAlertStyles = document.createElement('link');
+        sweetAlertStyles.rel = 'stylesheet';
+        sweetAlertStyles.href = 'https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css';
+        document.head.appendChild(sweetAlertStyles);
+    }
+});
+
+// Form steps handling
+let currentStep = 0;
+const steps = document.querySelectorAll('.form-step');
+const progressBar = document.querySelector('.progress-bar');
+const stepIndicators = document.querySelectorAll('.step');
+const prevBtn = document.querySelector('.prev-step');
+const nextBtn = document.querySelector('.next-step');
+const submitBtn = document.querySelector('.submit-btn');
+
+function updateStep(step) {
+    steps.forEach(s => s.style.display = 'none');
+    steps[step].style.display = 'block';
+    
+    // Update progress bar
+    progressBar.style.width = `${((step + 1) / steps.length) * 100}%`;
+    
+    // Update step indicators
+    stepIndicators.forEach((s, i) => {
+        s.classList.remove('active', 'completed');
+        if (i === step) s.classList.add('active');
+        if (i < step) s.classList.add('completed');
+    });
+    
+    // Update buttons
+    prevBtn.style.display = step === 0 ? 'none' : 'flex';
+    nextBtn.style.display = step === steps.length - 1 ? 'none' : 'flex';
+    submitBtn.style.display = step === steps.length - 1 ? 'flex' : 'none';
+    
+    // When moving to step 2 (violations), only initialize the violation selection listeners
+    // but don't automatically recalculate the amount
+    if (step === 1) {
+        console.log('Step 2 displayed, initializing violation selection listeners');
+        // Initialize the event listeners for violation changes
+        initializeViolationFines();
+    }
+}
+
+function validateStep(step) {
+    const currentStepEl = steps[step];
+    const inputs = currentStepEl.querySelectorAll('input[required], select[required], textarea[required]');
+    let isValid = true;
+
+    inputs.forEach(input => {
+        if (!input.value) {
+            isValid = false;
+            input.classList.add('is-invalid');
+        } else {
+            input.classList.remove('is-invalid');
+        }
+    });
+
+    // Special validation for step 2 (violations)
+    if (step === 1) {
+        // Check for violations in all possible locations
+        const minimalViolations = document.querySelectorAll('#minimal_violations_list .violation-item');
+        const selectedViolationsLi = document.querySelectorAll('#selected_violations li');
+        const selectedViolationsHidden = document.querySelectorAll('input[name="violation_type[]"]');
+        
+        console.log('Validation found violations - Minimal UI:', minimalViolations.length, 
+                   'Old UI Li:', selectedViolationsLi.length, 
+                   'Hidden inputs:', selectedViolationsHidden.length);
+        
+        const hasViolations = minimalViolations.length > 0 || 
+                             selectedViolationsLi.length > 0 || 
+                             selectedViolationsHidden.length > 0;
+        
+        if (!hasViolations) {
+            isValid = false;
+            // Show error message
+            const errorMsg = document.getElementById('no_violations_message');
+            if (errorMsg) {
+                errorMsg.textContent = 'Please select at least one violation type';
+                errorMsg.style.color = 'var(--bs-danger)';
+                errorMsg.style.fontWeight = 'bold';
+                errorMsg.style.display = 'block';
+            } else {
+                alert('Please select at least one violation type');
+            }
+        } else {
+            // Reset error message if violations are selected
+            const errorMsg = document.getElementById('no_violations_message');
+            if (errorMsg) {
+                errorMsg.textContent = 'No violations selected yet';
+                errorMsg.style.color = '';
+                errorMsg.style.fontWeight = '';
+            }
+            
+            // Update the violation amount when validating step 2
+            if (typeof updateViolationTotal === 'function') {
+                console.log('Updating violation total during validation');
+                updateViolationTotal();
+            }
+        }
+    }
+
+    return isValid;
+}
+
+// Add event listeners for navigation buttons
+nextBtn.addEventListener('click', () => {
+    if (validateStep(currentStep)) {
+        currentStep++;
+        updateStep(currentStep);
+        
+        // If moving to step 2 and "no license" is checked, ensure unlicensed violation is checked
+        if (currentStep === 1 && document.getElementById('noLicense').checked) {
+            const unlicensedCheckbox = Array.from(document.querySelectorAll('input[name="violation_type[]"]'))
+                .find(checkbox => checkbox.value === 'Unlicensed Driver');
+            
+            if (unlicensedCheckbox) {
+                unlicensedCheckbox.checked = true;
+            }
+        }
+
+        // If moving to step 2, check if this is a repeat violator
+        if (currentStep === 1) {
+            checkForRepeatViolator();
+            // Don't recalculate fine automatically when moving to step 2
+            // Let the initializeViolationFines function handle this based on violation selection
+        }
+    }
+});
+
+prevBtn.addEventListener('click', () => {
+    currentStep--;
+    updateStep(currentStep);
+});
+
+// Function to check for repeat violations
+async function checkForRepeatViolator() {
+    try {
+        const licenseNumber = document.getElementById('license_number').value;
+        const userId = document.getElementById('user_account_id').value;
+        const violatorSource = document.getElementById('violator_source').value;
+        const firstName = document.getElementById('first_name').value;
+        const lastName = document.getElementById('last_name').value;
+        
+        console.log('Checking for repeat violator with:', {
+            licenseNumber, userId, firstName, lastName
+        });
+        
+        // Only check if we have enough identifying information
+        if ((!licenseNumber && !userId) && (!firstName || !lastName)) {
+            console.log('Not enough information to check for repeat violator');
+            return;
+        }
+        
+        // Get CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        // Show loading indicator
+        const targetField = licenseNumber ? document.getElementById('license_number') : document.getElementById('first_name');
+        const fieldParent = targetField.parentElement;
+        
+        // Add loading state
+        if (fieldParent) {
+            fieldParent.classList.add('is-checking');
+            
+            // Add loading spinner if it doesn't exist
+            if (!fieldParent.querySelector('.checking-badge')) {
+                const loadingSpinner = document.createElement('div');
+                loadingSpinner.className = 'checking-badge position-absolute end-0 top-0 mt-3 me-3';
+                loadingSpinner.innerHTML = '<span class="spinner-border spinner-border-sm text-primary" role="status"></span> Checking...';
+                fieldParent.appendChild(loadingSpinner);
+            }
+        }
+        
+        // Prepare the request data
+        const formData = new FormData();
+        if (licenseNumber) formData.append('license_number', licenseNumber);
+        if (userId) formData.append('user_id', userId);
+        if (violatorSource) formData.append('source', violatorSource);
+        if (firstName) formData.append('first_name', firstName);
+        if (lastName) formData.append('last_name', lastName);
+        
+        console.log('Sending request to check for repeat violator');
+        
+        // Make API request to check for previous violations
+        const response = await fetch('/api/check-repeat-violator/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken
+            }
+        });
+        
+        // Remove loading state
+        if (fieldParent) {
+            fieldParent.classList.remove('is-checking');
+            const loadingBadge = fieldParent.querySelector('.checking-badge');
+            if (loadingBadge) loadingBadge.remove();
+        }
+        
+        if (!response.ok) {
+            throw new Error('Failed to check violator history');
+        }
+        
+        const data = await response.json();
+        console.log('Repeat violator check response:', data);
+        
+        // Ensure the alerts container exists
+        const alertsContainer = document.getElementById('violatorAlertsContainer');
+        if (!alertsContainer) {
+            console.error('Alert container not found! Creating one...');
+            // Create the container if it doesn't exist
+            const formCard = document.querySelector('.card-body');
+            if (formCard) {
+                const newAlertsContainer = document.createElement('div');
+                newAlertsContainer.id = 'violatorAlertsContainer';
+                newAlertsContainer.className = 'px-4 pt-3';
+                formCard.insertBefore(newAlertsContainer, formCard.firstChild);
+            }
+        }
+        
+        // Remove any existing alert first
+        const existingAlert = document.getElementById('violatorAlertsContainer')?.querySelector('.alert');
+        if (existingAlert) {
+            existingAlert.remove();
+        }
+        
+        // If there are unsettled violations, display warning with details
+        if (data.is_repeat_violator && data.unsettled_count > 0) {
+            console.log('Displaying repeat violator alert with', data.unsettled_count, 'violations');
+            
+            const alertHTML = `
+                <div id="repeat-violator-alert" class="repeat-violator-alert alert alert-warning alert-dismissible fade show mb-3" role="alert">
+                    <div class="d-flex align-items-center">
+                        <span class="material-icons me-2">warning</span>
+                        <div>
+                            <strong>Repeat Violator!</strong> This person has ${data.unsettled_count} unsettled violation(s).
+                            ${data.violation_details && data.violation_details.length > 0 ? 
+                                `<a href="#" id="toggleViolationDetails" class="ms-2 small">
+                                    <span class="material-icons" style="font-size: 14px;">expand_more</span>
+                                    View details
+                                </a>` : ''}
+                        </div>
+                    </div>
+                    ${data.violation_details && data.violation_details.length > 0 ? 
+                        `<div id="violationDetailsContainer" class="violation-details-container mt-2 small" style="display:none;">
+                            <div class="list-group">
+                                ${data.violation_details.map(v => `
+                                    <div class="violation-item list-group-item list-group-item-action flex-column align-items-start p-2">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">${v.type}</h6>
+                                            <span class="badge ${v.status === 'OVERDUE' ? 'bg-danger' : 'bg-warning'}">${v.status}</span>
+                                        </div>
+                                        <p class="mb-1">Date: ${v.date} | Fine: ₱${v.fine_amount}</p>
+                                        <small class="text-muted">Violation ID: ${v.id}</small>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>` : ''}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            
+            // Add to the alerts container and make sure it's visible
+            const container = document.getElementById('violatorAlertsContainer');
+            if (container) {
+                container.innerHTML = alertHTML;
+                container.style.display = 'block';
+                
+                // Make sure the alert is visible
+                const alert = container.querySelector('.alert');
+                if (alert) {
+                    alert.style.display = 'block';
+                    alert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+                
+                // Add toggle functionality for violation details
+                const toggleButton = document.getElementById('toggleViolationDetails');
+                if (toggleButton) {
+                    toggleButton.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const detailsContainer = document.getElementById('violationDetailsContainer');
+                        const icon = this.querySelector('.material-icons');
+                        if (detailsContainer) {
+                            if (detailsContainer.style.display === 'none') {
+                                detailsContainer.style.display = 'block';
+                                icon.textContent = 'expand_less';
+                            } else {
+                                detailsContainer.style.display = 'none';
+                                icon.textContent = 'expand_more';
+                            }
+                        }
+                    });
+                }
+            } else {
+                console.error('Alert container still not found after creation attempt');
+                // Fallback to alert if container still not found
+                alert(`Repeat Violator: This person has ${data.unsettled_count} unsettled violation(s)`);
+            }
+            
+            // Add visual indicator to the field
+            if (licenseNumber) {
+                const licenseField = document.getElementById('license_number');
+                if (licenseField) {
+                    licenseField.classList.add('border-warning');
+                    
+                    // Add a badge next to the license field if not already present
+                    if (!licenseField.parentElement.querySelector('.repeat-badge')) {
+                        const badge = document.createElement('div');
+                        badge.className = 'repeat-badge position-absolute end-0 top-0 mt-3 me-3';
+                        badge.innerHTML = '<span class="badge bg-warning text-dark">Repeat Violator</span>';
+                        licenseField.parentElement.appendChild(badge);
+                    }
+                }
+            }
+            
+            // Find and check the "Repeat Violator" violation checkbox if it exists
+            const repeatViolatorCheckbox = Array.from(document.querySelectorAll('input[name="violation_type[]"]'))
+                .find(checkbox => checkbox.value === 'Repeat Violator');
+            
+            if (repeatViolatorCheckbox) {
+                repeatViolatorCheckbox.checked = true;
+                
+                // Recalculate fine amount
+                if (typeof updateFineAmount === 'function') {
+                    updateFineAmount();
+                }
+            }
+        } else {
+            console.log('Not a repeat violator or no unsettled violations');
+            // Remove any visual indicators
+            if (licenseNumber) {
+                const licenseField = document.getElementById('license_number');
+                const licenseParent = licenseField.parentElement;
+                
+                // Remove repeat violator badge if exists
+                const repeatBadge = licenseParent.querySelector('.repeat-badge');
+                if (repeatBadge) repeatBadge.remove();
+                
+                // Remove warning class from license field
+                licenseField.classList.remove('border-warning');
+                
+                // Uncheck repeat violator checkbox if it was checked
+                const repeatViolatorCheckbox = Array.from(document.querySelectorAll('input[name="violation_type[]"]'))
+                    .find(checkbox => checkbox.value === 'Repeat Violator');
+                if (repeatViolatorCheckbox && repeatViolatorCheckbox.checked) {
+                    repeatViolatorCheckbox.checked = false;
+                    
+                    // Recalculate fine amount
+                    if (typeof updateFineAmount === 'function') {
+                        updateFineAmount();
+                    }
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error checking for repeat violator:', error);
+    }
+}
+
+// Add this code to the DOMContentLoaded event listener
+document.addEventListener('DOMContentLoaded', function() {
+    // ... existing code ...
+    
+    // Add event listeners to trigger repeat violator check on relevant fields
+    const licenseField = document.getElementById('license_number');
+    const firstNameField = document.getElementById('first_name');
+    const lastNameField = document.getElementById('last_name');
+    
+    // Ensure violatorAlertsContainer exists
+    if (!document.getElementById('violatorAlertsContainer')) {
+        console.log('Creating violatorAlertsContainer');
+        const formCard = document.querySelector('.card-body');
+        if (formCard) {
+            const alertsContainer = document.createElement('div');
+            alertsContainer.id = 'violatorAlertsContainer';
+            alertsContainer.className = 'px-4 pt-3';
+            formCard.insertBefore(alertsContainer, formCard.firstChild);
+        }
+    }
+    
+    // Create more robust debounce function
+    const debouncedCheck = debounceFunction(checkForRepeatViolator, 800);
+    
+    if (licenseField) {
+        console.log('Adding event listeners to license field');
+        // Check on blur and also when pressing Enter
+        licenseField.addEventListener('blur', debouncedCheck);
+        licenseField.addEventListener('keyup', function(e) {
+            if (e.key === 'Enter' && this.value.length > 5) {
+                debouncedCheck();
+            }
+        });
+        
+        // Check after selection from autocomplete
+        licenseField.addEventListener('change', function() {
+            if (this.value.length > 5) {  // Only if we have a substantial value
+                setTimeout(debouncedCheck, 300);
+            }
+        });
+    }
+    
+    if (firstNameField && lastNameField) {
+        console.log('Adding event listeners to name fields');
+        // Check after both fields have values
+        firstNameField.addEventListener('blur', function() {
+            if (this.value && lastNameField.value) {
+                debouncedCheck();
+            }
+        });
+        
+        lastNameField.addEventListener('blur', function() {
+            if (this.value && firstNameField.value) {
+                debouncedCheck();
+            }
+        });
+        
+        // Also check when Enter is pressed in either field
+        firstNameField.addEventListener('keyup', function(e) {
+            if (e.key === 'Enter' && this.value && lastNameField.value) {
+                debouncedCheck();
+            }
+        });
+        
+        lastNameField.addEventListener('keyup', function(e) {
+            if (e.key === 'Enter' && this.value && firstNameField.value) {
+                debouncedCheck();
+            }
+        });
+        
+        // Check after selection from autocomplete
+        firstNameField.addEventListener('change', function() {
+            if (this.value && lastNameField.value) {
+                setTimeout(debouncedCheck, 300);
+            }
+        });
+        
+        lastNameField.addEventListener('change', function() {
+            if (this.value && firstNameField.value) {
+                setTimeout(debouncedCheck, 300);
+            }
+        });
+    }
+    
+    // Simple debounce function to prevent too many API calls
+    function debounceFunction(func, delay) {
+        let timer;
+        return function() {
+            const context = this;
+            const args = arguments;
+            clearTimeout(timer);
+            timer = setTimeout(() => func.apply(context, args), delay);
+        }
+    }
+    
+    // Add styles for the checking badge and other UI elements
+    const style = document.createElement('style');
+    style.textContent = `
+        .checking-badge {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            font-size: 0.75rem;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 2px 8px;
+            border-radius: 12px;
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .repeat-badge {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            z-index: 5;
+        }
+        .is-checking .form-control {
+            background-color: #f8f9fa;
+        }
+        #violatorAlertsContainer {
+            display: block;
+            position: relative;
+            z-index: 1000;
+        }
+        .repeat-violator-alert {
+            display: block !important;
+            margin-bottom: 15px !important;
+        }
+        .violation-details-container {
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 6px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Manually trigger check once when form loads if license or name fields are already filled
+    setTimeout(function() {
+        if ((licenseField && licenseField.value.length > 5) || 
+            (firstNameField && lastNameField && firstNameField.value && lastNameField.value)) {
+            console.log('Auto-triggering repeat violator check on page load');
+            checkForRepeatViolator();
+        }
+    }, 1000);
+});
+
+// Remove all previous signature pad code and add this new implementation
+let signaturePadInstance;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize signature pad when DOM is loaded
+    setupSignaturePad();
+    
+    // Handle signature refusal checkbox
+    document.getElementById('noSignature').addEventListener('change', function() {
+        const signatureArea = document.getElementById('signatureArea');
+        const refusalNoteArea = document.getElementById('refusalNoteArea');
+        
+        if (this.checked) {
+            signatureArea.style.display = 'none';
+            refusalNoteArea.style.display = 'block';
+        } else {
+            signatureArea.style.display = 'block';
+            refusalNoteArea.style.display = 'none';
+        }
+    });
+    
+    // Reinitialize signature pad whenever step 3 becomes visible
+    document.querySelector('.next-step').addEventListener('click', function() {
+        if (currentStep === 1) { // If moving to step 2, prepare for later showing step 3
+            setTimeout(function() {
+                // Add a mutation observer to detect when step 3 becomes visible
+                const step3 = document.getElementById('step3');
+                if (step3) {
+                    const observer = new MutationObserver(function(mutations) {
+                        mutations.forEach(function(mutation) {
+                            if (mutation.attributeName === 'style' && 
+                                step3.style.display !== 'none') {
+                                setupSignaturePad();
+                                observer.disconnect();
+                            }
+                        });
+                    });
+                    
+                    observer.observe(step3, { attributes: true });
+                }
+            }, 100);
+        }
+    });
+});
+
+// Add window resize handler
+window.addEventListener('resize', function() {
+    if (signaturePadInstance) {
+        resizeSignaturePad();
+    }
+});
+
+// Handle device orientation changes
+window.addEventListener('orientationchange', function() {
+    setTimeout(function() {
+        if (signaturePadInstance) {
+            resizeSignaturePad();
+        }
+    }, 200);
+});
+
+function setupSignaturePad() {
+    console.log('Setting up signature pad');
+    const canvas = document.getElementById('signatureCanvas');
+    const signatureMsg = document.querySelector('.signature-pad-message');
+    const clearBtn = document.getElementById('clearSignature');
+    
+    if (!canvas || !signatureMsg || !clearBtn) {
+        console.error('Missing required elements for signature pad');
+        return;
+    }
+    
+    // Set up the signature pad properly for the first time
+    const container = canvas.parentElement;
+    const containerRect = container.getBoundingClientRect();
+    
+    // Set canvas dimensions based on container size
+    canvas.width = containerRect.width;
+    canvas.height = containerRect.height;
+    
+    // Initialize signature pad with conservative settings that work well across devices
+    try {
+        signaturePadInstance = new SignaturePad(canvas, {
+            backgroundColor: 'rgba(255, 255, 255, 0)',
+            penColor: 'black',
+            throttle: 0, // No throttling for responsive drawing
+            minDistance: 0 // No minimum distance for precise drawing
+        });
+        
+        console.log('Signature pad initialized successfully');
+        
+        // Set up clear button
+        clearBtn.addEventListener('click', function() {
+            signaturePadInstance.clear();
+            document.getElementById('signatureData').value = '';
+            signatureMsg.style.display = 'block';
+            console.log('Signature cleared');
+        });
+        
+        // Hide message when drawing starts
+        signaturePadInstance.addEventListener('beginStroke', function() {
+            signatureMsg.style.display = 'none';
+        });
+        
+        // Save signature when stroke ends
+        signaturePadInstance.addEventListener('endStroke', function() {
+            if (!signaturePadInstance.isEmpty()) {
+                const dataUrl = signaturePadInstance.toDataURL('image/png');
+                saveSignatureToServer(dataUrl);
+            }
+        });
+        
+        // Show or hide message based on initial state
+        if (signaturePadInstance.isEmpty()) {
+            signatureMsg.style.display = 'block';
+        } else {
+            signatureMsg.style.display = 'none';
+        }
+    } catch (err) {
+        console.error('Error initializing signature pad:', err);
+    }
+}
+
+function resizeSignaturePad() {
+    const canvas = document.getElementById('signatureCanvas');
+    if (!canvas || !signaturePadInstance) return;
+    
+    const container = canvas.parentElement;
+    const containerRect = container.getBoundingClientRect();
+    
+    // Get current data before resizing
+    const data = signaturePadInstance.toData();
+    
+    // Resize canvas
+    canvas.width = containerRect.width;
+    canvas.height = containerRect.height;
+    
+    // Restore signature data
+    signaturePadInstance.clear(); // Clearing is necessary after resize
+    if (data && data.length > 0) {
+        signaturePadInstance.fromData(data);
+    }
+}
+
+function saveSignatureToServer(dataUrl) {
+    if (!dataUrl) {
+        document.getElementById('signatureData').value = '';
+        return;
+    }
+    
+    // Create a timestamp for unique filename
+    const timestamp = new Date().getTime();
+    const filename = `signature_${timestamp}.png`;
+    
+    // Convert data URL to blob
+    fetch(dataUrl)
+        .then(res => res.blob())
+        .then(blob => {
+            // Create form data
+            const formData = new FormData();
+            formData.append('signature', blob, filename);
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            
+            // Send to server
+            fetch('/save-signature/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Signature saved successfully:', data.filename);
+                    document.getElementById('signatureData').value = data.filename;
+                } else {
+                    console.error('Failed to save signature:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error saving signature:', error);
+            });
+        });
+}
+
+// In case we need to check if the signature library is loaded
+function isSignaturePadLoaded() {
+    return typeof SignaturePad !== 'undefined';
+}
+
+// Define updateFineAmount globally to make it accessible from other functions
+function updateFineAmount() {
+    const violationCheckboxes = document.querySelectorAll('input[name="violation_type[]"]:checked');
+    const fineAmountEl = document.getElementById('fine_amount');
+    const isTdzViolationEl = document.getElementById('is_tdz_violation');
+
+    console.log('Running updateFineAmount function');
+    console.log('Found checked violations:', violationCheckboxes.length);
+    
+    // Default fine amount for unlisted violations
+    const DEFAULT_FINE = 300;
+    
+    // Updated fine amounts based on the new penalty table
+    const fineAmounts = {
+        'Jaywalking': 200,
+        'No Seat Belt': 200,
+        'Speeding': 300,
+        'Illegal Parking': 250,
+        'Obstruction': 250,
+        'Reckless Driving': 300,
+        'Unlicensed Driver': 500,
+        'Permitting Hitching': 500,
+        'No License': 100,
+        'DUI': 300,
+        'Using Phone While Driving': 300,
+        'Disobedience to Traffic Control': 200,
+        'Smoking While Driving': 200,
+        'Improper Use of Horn/Muffler': 250,
+        'Failure to Give Way to Pedestrian': 200,
+        'Driving Through Funeral Procession': 200,
+        'Unauthorized Sirens/Lights': 300,
+        'Driving on Reserved Lanes': 100,
+        'No Early Warning Device': 200,
+        'Defective Lights': 250,
+        'Tampered/Fake Plates': 200,
+        'Unregistered MV': 500,
+        'No Loading/Unloading Violation': 100,
+        'Sports Activities on Streets': 300,
+        'Throwing Objects on Road': 300,
+        'Drying Products on Roads': 300,
+        'Unauthorized Signs': 200,
+        'No Franchise/Fare Matrix': 175,
+        'Overloading': 250,
+        'Out-of-Route Operation': 275,
+        'Unsecured Cargo': 200,
+        'Dirty PUV': 150,
+        'Improper Attire on Motorcycle': 200,
+        'Entering Prohibited Zones': 250,
+        'Refusal to Convey': 250,
+        'Discourteous Driver': 200,
+        'Expired OR/CR': 300,
+        'No Permit': 250,
+        'Overcharging': 250,
+        'Defective Muffler': 250,
+        'Dilapidated': 300,
+        'Others': 300
+    };
+
+    // Calculate total based on all selected violations
+    let totalFine = 0;
+    
+    violationCheckboxes.forEach(checkbox => {
+        const violationType = checkbox.value;
+        const fineAmount = fineAmounts[violationType] !== undefined ? fineAmounts[violationType] : DEFAULT_FINE;
+        console.log(`Violation: ${violationType}, Fine: ${fineAmount}`);
+        totalFine += fineAmount;
+    });
+    
+    console.log('Total fine before TDZ multiplier:', totalFine);
+    
+    // Apply TDZ multiplier if checked
+    if (isTdzViolationEl && isTdzViolationEl.checked) {
+        totalFine *= 2;
+        console.log('Applied TDZ multiplier, new total:', totalFine);
+    }
+    
+    // Update the fine amount field
+    if (fineAmountEl) {
+        fineAmountEl.value = totalFine;
+        console.log('Updated fine amount field to:', totalFine);
+    } else {
+        console.error('Fine amount element not found!');
+    }
+}
+
+function initializeViolationFines() {
+    console.log('Initializing violation fines...');
+    
+    // Get all violation checkboxes and the TDZ checkbox
+    const violationCheckboxes = document.querySelectorAll('input[name="violation_type[]"]');
+    const fineAmountEl = document.getElementById('fine_amount');
+    const isTdzViolationEl = document.getElementById('is_tdz_violation');
+    
+    console.log('Found violation checkboxes:', violationCheckboxes.length);
+    if (fineAmountEl) {
+        console.log('Found fine amount element with ID:', fineAmountEl.id);
+    } else {
+        console.error('Fine amount element not found!');
+    }
+    
+    if (isTdzViolationEl) {
+        console.log('Found TDZ checkbox element with ID:', isTdzViolationEl.id);
+    } else {
+        console.error('TDZ checkbox element not found!');
+    }
+
+    // Set up event listeners for violation checkbox changes
+    if (violationCheckboxes.length > 0) {
+        violationCheckboxes.forEach(checkbox => {
+            console.log('Adding change listener to checkbox:', checkbox.value);
+            checkbox.addEventListener('change', function() {
+                console.log('Checkbox changed:', this.value, 'Checked:', this.checked);
+                updateFineAmount();
+            });
+        });
+
+        // Also check TDZ checkbox change
+        if (isTdzViolationEl) {
+            isTdzViolationEl.addEventListener('change', function() {
+                console.log('TDZ checkbox changed, checked:', this.checked);
+                updateFineAmount();
+            });
+        }
+    }
+
+    // Only update for pre-selected violations if no amount is already set
+    if (fineAmountEl && (!fineAmountEl.value || fineAmountEl.value === '0')) {
+        updateFineAmount();
+    } else {
+        console.log('Fine amount already set, preserving current value:', fineAmountEl?.value);
+    }
+}
+
+// Make sure to call initializeViolationFines when DOM is fully loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize existing functions
+    // ...
+    
+    // Make sure to initialize violation fines after the DOM is fully loaded
+    setTimeout(function() {
+        console.log('DOM fully loaded, initializing violation fines');
+        initializeViolationFines();
+    }, 500);
+});
+
+// Form submission handling
+document.getElementById('ticketForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    try {
+        // Create a new FormData object
+        const formData = new FormData(this);
+        
+        // Check for violations in multiple possible locations
+        const minimalViolations = document.querySelectorAll('#minimal_violations_list .violation-item');
+        const selectedViolationsLi = document.querySelectorAll('#selected_violations li');
+        
+        console.log('Submission check - Minimal UI violations:', minimalViolations.length, 
+                    'Old UI violations:', selectedViolationsLi.length);
+        
+        // Use the appropriate source of violations based on which UI is being used
+        let selectedViolations = [];
+        
+        if (minimalViolations && minimalViolations.length > 0) {
+            console.log('Using violations from minimal UI');
+            selectedViolations = minimalViolations;
+        } else if (selectedViolationsLi && selectedViolationsLi.length > 0) {
+            console.log('Using violations from old UI');
+            selectedViolations = selectedViolationsLi;
+        }
+        
+        // Debug log for violation types
+        console.log('Selected violation types:', Array.from(selectedViolations).map(v => v.getAttribute('data-name')));
+        
+        // Remove any existing violation_type[] entries
+        formData.delete('violation_type[]');
+        
+        // Check if we have any violations selected
+        if (selectedViolations.length === 0) {
+            console.error('No violations selected!');
+            alert('Please select at least one violation type');
+            return; // Stop form submission
+        }
+        
+        // Explicitly add each selected violation type to formData
+        selectedViolations.forEach(item => {
+            const violationName = item.getAttribute('data-name');
+            formData.append('violation_type[]', violationName);
+            console.log('Added violation type to formData:', violationName);
+        });
+        
+        // Store enforcer info in sessionStorage for future use
+        const enforcerName = document.getElementById('enforcer_name')?.value;
+        const enforcerId = document.getElementById('enforcer_id')?.value;
+        
+        // Debug logging for form submission
+        console.log('Submitting form with enforcer ID:', enforcerId);
+        console.log('Form data enforcer_id value:', formData.get('enforcer_id'));
+        
+        if (enforcerName) {
+            sessionStorage.setItem('enforcer_name', enforcerName);
+            console.log('Stored enforcer name in sessionStorage:', enforcerName);
+        }
+        if (enforcerId) {
+            sessionStorage.setItem('enforcer_id', enforcerId);
+            console.log('Stored enforcer ID in sessionStorage:', enforcerId);
+        }
+        
+        // Ensure signature data is included in the form data
+        if (!document.getElementById('noSignature').checked) {
+            const signatureData = document.getElementById('signatureData').value;
+            if (signatureData) {
+                formData.set('signature_data', signatureData);
+                console.log('Signature data included in form submission:', signatureData);
+            } else {
+                console.log('No signature data available');
+            }
+        } else {
+            const refusalNote = document.getElementById('refusalNote').value;
+            formData.set('refusal_note', refusalNote);
+            console.log('Signature refusal note included:', refusalNote);
+        }
+        
+        const response = await fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log('Ticket data received:', result.ticket_data);
+            const ticketContent = await generateTicketContent(result.ticket_data);
+            
+            try {
+                // Show success message using SweetAlert if available
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: 'Ticket issued successfully and sent to printer.',
+                        confirmButtonColor: '#4361ee',
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = '/violations/';
+                        }
+                    });
+                } else {
+                    // Fallback to standard alert if SweetAlert is not available
+                    alert('Ticket issued successfully and sent to printer');
+                    window.location.href = '/violations/';
+                }
+                
+                // Reset form after successful submission
+                this.reset();
+                currentStep = 0;
+                updateStep(currentStep);
+                
+                // Clear signature if exists
+                const signatureCanvas = document.getElementById('signatureCanvas');
+                if (signatureCanvas) {
+                    const ctx = signatureCanvas.getContext('2d');
+                    if (ctx) {
+                        ctx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+                    }
+                }
+            } catch (printError) {
+                console.error('Error printing ticket:', printError);
+                alert('Error printing ticket: ' + printError.message);
+            }
+        } else {
+            throw new Error(result.message || 'Failed to issue ticket');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error submitting form: ' + error.message);
+    }
+});
+
+// Make sure TDZ checkbox has a reliable event listener
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, setting up TDZ checkbox listener');
+    setupTdzCheckboxListener();
+});
+
+// Separate function to setup TDZ checkbox
+function setupTdzCheckboxListener() {
+    // Add direct event listener to TDZ checkbox
+    const tdzCheckbox = document.getElementById('is_tdz_violation');
+    if (tdzCheckbox) {
+        console.log('Setting up TDZ checkbox listener');
+        
+        // Remove previous click listeners
+        const newTdzCheckbox = tdzCheckbox.cloneNode(true);
+        tdzCheckbox.parentNode.replaceChild(newTdzCheckbox, tdzCheckbox);
+        
+        // Add event listener using multiple events for reliability
+        newTdzCheckbox.addEventListener('change', function() {
+            console.log('TDZ checkbox changed, new state:', this.checked);
+            setTimeout(updateViolationTotal, 0); // Use timeout to ensure it runs after state change
+        });
+        
+        // Also add click handler as backup
+        newTdzCheckbox.addEventListener('click', function() {
+            console.log('TDZ checkbox clicked, pending state:', this.checked);
+            setTimeout(updateViolationTotal, 0); // Use timeout to ensure it runs after state change
+        });
+    } else {
+        console.error('TDZ checkbox not found for listener setup!');
+    }
+}
+
+// Add event listener for TDZ checkbox to update total
+document.addEventListener('DOMContentLoaded', function() {
+    const tdzCheckbox = document.getElementById('is_tdz_violation');
+    if (tdzCheckbox) {
+        tdzCheckbox.addEventListener('change', function() {
+            console.log('TDZ checkbox changed to:', this.checked);
+            updateViolationTotal();
+        });
+    }
+    
+    // Initial calculation when page loads
+    if (typeof updateViolationTotal === 'function') {
+        setTimeout(updateViolationTotal, 200);
+    }
+});
+
+// Fix for field interaction issues - Reset any problematic event handlers
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded - Fixing form field interaction issues');
+    
+    // Reset any problematic event listeners on form fields
+    const formFields = document.querySelectorAll('input, select, textarea');
+    formFields.forEach(field => {
+        // Create a new clone of the element to remove all event listeners
+        const newField = field.cloneNode(true);
+        if (field.parentNode) {
+            field.parentNode.replaceChild(newField, field);
+        }
+        
+        // Log that we're fixing fields
+        console.log('Fixed field:', newField.id || newField.name);
+    });
+    
+    // Re-initialize minimal violation selection functionality
+    const violationSelector = document.getElementById('violation_selector');
+    const addViolationBtn = document.getElementById('add_violation_btn');
+    
+    if (addViolationBtn && violationSelector) {
+        // Remove and re-add event listeners
+        const newAddBtn = addViolationBtn.cloneNode(true);
+        addViolationBtn.parentNode.replaceChild(newAddBtn, addViolationBtn);
+        
+        newAddBtn.addEventListener('click', function() {
+            if (typeof addViolationToMinimalList === 'function') {
+                const selected = violationSelector.options[violationSelector.selectedIndex];
+                if (selected && selected.value) {
+                    const name = selected.value;
+                    const amount = selected.getAttribute('data-amount');
+                    const category = selected.getAttribute('data-category');
+                    addViolationToMinimalList(name, amount, category, false);
+                }
+            }
+        });
+    }
+    
+    // Also fix TDZ checkbox
+    const tdzCheckbox = document.getElementById('is_tdz_violation');
+    if (tdzCheckbox) {
+        const newTdzCheckbox = tdzCheckbox.cloneNode(true);
+        tdzCheckbox.parentNode.replaceChild(newTdzCheckbox, tdzCheckbox);
+        
+        newTdzCheckbox.addEventListener('change', function() {
+            if (typeof updateViolationTotal === 'function') {
+                updateViolationTotal();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
