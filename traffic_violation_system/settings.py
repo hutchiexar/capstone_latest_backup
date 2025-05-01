@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Brevo API settings
-BREVO_API_KEY = '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'
+BREVO_API_KEY = ''
 DEFAULT_FROM_EMAIL = 'hutchiexar@gmail.com'
 SITE_URL = 'http://192.168.1.4:8004'
 
