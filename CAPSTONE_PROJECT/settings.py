@@ -241,7 +241,7 @@ CORS_ORIGIN_WHITELIST = [
 ]
 
 # Brevo API settings
-BREVO_API_KEY = os.environ.get('BREVO_API_KEY', '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')
+BREVO_API_KEY = os.environ.get('BREVO_API_KEY', '')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@cttmo.com')
 SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
 
