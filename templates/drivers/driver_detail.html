@@ -36,67 +36,91 @@
 
     <!-- Driver Details Section -->
     <div class="row">
-        <div class="col-12">
             <!-- Personal Information Card -->
-            <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0 rounded-3 h-100">
                 <div class="card-header bg-transparent d-flex align-items-center px-4 py-3">
                     <span class="material-icons me-2" style="color: var(--primary-color)">person</span>
                     <h5 class="mb-0">Personal Information</h5>
                 </div>
                 <div class="card-body p-4">
                     <div class="row mb-3">
-                        <div class="col-md-3 text-muted">Full Name:</div>
-                        <div class="col-md-9">{{ driver.first_name }} {% if driver.middle_initial %}{{ driver.middle_initial }}.{% endif %} {{ driver.last_name }}</div>
+                        <div class="col-md-4 text-muted">Full Name:</div>
+                        <div class="col-md-8">{{ driver.first_name }} {% if driver.middle_initial %}{{ driver.middle_initial }}.{% endif %} {{ driver.last_name }}</div>
                     </div>
                     <div class="row mb-3">
-                        <div class="col-md-3 text-muted">Last Name:</div>
-                        <div class="col-md-9">{{ driver.last_name }}</div>
+                        <div class="col-md-4 text-muted">Last Name:</div>
+                        <div class="col-md-8">{{ driver.last_name }}</div>
                     </div>
                     <div class="row mb-3">
-                        <div class="col-md-3 text-muted">First Name:</div>
-                        <div class="col-md-9">{{ driver.first_name }}</div>
+                        <div class="col-md-4 text-muted">First Name:</div>
+                        <div class="col-md-8">{{ driver.first_name }}</div>
                     </div>
                     <div class="row mb-3">
-                        <div class="col-md-3 text-muted">Middle Initial:</div>
-                        <div class="col-md-9">{% if driver.middle_initial %}{{ driver.middle_initial }}{% else %}None{% endif %}</div>
+                        <div class="col-md-4 text-muted">Middle Initial:</div>
+                        <div class="col-md-8">{% if driver.middle_initial %}{{ driver.middle_initial }}{% else %}None{% endif %}</div>
                     </div>
                     <div class="row mb-3">
-                        <div class="col-md-3 text-muted">Address:</div>
-                        <div class="col-md-9">{{ driver.address }}</div>
+                        <div class="col-md-4 text-muted">Address:</div>
+                        <div class="col-md-8">{{ driver.address }}</div>
+                    </div>
+                    {% if driver.birthdate %}
+                    <div class="row mb-3">
+                        <div class="col-md-4 text-muted">Birthdate:</div>
+                        <div class="col-md-8">{{ driver.birthdate|date:"F j, Y" }}</div>
+                    </div>
+                    {% endif %}
+                    <div class="row mb-3">
+                        <div class="col-md-4 text-muted">Old PD Number:</div>
+                        <div class="col-md-8">{% if driver.old_pd_number and driver.old_pd_number != 'New' %}{{ driver.old_pd_number }}{% else %}None{% endif %}</div>
                     </div>
                     <div class="row mb-3">
-                        <div class="col-md-3 text-muted">Old PD Number:</div>
-                        <div class="col-md-9">{% if driver.old_pd_number and driver.old_pd_number != 'New' %}{{ driver.old_pd_number }}{% else %}None{% endif %}</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-3 text-muted">New PD Number:</div>
-                        <div class="col-md-9">{{ driver.new_pd_number }}</div>
+                        <div class="col-md-4 text-muted">New PD Number:</div>
+                        <div class="col-md-8">{{ driver.new_pd_number }}</div>
                     </div>
                     {% if driver.license_number %}
                     <div class="row mb-3">
-                        <div class="col-md-3 text-muted">License Number:</div>
-                        <div class="col-md-9">{{ driver.license_number }}</div>
+                        <div class="col-md-4 text-muted">License Number:</div>
+                        <div class="col-md-8">{{ driver.license_number }}</div>
                     </div>
                     {% endif %}
                     {% if driver.contact_number %}
                     <div class="row mb-3">
-                        <div class="col-md-3 text-muted">Contact Number:</div>
-                        <div class="col-md-9">{{ driver.contact_number }}</div>
+                        <div class="col-md-4 text-muted">Contact Number:</div>
+                        <div class="col-md-8">{{ driver.contact_number }}</div>
+                    </div>
+                    {% endif %}
+                    {% if driver.emergency_contact_name %}
+                    <div class="row mb-3">
+                        <div class="col-md-4 text-muted">Emergency Contact Name:</div>
+                        <div class="col-md-8">{{ driver.emergency_contact_name }}</div>
+                    </div>
+                    {% endif %}
+                    {% if driver.emergency_contact %}
+                    <div class="row mb-3">
+                        <div class="col-md-4 text-muted">Emergency Relationship:</div>
+                        <div class="col-md-8">{{ driver.emergency_contact }}</div>
+                    </div>
+                    {% endif %}
+                    {% if driver.emergency_contact_number %}
+                    <div class="row mb-3">
+                        <div class="col-md-4 text-muted">Emergency Phone:</div>
+                        <div class="col-md-8">{{ driver.emergency_contact_number }}</div>
                     </div>
                     {% endif %}
                     {% if driver.operator %}
                     <div class="row mb-3">
-                        <div class="col-md-3 text-muted">Operator:</div>
-                        <div class="col-md-9">{{ driver.operator }}</div>
+                        <div class="col-md-4 text-muted">Operator:</div>
+                        <div class="col-md-8">{{ driver.operator }}</div>
                     </div>
                     {% endif %}
                     <div class="row mb-3">
-                        <div class="col-md-3 text-muted">Registration Date:</div>
-                        <div class="col-md-9">{{ driver.created_at|date:"F j, Y" }}</div>
+                        <div class="col-md-4 text-muted">Registration Date:</div>
+                        <div class="col-md-8">{{ driver.created_at|date:"F j, Y" }}</div>
                     </div>
                     <div class="row">
-                        <div class="col-md-3 text-muted">Expiration Date:</div>
-                        <div class="col-md-9">
+                        <div class="col-md-4 text-muted">Expiration Date:</div>
+                        <div class="col-md-8">
                             {% if driver.expiration_date %}
                             <span class="badge {% if expiration_status == 'EXPIRED' %}bg-danger{% elif expiration_status == 'EXPIRING_SOON' %}bg-warning{% else %}bg-success{% endif %} p-2">
                                 {{ driver.expiration_date|date:"F j, Y" }}
@@ -114,6 +138,1407 @@
                 </div>
             </div>
         </div>
+
+        <!-- Driver ID Card Preview with Flip Functionality -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0 rounded-3 h-100">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center px-4 py-3">
+                    <div class="d-flex align-items-center">
+                        <span class="material-icons me-2" style="color: var(--primary-color)">badge</span>
+                        <h5 class="mb-0">Driver ID Card Preview</h5>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" id="print-card-btn" class="btn btn-sm btn-outline-success">
+                            <span class="material-icons me-1" style="font-size: 16px;">print</span>
+                            <span>Print ID Card</span>
+                        </button>
+                        <button type="button" id="flip-card-btn" class="btn btn-sm btn-outline-primary">
+                            <span class="material-icons me-1" style="font-size: 16px;">flip</span>
+                            <span id="flip-text">Flip Card</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="id-preview-container">
+                        <div class="id-card-flip-container">
+                            <div class="id-card-preview">
+                                <!-- Front of the ID card -->
+                                <div class="id-card-side id-card-front">
+                                    <!-- ID Card Header -->
+                                    <div class="id-preview-header">
+                                        <div class="id-preview-header-content">
+                                            <div class="id-preview-logo">
+                                                <img src="{% static 'images/logo.png' %}" alt="City Seal" onerror="this.src='https://via.placeholder.com/40?text=City'">
+                                            </div>
+                                            <div class="id-preview-titles">
+                                                <div class="id-preview-title-sm">Republic of the Philippines</div>
+                                                <div class="id-preview-title-sm">Province of Negros Oriental</div>
+                                                <div class="id-preview-title-lg">CITY OF BAYAWAN</div>
+                                                <div class="id-preview-title-sm">City Transportation and Traffic Management Office</div>
+                                            </div>
+                                            <div class="id-preview-logo">
+                                                <img src="{% static 'images/logo_ibayaw.png' %}" alt="CTTMO Logo" onerror="this.src='https://via.placeholder.com/40?text=CTTMO'">
+                                            </div>
+                                        </div>
+                                        <div class="id-preview-id-title">POTPOT IDENTIFICATION CARD</div>
+                                    </div>
+                                    
+                                    <!-- ID Card Body -->
+                                    <div class="id-preview-body">
+                                        <div class="id-preview-content">
+                                            <div class="id-preview-photo">
+                                                <div class="photo-placeholder">Photo</div>
+                                            </div>
+                                            
+                                            <div class="id-preview-info">
+                                                <div class="id-preview-number">
+                                                    {% if driver.new_pd_number|length > 3 %}
+                                                        {{ driver.new_pd_number|slice:"-3:" }}
+                                                    {% else %}
+                                                        {{ driver.new_pd_number }}
+                                                    {% endif %}
+                                                </div>
+                                                <div class="id-preview-label">POTPOT DRIVER NUMBER</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="id-preview-details">
+                                            <div class="id-preview-info-section">
+                                                <div class="id-preview-info-label">FULL NAME</div>
+                                                <div class="id-preview-name">{{ driver.first_name|upper }} {{ driver.last_name|upper }}</div>
+                                            </div>
+                                            
+                                            <div class="id-preview-info-section">
+                                                <div class="id-preview-info-label">ADDRESS</div>
+                                                <div class="id-preview-address">{{ driver.address|upper }}</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Validity Section -->
+                                        <div class="id-preview-validity">
+                                            <div class="id-preview-validity-label">VALID UNTIL</div>
+                                            <div class="id-preview-validity-date">
+                                                {% if driver.expiration_date %}
+                                                    {{ driver.expiration_date|date:"m-d-Y" }}
+                                                {% else %}
+                                                    N/A
+                                                {% endif %}
+                                            </div>
+                                            <div class="id-preview-validity-status">
+                                                {% if expiration_status == 'EXPIRED' %}
+                                                    <span class="badge bg-danger">EXPIRED</span>
+                                                {% elif expiration_status == 'EXPIRING_SOON' %}
+                                                    <span class="badge bg-warning">EXPIRING SOON</span>
+                                                {% else %}
+                                                    <span class="badge bg-success">VALID</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- ID Card Footer -->
+                                    <div class="id-preview-footer">
+                                        <div class="text-center">
+                                            <span class="id-preview-footer-text">
+                                                If found, please return to CTTMO Office • Valid until: 
+                                                {% if driver.expiration_date %}
+                                                    {{ driver.expiration_date|date:"m-d-Y" }}
+                                                {% else %}
+                                                    N/A
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Back of the ID card -->
+                                <div class="id-card-side id-card-back">
+                                    <div class="back-header-title">Back Side</div>
+                                    <div class="back-header">DRIVER IDENTIFICATION DETAILS</div>
+                                    
+                                    <div class="back-content">
+                                        <div class="personal-details">
+                                            <div class="personal-details-title">PERSONAL INFORMATION</div>
+                                            
+                                            <div class="personal-details-table">
+                                                <div class="personal-details-row">
+                                                    <div class="personal-details-label">
+                                                        <span class="info-icon"><i class="material-icons">badge</i></span>
+                                                        Driver ID:
+                                                    </div>
+                                                    <div class="personal-details-value">
+                                                        {% if driver.new_pd_number|length > 3 %}
+                                                            {{ driver.new_pd_number|slice:"-3:" }}
+                                                        {% else %}
+                                                            {{ driver.new_pd_number }}
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="personal-details-row">
+                                                    <div class="personal-details-label">
+                                                        <span class="info-icon"><i class="material-icons">event</i></span>
+                                                        Valid until:
+                                                    </div>
+                                                    <div class="personal-details-value">
+                                                        {% if driver.expiration_date %}
+                                                            {{ driver.expiration_date|date:"m-d-Y" }}
+                                                            <span class="badge bg-success badge-sm">Valid</span>
+                                                        {% else %}
+                                                            N/A
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="personal-details-row">
+                                                    <div class="personal-details-label">
+                                                        <span class="info-icon"><i class="material-icons">cake</i></span>
+                                                        Birth Date:
+                                                    </div>
+                                                    <div class="personal-details-value">
+                                                        {% if driver.birthdate %}
+                                                            {{ driver.birthdate|date:"m-d-Y" }}
+                                                        {% else %}
+                                                            N/A
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="personal-details-row">
+                                                    <div class="personal-details-label">
+                                                        <span class="info-icon"><i class="material-icons">phone</i></span>
+                                                        Contact:
+                                                    </div>
+                                                    <div class="personal-details-value">
+                                                        {% if driver.contact_number %}
+                                                            {{ driver.contact_number }}
+                                                        {% else %}
+                                                            None
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="personal-details-row">
+                                                    <div class="personal-details-label">
+                                                        <span class="info-icon"><i class="material-icons">person</i></span>
+                                                        Emergency Contact:
+                                                    </div>
+                                                    <div class="personal-details-value">
+                                                        {% if driver.emergency_contact_name %}
+                                                            {{ driver.emergency_contact_name }}
+                                                        {% else %}
+                                                            N/A
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+
+                                                <div class="personal-details-row">
+                                                    <div class="personal-details-label">
+                                                        <span class="info-icon"><i class="material-icons">family_restroom</i></span>
+                                                        Relationship:
+                                                    </div>
+                                                    <div class="personal-details-value">
+                                                        {% if driver.emergency_contact %}
+                                                            {{ driver.emergency_contact }}
+                                                        {% else %}
+                                                            N/A
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="personal-details-row">
+                                                    <div class="personal-details-label">
+                                                        <span class="info-icon"><i class="material-icons">emergency</i></span>
+                                                        Emergency Phone:
+                                                    </div>
+                                                    <div class="personal-details-value">
+                                                        {% if driver.emergency_contact_number %}
+                                                            {{ driver.emergency_contact_number }}
+                                                        {% else %}
+                                                            N/A
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="qr-container">
+                                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={% if request.scheme %}{{ request.scheme }}://{% else %}https://{% endif %}{{ request.get_host }}/driver/{{ driver.new_pd_number }}/verify" alt="QR Code" class="qr-code">
+                                            <div class="qr-label">Scan to verify driver information</div>
+                                        </div>
+                                        
+                                        <div class="back-signatures">
+                                            <div class="signature-row">
+                                                <div class="signature-item main-signature">
+                                                    <div class="signature-line"></div>
+                                                    <div class="official-name">EDILBERTO B. EURAOBA II</div>
+                                                    <div class="official-title">CTTMO Officer</div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="signature-row dual-signatures">
+                                                <div class="signature-item">
+                                                    <div class="signature-line"></div>
+                                                    <div class="official-name">CINDY H. SALIMBAGAT</div>
+                                                    <div class="official-title">CPSO Officer</div>
+                                                </div>
+                                                
+                                                <div class="signature-item">
+                                                    <div class="signature-line"></div>
+                                                    <div class="official-name">JOHN T. RAYMOND JR.</div>
+                                                    <div class="official-title">City Mayor</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-3">
+                            <div class="alert alert-info">
+                                <span class="material-icons me-2">info</span>
+                                <span>Full ID card functionality is available in the user portal for registered drivers.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Violation History Section -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0 rounded-3 mb-4">
+                <div class="card-header bg-transparent d-flex align-items-center px-4 py-3">
+                    <span class="material-icons me-2" style="color: var(--primary-color)">gavel</span>
+                    <h5 class="mb-0">Violation History</h5>
+                </div>
+                <div class="card-body p-4">
+                    {% if violations %}
+                    <div class="row">
+                        {% for violation in violations %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-header bg-light py-2 px-3">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge {% if violation.status == 'PAID' or violation.status == 'SETTLED' %}bg-success{% elif violation.status == 'PENDING' %}bg-warning{% elif violation.status == 'CONTESTED' %}bg-info{% elif violation.status == 'EXPIRED' %}bg-danger{% else %}bg-secondary{% endif %} text-white">
+                                            {{ violation.get_status_display }}
+                                        </span>
+                                        <small class="text-muted">{{ violation.violation_date|date:"M d, Y" }}</small>
+                                    </div>
+                                </div>
+                                <div class="card-body py-2 px-3">
+                                    <h6 class="card-title mb-2">{{ violation.violation_type }}</h6>
+                                    <div class="small text-muted mb-2">
+                                        <span class="material-icons" style="font-size: 16px; vertical-align: text-bottom;">location_on</span>
+                                        {{ violation.location }}
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong class="d-block">Fine Amount:</strong>
+                                            <span class="text-danger fw-bold">₱{{ violation.fine_amount }}</span>
+                                        </div>
+                                        {% if violation.vehicle_type or violation.plate_number %}
+                                        <div class="text-end">
+                                            <small class="text-muted d-block">Vehicle: {{ violation.vehicle_type }}</small>
+                                            {% if violation.plate_number %}
+                                            <small class="text-muted">Plate: {{ violation.plate_number }}</small>
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <span class="material-icons" style="font-size: 64px; color: #c0c0c0;">assignment_turned_in</span>
+                        <h5 class="mt-3 mb-0">No Violations Found</h5>
+                        <p class="text-muted">This driver has no recorded traffic violations.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<!-- Print Template for ID Card -->
+<div id="print-container" class="print-only">
+    <div class="print-id-card">
+        <!-- Front Side Print Template -->
+        <div class="print-id-front">
+            <div class="print-header">
+                <div class="print-header-content">
+                    <div class="print-logo">
+                        <img src="{% static 'images/logo.png' %}" alt="City Seal" onerror="this.src='https://via.placeholder.com/40?text=City'">
+                    </div>
+                    <div class="print-titles">
+                        <div class="print-title-sm">Republic of the Philippines</div>
+                        <div class="print-title-sm">Province of Negros Oriental</div>
+                        <div class="print-title-lg">CITY OF BAYAWAN</div>
+                        <div class="print-title-sm">City Transportation and Traffic Management Office</div>
+                    </div>
+                    <div class="print-logo">
+                        <img src="{% static 'images/logo_ibayaw.png' %}" alt="CTTMO Logo" onerror="this.src='https://via.placeholder.com/40?text=CTTMO'">
+                    </div>
+                </div>
+                <div class="print-id-title">POTPOT IDENTIFICATION CARD</div>
+            </div>
+            
+            <div class="print-body">
+                <div class="print-content">
+                    <div class="print-photo">
+                        <div class="photo-placeholder">Photo</div>
+                    </div>
+                    
+                    <div class="print-info">
+                        <div class="print-number">
+                            {% if driver.new_pd_number|length > 3 %}
+                                {{ driver.new_pd_number|slice:"-3:" }}
+                            {% else %}
+                                {{ driver.new_pd_number }}
+                            {% endif %}
+                        </div>
+                        <div class="print-label">POTPOT DRIVER NUMBER</div>
+                    </div>
+                </div>
+                
+                <div class="print-details">
+                    <div class="print-info-section">
+                        <div class="print-info-label">FULL NAME</div>
+                        <div class="print-name">{{ driver.first_name|upper }} {{ driver.last_name|upper }}</div>
+                    </div>
+                    
+                    <div class="print-info-section">
+                        <div class="print-info-label">ADDRESS</div>
+                        <div class="print-address">{{ driver.address|upper }}</div>
+                    </div>
+                </div>
+                
+                <div class="print-validity">
+                    <div class="print-validity-label">VALID UNTIL</div>
+                    <div class="print-validity-date">
+                        {% if driver.expiration_date %}
+                            {{ driver.expiration_date|date:"m-d-Y" }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </div>
+                    <div class="print-validity-status">
+                        {% if expiration_status == 'EXPIRED' %}
+                            <span class="print-badge print-expired">EXPIRED</span>
+                        {% elif expiration_status == 'EXPIRING_SOON' %}
+                            <span class="print-badge print-warning">EXPIRING SOON</span>
+                        {% else %}
+                            <span class="print-badge print-valid">VALID</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="print-footer">
+                <div class="text-center">
+                    <span class="print-footer-text">
+                        If found, please return to CTTMO Office • Valid until: 
+                        {% if driver.expiration_date %}
+                            {{ driver.expiration_date|date:"m-d-Y" }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Back Side Print Template -->
+        <div class="print-id-back">
+            <div class="print-back-header">DRIVER IDENTIFICATION DETAILS</div>
+            
+            <div class="print-back-content">
+                <div class="print-personal-details">
+                    <div class="print-personal-title">PERSONAL INFORMATION</div>
+                    
+                    <div class="print-personal-table">
+                        <div class="print-personal-row">
+                            <div class="print-personal-label">Driver ID:</div>
+                            <div class="print-personal-value">
+                                {% if driver.new_pd_number|length > 3 %}
+                                    {{ driver.new_pd_number|slice:"-3:" }}
+                                {% else %}
+                                    {{ driver.new_pd_number }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="print-personal-row">
+                            <div class="print-personal-label">Valid until:</div>
+                            <div class="print-personal-value">
+                                {% if driver.expiration_date %}
+                                    {{ driver.expiration_date|date:"m-d-Y" }}
+                                    <span class="print-badge-sm print-valid-sm">Valid</span>
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="print-personal-row">
+                            <div class="print-personal-label">Birth Date:</div>
+                            <div class="print-personal-value">
+                                {% if driver.birthdate %}
+                                    {{ driver.birthdate|date:"m-d-Y" }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="print-personal-row">
+                            <div class="print-personal-label">Contact:</div>
+                            <div class="print-personal-value">
+                                {% if driver.contact_number %}
+                                    {{ driver.contact_number }}
+                                {% else %}
+                                    None
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="print-personal-row">
+                            <div class="print-personal-label">Emergency Contact:</div>
+                            <div class="print-personal-value">
+                                {% if driver.emergency_contact_name %}
+                                    {{ driver.emergency_contact_name }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="print-personal-row">
+                            <div class="print-personal-label">Relationship:</div>
+                            <div class="print-personal-value">
+                                {% if driver.emergency_contact %}
+                                    {{ driver.emergency_contact }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="print-personal-row">
+                            <div class="print-personal-label">Emergency Phone:</div>
+                            <div class="print-personal-value">
+                                {% if driver.emergency_contact_number %}
+                                    {{ driver.emergency_contact_number }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="print-qr-container">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={% if request.scheme %}{{ request.scheme }}://{% else %}https://{% endif %}{{ request.get_host }}/driver/{{ driver.new_pd_number }}/verify" alt="QR Code" class="print-qr-code">
+                    <div class="print-qr-label">Scan to verify driver information</div>
+                </div>
+                
+                <div class="print-back-signatures">
+                    <div class="print-signature-row">
+                        <div class="print-signature-item print-main-signature">
+                            <div class="print-signature-line"></div>
+                            <div class="print-official-name">EDILBERTO B. EURAOBA II</div>
+                            <div class="print-official-title">CTTMO Officer</div>
+                        </div>
+                    </div>
+                    
+                    <div class="print-signature-row print-dual-signatures">
+                        <div class="print-signature-item">
+                            <div class="print-signature-line"></div>
+                            <div class="print-official-name">CINDY H. SALIMBAGAT</div>
+                            <div class="print-official-title">CPSO Officer</div>
+                        </div>
+                        
+                        <div class="print-signature-item">
+                            <div class="print-signature-line"></div>
+                            <div class="print-official-name">JOHN T. RAYMOND JR.</div>
+                            <div class="print-official-title">City Mayor</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* ID Card Preview Styles */
+.id-preview-container {
+    max-width: 100%;
+    margin: 0 auto;
+    perspective: 1000px;
+}
+
+.id-card-flip-container {
+    width: 370px;
+    height: 580px;
+    margin: 0 auto;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.8s;
+}
+
+.id-card-flip-container.flipped {
+    transform: rotateY(180deg);
+}
+
+.id-card-preview {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+}
+
+.id-card-side {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    background-color: #fff;
+    display: flex;
+    flex-direction: column;
+}
+
+.id-card-front {
+    transform: rotateY(0deg);
+}
+
+.id-card-back {
+    transform: rotateY(180deg);
+    background-color: #fff;
+    background-image: 
+        radial-gradient(circle at 10% 10%, rgba(227, 242, 253, 0.5) 6%, transparent 6%),
+        radial-gradient(circle at 90% 90%, rgba(227, 242, 253, 0.5) 6%, transparent 6%);
+}
+
+/* ID Card Header */
+.id-preview-header {
+    background-color: #2c3e50;
+    padding: 12px 10px;
+    text-align: center;
+}
+
+.id-preview-header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+
+.id-preview-logo img {
+    height: 35px;
+    width: 35px;
+    border-radius: 50%;
+    background-color: white;
+    padding: 2px;
+    object-fit: contain;
+}
+
+.id-preview-titles {
+    flex: 1;
+    text-align: center;
+}
+
+.id-preview-title-sm {
+    font-size: 9px;
+    color: #fff;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.id-preview-title-lg {
+    font-size: 14px;
+    font-weight: bold;
+    color: #fff;
+    margin: 2px 0;
+}
+
+.id-preview-id-title {
+    color: #fff;
+    font-size: 15px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* ID Card Body */
+.id-preview-body {
+    flex: 1;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+}
+
+.id-preview-content {
+    display: flex;
+    margin-bottom: 15px;
+    align-items: center;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.id-preview-photo {
+    width: 144px;
+    height: 144px;
+    border: 2px solid #dee2e6;
+    overflow: hidden;
+    margin-right: 20px;
+    background-color: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.photo-placeholder {
+    color: #adb5bd;
+    font-size: 16px;
+}
+
+.id-preview-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-left: 10px;
+}
+
+.id-preview-number {
+    font-size: 72px;
+    color: #e74c3c;
+    font-weight: bold;
+    line-height: 1;
+    letter-spacing: 8px;
+    margin-bottom: 5px;
+}
+
+.id-preview-label {
+    font-size: 12px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.id-preview-details {
+    margin-bottom: 15px;
+}
+
+.id-preview-info-section {
+    margin-bottom: 12px;
+}
+
+.id-preview-info-label {
+    font-size: 10px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+
+.id-preview-name {
+    font-size: 20px;
+    font-weight: bold;
+    color: #2c3e50;
+    line-height: 1.2;
+}
+
+.id-preview-address {
+    font-size: 14px;
+    color: #34495e;
+    line-height: 1.3;
+}
+
+.id-preview-validity {
+    margin-top: auto;
+    text-align: center;
+    border: 2px solid #e74c3c;
+    border-radius: 8px;
+    padding: 10px;
+    width: 80%;
+    align-self: center;
+}
+
+.id-preview-validity-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2c3e50;
+    text-transform: uppercase;
+}
+
+.id-preview-validity-date {
+    font-size: 20px;
+    font-weight: bold;
+    color: #e74c3c;
+}
+
+.id-preview-validity-status {
+    margin-top: 5px;
+}
+
+/* ID Card Footer */
+.id-preview-footer {
+    padding: 8px;
+    background-color: #f5f5f7;
+    border-top: 1px solid #eee;
+}
+
+.id-preview-footer-text {
+    font-size: 10px;
+    color: #666;
+}
+
+/* Back card styles */
+.back-header-title {
+    background-color: #fff;
+    padding: 8px 10px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    margin: 0;
+}
+
+.back-header {
+    background-color: #f8f9fa;
+    padding: 6px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: bold;
+    color: #2c3e50;
+    border-bottom: 2px solid #e74c3c;
+    margin: 0;
+}
+
+.id-card-side.id-card-back {
+    display: flex;
+    flex-direction: column;
+}
+
+.back-content {
+    flex: 1;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.personal-details {
+    border: 1px solid #eee;
+    border-radius: 6px;
+    padding: 0;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+
+.personal-details-title {
+    font-weight: bold;
+    font-size: 12px;
+    color: #fff;
+    background-color: #e74c3c;
+    margin-bottom: 0;
+    padding: 3px 8px;
+    border-bottom: 1px solid #eee;
+}
+
+.personal-details-table {
+    padding: 3px;
+}
+
+.personal-details-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2px;
+    font-size: 12px;
+    border-bottom: 1px solid #f5f5f5;
+    padding: 3px 8px;
+}
+
+.personal-details-label {
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+    color: #555;
+}
+
+.info-icon {
+    margin-right: 5px;
+    display: flex;
+    align-items: center;
+}
+
+.info-icon .material-icons {
+    font-size: 12px;
+    color: #e74c3c;
+}
+
+.personal-details-value {
+    color: #333;
+    font-weight: 500;
+    text-align: right;
+}
+
+.badge-sm {
+    font-size: 10px;
+    padding: 2px 5px;
+    margin-left: 5px;
+}
+
+.qr-container {
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.qr-code {
+    width: 120px;
+    height: 120px;
+    background-color: white;
+    padding: 3px;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.qr-label {
+    font-size: 10px;
+    color: #7f8c8d;
+    margin-top: 3px;
+}
+
+.back-signatures {
+    margin-top: 8px;
+}
+
+.signature-row {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 8px;
+}
+
+.dual-signatures {
+    justify-content: space-between;
+}
+
+.signature-item {
+    text-align: center;
+    flex: 0 0 45%;
+}
+
+.main-signature {
+    flex: 0 0 80%;
+    margin: 0 auto;
+}
+
+.signature-line {
+    border-top: 1px solid #2c3e50;
+    width: 100%;
+    margin: 3px auto;
+}
+
+.official-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0;
+}
+
+.official-title {
+    font-size: 9px;
+    color: #7f8c8d;
+    margin-top: 0;
+}
+
+/* Button styles */
+#flip-card-btn {
+    transition: all 0.3s ease;
+}
+
+#flip-card-btn:hover {
+    transform: scale(1.05);
+}
+
+/* Responsive adjustments */
+@media (max-width: 767px) {
+    .id-preview-number {
+        font-size: 56px;
+        letter-spacing: 6px;
+    }
+    
+    .id-preview-name {
+        font-size: 18px;
+    }
+    
+    .id-preview-address {
+        font-size: 12px;
+    }
+    
+    .id-preview-photo {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .id-card-flip-container {
+        width: 340px;
+        height: 540px;
+    }
+}
+
+/* Enhanced responsive behavior for side-by-side layout */
+@media (min-width: 768px) and (max-width: 991px) {
+    .id-card-flip-container {
+        width: 340px;
+        height: 540px;
+    }
+    
+    .id-preview-number {
+        font-size: 60px;
+        letter-spacing: 6px;
+    }
+    
+    .id-preview-photo {
+        width: 120px;
+        height: 120px;
+    }
+}
+
+/* Fix for very large screens to maintain card heights */
+@media (min-width: 1200px) {
+    .row .card.h-100 {
+        height: 100% !important;
+    }
+    
+    /* Make sure personal information takes full height */
+    .col-md-6 .card-body {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    /* Add some spacing between info rows */
+    .card-body .row.mb-3 {
+        margin-bottom: 0.6rem !important;
+    }
+}
+
+/* Print-specific styles */
+@media screen {
+    .print-only {
+        display: none;
+    }
+}
+
+@media print {
+    @page {
+        size: landscape;
+        margin: 0;
+    }
+    body * {
+        visibility: hidden;
+    }
+    #print-container, #print-container * {
+        visibility: visible;
+    }
+    #print-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transform: scale(1);
+        transform-origin: center;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+    }
+    #print-btn, #flip-button {
+        display: none;
+    }
+    .print-header-instructions, .print-footer-instructions {
+        display: none;
+    }
+    .print-id-card {
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        gap: 50px;
+        margin: 0;
+        padding: 0;
+        max-height: 100vh;
+    }
+    .print-id-front, .print-id-back {
+        width: 4.2in;
+        height: 6in;
+        margin: 0;
+        border: 1px dashed #aaa;
+        border-radius: 8px;
+        overflow: hidden;
+        background-color: #fff;
+        display: flex;
+        flex-direction: column;
+    }
+    .print-header {
+        background-color: #2c3e50 !important;
+        padding: 5px;
+        text-align: center;
+    }
+    .print-header-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 2px;
+    }
+    .print-logo img {
+        height: 45px;
+        width: 45px;
+        border-radius: 50%;
+        background-color: white;
+        padding: 2px;
+        object-fit: contain;
+    }
+    .print-titles {
+        flex: 1;
+        text-align: center;
+    }
+    .print-title-sm {
+        font-size: 8px;
+        color: #fff;
+        margin: 0;
+        line-height: 1.1;
+    }
+    .print-title-lg {
+        font-size: 12px;
+        font-weight: bold;
+        color: #fff;
+        margin: 1px 0;
+    }
+    .print-id-title {
+        color: #fff;
+        font-size: 18px;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .print-body {
+        flex: 1;
+        padding: 15px 10px;
+        display: flex;
+        flex-direction: column;
+    }
+    .print-content {
+        display: flex;
+        margin-bottom: 12px;
+        align-items: center;
+        padding: 5px 0;
+    }
+    .print-photo {
+        width: 140px;
+        height: 140px;
+        border: 1px solid #dee2e6;
+        overflow: hidden;
+        margin-right: 15px;
+        background-color: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+    }
+    .print-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding-left: 5px;
+    }
+    .print-number {
+        font-size: 90px;
+        color: #e74c3c;
+        font-weight: bold;
+        line-height: 1;
+        letter-spacing: 8px;
+        margin-bottom: 5px;
+    }
+    .print-label {
+        font-size: 14px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+    }
+    .print-details {
+        margin-bottom: 15px;
+    }
+    .print-info-section {
+        margin-bottom: 10px;
+    }
+    .print-info-label {
+        font-size: 12px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 2px;
+    }
+    .print-name {
+        font-size: 24px;
+        font-weight: bold;
+        color: #2c3e50;
+        line-height: 1.1;
+    }
+    .print-address {
+        font-size: 18px;
+        color: #34495e;
+        line-height: 1.2;
+    }
+    .print-validity {
+        margin-top: auto;
+        text-align: center;
+        border: 2px solid #e74c3c;
+        border-radius: 8px;
+        padding: 10px;
+        width: 80%;
+        align-self: center;
+    }
+    .print-validity-label {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2c3e50;
+        text-transform: uppercase;
+        margin: 0;
+    }
+    .print-validity-date {
+        font-size: 24px;
+        font-weight: bold;
+        color: #e74c3c;
+        margin: 5px 0;
+    }
+    .print-badge {
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-size: 10px;
+        font-weight: bold;
+    }
+    .print-valid {
+        background-color: #10b981;
+        color: white;
+    }
+    .print-footer {
+        padding: 5px;
+        background-color: #f5f5f7;
+        border-top: 1px solid #eee;
+    }
+    .print-footer-text {
+        font-size: 8px;
+        color: #666;
+        margin: 0;
+    }
+    .print-back-header-title {
+        display: none;
+    }
+    .print-back-header {
+        background-color: #f8f9fa !important;
+        padding: 6px;
+        text-align: center;
+        font-size: 16px;
+        font-weight: bold;
+        color: #2c3e50;
+        border-bottom: 2px solid #e74c3c;
+        margin: 0;
+    }
+    .print-back-content {
+        flex: 1;
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .print-personal-details {
+        border: 1px solid #eee;
+        border-radius: 4px;
+        padding: 0;
+        margin-bottom: 8px;
+        overflow: hidden;
+    }
+    .print-personal-title {
+        font-weight: bold;
+        font-size: 14px;
+        color: #fff;
+        background-color: #e74c3c !important;
+        margin-bottom: 0;
+        padding: 5px 8px;
+        border-bottom: 1px solid #eee;
+    }
+    .print-personal-table {
+        padding: 3px;
+    }
+    .print-personal-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 2px;
+        font-size: 14px;
+        border-bottom: 1px solid #f5f5f5;
+        padding: 4px 8px;
+    }
+    .print-personal-label {
+        font-weight: 500;
+        color: #555;
+    }
+    .print-personal-value {
+        color: #333;
+        font-weight: 500;
+        text-align: right;
+    }
+    .print-badge-sm {
+        font-size: 8px;
+        padding: 1px 3px;
+        border-radius: 2px;
+        margin-left: 2px;
+    }
+    .print-valid-sm {
+        background-color: #10b981;
+        color: white;
+    }
+    .print-qr-container {
+        text-align: center;
+        margin-bottom: 8px;
+    }
+    .print-qr-code {
+        width: 150px;
+        height: 150px;
+        background-color: white;
+        padding: 4px;
+        border-radius: 4px;
+    }
+    .print-qr-label {
+        font-size: 9px;
+        color: #7f8c8d;
+        margin-top: 2px;
+    }
+    .print-back-signatures {
+        margin-top: 8px;
+    }
+    .print-signature-row {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 5px;
+    }
+    .print-dual-signatures {
+        justify-content: space-between;
+    }
+    .print-signature-item {
+        text-align: center;
+        flex: 0 0 45%;
+    }
+    .print-main-signature {
+        flex: 0 0 80%;
+        margin: 0 auto;
+    }
+    .print-signature-line {
+        border-top: 2px solid #2c3e50;
+        width: 100%;
+        margin: 4px auto;
+    }
+    .print-official-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 1px;
+    }
+    .print-official-title {
+        font-size: 11px;
+        color: #7f8c8d;
+        margin-top: 0;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const flipButton = document.getElementById('flip-card-btn');
+    const flipContainer = document.querySelector('.id-card-flip-container');
+    const flipText = document.getElementById('flip-text');
+    const printButton = document.getElementById('print-card-btn');
+    
+    if (flipButton) {
+        flipButton.addEventListener('click', function() {
+            flipContainer.classList.toggle('flipped');
+            
+            if (flipContainer.classList.contains('flipped')) {
+                flipText.textContent = 'Show Front';
+            } else {
+                flipText.textContent = 'Flip Card';
+            }
+        });
+    }
+    
+    if (printButton) {
+        printButton.addEventListener('click', function() {
+            // Set some print-specific options
+            const beforePrint = function() {
+                document.body.classList.add('printing');
+                // Force landscape orientation and background colors
+                const style = document.createElement('style');
+                style.id = 'print-orientation';
+                style.innerHTML = `
+                    @page { 
+                        size: landscape !important;
+                    }
+                    * {
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                        color-adjust: exact !important;
+                    }
+                    .print-header {
+                        background-color: #2c3e50 !important;
+                    }
+                    .print-personal-title {
+                        background-color: #e74c3c !important;
+                    }
+                `;
+                document.head.appendChild(style);
+            };
+            
+            const afterPrint = function() {
+                document.body.classList.remove('printing');
+                // Remove the style after printing
+                const style = document.getElementById('print-orientation');
+                if (style) style.remove();
+            };
+            
+            window.addEventListener('beforeprint', beforePrint);
+            window.addEventListener('afterprint', afterPrint);
+            
+            // Trigger the print dialog
+            window.print();
+            
+            // Clean up the event listeners after printing is done or canceled
+            setTimeout(function() {
+                window.removeEventListener('beforeprint', beforePrint);
+                window.removeEventListener('afterprint', afterPrint);
+            }, 1000);
+        });
+    }
+});
+</script>
 {% endblock %} 

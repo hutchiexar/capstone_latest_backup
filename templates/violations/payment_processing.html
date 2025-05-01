@@ -748,6 +748,9 @@ table .violation-types-container {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Add debug console message to ensure scripts are loading
+    console.log("Payment processing script initialized - merging violators with same name");
+    
     // Group batch adjudicated violations
     groupBatchAdjudications();
 
@@ -769,35 +772,70 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Function to group batch adjudicated violations for display
     function groupBatchAdjudications() {
+        console.log("Starting violator grouping process");
+        
         // Get all violations in the table
         const tableRows = document.querySelectorAll('#paymentProcessingTable tbody tr');
+        console.log(`Found ${tableRows.length} total violations to process`);
+        
+        // Clear any existing groupings or styles first
+        tableRows.forEach(row => {
+            row.style.display = '';
+            row.classList.remove('grouped');
+        });
+        
         const batchGroups = {};
         
-        // First pass: identify batch groups by violator and date
-        tableRows.forEach(row => {
+        // First pass: identify batch groups by violator name only (ignore dates completely)
+        tableRows.forEach((row, index) => {
+            // Extract violator name from the row
             const violatorElement = row.querySelector('td:nth-child(3)');
-            const violatorName = violatorElement ? violatorElement.querySelector('.fw-medium').textContent.trim() : '';
-            const licenseNumber = violatorElement ? violatorElement.querySelector('.text-muted').textContent.trim() : '';
+            if (!violatorElement) {
+                console.log(`Row ${index} has no violator element, skipping`);
+                return;
+            }
+            
+            const violatorNameElement = violatorElement.querySelector('.fw-medium');
+            if (!violatorNameElement) {
+                console.log(`Row ${index} has no violator name element, skipping`);
+                return;
+            }
+            
+            const violatorName = violatorNameElement.textContent.trim();
+            const licenseElement = violatorElement.querySelector('.text-muted');
+            const licenseNumber = licenseElement ? licenseElement.textContent.trim() : '';
+            
+            // Skip if missing required data
+            if (!violatorName) {
+                console.log(`Row ${index} has empty violator name, skipping`);
+                return;
+            }
+            
+            // Normalize violator name to handle case differences
+            const normalizedName = violatorName.toLowerCase();
+            
+            // Create a unique key for this batch group - using only normalized violator name
+            // We're using just the normalized name to ensure matching regardless of license number
+            const batchKey = normalizedName;
+            
+            // Get other needed data
             const violationDate = row.querySelector('td:nth-child(2)').textContent.trim();
             const violationId = row.querySelector('td:nth-child(1)').textContent.trim();
             
-            // Skip if no violator element or missing required data
-            if (!violatorElement || !violatorName) return;
-            
-            // Create a unique key for this batch group - combine violator name, license and date
-            const batchKey = `${violatorName}-${licenseNumber}-${violationDate}`;
-            
             if (!batchGroups[batchKey]) {
+                console.log(`Creating new batch group for "${violatorName}" with key "${batchKey}"`);
                 batchGroups[batchKey] = {
                     rows: [],
                     violator: violatorName,
                     license: licenseNumber,
-                    date: violationDate,
+                    dates: new Set(),
                     totalFineAmount: 0,
                     violationTypes: new Set(),
                     violationIds: [],
                     firstRow: null
                 };
+            } else {
+                console.log(`Adding to existing batch group for "${violatorName}"`);
             }
             
             // Add this row to the group
@@ -807,6 +845,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!batchGroups[batchKey].firstRow) {
                 batchGroups[batchKey].firstRow = row;
             }
+            
+            // Add date to the set of dates
+            batchGroups[batchKey].dates.add(violationDate);
             
             // Extract fine amount from the row
             const fineText = row.querySelector('td:nth-child(5)').textContent.trim();
@@ -826,34 +867,61 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
+        console.log(`Created ${Object.keys(batchGroups).length} batch groups`);
+        
         // Also handle mobile card view
         const mobileCards = document.querySelectorAll('.violation-card');
+        console.log(`Found ${mobileCards.length} mobile cards to process`);
+        
+        // Clear any existing mobile groupings
+        mobileCards.forEach(card => {
+            card.style.display = '';
+            card.classList.remove('grouped');
+        });
+        
         const mobileBatchGroups = {};
         
-        mobileCards.forEach(card => {
+        mobileCards.forEach((card, index) => {
             const violationId = card.getAttribute('data-violation-id');
             const violatorElement = card.querySelector('.card-body .row:nth-child(2) .col-8');
             
-            if (!violatorElement) return;
+            if (!violatorElement) {
+                console.log(`Mobile card ${index} has no violator element, skipping`);
+                return;
+            }
             
-            const violatorName = violatorElement.querySelector('.fw-medium') ? 
-                violatorElement.querySelector('.fw-medium').textContent.trim() : '';
-            const licenseNumber = violatorElement.querySelector('.text-muted') ? 
-                violatorElement.querySelector('.text-muted').textContent.trim() : '';
-            const violationDate = card.querySelector('.card-body .row:nth-child(1) .col-8').textContent.trim();
+            const violatorNameElement = violatorElement.querySelector('.fw-medium');
+            if (!violatorNameElement) {
+                console.log(`Mobile card ${index} has no violator name element, skipping`);
+                return;
+            }
+            
+            const violatorName = violatorNameElement.textContent.trim();
+            const licenseElement = violatorElement.querySelector('.text-muted');
+            const licenseNumber = licenseElement ? licenseElement.textContent.trim() : '';
             
             // Skip if missing required data
-            if (!violatorName) return;
+            if (!violatorName) {
+                console.log(`Mobile card ${index} has empty violator name, skipping`);
+                return;
+            }
             
-            // Create a unique key for this batch group
-            const batchKey = `${violatorName}-${licenseNumber}-${violationDate}`;
+            // Normalize violator name to handle case differences
+            const normalizedName = violatorName.toLowerCase();
+            
+            // Create a unique key for this batch group - using only normalized violator name
+            const batchKey = normalizedName;
+            
+            // Get other data
+            const violationDate = card.querySelector('.card-body .row:nth-child(1) .col-8').textContent.trim();
             
             if (!mobileBatchGroups[batchKey]) {
+                console.log(`Creating new mobile batch group for "${violatorName}"`);
                 mobileBatchGroups[batchKey] = {
                     cards: [],
                     violator: violatorName,
                     license: licenseNumber,
-                    date: violationDate,
+                    dates: new Set(),
                     totalFineAmount: 0,
                     violationTypes: new Set(),
                     violationIds: [],
@@ -868,6 +936,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!mobileBatchGroups[batchKey].firstCard) {
                 mobileBatchGroups[batchKey].firstCard = card;
             }
+            
+            // Add date to the set of dates
+            mobileBatchGroups[batchKey].dates.add(violationDate);
             
             // Add violation ID to the list
             mobileBatchGroups[batchKey].violationIds.push(violationId);
@@ -893,26 +964,45 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Second pass for desktop view: only process groups with 2+ violations (actual batches)
+        console.log(`Created ${Object.keys(mobileBatchGroups).length} mobile batch groups`);
+        
+        // Second pass for desktop view: process groups with 2+ violations (actual batches)
         for (const batchKey in batchGroups) {
             const group = batchGroups[batchKey];
             
             // Only transform groups with 2+ violations
             if (group.rows.length >= 2) {
+                console.log(`Processing desktop batch group for "${group.violator}" with ${group.rows.length} violations`);
+                
                 // Modify the first row to represent the entire batch
                 const batchRow = group.firstRow;
                 
                 // Update the cell contents for the batch representation
                 if (batchRow) {
+                    // Mark this row as grouped
+                    batchRow.classList.add('grouped');
+                    
                     // Update case ID cell to show it's a batch
                     const caseIdCell = batchRow.querySelector('td:nth-child(1)');
                     const batchCount = group.rows.length;
                     caseIdCell.innerHTML = `
                         <div class="d-flex flex-column align-items-center">
                             <span class="badge bg-info mb-1">Batch (${batchCount})</span>
-                            <small>${group.violationIds.join(', ')}</small>
+                            <small>${group.violationIds.slice(0, 3).join(', ')}${group.violationIds.length > 3 ? '...' : ''}</small>
                         </div>
                     `;
+                    
+                    // Update date cell to show all dates if multiple
+                    const dateCell = batchRow.querySelector('td:nth-child(2)');
+                    if (group.dates.size > 1) {
+                        const dateArray = Array.from(group.dates);
+                        dateCell.innerHTML = `
+                            <div class="d-flex flex-column align-items-center">
+                                <span>Multiple Dates</span>
+                                <small>${dateArray.length} dates</small>
+                            </div>
+                        `;
+                    }
                     
                     // Update violator cell to indicate batch processing
                     const violatorCell = batchRow.querySelector('td:nth-child(3)');
@@ -920,7 +1010,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     violatorCell.innerHTML = `
                         ${existingViolator}
                         <div class="mt-2">
-                            <span class="badge bg-primary">Batch Payment</span>
+                            <span class="badge bg-warning text-dark">Merged Violations</span>
                         </div>
                     `;
                     
@@ -942,7 +1032,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     fineCell.innerHTML = `
                         <div class="d-flex flex-column align-items-center">
                             <span class="fw-bold">₱${group.totalFineAmount.toFixed(2)}</span>
-                            <small class="text-muted">Total for batch</small>
+                            <small class="text-muted">Total for ${batchCount} violations</small>
                         </div>
                     `;
                     
@@ -954,7 +1044,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     class="btn btn-primary action-btn batch-view-btn" 
                                     data-bs-toggle="tooltip" 
                                     data-bs-placement="top" 
-                                    title="View Batch"
+                                    title="View Merged Violations"
                                     data-batch-ids="${group.violationIds.join(',')}">
                                 <span class="material-icons">visibility</span>
                             </button>
@@ -963,7 +1053,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                data-bs-toggle="tooltip"
                                data-bs-placement="top"
                                    data-batch-ids="${group.violationIds.join(',')}"
-                               title="Record Batch Payment">
+                               title="Record Payment for All">
                                 <span class="material-icons">payments</span>
                             </button>
                         </div>
@@ -974,6 +1064,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         group.rows[i].style.display = 'none';
                     }
                 }
+            } else {
+                console.log(`Skipping desktop group for "${group.violator}" with only ${group.rows.length} violations`);
             }
         }
         
@@ -983,10 +1075,15 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Only transform groups with 2+ violations
             if (group.cards.length >= 2) {
+                console.log(`Processing mobile batch group for "${group.violator}" with ${group.cards.length} violations`);
+                
                 // Modify the first card to represent the entire batch
                 const batchCard = group.firstCard;
                 
                 if (batchCard) {
+                    // Mark this card as grouped
+                    batchCard.classList.add('grouped');
+                    
                     // Update card header to show it's a batch
                     const cardHeader = batchCard.querySelector('.card-header');
                     const batchCount = group.cards.length;
@@ -995,7 +1092,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (caseIdSpan) {
                         caseIdSpan.innerHTML = `
                             <span class="badge bg-info me-1">Batch (${batchCount})</span>
-                            ${group.violationIds.join(', ')}
+                            ${group.violationIds.slice(0, 2).join(', ')}${group.violationIds.length > 2 ? '...' : ''}
+                        `;
+                    }
+                    
+                    // Update date cell for multiple dates
+                    const dateRow = batchCard.querySelector('.card-body .row:nth-child(1)');
+                    if (dateRow && group.dates.size > 1) {
+                        const dateCell = dateRow.querySelector('.col-8');
+                        dateCell.innerHTML = `
+                            <div>
+                                <span>Multiple Dates</span>
+                                <small class="text-muted d-block">${group.dates.size} different dates</small>
+                            </div>
                         `;
                     }
                     
@@ -1005,7 +1114,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         const violatorCell = violatorRow.querySelector('.col-8');
                         violatorCell.innerHTML += `
                             <div class="mt-2">
-                                <span class="badge bg-primary">Batch Payment</span>
+                                <span class="badge bg-warning text-dark">Merged Violations</span>
                             </div>
                         `;
                     }
@@ -1031,7 +1140,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         fineCell.innerHTML = `
                             <div>
                                 <span class="fw-medium">₱${group.totalFineAmount.toFixed(2)}</span>
-                                <small class="text-muted d-block">Total for batch</small>
+                                <small class="text-muted d-block">Total for ${batchCount} violations</small>
                             </div>
                         `;
                     }
@@ -1058,6 +1167,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         group.cards[i].style.display = 'none';
                     }
                 }
+            } else {
+                console.log(`Skipping mobile group for "${group.violator}" with only ${group.cards.length} violations`);
             }
         }
         
@@ -1075,6 +1186,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 showBatchPaymentModal(batchIds);
             });
         });
+        
+        console.log("Completed batch grouping process");
     }
 
     // Initialize tooltips
@@ -1596,9 +1709,19 @@ function processSinglePayment(data) {
     })
     .then(data => {
         if (data.success) {
-            // Close modals and show success message
+            // Close modals
             MicroModal.close('modal-payment-form');
             
+            // Open receipt in new window for printing
+            if (data.receipt_url) {
+                // Use the provided receipt URL if available
+                window.open(data.receipt_url, '_blank');
+            } else {
+                // Use the batch summary view for printing
+                window.open(`/violation/${currentViolationId}/receipt-summary/`, '_blank');
+            }
+            
+            // Show success message after opening print window
             Swal.fire({
                 icon: 'success',
                 title: 'Payment Recorded',
@@ -1657,11 +1780,22 @@ function processBatchPayment(data) {
     let successCount = 0;
     let errorCount = 0;
     let currentIndex = 0;
+    let receiptUrls = [];
     
     function processNextPayment() {
         if (currentIndex >= currentBatchIds.length) {
             // All done, show results
             MicroModal.close('modal-payment-form');
+            
+            // Open receipts in new windows for printing
+            if (receiptUrls.length > 0) {
+                // Open receipts with a slight delay between each one to prevent browser popup blocking
+                receiptUrls.forEach((url, index) => {
+                    setTimeout(() => {
+                        window.open(url, '_blank');
+                    }, index * 500);
+                });
+            }
             
             if (errorCount === 0) {
                 Swal.fire({
@@ -1722,6 +1856,14 @@ function processBatchPayment(data) {
         .then(responseData => {
             if (responseData.success) {
                 successCount++;
+                
+                // Collect receipt URL for printing
+                if (responseData.receipt_url) {
+                    receiptUrls.push(responseData.receipt_url);
+                } else {
+                    // Use the batch summary view for printing
+                    receiptUrls.push(`/violation/${violationId}/receipt-summary/`);
+                }
             } else {
                 errorCount++;
                 console.error(`Error recording payment for violation #${violationId}:`, responseData.message);

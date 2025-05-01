@@ -73,12 +73,21 @@ def add_violation_type(request):
     """
     if request.method == 'POST':
         try:
+            # Log received form data for debugging
+            print(f"Add Violation Type - Form Data: {request.POST}")
+            
             name = request.POST.get('name')
             description = request.POST.get('description', '')
             amount = request.POST.get('amount')
             category = request.POST.get('category')
             is_active = 'is_active' in request.POST
-            is_ncap = 'is_ncap' in request.POST
+            classification = request.POST.get('classification', 'REGULAR')
+            
+            # Log parsed values for debugging
+            print(f"Parsed form values: name={name}, category={category}, classification={classification}, is_active={is_active}")
+            
+            # Derive is_ncap from classification
+            is_ncap = classification == 'NCAP'
             
             # Validate required fields
             if not name or not amount or not category:
@@ -91,25 +100,30 @@ def add_violation_type(request):
                 return redirect('violation_types')
                 
             # Create the violation type
-            ViolationType.objects.create(
+            violation_type = ViolationType.objects.create(
                 name=name,
                 description=description,
                 amount=amount,
                 category=category,
                 is_active=is_active,
-                is_ncap=is_ncap
+                is_ncap=is_ncap,
+                classification=classification
             )
+            
+            # Log successful creation with final values
+            print(f"Created ViolationType: id={violation_type.id}, name={violation_type.name}, classification={violation_type.classification}, is_ncap={violation_type.is_ncap}")
             
             # Log the activity
             log_activity(
                 request.user, 
-                f"Added new violation type: {name}", 
+                f"Added new violation type: {name} (Classification: {classification})", 
                 "VIOLATION_TYPE_ADDED"
             )
             
             return redirect(f"{reverse('violation_types')}?success=1&action=add")
             
         except Exception as e:
+            print(f"Error adding violation type: {str(e)}")
             messages.error(request, f"Error adding violation type: {str(e)}")
             return redirect('violation_types')
     else:
@@ -126,26 +140,49 @@ def edit_violation_type(request, type_id):
     
     if request.method == 'POST':
         try:
+            # Log received form data for debugging
+            print(f"Edit Violation Type ID {type_id} - Form Data: {request.POST}")
+            
+            # Store original values for logging changes
+            original_values = {
+                'name': violation_type.name,
+                'classification': violation_type.classification,
+                'is_ncap': violation_type.is_ncap
+            }
+            
             violation_type.name = request.POST.get('name')
             violation_type.description = request.POST.get('description', '')
             violation_type.amount = request.POST.get('amount')
             violation_type.category = request.POST.get('category')
             violation_type.is_active = 'is_active' in request.POST
-            violation_type.is_ncap = 'is_ncap' in request.POST
+            
+            # Get classification from the form
+            classification = request.POST.get('classification', 'REGULAR')
+            violation_type.classification = classification
+            
+            # Set is_ncap based on classification for consistency
+            violation_type.is_ncap = classification == 'NCAP'
+            
+            # Log changes before saving
+            print(f"Updating violation type {type_id}: classification changed from {original_values['classification']} to {violation_type.classification}, is_ncap from {original_values['is_ncap']} to {violation_type.is_ncap}")
             
             # Save the changes
             violation_type.save()
             
+            # Log final state after save
+            print(f"After save - ViolationType: id={violation_type.id}, name={violation_type.name}, classification={violation_type.classification}, is_ncap={violation_type.is_ncap}")
+            
             # Log the activity
             log_activity(
                 request.user, 
-                f"Updated violation type: {violation_type.name}", 
+                f"Updated violation type: {violation_type.name} (Classification: {violation_type.classification})", 
                 "VIOLATION_TYPE_UPDATED"
             )
             
             return redirect(f"{reverse('violation_types')}?success=1&action=edit")
             
         except Exception as e:
+            print(f"Error updating violation type {type_id}: {str(e)}")
             messages.error(request, f"Error updating violation type: {str(e)}")
             return redirect('violation_types')
     else:

@@ -25,13 +25,16 @@ OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 # Google API Key for Gemini
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
 
+# Quick-start development settings - unsuitable for production
+# See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
+
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-here')
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-default-key-change-me-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['192.168.1.4', 'localhost', '127.0.0.1', '192.168.0.14', '192.168.135.71', '192.168.254.118', '192.168.134.71', '192.168.1.10', '192.168.254.140', '192.168.1.6','*']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.1.4', '*']
 
 
 
@@ -61,6 +64,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     'traffic_violation_system.middleware.AuthenticationMiddleware',
+    'traffic_violation_system.middleware.EmailVerificationMiddleware',
     'traffic_violation_system.middleware.NoCacheMiddleware',
     'django.middleware.cache.UpdateCacheMiddleware',
     'django.middleware.cache.FetchFromCacheMiddleware',
@@ -234,4 +238,23 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_WHITELIST = [
     'http://localhost:8000',
     'http://127.0.0.1:8000',
+]
+
+# Brevo API settings
+BREVO_API_KEY = os.environ.get('BREVO_API_KEY', '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')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@cttmo.com')
+SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
+
+# Email verification settings
+EMAIL_VERIFICATION_REQUIRED = True
+EMAIL_VERIFICATION_TIMEOUT_HOURS = 24  # Token expiration in hours
+EMAIL_VERIFICATION_EXEMPT_URLS = [
+    r'^/login/$',
+    r'^/logout/$',
+    r'^/register/$',
+    r'^/verification/',
+    r'^/static/',
+    r'^/media/',
+    r'^/admin/',
+    r'^/api/',
 ]

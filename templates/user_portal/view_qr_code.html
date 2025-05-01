@@ -1,0 +1,180 @@
+{% extends 'user_portal/base_user.html' %}
+{% load static %}
+
+{% block title %}Vehicle QR Code - CTTMO User Portal{% endblock %}
+
+{% block extra_css %}
+<style>
+    .qr-container {
+        background-color: #fff;
+        border-radius: 0.75rem;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+        padding: 2rem;
+        max-width: 500px;
+        margin: 0 auto;
+    }
+    
+    .qr-code-img {
+        width: 100%;
+        max-width: 300px;
+        height: auto;
+        display: block;
+        margin: 0 auto 1.5rem auto;
+    }
+    
+    .print-qr-btn {
+        background-color: #3563E9;
+        color: white;
+        font-weight: 600;
+        padding: 0.625rem 1.25rem;
+        border-radius: 0.5rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        box-shadow: 0 4px 6px rgba(53, 99, 233, 0.2);
+        transition: all 0.2s ease;
+    }
+    
+    .print-qr-btn:hover {
+        background-color: #2954d8;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(53, 99, 233, 0.3);
+    }
+    
+    .instruction-list {
+        margin-top: 1.5rem;
+        padding-left: 1.5rem;
+    }
+    
+    .instruction-list li {
+        margin-bottom: 0.75rem;
+    }
+    
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        
+        .qr-print-section, .qr-print-section * {
+            visibility: visible;
+        }
+        
+        .qr-print-section {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            padding: 20px;
+        }
+        
+        .non-printable {
+            display: none !important;
+        }
+        
+        .qr-container {
+            box-shadow: none;
+            padding: 0;
+        }
+        
+        .qr-title {
+            margin-top: 0;
+            font-size: 16pt;
+        }
+        
+        .qr-code-img {
+            max-width: 250px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="mb-4 d-flex justify-content-between align-items-center">
+        <h1 class="h3 mb-0">Vehicle QR Code</h1>
+        <a href="{% url 'user_portal:user_profile' %}" class="btn btn-outline-primary btn-sm">
+            <span class="material-icons align-middle me-1" style="font-size: 18px;">arrow_back</span>
+            Back to Profile
+        </a>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <!-- QR Code Container -->
+            <div class="qr-print-section">
+                <div class="qr-container">
+                    <h2 class="h4 text-center mb-3 qr-title">CTTMO Vehicle QR Code</h2>
+                    
+                    {% if profile.qr_code %}
+                    <img src="{{ profile.qr_code.url }}" alt="Vehicle QR Code" class="qr-code-img">
+                    {% else %}
+                    <div class="alert alert-warning">
+                        QR code not found. Please try generating a new one.
+                    </div>
+                    {% endif %}
+                    
+                    <div class="text-center mb-3">
+                        <p class="mb-2"><strong>{{ user.get_full_name }}</strong></p>
+                        {% if profile.license_number %}
+                        <p class="mb-2">License: {{ profile.license_number }}</p>
+                        {% endif %}
+                        
+                        {% if user.registered_vehicles.exists %}
+                        {% with vehicle=user.registered_vehicles.first %}
+                        <p class="mb-0">Vehicle: {{ vehicle.plate_number }} ({{ vehicle.make }} {{ vehicle.model }})</p>
+                        {% endwith %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Print Button (non-printable) -->
+            <div class="text-center mt-4 non-printable">
+                <button onclick="window.print()" class="print-qr-btn">
+                    <span class="material-icons me-2">print</span>
+                    Print QR Code
+                </button>
+            </div>
+        </div>
+        
+        <div class="col-md-4 non-printable">
+            <div class="card border-0 shadow-sm rounded-lg mt-4 mt-md-0">
+                <div class="card-body">
+                    <h3 class="h5 mb-3">
+                        <span class="material-icons align-middle me-2" style="color: #3563E9;">info</span>
+                        Instructions
+                    </h3>
+                    
+                    <ul class="instruction-list">
+                        <li>Print this QR code and <strong>attach it to your vehicle</strong> where it can be easily scanned.</li>
+                        <li>Place it preferably on your windshield or a visible location.</li>
+                        <li>This QR code helps enforcers quickly verify your vehicle information.</li>
+                        <li>CTTMO cameras can also detect and scan this QR code.</li>
+                        <li>Keep the QR code clean and undamaged for proper scanning.</li>
+                    </ul>
+                    
+                    <div class="alert alert-info mt-3 mb-0">
+                        <div class="d-flex">
+                            <span class="material-icons me-2" style="font-size: 24px;">qr_code_scanner</span>
+                            <div>
+                                <strong>Why use a QR code?</strong>
+                                <p class="mb-0 small">QR codes allow for quick verification and reduce the need for manual checks during traffic enforcement.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // This block would contain any JavaScript needed for the QR code page
+        // Currently, we only need the print functionality which is handled by the button's onclick
+    });
+</script>
+{% endblock %} 

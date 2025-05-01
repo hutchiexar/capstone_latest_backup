@@ -1,16 +1,18 @@
 from django.db import models
-from django.utils import timezone
 from django.contrib.auth.models import User
+from django.utils import timezone
+import math
+import uuid
 import qrcode
 from io import BytesIO
 from django.core.files import File
-from PIL import Image
+from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.exceptions import ValidationError
+import random
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 import json
 import os
-import uuid
-from django.core.exceptions import ValidationError
 
 
 
@@ -56,6 +58,15 @@ class ViolationType(models.Model):
         ('FRANCHISE', 'Franchise & Permits'),
         ('OTHER', 'Other Violations')
     ])
+    classification = models.CharField(
+        max_length=50,
+        choices=[
+            ('REGULAR', 'Regular Violations'),
+            ('NCAP', 'NCAP')
+        ],
+        default='REGULAR',
+        help_text="Classification of violation (Regular for direct tickets, NCAP for uploaded violations)"
+    )
     is_active = models.BooleanField(default=True)
     is_ncap = models.BooleanField(default=False, help_text="Whether this violation type is for NCAP (Non-Contact Apprehension Program)")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -68,6 +79,14 @@ class ViolationType(models.Model):
     
     def __str__(self):
         return f"{self.name} (₱{self.amount})"
+    
+    def save(self, *args, **kwargs):
+        # Ensure is_ncap and classification stay in sync
+        if self.classification == 'NCAP':
+            self.is_ncap = True
+        else:
+            self.is_ncap = False
+        super().save(*args, **kwargs)
 
 
 def get_ncap_image_path(instance, filename):
@@ -118,15 +137,18 @@ class Operator(models.Model):
 
 
 class Violation(models.Model):
-    STATUS_CHOICES = [
+    STATUS_CHOICES = (
         ('PENDING', 'Pending'),
         ('ADJUDICATED', 'Adjudicated'),
         ('APPROVED', 'Approved'),
         ('REJECTED', 'Rejected'),
         ('PAID', 'Paid'),
         ('SETTLED', 'Settled'),
-        ('OVERDUE', 'Overdue'),
-    ]
+        ('CONTESTED', 'Contested'),
+        ('HEARING_SCHEDULED', 'Hearing Scheduled'),
+        ('DISMISSED', 'Dismissed'),
+        ('EXPIRED', 'Expired'),
+    )
 
     VIOLATION_CHOICES = [
         ('Illegal Parking', 'Illegal Parking (DTS)'),
@@ -216,6 +238,8 @@ class Violation(models.Model):
     vehicle_owner = models.CharField(max_length=200, blank=True, null=True)
     vehicle_owner_address = models.TextField(blank=True, null=True)
     violation_types = models.TextField(default='[]')  # Store JSON as text
+    original_violation_types = models.TextField(blank=True, null=True, help_text="Original violation types before adjudication (stored as JSON)")
+    original_fine_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Original fine amount before adjudication")
     receipt_number = models.CharField(max_length=50, blank=True, null=True)
     receipt_date = models.DateField(blank=True, null=True)
     payment_remarks = models.TextField(blank=True, null=True)
@@ -331,6 +355,50 @@ class UserProfile(models.Model):
     birthdate = models.DateField(null=True, blank=True)
     emergency_contact_name = models.CharField(max_length=100, null=True, blank=True)
     emergency_contact_number = models.CharField(max_length=15, null=True, blank=True)
+    is_email_verified = models.BooleanField(default=False)
+    
+    def generate_qr_code(self):
+        """Generate QR code for user profile"""
+        try:
+            import qrcode
+            from io import BytesIO
+            from django.core.files.base import ContentFile
+            
+            # Create QR code instance
+            qr = qrcode.QRCode(
+                version=1,
+                error_correction=qrcode.constants.ERROR_CORRECT_L,
+                box_size=10,
+                border=4,
+            )
+            
+            # Add data to QR code (user ID and username for identification)
+            qr_data = f"uid:{self.user.id}-{self.user.username}"
+            qr.add_data(qr_data)
+            qr.make(fit=True)
+            
+            # Create an image from the QR Code
+            img = qr.make_image(fill_color="black", back_color="white")
+            
+            # Save the image to a BytesIO object
+            buffer = BytesIO()
+            img.save(buffer)
+            buffer.seek(0)
+            
+            # Create a Django-friendly image file
+            filename = f"qr_{self.user.username}.png"
+            self.qr_code.save(filename, ContentFile(buffer.read()), save=False)
+            
+        except ImportError:
+            # Log that qrcode package is not installed
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning("qrcode package not installed, QR code not generated")
+        except Exception as e:
+            # Log any other errors
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error generating QR code: {str(e)}")
 
     def get_permissions(self):
         permissions = {
@@ -374,53 +442,17 @@ class UserProfile(models.Model):
         return f"{self.user.get_full_name()} - {self.enforcer_id or 'No ID'}"
 
     def save(self, *args, **kwargs):
-        # Generate enforcer_id if it's not set
-        if not self.enforcer_id:
-            # Try to generate an enforcer ID or use a fallback
-            try:
-                from django.utils import timezone
-                import random
-                prefix = 'ENF'
-                # Create a more unique fallback ID using timestamp and random number
-                timestamp = int(timezone.now().timestamp())
-                random_suffix = random.randint(1000, 9999)
-                self.enforcer_id = f"{prefix}{timestamp % 10000}{random_suffix}"
-                
-                # Check if this enforcer_id already exists, and if so, generate a new one
-                collision_count = 0
-                while UserProfile.objects.filter(enforcer_id=self.enforcer_id).exists():
-                    random_suffix = random.randint(1000, 9999)
-                    self.enforcer_id = f"{prefix}{timestamp % 10000}{random_suffix}"
-                    collision_count += 1
-                    if collision_count > 10:  # Prevent infinite loops
-                        self.enforcer_id = f"{prefix}{timestamp}{random_suffix}"
-                        break
-            except Exception as e:
-                # Last resort fallback
-                import uuid
-                self.enforcer_id = f"ENF{str(uuid.uuid4())[:7]}"
-        
-        # Generate QR code for profile
-        if not self.qr_code:
-            try:
-                qr = qrcode.QRCode(
-                    version=1,
-                    error_correction=qrcode.constants.ERROR_CORRECT_L,
-                    box_size=10,
-                    border=4,
-                )
-                qr.add_data(f"Enforcer ID: {self.enforcer_id}\nName: {self.user.get_full_name()}")
-                qr.make(fit=True)
-
-                img = qr.make_image(fill_color="black", back_color="white")
-                blob = BytesIO()
-                img.save(blob, 'PNG')
-                self.qr_code.save(f'qr_{self.enforcer_id}.png', File(blob), save=False)
-            except Exception as e:
-                # Handle exception if QR code generation fails
-                pass
-        
+        # Handle enforcer_id if not already set
+        is_new = not self.pk
+        if is_new and not self.enforcer_id and self.role == 'ENFORCER':
+            self.enforcer_id = generate_enforcer_id()
+            
+        # Call the real save method
         super().save(*args, **kwargs)
+        
+        # Generate and save QR code only once or when updating necessary info
+        if not self.qr_code or is_new or 'license_number' in kwargs.get('update_fields', []):
+            self.generate_qr_code()
 
     def calculate_age(self):
         """Calculate age based on birthdate"""
@@ -439,7 +471,8 @@ def create_user_profile(sender, instance, created, **kwargs):
             user=instance,
             enforcer_id=generate_enforcer_id(),
             phone_number='',
-            address=''
+            address='',
+            is_email_verified=False  # Set email verification to False by default
         )
 
 @receiver(post_save, sender=User)
@@ -636,9 +669,11 @@ class Driver(models.Model):
     middle_initial = models.CharField(max_length=10, blank=True, null=True)
     address = models.TextField()
     old_pd_number = models.CharField(max_length=20, blank=True, null=True)
-    new_pd_number = models.CharField(max_length=20, unique=True)
+    new_pd_number = models.CharField(max_length=20, unique=True, blank=True, null=True)
     license_number = models.CharField(max_length=50, blank=True, null=True)
     contact_number = models.CharField(max_length=20, blank=True, null=True)
+    birthdate = models.DateField(blank=True, null=True)
+    emergency_contact_name = models.CharField(max_length=100, blank=True, null=True)
     emergency_contact = models.CharField(max_length=100, blank=True, null=True)
     emergency_contact_number = models.CharField(max_length=20, blank=True, null=True)
     active = models.BooleanField(default=True)
@@ -775,3 +810,22 @@ class ViolationCertificate(models.Model):
     
     def __str__(self):
         return f"Certificate for Violation {self.violation.id}"
+
+
+class EmailVerificationToken(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='verification_tokens')
+    token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    
+    def __str__(self):
+        return f"Verification token for {self.user.username}"
+    
+    def is_valid(self):
+        return timezone.now() <= self.expires_at
+    
+    def save(self, *args, **kwargs):
+        # Set expiration date to 24 hours from creation if not set
+        if not self.expires_at:
+            self.expires_at = timezone.now() + timezone.timedelta(hours=24)
+        super().save(*args, **kwargs)

@@ -66,49 +66,50 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% regroup paid_violations by receipt_number as grouped_violations %}
-                    {% for receipt_group in grouped_violations %}
+                    {% regroup paid_violations|dictsort:"receipt_number" by receipt_number as receipt_grouped %}
+                    {% for receipt_group in receipt_grouped %}
+                        {% regroup receipt_group.list by violator as violator_grouped %}
+                        {% for violator_group in violator_grouped %}
                     <tr>
                         <td class="ps-4">
                             <span class="badge bg-secondary">{{ receipt_group.grouper }}</span>
                         </td>
-                        <td>{{ receipt_group.list.0.receipt_date|date:"M d, Y" }}</td>
+                            <td>{{ violator_group.list.0.receipt_date|date:"M d, Y" }}</td>
                         <td>
-                            {% if receipt_group.list|length > 1 %}
-                                <span class="badge bg-info mb-1">Batch ({{ receipt_group.list|length }})</span>
+                                {% if violator_group.list|length > 1 %}
+                                    <span class="badge bg-info mb-1">Batch ({{ violator_group.list|length }})</span>
                                 <div class="small">
-                                    {% for violation in receipt_group.list %}
+                                        {% for violation in violator_group.list %}
                                         #{{ violation.id }}{% if not forloop.last %}, {% endif %}
                                     {% endfor %}
                                 </div>
                             {% else %}
-                                <a href="#" class="text-decoration-none text-dark violation-detail-link" data-violation-id="{{ receipt_group.list.0.id }}">
-                                    #{{ receipt_group.list.0.id }}
+                                    <a href="#" class="text-decoration-none text-dark violation-detail-link" data-violation-id="{{ violator_group.list.0.id }}">
+                                        #{{ violator_group.list.0.id }}
                                 </a>
                             {% endif %}
                         </td>
                         <td class="text-dark">
-                            {% if receipt_group.list|length > 1 %}
-                                {% with first_violator=receipt_group.list.0.violator %}
-                                    {{ first_violator.get_full_name }}
-                                    {% if receipt_group.list|length > 1 %}
+                                {{ violator_group.grouper.get_full_name }}
+                                {% if violator_group.list|length > 1 %}
                                         <div class="badge bg-primary mt-1">Multiple Violations</div>
-                                    {% endif %}
-                                {% endwith %}
-                            {% else %}
-                                {{ receipt_group.list.0.violator.get_full_name }}
                             {% endif %}
                         </td>
                         <td>
-                            {% with total_amount=0 %}
-                                {% for violation in receipt_group.list %}
-                                    {% with total_amount=total_amount|add:violation.fine_amount %}{% endwith %}
+                                <span class="fw-bold text-dark">
+                                    ₱{% with total=0 %}
+                                        {% for violation in violator_group.list %}
+                                            {% with amount=violation.payment_amount|default:violation.fine_amount %}
+                                                {% with total=total|add:amount %}
+                                                    {% if forloop.last %}{{ total|floatformat:2 }}{% endif %}
+                                                {% endwith %}
+                                            {% endwith %}
                                 {% endfor %}
-                                <span class="fw-bold text-dark">₱{{ total_amount|floatformat:2 }}</span>
-                                {% if receipt_group.list|length > 1 %}
-                                    <div class="small text-muted">Total for batch</div>
-                                {% endif %}
                             {% endwith %}
+                                </span>
+                                {% if violator_group.list|length > 1 %}
+                                    <div class="small text-muted">Total for violator</div>
+                                {% endif %}
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
@@ -118,24 +119,29 @@
                         </td>
                         <td class="text-end">
                             <div class="action-buttons">
-                                {% if receipt_group.list|length > 1 %}
+                                    {% if violator_group.list|length > 1 %}
                                     <button type="button" 
                                             class="btn btn-primary action-btn batch-detail-btn" 
-                                            data-batch-ids="{% for violation in receipt_group.list %}{{ violation.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                                                data-batch-ids="{% for violation in violator_group.list %}{{ violation.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
                                         <span class="material-icons">visibility</span>
+                                    </button>
+                                    <button type="button"
+                                            class="btn btn-success action-btn"
+                                            onclick="printBatchSummaryFromList('{% for violation in violator_group.list %}{{ violation.id }}{% if not forloop.last %},{% endif %}{% endfor %}')">
+                                        <span class="material-icons">print</span>
                                     </button>
                                 {% else %}
                                     <button type="button" 
                                             class="btn btn-primary action-btn violation-detail-btn" 
-                                            data-violation-id="{{ receipt_group.list.0.id }}">
+                                                data-violation-id="{{ violator_group.list.0.id }}">
                                         <span class="material-icons">visibility</span>
                                     </button>
-                                {% endif %}
-                                <a href="{% url 'print_receipt' receipt_group.list.0.id %}" 
+                                    <button type="button"
                                    class="btn btn-success action-btn"
-                                   target="_blank">
+                                            onclick="printBatchSummaryFromList('{{ violator_group.list.0.id }}')">
                                     <span class="material-icons">print</span>
-                                </a>
+                                    </button>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>
@@ -148,6 +154,7 @@
                             </div>
                         </td>
                     </tr>
+                        {% endfor %}
                     {% endfor %}
                 </tbody>
             </table>
@@ -155,9 +162,11 @@
         
         <!-- Card View for mobile devices -->
         <div class="payment-cards d-block d-md-none p-3">
-            {% regroup paid_violations by receipt_number as grouped_violations %}
-            {% for receipt_group in grouped_violations %}
-            <div class="payment-card" data-receipt-id="{{ receipt_group.grouper }}">
+            {% regroup paid_violations|dictsort:"receipt_number" by receipt_number as receipt_grouped %}
+            {% for receipt_group in receipt_grouped %}
+                {% regroup receipt_group.list by violator as violator_grouped %}
+                {% for violator_group in violator_grouped %}
+                <div class="payment-card" data-receipt-id="{{ receipt_group.grouper }}-{{ violator_group.grouper.id }}">
                 <div class="card mb-3">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <div>
@@ -175,7 +184,7 @@
                                 <small class="text-muted">Date:</small>
                             </div>
                             <div class="col-7">
-                                {{ receipt_group.list.0.receipt_date|date:"M d, Y" }}
+                                    {{ violator_group.list.0.receipt_date|date:"M d, Y" }}
                             </div>
                         </div>
                         <div class="row mb-2">
@@ -183,16 +192,16 @@
                                 <small class="text-muted">Violation(s):</small>
                             </div>
                             <div class="col-7">
-                                {% if receipt_group.list|length > 1 %}
-                                    <span class="badge bg-info">Batch ({{ receipt_group.list|length }})</span>
+                                    {% if violator_group.list|length > 1 %}
+                                        <span class="badge bg-info">Batch ({{ violator_group.list|length }})</span>
                                     <div class="small mt-1">
-                                        {% for violation in receipt_group.list %}
+                                            {% for violation in violator_group.list %}
                                             #{{ violation.id }}{% if not forloop.last %}, {% endif %}
                                         {% endfor %}
                                     </div>
                                 {% else %}
-                                    <a href="#" class="text-decoration-none text-primary violation-detail-link" data-violation-id="{{ receipt_group.list.0.id }}">
-                                        #{{ receipt_group.list.0.id }}
+                                        <a href="#" class="text-decoration-none text-primary violation-detail-link" data-violation-id="{{ violator_group.list.0.id }}">
+                                            #{{ violator_group.list.0.id }}
                                     </a>
                                 {% endif %}
                             </div>
@@ -202,8 +211,8 @@
                                 <small class="text-muted">Violator:</small>
                             </div>
                             <div class="col-7">
-                                {{ receipt_group.list.0.violator.get_full_name }}
-                                {% if receipt_group.list|length > 1 %}
+                                    {{ violator_group.grouper.get_full_name }}
+                                    {% if violator_group.list|length > 1 %}
                                     <div class="badge bg-primary mt-1">Multiple Violations</div>
                                 {% endif %}
                             </div>
@@ -213,41 +222,52 @@
                                 <small class="text-muted">Amount:</small>
                             </div>
                             <div class="col-7">
-                                {% with total_amount=0 %}
-                                    {% for violation in receipt_group.list %}
-                                        {% with total_amount=total_amount|add:violation.fine_amount %}{% endwith %}
+                                    <span class="fw-bold">
+                                        ₱{% with total=0 %}
+                                            {% for violation in violator_group.list %}
+                                                {% with amount=violation.payment_amount|default:violation.fine_amount %}
+                                                    {% with total=total|add:amount %}
+                                                        {% if forloop.last %}{{ total|floatformat:2 }}{% endif %}
+                                                    {% endwith %}
+                                                {% endwith %}
                                     {% endfor %}
-                                    <span class="fw-bold">₱{{ total_amount|floatformat:2 }}</span>
-                                    {% if receipt_group.list|length > 1 %}
-                                        <div class="small text-muted">Total for batch</div>
-                                    {% endif %}
                                 {% endwith %}
+                                    </span>
+                                    {% if violator_group.list|length > 1 %}
+                                        <div class="small text-muted">Total for violator</div>
+                                    {% endif %}
                             </div>
                         </div>
                     </div>
                     <div class="card-footer p-2">
                         <div class="mobile-actions">
-                            {% if receipt_group.list|length > 1 %}
+                                {% if violator_group.list|length > 1 %}
                                 <button type="button" 
                                         class="btn btn-primary action-btn batch-detail-btn" 
-                                        data-batch-ids="{% for violation in receipt_group.list %}{{ violation.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                                            data-batch-ids="{% for violation in violator_group.list %}{{ violation.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
                                     <span class="material-icons">visibility</span>
                                     <span class="view-text">View</span>
+                                </button>
+                                <button type="button"
+                                        class="btn btn-success action-btn"
+                                        onclick="printBatchSummaryFromList('{% for violation in violator_group.list %}{{ violation.id }}{% if not forloop.last %},{% endif %}{% endfor %}')">
+                                    <span class="material-icons">print</span>
+                                    <span class="view-text">Print</span>
                                 </button>
                             {% else %}
                                 <button type="button" 
                                         class="btn btn-primary action-btn violation-detail-btn" 
-                                        data-violation-id="{{ receipt_group.list.0.id }}">
+                                            data-violation-id="{{ violator_group.list.0.id }}">
                                     <span class="material-icons">visibility</span>
                                     <span class="view-text">View</span>
                                 </button>
-                            {% endif %}
-                            <a href="{% url 'print_receipt' receipt_group.list.0.id %}" 
+                                <button type="button"
                                class="btn btn-success action-btn"
-                               target="_blank">
+                                        onclick="printBatchSummaryFromList('{{ violator_group.list.0.id }}')">
                                 <span class="material-icons">print</span>
                                 <span class="view-text">Print</span>
-                            </a>
+                                </button>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -259,6 +279,7 @@
                     <p class="mb-0">No payment records found</p>
                 </div>
             </div>
+                {% endfor %}
             {% endfor %}
         </div>
         
@@ -319,6 +340,16 @@
                     <p class="mt-3">Loading batch details...</p>
                 </div>
             </main>
+            <footer class="modal__footer bg-light d-flex justify-content-between">
+                <button class="btn btn-outline-secondary" data-micromodal-close>
+                    <span class="material-icons me-1 align-middle" style="font-size: 18px;">close</span>
+                    Close
+                </button>
+                <button class="btn btn-success" id="printBatchSummaryBtn" onclick="printBatchSummary()">
+                    <span class="material-icons me-1 align-middle" style="font-size: 18px;">print</span>
+                    Print Summary
+                </button>
+            </footer>
         </div>
     </div>
 </div>
@@ -931,8 +962,10 @@
 </style>
 
 <script>
-// Initialize MicroModal when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Payment records page initialized');
+    
+    // Initialize MicroModal when DOM is loaded
     console.log('DOM loaded, setting up MicroModal...');
     
     // Initialize MicroModal with specific options for closing
@@ -1069,9 +1102,18 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Also fix layout when window is resized
     window.addEventListener('resize', fixTableLayouts);
+    
+    // Add event listener for batch detail buttons
+    document.querySelectorAll('.batch-detail-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const batchIds = this.getAttribute('data-batch-ids');
+            showBatchDetails(batchIds);
+        });
+    });
 });
 
-// Helper function to close the modal
+// Helper function to close the violation modal
 function closeViolationModal() {
     console.log('Closing violation modal manually');
     if (typeof MicroModal !== 'undefined') {
@@ -1207,21 +1249,53 @@ function showBatchDetails(batchIds) {
             // Get receipt number and date
             let receiptNumber = 'N/A';
             let receiptDate = 'N/A';
+            let firstViolatorName = '';
             
             // Find receipt info
             const allElements = tempDiv.querySelectorAll('*');
             allElements.forEach(el => {
                 const text = el.textContent.trim();
                 if (text.includes('Receipt Number:')) {
-                    const valueEl = el.nextElementSibling || el.parentElement.nextElementSibling;
+                    // Get the next sibling text content or the text after the "Receipt Number:" text
+                    const valueEl = el.nextElementSibling;
                     if (valueEl && valueEl.textContent.trim()) {
                         receiptNumber = valueEl.textContent.trim();
+                    } else {
+                        // Try to extract the value if it's in the same element but after the label
+                        const labelIndex = text.indexOf('Receipt Number:');
+                        if (labelIndex >= 0 && text.length > labelIndex + 15) {
+                            const remainingText = text.substring(labelIndex + 15).trim();
+                            if (remainingText && remainingText !== "Payment Date:") {
+                                receiptNumber = remainingText;
+                            }
+                        }
                     }
                 }
-                if (text.includes('Receipt Date:')) {
-                    const valueEl = el.nextElementSibling || el.parentElement.nextElementSibling;
+                
+                if (text.includes('Payment Date:') || text.includes('Receipt Date:')) {
+                    const valueEl = el.nextElementSibling;
                     if (valueEl && valueEl.textContent.trim()) {
                         receiptDate = valueEl.textContent.trim();
+                    } else {
+                        // Try to extract the value if it's in the same element but after the label
+                        const labelIndex = text.indexOf('Payment Date:') >= 0 ? 
+                            text.indexOf('Payment Date:') : text.indexOf('Receipt Date:');
+                        if (labelIndex >= 0 && text.length > labelIndex + 14) {
+                            receiptDate = text.substring(labelIndex + 14).trim();
+                        }
+                    }
+                }
+                
+                if (text.includes('Violator:')) {
+                    const valueEl = el.nextElementSibling;
+                    if (valueEl && valueEl.textContent.trim()) {
+                        firstViolatorName = valueEl.textContent.trim();
+                    } else {
+                        // Try to extract the value if it's in the same element but after the label
+                        const labelIndex = text.indexOf('Violator:');
+                        if (labelIndex >= 0 && text.length > labelIndex + 9) {
+                            firstViolatorName = text.substring(labelIndex + 9).trim();
+                        }
                     }
                 }
             });
@@ -1235,89 +1309,123 @@ function showBatchDetails(batchIds) {
                         }
                         return response.json();
                     })
+                    .then(data => {
+                        // Add the receipt number to each violation
+                        return {...data, receiptNumber: receiptNumber};
+                    })
                     .catch(error => {
                         console.error(error);
-                        return { id: id, error: true, message: error.message };
+                        return { id: id, error: true, message: error.message, receiptNumber: receiptNumber };
                     })
             );
             
-            return Promise.all([Promise.resolve({receiptNumber, receiptDate}), Promise.all(fetchPromises)]);
+            return Promise.all([Promise.resolve({receiptNumber, receiptDate, firstViolatorName}), Promise.all(fetchPromises)]);
         })
         .then(([receiptInfo, violations]) => {
-            // Calculate batch summary
-            const totalFineAmount = violations
-                .filter(v => !v.error && v.fine_amount)
+            // Group violations by receipt number AND violator name
+            const violationsByReceiptAndViolator = {};
+            
+            violations.forEach(v => {
+                if (!v.error) {
+                    // Create a composite key using receipt number AND violator name
+                    const violatorName = v.violator_name || 'Unknown';
+                    const receiptKey = `${v.receipt_number || receiptInfo.receiptNumber}-${violatorName}`;
+                    
+                    if (!violationsByReceiptAndViolator[receiptKey]) {
+                        violationsByReceiptAndViolator[receiptKey] = [];
+                    }
+                    
+                    violationsByReceiptAndViolator[receiptKey].push(v);
+                } else {
+                    // Handle errors separately
+                    const errorKey = 'errors';
+                    if (!violationsByReceiptAndViolator[errorKey]) {
+                        violationsByReceiptAndViolator[errorKey] = [];
+                    }
+                    violationsByReceiptAndViolator[errorKey].push(v);
+                }
+            });
+            
+            // Find the key that corresponds to the first violator
+            const firstViolatorKey = Object.keys(violationsByReceiptAndViolator).find(key => 
+                key.includes(receiptInfo.firstViolatorName) || 
+                (!receiptInfo.firstViolatorName && key.includes(receiptInfo.receiptNumber))
+            );
+            
+            // Use the violations for the first violator only
+            const firstViolatorKey2 = Object.keys(violationsByReceiptAndViolator).find(key => 
+                key.startsWith(`${receiptInfo.receiptNumber}-`)
+            ) || Object.keys(violationsByReceiptAndViolator)[0];
+            
+            const relevantViolations = violationsByReceiptAndViolator[firstViolatorKey2] || [];
+            
+            // Get violator name from the first violation
+            const violatorName = relevantViolations.length > 0 ? 
+                (relevantViolations[0].violator_name || 'Unknown') : 'Unknown';
+            
+            // Calculate batch summary for the selected violator only
+            const totalFineAmount = relevantViolations
+                .filter(v => v.fine_amount)
                 .reduce((sum, v) => sum + parseFloat(v.fine_amount || 0), 0);
                 
             const uniqueViolationTypes = new Set();
-            violations.forEach(v => {
-                if (!v.error && v.violation_types) {
+            relevantViolations.forEach(v => {
+                if (v.violation_types) {
                     v.violation_types.forEach(type => uniqueViolationTypes.add(type));
-                } else if (!v.error && v.violation_type) {
+                } else if (v.violation_type) {
                     uniqueViolationTypes.add(v.violation_type);
                 }
             });
             
-            // Create HTML content - with enhanced design
+            // Create HTML content - with enhanced design to match payment details modal
             let batchHtml = `
-                <div class="p-4">
-                    <div class="row">
-                        <!-- Batch Summary Card -->
-                        <div class="col-md-7 mb-4">
-                            <div class="card shadow-sm border-0 h-100">
-                                <div class="card-header bg-white py-3 border-bottom">
-                                    <h5 class="mb-0 d-flex align-items-center">
-                                        <span class="material-icons me-2 text-primary">summarize</span>
-                                        Batch Summary
-                                    </h5>
+                <div class="payment-detail-container p-4">
+                    <!-- Payment Information Section -->
+                    <div class="card mb-4 border-0 shadow-sm">
+                        <div class="card-header bg-white">
+                            <h6 class="mb-0 d-flex align-items-center">
+                                <span class="material-icons me-2 text-secondary">payments</span>
+                                Payment Information
+                            </h6>
                                 </div>
                                 <div class="card-body">
                                     <div class="row">
-                                        <div class="col-md-6 mb-3">
-                                            <div class="d-flex align-items-center mb-2">
-                                                <span class="material-icons text-secondary me-2" style="font-size: 18px;">tag</span>
-                                                <span class="text-muted">Total Violations:</span>
+                                <div class="col-md-6">
+                                    <p class="mb-2"><strong>Receipt Number:</strong>&nbsp;<span class="ps-1">${receiptInfo.receiptNumber}</span></p>
+                                    <p class="mb-2"><strong>Payment Date:</strong>&nbsp;<span class="ps-1">${receiptInfo.receiptDate}</span></p>
+                                    <p class="mb-2"><strong>Amount Paid:</strong>&nbsp;<span class="ps-1">₱${totalFineAmount.toFixed(2)}</span></p>
                                             </div>
-                                            <p class="ms-4 fw-bold mb-3">${violations.length}</p>
-                                            
-                                            <div class="d-flex align-items-center mb-2">
-                                                <span class="material-icons text-secondary me-2" style="font-size: 18px;">receipt</span>
-                                                <span class="text-muted">Receipt Number:</span>
+                                <div class="col-md-6">
+                                    <p class="mb-2"><strong>Status:</strong>&nbsp;
+                                        <span class="badge bg-success">Paid</span>
+                                    </p>
+                                    <p class="mb-2"><strong>Processed by:</strong>&nbsp;<span class="ps-1">${relevantViolations[0]?.processed_by_name || 'System'}</span></p>
+                                    <p class="mb-2"><strong>Remarks:</strong>&nbsp;<span class="ps-1">${relevantViolations[0]?.payment_remarks || 'N/A'}</span></p>
                                             </div>
-                                            <p class="ms-4 fw-bold mb-3">${receiptInfo.receiptNumber}</p>
                                         </div>
-                                        <div class="col-md-6 mb-3">
-                                            <div class="d-flex align-items-center mb-2">
-                                                <span class="material-icons text-secondary me-2" style="font-size: 18px;">calendar_today</span>
-                                                <span class="text-muted">Receipt Date:</span>
-                                            </div>
-                                            <p class="ms-4 fw-bold mb-3">${receiptInfo.receiptDate}</p>
-                                            
-                                            <div class="d-flex align-items-center mb-2">
-                                                <span class="material-icons text-secondary me-2" style="font-size: 18px;">payments</span>
-                                                <span class="text-muted">Total Fine Amount:</span>
-                                            </div>
-                                            <p class="ms-4 fw-bold text-primary mb-3">₱${totalFineAmount.toFixed(2)}</p>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                         
-                        <!-- Violation Types Card -->
-                        <div class="col-md-5 mb-4">
-                            <div class="card shadow-sm border-0 h-100">
-                                <div class="card-header bg-white py-3 border-bottom">
-                                    <h5 class="mb-0 d-flex align-items-center">
-                                        <span class="material-icons me-2 text-primary">label</span>
-                                        Violation Types
-                                    </h5>
+                    <!-- Violation Information Section -->
+                    <div class="card mb-4 border-0 shadow-sm">
+                        <div class="card-header bg-white">
+                            <h6 class="mb-0 d-flex align-items-center">
+                                <span class="material-icons me-2 text-secondary">person</span>
+                                Violator Information
+                            </h6>
                                 </div>
                                 <div class="card-body">
-                                    <div class="d-flex flex-wrap gap-2 mt-2">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-2"><strong>Name:</strong> ${violatorName}</p>
+                                    <p class="mb-2"><strong>License Number:</strong> ${relevantViolations[0]?.license_number || 'N/A'}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="mb-2"><strong>Total Violations:</strong> ${relevantViolations.length}</p>
+                                    <div class="mb-2"><strong>Violation Types:</strong></div>
+                                    <div class="d-flex flex-wrap gap-2">
                                         ${Array.from(uniqueViolationTypes).map(type => `
-                                            <div class="badge bg-light text-dark p-2 rounded-pill">
-                                                <span class="material-icons me-1" style="font-size: 14px; vertical-align: text-top;">error</span>
+                                            <div class="badge bg-light text-dark">
                                                 ${type}
                                             </div>
                                         `).join('')}
@@ -1328,12 +1436,12 @@ function showBatchDetails(batchIds) {
                     </div>
                     
                     <!-- Violations Table Card -->
-                    <div class="card shadow-sm border-0 mb-3">
-                        <div class="card-header bg-white py-3 border-bottom">
-                            <h5 class="mb-0 d-flex align-items-center">
-                                <span class="material-icons me-2 text-primary">list_alt</span>
-                                Violations in this Batch (${violations.length})
-                            </h5>
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white">
+                            <h6 class="mb-0 d-flex align-items-center">
+                                <span class="material-icons me-2 text-secondary">list_alt</span>
+                                Violation Details
+                            </h6>
                         </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
@@ -1341,21 +1449,13 @@ function showBatchDetails(batchIds) {
                                     <thead class="table-light">
                                         <tr>
                                             <th class="py-3">CASE ID</th>
-                                            <th class="py-3">VIOLATOR</th>
+                                            <th class="py-3">RECEIPT #</th>
                                             <th class="py-3">VIOLATION TYPE</th>
                                             <th class="py-3 text-end">FINE</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        ${violations.map(v => {
-                                            if (v.error) {
-                                                return `
-                                                    <tr class="table-danger">
-                                                        <td class="py-3">${v.id}</td>
-                                                        <td class="py-3" colspan="3">Error: ${v.message}</td>
-                                                    </tr>
-                                                `;
-                                            } else {
+                                        ${relevantViolations.map(v => {
                                                 const violationTypes = Array.isArray(v.violation_types) && v.violation_types.length > 0 
                                                     ? v.violation_types.join(', ') 
                                                     : v.violation_type || 'N/A';
@@ -1363,12 +1463,11 @@ function showBatchDetails(batchIds) {
                                                 return `
                                                     <tr>
                                                         <td class="py-3">${v.id}</td>
-                                                        <td class="py-3">${v.violator_name || 'N/A'}</td>
+                                                        <td class="py-3">${v.receipt_number || receiptInfo.receiptNumber}</td>
                                                         <td class="py-3">${violationTypes}</td>
                                                         <td class="py-3 text-end">₱${parseFloat(v.fine_amount || 0).toFixed(2)}</td>
                                                     </tr>
                                                 `;
-                                            }
                                         }).join('')}
                                     </tbody>
                                 </table>
@@ -1394,15 +1493,884 @@ function showBatchDetails(batchIds) {
         });
 }
 
-// Add event listener for batch detail buttons
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.batch-detail-btn').forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            const batchIds = this.getAttribute('data-batch-ids');
-            showBatchDetails(batchIds);
+// Function to print batch summary directly from the list without showing modal first
+function printBatchSummaryFromList(batchIds) {
+    // Convert string of IDs to array if needed
+    if (typeof batchIds === 'string') {
+        batchIds = batchIds.split(',');
+    }
+    
+    // Instead of showing the modal, silently load the data and print
+    const modalContent = document.getElementById('modal-batch-details-content');
+    
+    // Show loading in the background (no visible modal)
+    modalContent.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3">Loading batch details...</p>
+        </div>
+    `;
+    
+    // Load batch data silently (reuse the same function but don't call MicroModal.show)
+    // Fetch first payment to get receipt info
+    fetch(`/violation/${batchIds[0]}/payment-detail-modal/`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Error fetching payment details`);
+            }
+            return response.text();
+        })
+        .then(detailHtml => {
+            // Extract receipt info from the HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = detailHtml;
+            
+            // Get receipt number and date
+            let receiptNumber = 'N/A';
+            let receiptDate = 'N/A';
+            let firstViolatorName = '';
+            
+            // Find receipt info
+            const allElements = tempDiv.querySelectorAll('*');
+            allElements.forEach(el => {
+                const text = el.textContent.trim();
+                if (text.includes('Receipt Number:')) {
+                    // Get the next sibling text content or the text after the "Receipt Number:" text
+                    const valueEl = el.nextElementSibling;
+                    if (valueEl && valueEl.textContent.trim()) {
+                        receiptNumber = valueEl.textContent.trim();
+                    } else {
+                        // Try to extract the value if it's in the same element but after the label
+                        const labelIndex = text.indexOf('Receipt Number:');
+                        if (labelIndex >= 0 && text.length > labelIndex + 15) {
+                            const remainingText = text.substring(labelIndex + 15).trim();
+                            if (remainingText && remainingText !== "Payment Date:") {
+                                receiptNumber = remainingText;
+                            }
+                        }
+                    }
+                }
+                
+                if (text.includes('Payment Date:') || text.includes('Receipt Date:')) {
+                    const valueEl = el.nextElementSibling;
+                    if (valueEl && valueEl.textContent.trim()) {
+                        receiptDate = valueEl.textContent.trim();
+                    } else {
+                        // Try to extract the value if it's in the same element but after the label
+                        const labelIndex = text.indexOf('Payment Date:') >= 0 ? 
+                            text.indexOf('Payment Date:') : text.indexOf('Receipt Date:');
+                        if (labelIndex >= 0 && text.length > labelIndex + 14) {
+                            receiptDate = text.substring(labelIndex + 14).trim();
+                        }
+                    }
+                }
+                
+                if (text.includes('Violator:')) {
+                    const valueEl = el.nextElementSibling;
+                    if (valueEl && valueEl.textContent.trim()) {
+                        firstViolatorName = valueEl.textContent.trim();
+                    } else {
+                        // Try to extract the value if it's in the same element but after the label
+                        const labelIndex = text.indexOf('Violator:');
+                        if (labelIndex >= 0 && text.length > labelIndex + 9) {
+                            firstViolatorName = text.substring(labelIndex + 9).trim();
+                        }
+                    }
+                }
+            });
+            
+            // Fetch all payments in the batch
+            const fetchPromises = batchIds.map(id => 
+                fetch(`/violation/${id}/payment-info/`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Error fetching violation #${id}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Add the receipt number to each violation
+                        return {...data, receiptNumber: receiptNumber};
+                    })
+                    .catch(error => {
+                        console.error(error);
+                        return { id: id, error: true, message: error.message, receiptNumber: receiptNumber };
+                    })
+            );
+            
+            return Promise.all([Promise.resolve({receiptNumber, receiptDate, firstViolatorName}), Promise.all(fetchPromises)]);
+        })
+        .then(([receiptInfo, violations]) => {
+            // Group violations by receipt number AND violator name
+            const violationsByReceiptAndViolator = {};
+            
+            violations.forEach(v => {
+                if (!v.error) {
+                    // Create a composite key using receipt number AND violator name
+                    const violatorName = v.violator_name || 'Unknown';
+                    const receiptKey = `${v.receipt_number || receiptInfo.receiptNumber}-${violatorName}`;
+                    
+                    if (!violationsByReceiptAndViolator[receiptKey]) {
+                        violationsByReceiptAndViolator[receiptKey] = [];
+                    }
+                    
+                    violationsByReceiptAndViolator[receiptKey].push(v);
+                } else {
+                    // Handle errors separately
+                    const errorKey = 'errors';
+                    if (!violationsByReceiptAndViolator[errorKey]) {
+                        violationsByReceiptAndViolator[errorKey] = [];
+                    }
+                    violationsByReceiptAndViolator[errorKey].push(v);
+                }
+            });
+            
+            // Find the key that corresponds to the first violator
+            const firstViolatorKey = Object.keys(violationsByReceiptAndViolator).find(key => 
+                key.includes(receiptInfo.firstViolatorName) || 
+                (!receiptInfo.firstViolatorName && key.includes(receiptInfo.receiptNumber))
+            );
+            
+            // Use the violations for the first violator only
+            const firstViolatorKey2 = Object.keys(violationsByReceiptAndViolator).find(key => 
+                key.startsWith(`${receiptInfo.receiptNumber}-`)
+            ) || Object.keys(violationsByReceiptAndViolator)[0];
+            
+            const relevantViolations = violationsByReceiptAndViolator[firstViolatorKey2] || [];
+            
+            // Get violator name from the first violation
+            const violatorName = relevantViolations.length > 0 ? 
+                (relevantViolations[0].violator_name || 'Unknown') : 'Unknown';
+            
+            // Calculate batch summary for the selected violator only
+            const totalFineAmount = relevantViolations
+                .filter(v => v.fine_amount)
+                .reduce((sum, v) => sum + parseFloat(v.fine_amount || 0), 0);
+                
+            const uniqueViolationTypes = new Set();
+            relevantViolations.forEach(v => {
+                if (v.violation_types) {
+                    v.violation_types.forEach(type => uniqueViolationTypes.add(type));
+                } else if (v.violation_type) {
+                    uniqueViolationTypes.add(v.violation_type);
+                }
+            });
+            
+            // Generate the HTML for display in the modal content (but not shown)
+            let batchHtml = `
+                <div class="payment-detail-container p-4">
+                    <!-- Payment Information Section -->
+                    <div class="card mb-4 border-0 shadow-sm">
+                        <div class="card-header bg-white">
+                            <h6 class="mb-0 d-flex align-items-center">
+                                <span class="material-icons me-2 text-secondary">payments</span>
+                                Payment Information
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-2"><strong>Receipt Number:</strong>&nbsp;<span class="ps-1">${receiptInfo.receiptNumber}</span></p>
+                                    <p class="mb-2"><strong>Payment Date:</strong>&nbsp;<span class="ps-1">${receiptInfo.receiptDate}</span></p>
+                                    <p class="mb-2"><strong>Amount Paid:</strong>&nbsp;<span class="ps-1">₱${totalFineAmount.toFixed(2)}</span></p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="mb-2"><strong>Status:</strong>&nbsp;
+                                        <span class="badge bg-success">Paid</span>
+                                    </p>
+                                    <p class="mb-2"><strong>Processed by:</strong>&nbsp;<span class="ps-1">${relevantViolations[0]?.processed_by_name || 'System'}</span></p>
+                                    <p class="mb-2"><strong>Remarks:</strong>&nbsp;<span class="ps-1">${relevantViolations[0]?.payment_remarks || 'N/A'}</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Violation Information Section -->
+                    <div class="card mb-4 border-0 shadow-sm">
+                        <div class="card-header bg-white">
+                            <h6 class="mb-0 d-flex align-items-center">
+                                <span class="material-icons me-2 text-secondary">person</span>
+                                Violator Information
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-2"><strong>Name:</strong> ${violatorName}</p>
+                                    <p class="mb-2"><strong>License Number:</strong> ${relevantViolations[0]?.license_number || 'N/A'}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="mb-2"><strong>Total Violations:</strong> ${relevantViolations.length}</p>
+                                    <div class="mb-2"><strong>Violation Types:</strong></div>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        ${Array.from(uniqueViolationTypes).map(type => `
+                                            <div class="badge bg-light text-dark">
+                                                ${type}
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Violations Table Card -->
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white">
+                            <h6 class="mb-0 d-flex align-items-center">
+                                <span class="material-icons me-2 text-secondary">list_alt</span>
+                                Violation Details
+                            </h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="py-3">CASE ID</th>
+                                            <th class="py-3">RECEIPT #</th>
+                                            <th class="py-3">VIOLATION TYPE</th>
+                                            <th class="py-3 text-end">FINE</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${relevantViolations.map(v => {
+                                                const violationTypes = Array.isArray(v.violation_types) && v.violation_types.length > 0 
+                                                    ? v.violation_types.join(', ') 
+                                                    : v.violation_type || 'N/A';
+                                                    
+                                                return `
+                                                    <tr>
+                                                        <td class="py-3">${v.id}</td>
+                                                        <td class="py-3">${v.receipt_number || receiptInfo.receiptNumber}</td>
+                                                        <td class="py-3">${violationTypes}</td>
+                                                        <td class="py-3 text-end">₱${parseFloat(v.fine_amount || 0).toFixed(2)}</td>
+                                                    </tr>
+                                                `;
+                                        }).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Update the modal content (but not visible)
+            modalContent.innerHTML = batchHtml;
+            
+            // Now directly call the print function
+            printBatchSummary();
+        })
+        .catch(error => {
+            console.error('Error processing batch details:', error);
+            alert('Error loading batch details: ' + error.message);
         });
+}
+
+// Replace the entire printBatchSummary function
+function printBatchSummary() {
+    // Create a new tab for printing
+    const printWindow = window.open('', '_blank');
+    
+    // Get the batch details content
+    const batchContent = document.getElementById('modal-batch-details-content');
+    
+    // Extract relevant information with better selectors
+    let receiptNumber = 'N/A';
+    let receiptPara = Array.from(batchContent.querySelectorAll('p')).find(p => 
+        p.textContent.includes('Receipt Number:')
+    );
+    if (receiptPara) {
+        const spanEl = receiptPara.querySelector('span');
+        if (spanEl) {
+            receiptNumber = spanEl.textContent.trim();
+        } else {
+            const text = receiptPara.textContent;
+            const receiptLabel = 'Receipt Number:';
+            const numIndex = text.indexOf(receiptLabel);
+            if (numIndex >= 0) {
+                receiptNumber = text.substring(numIndex + receiptLabel.length).trim();
+            }
+        }
+    }
+    
+    // Receipt date
+    let receiptDate = 'N/A';
+    let datePara = Array.from(batchContent.querySelectorAll('p')).find(p => 
+        p.textContent.includes('Payment Date:')
+    );
+    if (datePara) {
+        const spanEl = datePara.querySelector('span');
+        if (spanEl) {
+            receiptDate = spanEl.textContent.trim();
+        } else {
+            const text = datePara.textContent;
+            const dateLabel = 'Payment Date:';
+            const dateIndex = text.indexOf(dateLabel);
+            if (dateIndex >= 0) {
+                receiptDate = text.substring(dateIndex + dateLabel.length).trim();
+            }
+        }
+    }
+    
+    // Get total amount
+    let totalAmount = '₱0.00';
+    let amountPara = Array.from(batchContent.querySelectorAll('p')).find(p => 
+        p.textContent.includes('Amount Paid:')
+    );
+    if (amountPara) {
+        const spanEl = amountPara.querySelector('span');
+        if (spanEl) {
+            totalAmount = spanEl.textContent.trim();
+        } else {
+            const text = amountPara.textContent;
+            const amountLabel = 'Amount Paid:';
+            const amountIndex = text.indexOf(amountLabel);
+            if (amountIndex >= 0) {
+                totalAmount = text.substring(amountIndex + amountLabel.length).trim();
+            }
+        }
+    }
+    
+    // Get violator name
+    let violatorName = 'Unknown';
+    let violatorPara = Array.from(batchContent.querySelectorAll('p')).find(p => 
+        p.textContent.includes('Name:')
+    );
+    if (violatorPara) {
+        const text = violatorPara.textContent.trim();
+        const nameLabel = 'Name:';
+        const nameIndex = text.indexOf(nameLabel);
+        if (nameIndex >= 0) {
+            violatorName = text.substring(nameIndex + nameLabel.length).trim();
+        }
+    }
+    
+    // If still not found, try other methods
+    if (violatorName === 'Unknown') {
+        violatorPara = Array.from(batchContent.querySelectorAll('p')).find(p => 
+            p.textContent.includes('Violator:')
+        );
+        
+        if (violatorPara) {
+            const text = violatorPara.textContent.trim();
+            const nameLabel = 'Violator:';
+            const nameIndex = text.indexOf(nameLabel);
+            if (nameIndex >= 0) {
+                violatorName = text.substring(nameIndex + nameLabel.length).trim();
+            }
+        }
+    }
+    
+    // Process processor name
+    let processedBy = 'System';
+    let processorPara = Array.from(batchContent.querySelectorAll('p')).find(p => 
+        p.textContent.includes('Processed by:')
+    );
+    
+    if (processorPara) {
+        const spanEl = processorPara.querySelector('span');
+        if (spanEl) {
+            processedBy = spanEl.textContent.trim();
+        } else {
+            const text = processorPara.textContent.trim();
+            const processorLabel = 'Processed by:';
+            const processorIndex = text.indexOf(processorLabel);
+            if (processorIndex >= 0) {
+                processedBy = text.substring(processorIndex + processorLabel.length).trim();
+            }
+        }
+    }
+    
+    console.log("Extracted data for receipt:", { 
+        receiptNumber, 
+        receiptDate, 
+        totalAmount,
+        violatorName,
+        processedBy 
     });
-});
+    
+    // Get all violation types
+    const violationTypes = Array.from(batchContent.querySelectorAll('.badge.bg-light.text-dark'))
+        .map(badge => badge.textContent.trim())
+        .filter(text => text);
+    
+    // Get all case IDs and their corresponding violation types and amounts
+    const violations = [];
+    const rows = batchContent.querySelectorAll('table tbody tr');
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length >= 4 && !row.classList.contains('amount-row')) {
+            violations.push({
+                id: cells[0].textContent.trim(),
+                receipt: cells[1].textContent.trim(),
+                type: cells[2].textContent.trim(),
+                amount: cells[3].textContent.trim()
+            });
+        }
+    });
+    
+    // Check if we have receipt numbers in the table data and use the first valid one
+    if (violations.length > 0 && receiptNumber === 'N/A') {
+        // Find the first non-N/A receipt number
+        const firstValidReceipt = violations.find(v => v.receipt && v.receipt !== 'N/A');
+        if (firstValidReceipt && firstValidReceipt.receipt) {
+            receiptNumber = firstValidReceipt.receipt;
+        }
+    }
+    
+    // Try to find receipt date from other sources if still N/A
+    if (receiptDate === 'N/A') {
+        // Look for any other date in the modal
+        const dateEls = batchContent.querySelectorAll('*');
+        for (const el of dateEls) {
+            const text = el.textContent.trim();
+            // Look for date formats like "April 25, 2025" or similar
+            if (/[A-Z][a-z]+ \d{1,2}, \d{4}/.test(text) || 
+                /\d{1,2}\/\d{1,2}\/\d{4}/.test(text) || 
+                /\d{4}-\d{1,2}-\d{1,2}/.test(text)) {
+                if (!text.includes("Violation Date") && !text.includes("Date Filed")) {
+                    const dateMatch = text.match(/([A-Z][a-z]+ \d{1,2}, \d{4}|\d{1,2}\/\d{1,2}\/\d{4}|\d{4}-\d{1,2}-\d{1,2})/);
+                    if (dateMatch && dateMatch[1]) {
+                        receiptDate = dateMatch[1];
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // If still N/A, use today's date
+        if (receiptDate === 'N/A') {
+            const today = new Date();
+            receiptDate = today.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+    }
+    
+    // Calculate total amount if not extracted properly
+    if (totalAmount === '₱0.00') {
+        const totalPaid = violations.reduce((sum, v) => {
+            const numericAmount = parseFloat(v.amount.replace(/[^\d.-]/g, '')) || 0;
+            return sum + numericAmount;
+        }, 0);
+        
+        totalAmount = `₱${totalPaid.toFixed(2)}`;
+    }
+    
+    // Create print-friendly HTML with enhanced design and logos
+    const printContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Official Receipt #${receiptNumber}</title>
+            <style>
+                @page {
+                    size: A4;
+                    margin: 0;
+                }
+                
+                body {
+                    font-family: 'Arial', sans-serif;
+                    margin: 0;
+                    padding: 0;
+                    background-color: #f8f8f8;
+                    color: #333;
+                }
+                
+                .receipt-container {
+                    position: relative;
+                    width: 21cm;
+                    margin: 0 auto;
+                    background-color: white;
+                    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                    padding: 1.5cm;
+                    box-sizing: border-box;
+                }
+                
+                .watermark {
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%) rotate(-45deg);
+                    font-size: 120px;
+                    color: rgba(0,0,0,0.03);
+                    z-index: 0;
+                    pointer-events: none;
+                    font-weight: bold;
+                    white-space: nowrap;
+                }
+                
+                .header {
+                    text-align: center;
+                    border-bottom: 2px solid #000;
+                    padding-bottom: 15px;
+                    margin-bottom: 20px;
+                    position: relative;
+                    z-index: 1;
+                }
+                
+                .logo-container {
+                    display: flex;
+                    width: 100%;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+                
+                .logo {
+                    width: 80px;
+                    height: 80px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                
+                .logo img {
+                    max-width: 100%;
+                    max-height: 100%;
+                    object-fit: contain;
+                }
+                
+                .header-text {
+                    text-align: center;
+                    flex-grow: 1;
+                    padding: 0 15px;
+                }
+                
+                .header-text h1 {
+                    margin: 0;
+                    font-size: 16px;
+                    font-weight: bold;
+                    text-transform: uppercase;
+                }
+                
+                .header-text h2 {
+                    margin: 5px 0;
+                    font-size: 20px;
+                    font-weight: bold;
+                    color: #000;
+                    text-transform: uppercase;
+                }
+                
+                .header-text p {
+                    margin: 2px 0;
+                    font-size: 14px;
+                }
+                
+                .receipt-title {
+                    text-align: center;
+                    margin: 20px 0;
+                    position: relative;
+                    z-index: 1;
+                }
+                
+                .receipt-title h3 {
+                    display: inline-block;
+                    padding: 5px 20px;
+                    border: 2px solid #000;
+                    font-size: 16px;
+                    text-transform: uppercase;
+                    letter-spacing: 2px;
+                    background-color: white;
+                }
+                
+                .content {
+                    position: relative;
+                    z-index: 1;
+                }
+                
+                .receipt-info-container {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 15px;
+                    margin-bottom: 20px;
+                    border: 1px solid #ddd;
+                    padding: 15px;
+                }
+                
+                .receipt-info-item {
+                    line-height: 1.8;
+                }
+                
+                .receipt-info-item p {
+                    margin: 5px 0;
+                }
+                
+                .receipt-info-item strong {
+                    display: inline-block;
+                    min-width: 130px;
+                }
+                
+                .violation-types-section {
+                    margin-top: 20px;
+                    margin-bottom: 20px;
+                    border: 1px solid #ddd;
+                    padding: 15px;
+                }
+                
+                .violation-types-section h4 {
+                    margin-top: 0;
+                    margin-bottom: 10px;
+                    font-size: 16px;
+                    border-bottom: 1px solid #eee;
+                    padding-bottom: 8px;
+                }
+                
+                .violation-types {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                }
+                
+                .violation-type {
+                    background-color: #f1f1f1;
+                    padding: 6px 12px;
+                    border-radius: 4px;
+                    font-size: 13px;
+                }
+                
+                .details-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-bottom: 25px;
+                }
+                
+                .details-table th, .details-table td {
+                    border: 1px solid #ddd;
+                    padding: 10px;
+                    text-align: left;
+                }
+                
+                .details-table th {
+                    background-color: #2563eb;
+                    color: white;
+                    font-weight: bold;
+                    text-transform: uppercase;
+                    font-size: 12px;
+                }
+                
+                .details-table tr:nth-child(even) {
+                    background-color: #f9f9f9;
+                }
+                
+                .amount-row td {
+                    font-weight: bold;
+                    background-color: #f2f2f2;
+                }
+                
+                .signatures {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-top: 40px;
+                    margin-bottom: 20px;
+                }
+                
+                .signature-block {
+                    text-align: center;
+                    width: 45%;
+                }
+                
+                .signature-line {
+                    border-top: 1px solid #000;
+                    padding-top: 5px;
+                    margin-top: 40px;
+                    font-weight: bold;
+                    font-size: 14px;
+                }
+                
+                .signature-title {
+                    font-size: 12px;
+                    margin-top: 5px;
+                }
+                
+                .footer {
+                    text-align: center;
+                    margin-top: 20px;
+                    font-size: 12px;
+                    border-top: 1px solid #000;
+                    padding-top: 10px;
+                    position: relative;
+                    z-index: 1;
+                }
+                
+                .document-number {
+                    position: absolute;
+                    top: 1.5cm;
+                    right: 1.5cm;
+                    font-size: 14px;
+                    font-weight: bold;
+                    border: 1px solid #000;
+                    padding: 5px 10px;
+                    background-color: #f2f2f2;
+                }
+                
+                .paid-status {
+                    color: #16a34a; 
+                    font-weight: bold;
+                }
+                
+                .print-buttons {
+                    margin-top: 20px;
+                    display: flex;
+                    justify-content: center;
+                    gap: 10px;
+                }
+                
+                .print-button, .close-button {
+                    padding: 10px 25px;
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    color: white;
+                    font-size: 14px;
+                }
+                
+                .print-button {
+                    background-color: #2563eb;
+                }
+                
+                .close-button {
+                    background-color: #dc2626;
+                }
+                
+                @media print {
+                    body {
+                        background-color: white;
+                    }
+                    
+                    .receipt-container {
+                        box-shadow: none;
+                        padding: 0.5cm;
+                        width: 100%;
+                    }
+                    
+                    .print-buttons {
+                        display: none;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="receipt-container">
+                <div class="watermark">OFFICIAL RECEIPT</div>
+                
+                <div class="document-number">No. ${receiptNumber}</div>
+                
+                <div class="header">
+                    <div class="logo-container">
+                        <div class="logo">
+                            <img src="/static/images/logo.png" alt="City of Bayawan Seal">
+                        </div>
+                        <div class="header-text">
+                            <div class="republic-title">REPUBLIC OF THE PHILIPPINES</div>
+                            <div class="office-title">CITY TRANSPORT AND TRAFFIC MANAGEMENT OFFICE</div>
+                            <p>Traffic Violation Management System</p>
+                            <p>City Government of Bayawan City</p>
+                        </div>
+                        <div class="logo">
+                            <img src="/static/images/logo_ibayaw.png" alt="iBayaw TriGrp Logo">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="receipt-title">
+                    <h3>Official Receipt</h3>
+                </div>
+                
+                <div class="content">
+                    <div class="receipt-info-container">
+                        <div class="receipt-info-item">
+                            <p><strong>Receipt Number:</strong> ${receiptNumber}</p>
+                            <p><strong>Receipt Date:</strong> ${receiptDate}</p>
+                            <p><strong>Total Violations:</strong> ${violations.length}</p>
+                        </div>
+                        <div class="receipt-info-item">
+                            <p><strong>Violator:</strong> ${violatorName}</p>
+                            <p><strong>Total Amount:</strong> ${totalAmount}</p>
+                            <p><strong>Payment Status:</strong> <span class="paid-status">PAID</span></p>
+                        </div>
+                    </div>
+                    
+                    <div class="violation-types-section">
+                        <h4>Violation Types</h4>
+                        <div class="violation-types">
+                            ${violationTypes.map(type => `<div class="violation-type">${type}</div>`).join('')}
+                        </div>
+                    </div>
+                    
+                    <table class="details-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 15%;">CASE ID</th>
+                                <th style="width: 15%;">RECEIPT #</th>
+                                <th style="width: 50%;">VIOLATION TYPE</th>
+                                <th style="width: 20%;">AMOUNT</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${violations.map(v => `
+                                <tr>
+                                    <td>${v.id}</td>
+                                    <td>${v.receipt}</td>
+                                    <td>${v.type}</td>
+                                    <td>${v.amount}</td>
+                                </tr>
+                            `).join('')}
+                            <tr class="amount-row">
+                                <td colspan="3" style="text-align: right;"><strong>TOTAL AMOUNT PAID:</strong></td>
+                                <td><strong>${totalAmount}</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div class="signatures">
+                        <div class="signature-block">
+                            <div class="signature-line">${processedBy}</div>
+                            <div class="signature-title">Cashier/Authorized Officer</div>
+                        </div>
+                        <div class="signature-block">
+                            <div class="signature-line">${violatorName}</div>
+                            <div class="signature-title">Received by</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="footer">
+                    <p>This is an official document of the City Transport and Traffic Management Office.</p>
+                    <p>Any alteration or erasure on this receipt renders it void.</p>
+                    <p>Receipt generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</p>
+                </div>
+            </div>
+            
+            <div class="print-buttons">
+                <button class="print-button" onclick="window.print();">
+                    Print Receipt
+                </button>
+                <button class="close-button" onclick="window.close();">
+                    Close
+                </button>
+            </div>
+        </body>
+        </html>
+    `;
+    
+    // Write to the new tab and print
+    printWindow.document.open();
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    
+    // Wait for content to load before printing
+    printWindow.onload = function() {
+        setTimeout(function() {
+            printWindow.print();
+        }, 300);
+    };
+}
 </script>
 {% endblock %} 

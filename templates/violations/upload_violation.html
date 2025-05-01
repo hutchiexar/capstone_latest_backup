@@ -168,8 +168,8 @@
                         <div class="form-group">
                             <label for="vehicle_penalty_type" class="form-label">Vehicle Penalty Type</label>
                             <select class="form-control" id="vehicle_penalty_type" name="vehicle_penalty_type" onchange="recalculateTotal()">
-                                <option value="regular">Regular Vehicles (₱300.00)</option>
-                                <option value="potpot">Pot-Pot / e-Pot Vehicles (₱50.00)</option>
+                                <option value="regular">Regular Vehicles</option>
+                                <option value="potpot">Pot-Pot / e-Pot Vehicles</option>
                             </select>
                             <small class="form-text text-muted">Select the appropriate penalty rate based on the vehicle type.</small>
                         </div>
@@ -452,7 +452,7 @@
                                         <div class="alert alert-info mt-2">
                                             <h6 class="alert-heading mb-2">Violation Penalty Information</h6>
                                             <div id="penalty_breakdown">
-                                                <div><strong>Per Violation Rate:</strong> ₱300.00 for each violation by Regular Vehicles or ₱50.00 for each violation by Pot-Pot/e-Pot Vehicles</div>
+                                                <div><strong>Per Violation Rate:</strong> Base rate varies by vehicle type (Regular Vehicles or Pot-Pot/e-Pot Vehicles)</div>
                                                 <div><strong>Multiple Violations:</strong> The total amount will be the base rate multiplied by the number of violations</div>
                                                 <div><strong>TDZ Violations:</strong> Penalties are doubled in Traffic Discipline Zones</div>
                                                 <div><strong>Late Payment:</strong> 1% monthly interest will be applied after the 3-day payment deadline</div>
@@ -488,7 +488,6 @@
                                             </ul>
                                             <button class="btn btn-sm btn-secondary" onclick="document.getElementById('debug_info').style.display = 'none';">Hide Debug Info</button>
                                         </div>
-                                        <button class="btn btn-sm btn-outline-secondary mb-3" onclick="document.getElementById('debug_info').style.display = 'block';">Show Debug Info</button>
                                         
                                         <!-- Multiple Violations Selection -->
                                         <div class="violation-selection-container mb-3">
@@ -498,26 +497,16 @@
                                                         <option value="">Select violation type to add</option>
                                                         {% if violation_types %}
                                                             {% for violation_type in violation_types %}
-                                                                <option value="{{ violation_type.name }}" data-amount="{{ violation_type.amount }}">
-                                                                    {{ violation_type.name }}
+                                                                {% if violation_type.classification == 'NCAP' %}
+                                                                <option value="{{ violation_type.name }}" 
+                                                                        data-amount="{{ violation_type.amount }}"
+                                                                        data-classification="{{ violation_type.classification }}">
+                                                                    {{ violation_type.name }} (₱{{ violation_type.amount }})
                                                                 </option>
-                                                            {% endfor %}
-                                                        {% elif violation_choices %}
-                                                            {% for code, name in violation_choices %}
-                                                                <option value="{{ name }}" data-amount="300">
-                                                                    {{ name }}
-                                                                </option>
+                                                                {% endif %}
                                                             {% endfor %}
                                                         {% else %}
-                                                            <!-- NCAP specific fallback options -->
-                                                            <option value="Beating the red light" data-amount="300">Beating the red light</option>
-                                                            <option value="Illegal parking" data-amount="300">Illegal parking</option>
-                                                            <option value="Overspeeding" data-amount="300">Overspeeding</option>
-                                                            <option value="No helmet" data-amount="300">No helmet</option>
-                                                            <option value="Counterflowing" data-amount="300">Counterflowing</option>
-                                                            <option value="Reckless driving" data-amount="300">Reckless driving</option>
-                                                            <option value="No license" data-amount="300">No license</option>
-                                                            <option value="No registration" data-amount="300">No registration</option>
+                                                            <option value="" disabled>No violation types available</option>
                                                         {% endif %}
                                                     </select>
                                                 </div>
@@ -2141,15 +2130,13 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         // Apply vehicle type rate adjustment to all violations
         updateRates: function(vehicleType) {
-            const multiplier = vehicleType === 'potpot' ? 0.167 : 1.0; // 50/300 = 0.167
-            
             this.items.forEach(v => {
                 if (vehicleType === 'potpot') {
-                    // For potpot vehicles, either use the multiplier or cap at 50
-                    v.rate = Math.min(v.originalRate * multiplier, 50);
-                } else {
-                    // For regular vehicles, use the original rate from the database
+                    // For potpot vehicles, use the actual amount from the violation type model
                     v.rate = v.originalRate;
+                } else {
+                    // For regular vehicles, always override to 300
+                    v.rate = 300;
                 }
             });
         },
@@ -2293,6 +2280,30 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         const violationText = selectedOption.text;
+        
+        // Check if this violation is already in the list
+        const existingViolations = window.violationTracker.getViolations();
+        const isDuplicate = existingViolations.some(v => v.text === violationText);
+        
+        if (isDuplicate) {
+            // Show error if violation is already added
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Duplicate Violation',
+                    text: 'This violation has already been added to the list.',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+            }
+            
+            // Reset selector
+            violationSelector.selectedIndex = 0;
+            return;
+        }
+        
         const violationTypeInput = document.getElementById('violation_type');
         const violationPenaltiesInput = document.getElementById('violation_penalties');
         const selectedViolationsBody = document.getElementById('selected_violations_body');
@@ -2445,25 +2456,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function recalculateTotal() {
     var vehicleType = document.getElementById('vehicle_penalty_type').value;
-    var fineAmount = 0;
     
+    // Instead of hardcoded values, use the violation rates from the selected violations
     if (vehicleType === 'regular') {
-        fineAmount = 300.00;
         // Show vehicle information section and hide operator details for regular vehicles
         document.getElementById('vehicle_information_section').style.display = 'block';
         document.getElementById('operator_details_section').style.display = 'none';
     } else if (vehicleType === 'potpot') {
-        fineAmount = 50.00;
         // Hide vehicle information section and show operator details for potpot vehicles
         document.getElementById('vehicle_information_section').style.display = 'none';
         document.getElementById('operator_details_section').style.display = 'block';
     }
     
-    // Set the penalty amount based on vehicle type
-    document.getElementById('penalty_amount').value = fineAmount;
+    // Calculate final amount using the violation tracker
+    var finalAmount = window.violationTracker ? window.violationTracker.getTotal() : 0;
     
-    // Calculate final amount (apply multipliers if needed)
-    var finalAmount = fineAmount;
+    // Apply TDZ multiplier if checked
     if (document.getElementById('is_tdz_violation').checked) {
         finalAmount *= 2;
         document.getElementById('tdz_multiplier_info').style.display = 'block';
@@ -2479,9 +2487,8 @@ function recalculateTotal() {
 }
 
 function updatePenaltyInfo(vehicleType, violationCount, totalAmount) {
-    var baseRate = vehicleType === 'regular' ? '₱300.00' : '₱50.00';
+    // Determine base rate message based on actual violation types rather than hardcoded values
     var penaltyInfoText = `
-        <strong>Base Penalty:</strong> ${baseRate} per violation<br>
         <strong>Number of Violations:</strong> ${violationCount}<br>
         <strong>Total Amount:</strong> ₱${totalAmount.toFixed(2)}<br>
         <strong>Late Payment:</strong> Additional 2% interest per month<br>
@@ -2844,29 +2851,6 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log("Second option text:", violationSelector.options[1].text);
         } else {
             console.log("WARNING: Only the placeholder option exists in the dropdown!");
-            
-            // Add fallback NCAP violation types if only the placeholder exists
-            const defaultNCAPViolations = [
-                { name: "Beating the red light", amount: 300 },
-                { name: "Illegal parking", amount: 300 },
-                { name: "Overspeeding", amount: 300 },
-                { name: "No helmet", amount: 300 },
-                { name: "Counterflowing", amount: 300 },
-                { name: "Reckless driving", amount: 300 },
-                { name: "Driving through restricted lanes", amount: 300 },
-                { name: "Illegal U-turn", amount: 300 }
-            ];
-            
-            // Add these default options to the selector
-            defaultNCAPViolations.forEach(violation => {
-                const option = document.createElement('option');
-                option.value = violation.name;
-                option.text = violation.name;
-                option.dataset.amount = violation.amount;
-                violationSelector.appendChild(option);
-            });
-            
-            console.log("Added fallback NCAP violation types. New count:", violationSelector.options.length);
         }
     } else {
         console.log("ERROR: violation_selector element not found in the DOM");

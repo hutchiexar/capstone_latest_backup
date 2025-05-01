@@ -134,12 +134,19 @@
                                            title="View Details and Violations">
                                         <span class="material-icons">visibility</span>
                                     </button>
-                                    <a href="{% url 'adjudication_form' violation.id %}" 
+                                    <a href="{% url 'violation_detail' violation.id %}" 
                                        class="btn btn-purple action-btn"
                                        data-bs-toggle="tooltip"
                                        data-bs-placement="top"
-                                       title="Adjudicate Case">
+                                       title="View Violation Details">
                                         <span class="material-icons">balance</span>
+                                    </a>
+                                    <a href="{% url 'adjudication_page' violator_id=violation.violator.id %}" 
+                                       class="btn btn-success action-btn"
+                                       data-bs-toggle="tooltip"
+                                       data-bs-placement="top"
+                                       title="New Adjudication Interface">
+                                        <span class="material-icons">gavel</span>
                                     </a>
                                 </div>
                             </td>
@@ -190,8 +197,15 @@
                                 <button type="button" class="btn btn-primary action-btn view-violation-btn" data-violation-id="{{ violation.id }}">
                                     <span class="material-icons">visibility</span>
                                 </button>
-                                <a href="{% url 'adjudication_form' violation.id %}" class="btn btn-purple action-btn">
+                                <a href="{% url 'violation_detail' violation.id %}" class="btn btn-purple action-btn">
                                     <span class="material-icons">balance</span>
+                                </a>
+                                <a href="{% url 'adjudication_page' violator_id=violation.violator.id %}" 
+                                   class="btn btn-success action-btn"
+                                   data-bs-toggle="tooltip"
+                                   data-bs-placement="top"
+                                   title="New Adjudication Interface">
+                                    <span class="material-icons">gavel</span>
                                 </a>
                             </div>
                         </div>

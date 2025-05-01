@@ -4,10 +4,21 @@
 
 {% block content %}
 <div class="container-fluid px-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0">Adjudication Dashboard</h1>
-        <div class="d-flex gap-2">
-            <a href="{% url 'rejected_adjudications' %}" class="btn btn-primary d-flex align-items-center gap-2">
+    <!-- Header Container Card -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="header-icon bg-primary-subtle rounded-3 p-3">
+                        <span class="material-icons text-primary" style="font-size: 2rem;">gavel</span>
+                    </div>
+                    <div>
+                        <h1 class="h3 mb-1 fw-bold text-gray-800">Adjudication Dashboard</h1>
+                        <p class="mb-0 text-muted">Monitor and manage adjudication activities</p>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-md-0 mt-3">
+                    <a href="{% url 'rejected_adjudications' %}" class="btn btn-danger d-flex align-items-center gap-2 shadow-sm">
                 <span class="material-icons">warning</span>
                 <span>Rejected Adjudications</span>
             </a>
@@ -15,6 +26,8 @@
                 <span class="material-icons">gavel</span>
                 <span>Adjudication List</span>
             </a>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -22,7 +35,12 @@
     <div class="row g-3 mb-4">
         <!-- Total Violations Card -->
         <div class="col-6 col-xl-3 col-md-6">
-            <div class="card stat-card h-100">
+            <div class="card stat-card h-100" data-loading="true">
+                <div class="card-loading animate-pulse p-4 rounded-xl d-none">
+                    <div class="skeleton-title"></div>
+                    <div class="skeleton-value"></div>
+                    <div class="skeleton-text"></div>
+                </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div class="stat-content">
@@ -40,12 +58,21 @@
                         </div>
                     </div>
                 </div>
+                <div class="empty-state text-center p-4 d-none">
+                    <span class="material-icons empty-icon">description</span>
+                    <p class="text-muted">No violations recorded</p>
+                </div>
             </div>
         </div>
 
         <!-- Total Adjudications Card -->
         <div class="col-6 col-xl-3 col-md-6">
-            <div class="card stat-card h-100">
+            <div class="card stat-card h-100" data-loading="true">
+                <div class="card-loading animate-pulse p-4 rounded-xl d-none">
+                    <div class="skeleton-title"></div>
+                    <div class="skeleton-value"></div>
+                    <div class="skeleton-text"></div>
+                </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div class="stat-content">
@@ -63,12 +90,21 @@
                         </div>
                     </div>
                 </div>
+                <div class="empty-state text-center p-4 d-none">
+                    <span class="material-icons empty-icon">gavel</span>
+                    <p class="text-muted">No adjudications recorded</p>
+                </div>
             </div>
         </div>
 
         <!-- Approved Adjudications Card -->
         <div class="col-6 col-xl-3 col-md-6">
-            <div class="card stat-card h-100">
+            <div class="card stat-card h-100" data-loading="true">
+                <div class="card-loading animate-pulse p-4 rounded-xl d-none">
+                    <div class="skeleton-title"></div>
+                    <div class="skeleton-value"></div>
+                    <div class="skeleton-text"></div>
+                </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div class="stat-content">
@@ -86,12 +122,21 @@
                         </div>
                     </div>
                 </div>
+                <div class="empty-state text-center p-4 d-none">
+                    <span class="material-icons empty-icon">check_circle</span>
+                    <p class="text-muted">No approved adjudications</p>
+                </div>
             </div>
         </div>
 
-        <!-- Rejected Adjudications Card -->
+        <!-- Rejected Card -->
         <div class="col-6 col-xl-3 col-md-6">
-            <div class="card stat-card h-100">
+            <div class="card stat-card h-100" data-loading="true">
+                <div class="card-loading animate-pulse p-4 rounded-xl d-none">
+                    <div class="skeleton-title"></div>
+                    <div class="skeleton-value"></div>
+                    <div class="skeleton-text"></div>
+                </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div class="stat-content">
@@ -111,149 +156,74 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Pending Approval Card -->
-        <div class="col-6 col-xl-3 col-md-6">
-            <div class="card stat-card h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div class="stat-content">
-                            <div class="d-flex align-items-center gap-2 mb-2">
-                                <div class="stat-icon warning-icon">
-                                    <span class="material-icons">pending</span>
-                                </div>
-                                <h6 class="text-uppercase mb-0">Pending Approval</h6>
-                            </div>
-                            <h2 class="mb-2">{{ pending_adjudications }}</h2>
-                            <div class="trend-info">
-                                <span class="material-icons warning">hourglass_empty</span>
-                                <span>Awaiting supervisor approval</span>
-                            </div>
-                        </div>
-                    </div>
+                <div class="empty-state text-center p-4 d-none">
+                    <span class="material-icons empty-icon">cancel</span>
+                    <p class="text-muted">No rejected adjudications</p>
                 </div>
             </div>
         </div>
-    </div>
+                                </div>
 
-    <!-- Adjudicator Performance -->
-    <div class="row g-4 mb-4">
-        <div class="col-xl-6">
-            <div class="card h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Top Adjudicators</h5>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" 
+    <!-- Recent Adjudications (Full Width) -->
+    <div class="card table-card shadow-sm border-0 rounded-3" data-loading="true">
+        <div class="card-header bg-transparent py-3 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <span class="material-icons text-primary me-2">history</span>
+                <h5 class="mb-0">Recent Adjudications</h5>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-light shadow-sm" 
                             onclick="refreshData()"
                             title="Refresh Data">
                         <span class="material-icons">refresh</span>
                     </button>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Adjudicator</th>
-                                    <th>Total</th>
-                                    <th>Approved</th>
-                                    <th>Rejected</th>
-                                    <th>Pending</th>
-                                    <th>Performance</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for adjudicator in adjudicator_summary %}
-                                <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="avatar avatar-sm me-2 bg-primary text-white">
-                                                {{ adjudicator.adjudicated_by__first_name|first }}{{ adjudicator.adjudicated_by__last_name|first }}
-                                            </div>
-                                            <div>
-                                                {% if adjudicator.adjudicated_by__first_name %}
-                                                    {{ adjudicator.adjudicated_by__first_name }} {{ adjudicator.adjudicated_by__last_name }}
-                                                {% else %}
-                                                    {{ adjudicator.adjudicated_by__username }}
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td><strong>{{ adjudicator.total }}</strong></td>
-                                    <td class="text-success">{{ adjudicator.approved }}</td>
-                                    <td class="text-danger">{{ adjudicator.rejected }}</td>
-                                    <td class="text-warning">{{ adjudicator.pending }}</td>
-                                    <td>
-                                        {% if adjudicator.total > 0 %}
-                                            {% with approval_rate=adjudicator.approved|floatformat:0|add:"0" %}
-                                            {% with total=adjudicator.total|floatformat:0|add:"0" %}
-                                            {% with percent=approval_rate|mul:100|floordiv:total %}
-                                                <div class="progress" style="height: 8px;" title="{{ percent }}% approval rate">
-                                                    <div class="progress-bar bg-success" role="progressbar" 
-                                                        style="width: {{ percent }}%;" 
-                                                        aria-valuenow="{{ percent }}" aria-valuemin="0" aria-valuemax="100">
-                                                    </div>
-                                                </div>
-                                                <small class="text-muted">{{ percent }}% approval</small>
-                                            {% endwith %}
-                                            {% endwith %}
-                                            {% endwith %}
-                                        {% else %}
-                                            <small class="text-muted">No data</small>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="6" class="text-center py-4">
-                                        <div class="empty-state">
-                                            <span class="material-icons empty-icon">person_off</span>
-                                            <p class="text-muted">No adjudicator data available</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                <a href="{% url 'adjudication_list' %}" class="btn btn-sm btn-primary shadow-sm">
+                    <span class="material-icons d-none d-sm-inline me-1">visibility</span>
+                    <span>View All</span>
+                </a>
             </div>
-        </div>
-
-        <!-- Recent Adjudications -->
-        <div class="col-xl-6">
-            <div class="card h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Recent Adjudications</h5>
-                    <a href="{% url 'adjudication_list' %}" class="btn btn-sm btn-outline-primary">
-                        View All
-                    </a>
                 </div>
                 <div class="card-body p-0">
-                    <div class="list-group list-group-flush">
+            <div class="table-loading animate-pulse d-none">
+                <div class="skeleton-table-row"></div>
+                <div class="skeleton-table-row"></div>
+                <div class="skeleton-table-row"></div>
+            </div>
+            
+            <!-- Desktop View -->
+            <div class="list-group list-group-flush d-none d-md-block">
                         {% for adj in recent_adjudications %}
-                        <div class="list-group-item px-4">
+                <div class="list-group-item px-4 py-3 list-item-hover">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <div class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center gap-2 mb-1">
                                         <span class="badge rounded-pill
-                                                    {% if adj.status == 'APPROVED' %}bg-success
-                                                    {% elif adj.status == 'REJECTED' %}bg-danger
-                                                    {% elif adj.status == 'ADJUDICATED' %}bg-warning
-                                                    {% else %}bg-secondary{% endif %}">
+                                            {% if adj.status == 'APPROVED' %}text-bg-success
+                                            {% elif adj.status == 'REJECTED' %}text-bg-danger
+                                            {% elif adj.status == 'ADJUDICATED' %}text-bg-warning
+                                            {% else %}text-bg-secondary{% endif %}">
                                             {{ adj.status }}
                                         </span>
-                                        <h6 class="mb-0">Citation #{{ adj.id }}</h6>
+                                <h6 class="mb-0 fw-bold">Citation #{{ adj.id }}</h6>
                                     </div>
                                     <p class="text-muted small mb-0">
-                                        {{ adj.violator.first_name }} {{ adj.violator.last_name }} | 
-                                        Adjudicated by {{ adj.adjudicated_by.get_full_name }} | 
-                                        ₱{{ adj.fine_amount }}
+                                <span class="me-2"><i class="material-icons" style="font-size: 14px; vertical-align: text-top;">person</i> {{ adj.violator.first_name }} {{ adj.violator.last_name }}</span>
+                                <span class="me-2"><i class="material-icons" style="font-size: 14px; vertical-align: text-top;">gavel</i> {{ adj.adjudicated_by.get_full_name }}</span>
+                                <span><i class="material-icons" style="font-size: 14px; vertical-align: text-top;">payments</i> ₱{{ adj.fine_amount }}</span>
                                     </p>
                                 </div>
-                                <div>
-                                    <small class="text-muted">{{ adj.adjudication_date|date:"M d, Y" }}</small>
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="badge bg-light text-dark rounded-pill shadow-sm">
+                                <i class="material-icons" style="font-size: 12px; vertical-align: middle;">calendar_today</i>
+                                {{ adj.adjudication_date|date:"M d, Y" }}
+                            </span>
+                            <div class="action-buttons d-flex gap-2">
+                                <button type="button" class="btn btn-action btn-view" 
+                                        data-adj-id="{{ adj.id }}"
+                                        title="View Details">
+                                    <span class="material-icons">visibility</span>
+                                </button>
+                            </div>
                                 </div>
                             </div>
                         </div>
@@ -265,104 +235,211 @@
                             </div>
                         </div>
                         {% endfor %}
+            </div>
+            
+            <!-- Mobile View -->
+            <div class="d-md-none">
+                {% if recent_adjudications %}
+                <div class="mobile-adjudications">
+                    {% for adj in recent_adjudications %}
+                    <div class="mobile-adjudication-card p-3 border-bottom">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <div class="text-muted small">{{ adj.adjudication_date|date:"M d, Y" }}</div>
+                                <div class="fw-semibold">Citation #{{ adj.id }}</div>
+                            </div>
+                            <span class="badge rounded-pill
+                                {% if adj.status == 'APPROVED' %}text-bg-success
+                                {% elif adj.status == 'REJECTED' %}text-bg-danger
+                                {% elif adj.status == 'ADJUDICATED' %}text-bg-warning
+                                {% else %}text-bg-secondary{% endif %}">
+                                {{ adj.status }}
+                            </span>
+                        </div>
+
+                        <div class="adjudication-details mb-3">
+                            <div class="mb-2">
+                                <span class="text-muted">Violator:</span>
+                                <span class="ms-1">{{ adj.violator.first_name }} {{ adj.violator.last_name }}</span>
+                            </div>
+                            <div class="mb-2">
+                                <span class="text-muted">Adjudicated by:</span>
+                                <span class="ms-1">{{ adj.adjudicated_by.get_full_name }}</span>
+                            </div>
+                            <div class="mb-2">
+                                <span class="text-muted">Amount:</span>
+                                <span class="ms-1 fw-semibold">₱{{ adj.fine_amount }}</span>
+                            </div>
+                        </div>
+
+                        <div class="action-buttons d-flex gap-2">
+                            <button type="button" class="btn btn-action btn-view flex-grow-1" 
+                                    data-adj-id="{{ adj.id }}"
+                                    title="View Details">
+                                <span class="material-icons me-2">visibility</span>
+                                <span>View Details</span>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <div class="empty-state">
+                        <span class="material-icons empty-icon mb-2" style="font-size: 3rem; color: #e5e7eb;">gavel_off</span>
+                        <p class="mb-0 text-muted">No adjudications recorded yet</p>
                     </div>
                 </div>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
 
 <style>
+    /* Enhanced Dashboard Styling */
 .stat-card {
-    background: white;
+        transition: all 0.3s ease;
+        border: none;
     border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
-    transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        background-color: #fff;
+        overflow: hidden;
 }
 
 .stat-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    }
+
+    .stat-card .card-body {
+        padding: 1.5rem;
+    }
+
+    .stat-content {
+        width: 100%;
+    }
+
+    .stat-card h6 {
+        color: var(--bs-gray-600);
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+
+    .stat-card h2 {
+        color: var(--bs-gray-900);
+        font-size: 1.75rem;
+        font-weight: 700;
+        line-height: 1;
 }
 
 .stat-icon {
     width: 40px;
     height: 40px;
-    border-radius: 12px;
-    background: rgba(37, 99, 235, 0.1);
+        border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-}
-
-.stat-icon .material-icons {
-    color: #2563eb;
-    font-size: 24px;
+        background-color: var(--bs-primary-subtle);
+        color: var(--bs-primary);
+        flex-shrink: 0;
 }
 
 .success-icon {
-    background: rgba(16, 185, 129, 0.1);
-}
-
-.success-icon .material-icons {
-    color: #10b981;
+        background-color: var(--bs-success-subtle);
+        color: var(--bs-success);
 }
 
 .error-icon {
-    background: rgba(239, 68, 68, 0.1);
-}
-
-.error-icon .material-icons {
-    color: #ef4444;
+        background-color: var(--bs-danger-subtle);
+        color: var(--bs-danger);
 }
 
 .warning-icon {
-    background: rgba(245, 158, 11, 0.1);
+        background-color: var(--bs-warning-subtle);
+        color: var(--bs-warning);
 }
 
-.warning-icon .material-icons {
-    color: #f59e0b;
+    .stat-icon .material-icons {
+        font-size: 1.25rem;
 }
 
 .trend-info {
     display: flex;
     align-items: center;
-    gap: 5px;
-    font-size: 0.85rem;
-    color: #64748b;
+        gap: 0.5rem;
+        font-size: 0.75rem;
+        color: var(--bs-gray-600);
+        margin-top: 0.5rem;
 }
 
 .trend-info .material-icons {
-    font-size: 16px;
+        font-size: 1rem;
 }
 
-.trend-info .success {
-    color: #10b981;
+    .success {
+        color: var(--bs-success);
 }
 
-.trend-info .error {
-    color: #ef4444;
+    .error {
+        color: var(--bs-danger);
 }
 
-.trend-info .warning {
-    color: #f59e0b;
+    .warning {
+        color: var(--bs-warning);
 }
 
-.trend-info .info {
-    color: #3b82f6;
+    .info {
+        color: var(--bs-primary);
 }
 
-.avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    /* Card Styling */
+    .table-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        margin-bottom: 2rem;
+    }
+
+    .table-card .card-header {
+        background-color: transparent;
+        border-bottom: 1px solid var(--bs-gray-200);
+        padding: 1rem 1.5rem;
+    }
+    
+    .table-card h5 {
+        font-size: 1.1rem;
     font-weight: 600;
-    font-size: 0.75rem;
+    }
+
+    /* List Items */
+    .list-group-item {
+        border-left: none;
+        border-right: none;
+        border-color: rgba(0,0,0,0.05);
+        transition: all 0.15s ease;
+    }
+
+    .list-item-hover:hover {
+        background-color: rgba(37, 99, 235, 0.03);
+        transform: translateX(3px);
+    }
+
+    /* Badge Styling */
+    .badge {
+        padding: 0.4rem 0.8rem;
+        font-weight: 500;
+        letter-spacing: 0.02em;
+    }
+
+    .badge.rounded-pill {
+        padding-left: 0.8rem;
+        padding-right: 0.8rem;
 }
 
+    /* Empty State */
 .empty-state {
     padding: 2rem 0;
     display: flex;
@@ -375,27 +452,317 @@
     font-size: 48px;
     color: #cbd5e1;
     margin-bottom: 1rem;
+        opacity: 0.7;
 }
 
-.list-group-item {
+    /* Button styling */
+    .btn {
+        font-weight: 500;
+        border-radius: 6px;
     transition: all 0.2s ease;
 }
 
-.list-group-item:hover {
-    background-color: #f8fafc;
+    .btn-primary {
+        background-color: #2563eb;
+        border-color: #2563eb;
+    }
+
+    .btn-primary:hover {
+        background-color: #1d4ed8;
+        border-color: #1d4ed8;
+        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+    }
+
+    .btn-outline-primary {
+        color: #2563eb;
+        border-color: #2563eb;
+    }
+
+    .btn-outline-primary:hover {
+        background-color: #2563eb;
+        color: white;
+        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+    }
+
+    .btn-light {
+        background-color: white;
+        border-color: #e5e7eb;
+    }
+
+    .btn-light:hover {
+        background-color: #f9fafb;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    
+    .btn-danger {
+        background-color: #dc3545;
+        border-color: #dc3545;
+    }
+    
+    .btn-danger:hover {
+        background-color: #bb2d3b;
+        border-color: #b02a37;
+        box-shadow: 0 4px 10px rgba(220, 53, 69, 0.25);
+    }
+
+    /* Mobile Card View Styles */
+    .mobile-adjudication-card {
+        background-color: #fff;
+        transition: background-color 0.2s ease;
+    }
+
+    .mobile-adjudication-card:hover {
+        background-color: var(--bs-gray-100);
+    }
+
+    .mobile-adjudication-card .btn-action {
+        width: auto;
+        height: auto;
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--bs-gray-200);
+        background-color: #fff;
+        color: var(--bs-gray-700);
+    }
+
+    .mobile-adjudication-card .btn-view {
+        background-color: var(--bs-primary-subtle);
+        color: var(--bs-primary);
+        border-color: var(--bs-primary-subtle);
+    }
+
+    .mobile-adjudication-card .btn-action:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    /* Action Button Styling */
+    .btn-action {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        background-color: var(--bs-gray-100);
+        border: none;
+    }
+
+    .btn-action:hover {
+        transform: translateY(-2px);
+        background-color: var(--bs-gray-200);
+    }
+
+    .btn-action .material-icons {
+        font-size: 20px;
+    }
+    
+    /* Loading States */
+    .card-loading, .table-loading {
+        padding: 1.5rem;
+    }
+    
+    .skeleton-title {
+        height: 20px;
+        width: 40%;
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+        border-radius: 4px;
+        margin-bottom: 12px;
+    }
+    
+    .skeleton-value {
+        height: 30px;
+        width: 60%;
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+        border-radius: 4px;
+        margin-bottom: 12px;
+    }
+    
+    .skeleton-text {
+        height: 16px;
+        width: 80%;
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+        border-radius: 4px;
+    }
+    
+    .skeleton-table-row {
+        height: 60px;
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+        margin-bottom: 1px;
+    }
+    
+    @keyframes loading {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+    
+    .animate-pulse {
+        animation-duration: 2s;
+        animation-iteration-count: infinite;
+        animation-name: pulse;
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 992px) {
+        .stat-card h2 {
+            font-size: 1.5rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .container-fluid {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }
+        
+        .stat-card .card-body {
+            padding: 1rem;
+        }
+        
+        .stat-card h2 {
+            font-size: 1.25rem;
+        }
+        
+        .stat-icon {
+            width: 36px;
+            height: 36px;
+        }
+        
+        .stat-icon .material-icons {
+            font-size: 1.125rem;
+        }
+}
+    
+    @media (max-width: 575.98px) {
+        .stat-card {
+            border-radius: 12px;
+        }
+
+        .stat-card .card-body {
+            padding: 1rem;
+        }
+
+        .stat-card h2 {
+            font-size: 1.25rem;
+        }
+
+        .stat-icon {
+            width: 32px;
+            height: 32px;
+        }
+
+        .stat-icon .material-icons {
+            font-size: 1rem;
+        }
+
+        .trend-info {
+            font-size: 0.65rem;
+        }
+    }
+
+    /* Rotation Animation */
+    @keyframes rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    .rotating {
+        animation: rotate 1s linear infinite;
+        display: inline-block;
 }
 </style>
 
 <script>
-// Function to refresh data
+// Function to refresh data with animation
 function refreshData() {
+    const refreshBtn = document.querySelector('button[onclick="refreshData()"]');
+    refreshBtn.disabled = true;
+    refreshBtn.innerHTML = '<span class="material-icons rotating">refresh</span>';
+    
+    // Simulate slight delay before refresh
+    setTimeout(() => {
     window.location.reload();
+    }, 800);
 }
 
-// Custom template tag replacement for multiply and divide
-// Since the template doesn't allow these operations directly
+// Initialize page interactions
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize any JS components
+    // Initialize loading states
+    const cards = document.querySelectorAll('[data-loading="true"]');
+    cards.forEach(card => {
+        const loading = card.querySelector('.card-loading, .table-loading');
+        const content = card.querySelector('.card-body, .list-group, .list-group-flush, .mobile-adjudications');
+        const emptyState = card.querySelector('.empty-state');
+
+        if (loading && content) {
+            // Simulate loading
+            loading.classList.remove('d-none');
+            if (content) content.style.opacity = '0';
+
+            setTimeout(() => {
+                loading.classList.add('d-none');
+                if (content) content.style.opacity = '1';
+
+                // Show empty state if no data
+                if (emptyState && shouldShowEmptyState(card)) {
+                    if (content) content.classList.add('d-none');
+                    emptyState.classList.remove('d-none');
+                }
+            }, 800);
+        }
+    });
+
+    // Function to determine if empty state should be shown
+    function shouldShowEmptyState(card) {
+        if (card.classList.contains('stat-card')) {
+            const value = card.querySelector('h2')?.textContent;
+            return value === '0';
+        }
+        if (card.classList.contains('table-card')) {
+            if (card.querySelector('.mobile-adjudications')) {
+                return card.querySelectorAll('.mobile-adjudication-card').length === 0;
+            } else {
+                return card.querySelectorAll('.list-group-item:not(.empty-state-container)').length === 0;
+            }
+        }
+        return false;
+    }
+    
+    // Add hover effects to adjudication items
+    const adjItems = document.querySelectorAll('.list-item-hover');
+    adjItems.forEach(item => {
+        item.addEventListener('mouseenter', () => {
+            item.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
+        });
+        
+        item.addEventListener('mouseleave', () => {
+            item.style.boxShadow = 'none';
+        });
+    });
+    
+    // Add click handler for view buttons
+    const viewButtons = document.querySelectorAll('.btn-view');
+    viewButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const adjId = this.getAttribute('data-adj-id');
+            // Redirect to adjudication detail page or show modal
+            window.location.href = `/adjudication/detail/${adjId}/`;
+        });
+    });
 });
 </script>
 {% endblock %} 

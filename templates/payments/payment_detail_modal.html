@@ -11,17 +11,17 @@
         <div class="card-body">
             <div class="row">
                 <div class="col-md-6">
-                    <p class="mb-2"><strong>Receipt Number:</strong> {{ violation.receipt_number }}</p>
-                    <p class="mb-2"><strong>Payment Date:</strong> {{ violation.receipt_date|date:"F d, Y" }}</p>
-                    <p class="mb-2"><strong>Amount Paid:</strong> ₱{{ violation.payment_amount|default:violation.fine_amount|floatformat:2 }}</p>
+                    <p class="mb-2"><strong>Receipt Number:</strong>&nbsp;<span class="ps-1">{{ violation.receipt_number }}</span></p>
+                    <p class="mb-2"><strong>Payment Date:</strong>&nbsp;<span class="ps-1">{{ violation.receipt_date|date:"F d, Y" }}</span></p>
+                    <p class="mb-2"><strong>Amount Paid:</strong>&nbsp;<span class="ps-1">₱{{ violation.payment_amount|default:violation.fine_amount|floatformat:2 }}</span></p>
                 </div>
                 <div class="col-md-6">
-                    <p class="mb-2"><strong>Status:</strong> 
+                    <p class="mb-2"><strong>Status:</strong>&nbsp;
                         <span class="badge bg-success">Paid</span>
                     </p>
-                    <p class="mb-2"><strong>Processed by:</strong> {{ violation.processed_by.get_full_name|default:"System" }}</p>
+                    <p class="mb-2"><strong>Processed by:</strong>&nbsp;<span class="ps-1">{{ violation.processed_by.get_full_name|default:"System" }}</span></p>
                     {% if violation.payment_remarks %}
-                    <p class="mb-2"><strong>Remarks:</strong> {{ violation.payment_remarks }}</p>
+                    <p class="mb-2"><strong>Remarks:</strong>&nbsp;<span class="ps-1">{{ violation.payment_remarks }}</span></p>
                     {% endif %}
                 </div>
             </div>

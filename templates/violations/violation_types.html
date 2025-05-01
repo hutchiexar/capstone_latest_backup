@@ -51,9 +51,9 @@
                     <div class="input-group">
                         <span class="input-group-text bg-transparent border-end-0"><i class="fas fa-tag text-muted"></i></span>
                         <select class="form-select" id="ncapFilter">
-                            <option value="all">All Types</option>
-                            <option value="regular">Regular</option>
-                            <option value="ncap">NCAP</option>
+                            <option value="all">All Classifications</option>
+                            <option value="REGULAR">Regular Violations</option>
+                            <option value="NCAP">NCAP</option>
                         </select>
                     </div>
                 </div>
@@ -73,13 +73,13 @@
                             <th>Category</th>
                             <th class="text-end">Amount (₱)</th>
                             <th>Status</th>
-                            <th>NCAP</th>
+                            <th>Classification</th>
                             <th class="text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for violation_type in violation_types %}
-                        <tr data-category="{{ violation_type.category }}" data-ncap="{{ violation_type.is_ncap|yesno:'true,false' }}">
+                        <tr data-category="{{ violation_type.category }}" data-classification="{{ violation_type.classification }}">
                             <td class="fw-medium">{{ violation_type.name }}</td>
                             <td><span class="badge bg-secondary">{{ violation_type.get_category_display }}</span></td>
                             <td class="text-end">{{ violation_type.amount }}</td>
@@ -91,10 +91,10 @@
                                 {% endif %}
                             </td>
                             <td>
-                                {% if violation_type.is_ncap %}
+                                {% if violation_type.classification == 'NCAP' %}
                                 <span class="badge bg-info text-dark">NCAP</span>
                                 {% else %}
-                                <span class="badge bg-secondary">Regular</span>
+                                <span class="badge bg-secondary">Regular Violations</span>
                                 {% endif %}
                             </td>
                             <td class="text-center">
@@ -106,7 +106,7 @@
                                             data-amount="{{ violation_type.amount }}"
                                             data-category="{{ violation_type.category }}"
                                             data-is_active="{{ violation_type.is_active|yesno:'true,false' }}"
-                                            data-is_ncap="{{ violation_type.is_ncap|yesno:'true,false' }}">
+                                            data-classification="{{ violation_type.classification }}">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                     <button class="btn btn-sm btn-outline-danger delete-btn" data-id="{{ violation_type.id }}">
@@ -244,11 +244,12 @@
                             <div class="form-text text-muted">Inactive violations won't be available for selection</div>
                         </div>
                         <div class="col-md-6">
-                            <div class="form-check form-switch">
-                                <input type="checkbox" class="form-check-input" id="is_ncap" name="is_ncap">
-                                <label class="form-check-label" for="is_ncap">NCAP Violation</label>
-                            </div>
-                            <div class="form-text text-muted">Non-Contact Apprehension Program violations</div>
+                            <label for="classification" class="form-label fw-bold">Classification</label>
+                            <select class="form-select" id="classification" name="classification">
+                                <option value="REGULAR">Regular Violations</option>
+                                <option value="NCAP">NCAP</option>
+                            </select>
+                            <div class="form-text text-muted">Type of violation classification</div>
                         </div>
                     </div>
                 </div>
@@ -315,11 +316,12 @@
                             <div class="form-text text-muted">Inactive violations won't be available for selection</div>
                         </div>
                         <div class="col-md-6">
-                            <div class="form-check form-switch">
-                                <input type="checkbox" class="form-check-input" id="edit_is_ncap" name="is_ncap">
-                                <label class="form-check-label" for="edit_is_ncap">NCAP Violation</label>
-                            </div>
-                            <div class="form-text text-muted">Non-Contact Apprehension Program violations</div>
+                            <label for="edit_classification" class="form-label fw-bold">Classification</label>
+                            <select class="form-select" id="edit_classification" name="classification">
+                                <option value="REGULAR">Regular Violations</option>
+                                <option value="NCAP">NCAP</option>
+                            </select>
+                            <div class="form-text text-muted">Type of violation classification</div>
                         </div>
                     </div>
                 </div>
@@ -370,7 +372,7 @@
             var amount = $(this).data('amount');
             var category = $(this).data('category');
             var isActive = $(this).data('is_active') === true || $(this).data('is_active') === 'true';
-            var isNcap = $(this).data('is_ncap') === true || $(this).data('is_ncap') === 'true';
+            var classification = $(this).data('classification');
             
             $('#edit_id').val(id);
             $('#edit_name').val(name);
@@ -378,7 +380,7 @@
             $('#edit_amount').val(amount);
             $('#edit_category').val(category);
             $('#edit_is_active').prop('checked', isActive);
-            $('#edit_is_ncap').prop('checked', isNcap);
+            $('#edit_classification').val(classification);
             
             // Set the form action URL with the correct ID
             $('#editViolationTypeForm').attr('action', '/management/violation-types/edit/' + id + '/');
@@ -459,7 +461,7 @@
         function performSearch() {
             var searchTerm = $('#searchInput').val().toLowerCase();
             var categoryFilter = $('#categoryFilter').val();
-            var ncapFilter = $('#ncapFilter').val();
+            var classificationFilter = $('#ncapFilter').val();
             
             var params = [];
             if (searchTerm) {
@@ -470,8 +472,8 @@
                 params.push('category=' + encodeURIComponent(categoryFilter));
             }
             
-            if (ncapFilter && ncapFilter !== 'all') {
-                params.push('ncap=' + encodeURIComponent(ncapFilter));
+            if (classificationFilter && classificationFilter !== 'all') {
+                params.push('classification=' + encodeURIComponent(classificationFilter));
             }
             
             var url = '{% url "violation_types" %}';
@@ -484,15 +486,15 @@
         
         // Set active values in filters based on current URL parameters
         var selectedCategory = '{{ selected_category }}';
-        var selectedNcap = '{{ selected_ncap }}';
+        var selectedClassification = '{{ selected_classification }}';
         var searchQuery = '{{ search_query }}';
         
         if (selectedCategory) {
             $('#categoryFilter').val(selectedCategory);
         }
         
-        if (selectedNcap) {
-            $('#ncapFilter').val(selectedNcap);
+        if (selectedClassification) {
+            $('#ncapFilter').val(selectedClassification);
         }
         
         if (searchQuery) {
@@ -502,7 +504,7 @@
         // Export functionality
         $('#exportViolationTypes').on('click', function() {
             var category = $('#categoryFilter').val();
-            var ncap = $('#ncapFilter').val();
+            var classification = $('#ncapFilter').val();
             var url = '{% url "export_violation_types" %}';
             
             var params = [];
@@ -510,8 +512,8 @@
                 params.push('category=' + encodeURIComponent(category));
             }
             
-            if (ncap && ncap !== 'all') {
-                params.push('ncap=' + encodeURIComponent(ncap));
+            if (classification && classification !== 'all') {
+                params.push('classification=' + encodeURIComponent(classification));
             }
             
             if (params.length > 0) {

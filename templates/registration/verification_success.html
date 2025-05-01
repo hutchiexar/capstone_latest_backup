@@ -1,0 +1,182 @@
+{% extends 'base_auth.html' %}
+{% load static %}
+
+{% block title %}Email Verified - CTTMO{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="verification-card">
+        <!-- Logo and Title Section -->
+        <div class="text-center mb-4">
+            <img src="{% static 'admin/img/logo.ico' %}" alt="Logo" class="verification-logo mb-2">
+            <h1 class="verification-title mb-1">Email Verified!</h1>
+            <p class="verification-subtitle">Your account has been activated</p>
+        </div>
+
+        <!-- Messages Section -->
+        {% if messages %}
+        <div class="messages mb-4">
+            {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Success Content -->
+        <div class="text-center mb-4">
+            <div class="success-circle mb-3">
+                <i class="material-icons">check_circle</i>
+            </div>
+            <h4>Verification Complete</h4>
+            <p class="text-muted">Thank you for verifying your email address. Your account is now fully activated.</p>
+        </div>
+
+        <!-- What's Next Section -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">What's Next?</h5>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex align-items-center">
+                        <i class="material-icons text-success me-3">login</i>
+                        <div>
+                            <strong>Log in to your account</strong>
+                            <p class="mb-0 small text-muted">Access all features of the CTTMO system</p>
+                        </div>
+                    </li>
+                    <li class="list-group-item d-flex align-items-center">
+                        <i class="material-icons text-success me-3">person</i>
+                        <div>
+                            <strong>Complete your profile</strong>
+                            <p class="mb-0 small text-muted">Add additional information to your account</p>
+                        </div>
+                    </li>
+                    <li class="list-group-item d-flex align-items-center">
+                        <i class="material-icons text-success me-3">qr_code_2</i>
+                        <div>
+                            <strong>Access your QR code</strong>
+                            <p class="mb-0 small text-muted">Your unique identifier in the CTTMO system</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Action Button -->
+        <div class="d-grid">
+            <a href="{% url 'login' %}" class="btn btn-primary">
+                <i class="material-icons small align-middle me-1">login</i> Log In to Your Account
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.auth-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 1rem;
+}
+
+.verification-card {
+    background: white;
+    border-radius: 0.75rem;
+    padding: 2rem;
+    width: 100%;
+    max-width: 550px;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+}
+
+.verification-logo {
+    width: 60px;
+    height: auto;
+}
+
+.verification-title {
+    color: #0d6efd;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.verification-subtitle {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-bottom: 0;
+}
+
+.success-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: #d4edda;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.success-circle i {
+    font-size: 48px;
+    color: #28a745;
+}
+
+.list-group-item i {
+    font-size: 24px;
+}
+
+/* Media queries for responsive design */
+@media (max-width: 576px) {
+    .verification-card {
+        padding: 1.25rem;
+        margin: 0.5rem;
+        max-width: 360px;
+    }
+    
+    .verification-title {
+        font-size: 1.2rem;
+    }
+    
+    .success-circle {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .success-circle i {
+        font-size: 36px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-close alerts after 5 seconds
+    const alerts = document.querySelectorAll('.alert');
+    alerts.forEach(function(alert) {
+        setTimeout(function() {
+            const closeButton = alert.querySelector('.btn-close');
+            if (closeButton) {
+                closeButton.click();
+            }
+        }, 5000);
+    });
+    
+    // Add animation for success icon
+    const successIcon = document.querySelector('.success-circle i');
+    if (successIcon) {
+        setTimeout(function() {
+            successIcon.style.transition = 'transform 0.5s ease-in-out';
+            successIcon.style.transform = 'scale(1.2)';
+            
+            setTimeout(function() {
+                successIcon.style.transform = 'scale(1)';
+            }, 500);
+        }, 300);
+    }
+});
+</script>
+{% endblock %} 

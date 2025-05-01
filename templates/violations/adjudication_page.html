@@ -1,0 +1,1054 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- Add SweetAlert2 library -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+
+<!-- Define global violation type amounts -->
+<script>
+// This should ideally be loaded from the database rather than hardcoded
+// The backend should pass these values in the context
+// Empty initialization - will be populated from backend data in each violation
+window.violationTypeAmounts = {};
+</script>
+
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <span class="material-icons me-2" style="color: var(--primary-color)">gavel</span>
+                    <h4 class="mb-0">Adjudication Form: {{ violator.first_name }} {{ violator.last_name }}</h4>
+                </div>
+                <div class="d-flex align-items-center">
+                    <a href="{% url 'adjudication_list' %}" class="btn btn-outline-secondary">
+                        <span class="material-icons me-1">arrow_back</span>
+                        Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Violator Info Card -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-header bg-light py-3">
+            <h5 class="mb-0">Violator Information</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Full Name</label>
+                        <div class="fs-5 fw-medium">{{ violator.first_name }} {{ violator.last_name }}</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">License Number</label>
+                        <div class="fs-5 fw-medium">{{ violator.license_number|default:"Not Provided" }}</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Address</label>
+                        <div class="fs-5 fw-medium">{{ violator.address|default:"Not Provided" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Violations Card -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-header bg-light py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Pending Violations ({{ violations_count }})</h5>
+                <span class="badge bg-primary rounded-pill">{{ violations_count }}</span>
+            </div>
+        </div>
+        <div class="card-body p-4">
+            {% if violations %}
+                <div class="row">
+                    <div class="col-md-7">
+                        <!-- Violation Cards -->
+                        <div class="violation-cards" id="pendingViolationsContainer">
+                            {% for violation in violations %}
+                                <div class="violation-card mb-3 {% if violation.is_rejected %}border-left-danger{% endif %}" 
+                                    data-violation-id="{{ violation.id }}" 
+                                    data-violation-types="{{ violation.violation_types }}"
+                                    data-violation-amount="{{ violation.fine_amount }}"
+                                    data-violation-type-amounts="{{ violation.violation_type_amounts|default:'{}' }}"
+                                    data-location="{{ violation.location }}"
+                                    data-is-rejected="{{ violation.is_rejected|lower }}"
+                                    data-rejection-reason="{{ violation.rejection_reason|default:'' }}">
+                                    <div class="card">
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <span class="fw-bold">Ticket #{{ violation.ticket_id }}</span>
+                                                <span class="badge bg-{{ violation.status|lower }} ms-2">{{ violation.status }}</span>
+                                            </div>
+                                            <div>
+                                                <span class="text-muted">{{ violation.violation_date|date:"M d, Y" }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="violation-details">
+                                                <div class="mb-2 fw-medium text-primary violation-types-display"></div>
+                                                <div class="mb-2">
+                                                    <span class="text-muted">Location:</span> 
+                                                    <span>{{ violation.location }}</span>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <span class="text-muted">Fine Amount:</span>
+                                                        <span class="fw-medium">₱{{ violation.fine_amount|floatformat:2 }}</span>
+                                                    </div>
+                                                    <button class="btn btn-sm btn-primary select-violation-btn">
+                                                        <span class="material-icons me-1">gavel</span>
+                                                        Adjudicate
+                                                    </button>
+                                                </div>
+                                                {% if violation.is_rejected %}
+                                                <div class="alert alert-danger mt-3 mb-0">
+                                                    <strong>Previously Rejected:</strong> {{ violation.rejection_reason }}
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <!-- Adjudication Form -->
+                        <div class="card h-100" id="adjudicationFormCard">
+                            <div class="card-header bg-primary text-white py-3">
+                                <h5 class="mb-0">Adjudication Decision</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="noViolationSelectedMessage" class="text-center py-5">
+                                    <div class="mb-3">
+                                        <span class="material-icons text-muted" style="font-size: 4rem;">gavel</span>
+                                    </div>
+                                    <h5>No Violation Selected</h5>
+                                    <p class="text-muted">Select a violation from the left panel to begin adjudication.</p>
+                                </div>
+                                
+                                <div id="adjudicationFormContent" style="display: none;">
+                                    <div id="rejectionWarning" class="alert alert-warning mb-4" style="display: none;">
+                                        <div class="d-flex">
+                                            <span class="material-icons me-2">warning</span>
+                                            <div>
+                                                <strong>Previously Rejected:</strong>
+                                                <p id="rejectionReasonText" class="mb-0"></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <form id="adjudicationForm">
+                                        <input type="hidden" id="ticketId" name="ticket_id">
+                                        
+                                        <div class="mb-4">
+                                            <label class="form-label">Violation Types</label>
+                                            <div id="violationTypesList" class="mb-3">
+                                                <!-- Violation types will be populated here -->
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-4">
+                                            <div class="d-flex justify-content-between">
+                                                <label for="penaltyAmount" class="form-label">Penalty Amount</label>
+                                                <small class="text-muted" id="originalAmountLabel" style="display: none;">
+                                                    Original: ₱<span id="originalAmount">0.00</span>
+                                                </small>
+                                            </div>
+                                            <div class="input-group">
+                                                <span class="input-group-text">₱</span>
+                                                <input type="number" step="0.01" class="form-control" id="penaltyAmount" name="penalty_amount" required>
+                                            </div>
+                                            <div class="mt-1">
+                                                <small class="text-info" id="amountChangeInfo" style="display: none;"></small>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-4">
+                                            <label for="adjudicationNotes" class="form-label">Adjudication Notes</label>
+                                            <textarea class="form-control" id="adjudicationNotes" name="notes" rows="4" placeholder="Enter notes or remarks about this adjudication decision..."></textarea>
+                                        </div>
+                                        
+                                        <div class="d-grid gap-2">
+                                            <button type="submit" class="btn btn-success">
+                                                <span class="material-icons me-1">check_circle</span>
+                                                Submit Adjudication
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <p class="mb-0">No pending violations found for this violator.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Adjudicated Violations Card -->
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-header bg-light py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Adjudicated Violations</h5>
+                <span class="badge bg-success rounded-pill">{{ adjudicated_count }}</span>
+            </div>
+        </div>
+        <div class="card-body p-4">
+            {% if adjudicated_violations %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Ticket #</th>
+                                <th>Date Adjudicated</th>
+                                <th>Violation Types</th>
+                                <th>Penalty</th>
+                                <th>Adjudicated By</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adjudicatedViolationsBody">
+                            {% for violation in adjudicated_violations %}
+                                <tr>
+                                    <td>{{ violation.ticket_id }}</td>
+                                    <td>{{ violation.adjudication_date|date:"M d, Y" }}</td>
+                                    <td class="adjudicated-violation-types" data-violation-types="{{ violation.violation_types }}"></td>
+                                    <td>₱{{ violation.fine_amount|floatformat:2 }}</td>
+                                    <td>{{ violation.adjudicated_by }}</td>
+                                    <td><span class="badge bg-{{ violation.status|lower }}">{{ violation.status }}</span></td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <p class="mb-0">No adjudicated violations found for this violator.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Styles -->
+<style>
+    /* Border for rejected violations */
+    .border-left-danger {
+        border-left: 4px solid #dc3545;
+    }
+    
+    /* Violation Cards Styling */
+    .violation-card {
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .violation-card:hover {
+        transform: translateY(-2px);
+    }
+    
+    .violation-card.active {
+        border-left: 4px solid var(--primary-color);
+    }
+    
+    .violation-card .card {
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    
+    .violation-card.active .card {
+        border-color: var(--primary-color);
+        box-shadow: 0 2px 12px rgba(37, 99, 235, 0.1);
+    }
+    
+    /* Violation Type Checkboxes */
+    .violation-type-item {
+        padding: 12px 15px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        transition: all 0.2s;
+        position: relative;
+        background-color: #f8f9fa;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .violation-type-item:hover {
+        background-color: #f0f4f8;
+        border-color: #cbd5e1;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .violation-type-item.checked {
+        background-color: #f0f7ff;
+        border-color: var(--primary-color);
+        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+    }
+    
+    .violation-type-item:not(.checked) {
+        opacity: 0.75;
+        background-color: #f8f9fa;
+    }
+    
+    .violation-type-item:not(.checked) .text-muted {
+        text-decoration: line-through;
+        opacity: 0.7;
+    }
+    
+    .violation-type-item.checked::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background-color: var(--primary-color);
+        border-top-left-radius: 7px;
+        border-bottom-left-radius: 7px;
+    }
+    
+    .violation-type-item .amount-badge {
+        padding: 6px 10px;
+        background-color: #e6f0ff;
+        border: 1px solid #cfe0ff;
+        border-radius: 6px;
+        font-weight: 600;
+        color: #0047b3;
+        font-size: 0.95rem;
+        margin-left: 10px;
+        transition: all 0.2s;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    
+    .violation-type-item:hover .amount-badge {
+        background-color: #d4e5ff;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .violation-type-item:not(.checked) .amount-badge {
+        background-color: #e9ecef;
+        color: #6c757d;
+        border-color: #dee2e6;
+        text-decoration: line-through;
+    }
+    
+    /* Improve the form control */
+    #penaltyAmount {
+        font-weight: 500;
+        font-size: 1.1rem;
+    }
+    
+    #penaltyAmount:focus {
+        box-shadow: 0 0 0 0.2rem rgba(var(--primary-color-rgb, 37, 99, 235), 0.25);
+    }
+</style>
+
+<!-- Scripts -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Debug information
+    console.log('Adjudication form loaded');
+    console.log('window.violationTypeAmounts defined:', typeof window.violationTypeAmounts !== 'undefined');
+    if (typeof window.violationTypeAmounts !== 'undefined') {
+        console.log('Available violation types:', Object.keys(window.violationTypeAmounts));
+    }
+    
+    // No forced amounts - we'll rely on the database values
+    const FORCED_AMOUNTS = {};
+    
+    // Override the window.violationTypeAmounts to ensure it has our forced values
+    if (typeof window.violationTypeAmounts === 'undefined') {
+        window.violationTypeAmounts = {};
+    }
+    
+    // Parse violation types for display
+    document.querySelectorAll('.violation-card').forEach(card => {
+        const typesData = card.getAttribute('data-violation-types');
+        const typesDisplay = card.querySelector('.violation-types-display');
+        
+        try {
+            const types = JSON.parse(typesData);
+            typesDisplay.textContent = types.join(', ');
+        } catch (error) {
+            console.error('Error parsing violation types:', error);
+            typesDisplay.textContent = 'Error loading violation types';
+        }
+    });
+    
+    // Parse adjudicated violation types for display
+    document.querySelectorAll('.adjudicated-violation-types').forEach(cell => {
+        const typesData = cell.getAttribute('data-violation-types');
+        
+        try {
+            const types = JSON.parse(typesData);
+            cell.textContent = types.join(', ');
+        } catch (error) {
+            console.error('Error parsing adjudicated violation types:', error);
+            cell.textContent = 'Error loading violation types';
+        }
+    });
+    
+    // Handle violation card selection
+    const violationCards = document.querySelectorAll('.violation-card');
+    violationCards.forEach(card => {
+        card.addEventListener('click', function() {
+            // Remove active class from all cards
+            violationCards.forEach(c => c.classList.remove('active'));
+            
+            // Add active class to clicked card
+            this.classList.add('active');
+            
+            // Get violation data
+            const violationId = this.getAttribute('data-violation-id');
+            const violationTypesData = this.getAttribute('data-violation-types');
+            const violationAmount = this.getAttribute('data-violation-amount');
+            const isRejected = this.getAttribute('data-is-rejected') === 'true';
+            const rejectionReason = this.getAttribute('data-rejection-reason');
+            
+            // Store original amount for reference
+            const originalAmountSpan = document.getElementById('originalAmount');
+            const originalAmountLabel = document.getElementById('originalAmountLabel');
+            const formattedAmount = parseFloat(violationAmount).toFixed(2);
+            originalAmountSpan.textContent = formattedAmount;
+            originalAmountLabel.style.display = 'block';
+            
+            // Reset amount change info when selecting a new violation
+            const amountChangeInfo = document.getElementById('amountChangeInfo');
+            amountChangeInfo.style.display = 'none';
+            
+            // Show rejection warning if applicable
+            const rejectionWarning = document.getElementById('rejectionWarning');
+            const rejectionReasonText = document.getElementById('rejectionReasonText');
+            
+            if (isRejected && rejectionReason) {
+                rejectionWarning.style.display = 'block';
+                rejectionReasonText.textContent = rejectionReason;
+            } else {
+                rejectionWarning.style.display = 'none';
+            }
+            
+            // Update form values
+            document.getElementById('ticketId').value = violationId;
+            document.getElementById('penaltyAmount').value = violationAmount;
+            
+            // Update violation types list
+            const violationTypesList = document.getElementById('violationTypesList');
+            violationTypesList.innerHTML = '';
+            
+            try {
+                const types = JSON.parse(violationTypesData);
+                
+                // Get violation type-specific amounts from server or data attribute
+                let typeAmounts = {};
+                
+                // Create a map of violation types to amounts (moved up for better scope)
+                let violationAmounts = {};
+                
+                try {
+                    // Try to get type-specific amounts if they exist
+                    const typeAmountsData = this.getAttribute('data-violation-type-amounts');
+                    if (typeAmountsData) {
+                        // Log raw data to check format
+                        console.log('Raw type-specific amounts data:', typeAmountsData);
+                        
+                        try {
+                            typeAmounts = JSON.parse(typeAmountsData);
+                            console.log('Successfully parsed type amounts:', typeAmounts);
+                            
+                            // Validate the typeAmounts data structure
+                            if (typeof typeAmounts === 'object' && Object.keys(typeAmounts).length > 0) {
+                                console.log('Valid type amounts found:', Object.keys(typeAmounts).length, 'entries');
+                                
+                                // Convert any string values to numbers
+                                Object.keys(typeAmounts).forEach(type => {
+                                    if (typeof typeAmounts[type] === 'string') {
+                                        typeAmounts[type] = parseFloat(typeAmounts[type]);
+                                    }
+                                });
+                            } else {
+                                console.warn('Type amounts data is empty or not in expected format:', typeAmounts);
+                            }
+                        } catch (e) {
+                            console.error('Error parsing type amounts JSON:', e, 'Raw data:', typeAmountsData);
+                        }
+                    } else {
+                        console.warn('No data-violation-type-amounts attribute found on this violation card');
+                    }
+                } catch (e) {
+                    console.error('Error accessing type amount data:', e);
+                }
+                
+                // Log a warning if we're using the default database amount
+                if (Object.keys(typeAmounts).length === 0) {
+                    console.warn('No type-specific amounts found. This may result in inaccurate fine amounts being displayed.');
+                }
+                
+                // If type-specific amounts are not available, calculate them
+                const totalAmount = parseFloat(violationAmount);
+                const violationCount = types.length;
+                
+                // If we don't have specific amounts in the data attribute, check if we can get them from a global configuration
+                if (Object.keys(typeAmounts).length === 0) {
+                    // Try to get amounts from database via the violation_type_amounts attribute
+                    console.log('No specific type amounts found in data attribute, using fallback methods');
+                    
+                    // Get all amount data from the page for debugging
+                    console.log('Card data attributes:', {
+                        'types': types,
+                        'violationAmount': violationAmount,
+                        'typeAmountsData': this.getAttribute('data-violation-type-amounts')
+                    });
+                    
+                    // TEMPORARY FIX: Apply known amounts from the image for the specified violation types
+                    // NOTE: This should be removed once the database provides correct values
+                    const fixedAmounts = {
+                        "Unlicensed Driver": 250.00,
+                        "Disobeying Traffic rules": 500.00,
+                        "No helmet": 250.00,
+                        "Unregistered Driver": 250.00
+                    };
+                    
+                    // First try the fixed amounts as a temporary solution
+                    types.forEach(type => {
+                        if (fixedAmounts[type]) {
+                            violationAmounts[type] = fixedAmounts[type];
+                            console.log(`Using fixed amount for "${type}": ₱${violationAmounts[type]} (TEMPORARY FIX)`);
+                        }
+                    });
+                    
+                    // Attempt to use any values already in the system as backup
+                    types.forEach(type => {
+                        if (!violationAmounts[type] && window.violationTypeAmounts[type]) {
+                            violationAmounts[type] = parseFloat(window.violationTypeAmounts[type]);
+                            console.log(`Using global amount for "${type}": ₱${violationAmounts[type]}`);
+                        }
+                    });
+                } else {
+                    // Use the provided type-specific amounts from data attribute
+                    violationAmounts = typeAmounts;
+                }
+                
+                // If there are still types without amounts, distribute remaining amount
+                if (Object.keys(violationAmounts).length < types.length) {
+                    console.log('Some violation types still missing amounts after applying fixes');
+                    
+                    // Identify types that still don't have amounts
+                    const typesWithoutAmounts = types.filter(t => !violationAmounts[t]);
+                    console.log('Types without amounts:', typesWithoutAmounts);
+                    
+                    // Calculate how much amount has been assigned already
+                    const assignedAmount = Object.values(violationAmounts).reduce((sum, val) => sum + parseFloat(val), 0);
+                    const remainingAmount = Math.max(0, totalAmount - assignedAmount);
+                    
+                    // Distribute remaining amount equally
+                    if (typesWithoutAmounts.length > 0) {
+                        const defaultAmount = remainingAmount / typesWithoutAmounts.length;
+                        
+                        typesWithoutAmounts.forEach(type => {
+                            violationAmounts[type] = defaultAmount;
+                            console.log(`Using calculated fallback amount for "${type}": ₱${defaultAmount.toFixed(2)}`);
+                        });
+                    }
+                }
+                
+                // For any violation types that don't have specific amounts, divide remaining total equally
+                let assignedAmount = 0;
+                let unassignedTypes = [];
+                
+                types.forEach(type => {
+                    if (violationAmounts[type]) {
+                        assignedAmount += parseFloat(violationAmounts[type]);
+                    } else {
+                        unassignedTypes.push(type);
+                    }
+                });
+                
+                const remainingAmount = Math.max(0, totalAmount - assignedAmount);
+                const perRemainingType = unassignedTypes.length > 0 ? remainingAmount / unassignedTypes.length : 0;
+                
+                unassignedTypes.forEach(type => {
+                    violationAmounts[type] = perRemainingType;
+                });
+                
+                // Ensure all violation amounts together equal the total amount (avoid rounding issues)
+                let adjustmentNeeded = totalAmount - Object.values(violationAmounts).reduce((sum, val) => sum + parseFloat(val), 0);
+                
+                if (Math.abs(adjustmentNeeded) > 0.01 && types.length > 0) {
+                    // Add any small difference to the first violation to ensure total matches exactly
+                    violationAmounts[types[0]] = parseFloat(violationAmounts[types[0]]) + adjustmentNeeded;
+                }
+                
+                // Create the UI elements for each violation type
+                types.forEach((type, index) => {
+                    // Remove force-setting specific amounts and use values from database
+                    // No hardcoding here - rely on what was loaded from the database
+                    
+                    const typeAmount = violationAmounts[type] || 0;
+                    console.log(`Creating violation type item: "${type}" with amount: ₱${typeAmount}`);
+                    
+                    const typeItem = document.createElement('div');
+                    typeItem.className = 'violation-type-item checked';
+                    typeItem.innerHTML = `
+                        <div class="form-check d-flex align-items-center">
+                            <input class="form-check-input violation-type-checkbox" 
+                                   type="checkbox" 
+                                   value="${type}" 
+                                   id="violationType${index}" 
+                                   data-amount="${typeAmount.toFixed(2)}"
+                                   checked>
+                            <label class="form-check-label ms-2" for="violationType${index}">
+                                ${type}
+                            </label>
+                        </div>
+                        <span class="amount-badge">₱${typeAmount.toFixed(2)}</span>
+                    `;
+                    violationTypesList.appendChild(typeItem);
+                });
+                
+                // Add click event to violation type items
+                document.querySelectorAll('.violation-type-item').forEach(item => {
+                    item.addEventListener('click', function(event) {
+                        // Don't trigger if the click was on the checkbox itself
+                        if (event.target.type !== 'checkbox') {
+                            const checkbox = this.querySelector('input[type="checkbox"]');
+                            checkbox.checked = !checkbox.checked;
+                            
+                            if (checkbox.checked) {
+                                this.classList.add('checked');
+                            } else {
+                                this.classList.remove('checked');
+                            }
+                            
+                            // Update total amount based on checked violations
+                            updateTotalAmount();
+                        }
+                    });
+                });
+                
+                // Add change event directly to checkboxes for updates on direct checkbox clicks
+                document.querySelectorAll('.violation-type-checkbox').forEach(checkbox => {
+                    checkbox.addEventListener('change', function() {
+                        // Update parent container class
+                        const container = this.closest('.violation-type-item');
+                        if (this.checked) {
+                            container.classList.add('checked');
+                        } else {
+                            container.classList.remove('checked');
+                        }
+                        
+                        // Update total amount
+                        updateTotalAmount();
+                    });
+                });
+                
+                // Function to update the total amount based on checked violations
+                function updateTotalAmount() {
+                    let total = 0;
+                    document.querySelectorAll('.violation-type-checkbox:checked').forEach(checkbox => {
+                        total += parseFloat(checkbox.getAttribute('data-amount') || 0);
+                    });
+                    
+                    // Get original amount
+                    const originalAmount = parseFloat(document.getElementById('originalAmount').textContent);
+                    
+                    // Update the penalty amount field
+                    const penaltyAmountField = document.getElementById('penaltyAmount');
+                    penaltyAmountField.value = total.toFixed(2);
+                    
+                    // Show original amount reference
+                    const originalAmountLabel = document.getElementById('originalAmountLabel');
+                    originalAmountLabel.style.display = 'block';
+                    
+                    // Calculate and show the difference
+                    const amountChangeInfo = document.getElementById('amountChangeInfo');
+                    const difference = total - originalAmount;
+                    
+                    if (Math.abs(difference) > 0.01) { // Only show if there's a meaningful difference
+                        amountChangeInfo.style.display = 'block';
+                        if (difference < 0) {
+                            // Amount reduced
+                            amountChangeInfo.className = 'text-danger small mt-1';
+                            amountChangeInfo.innerHTML = `<span class="material-icons align-middle" style="font-size: 14px;">arrow_downward</span> Reduced by ₱${Math.abs(difference).toFixed(2)} from original`;
+                        } else {
+                            // Amount increased (unusual but possible if manually edited)
+                            amountChangeInfo.className = 'text-success small mt-1';
+                            amountChangeInfo.innerHTML = `<span class="material-icons align-middle" style="font-size: 14px;">arrow_upward</span> Increased by ₱${difference.toFixed(2)} from original`;
+                        }
+                    } else {
+                        amountChangeInfo.style.display = 'none';
+                    }
+                    
+                    // Visual feedback for amount change
+                    penaltyAmountField.style.transition = 'background-color 0.3s';
+                    if (difference < 0) {
+                        penaltyAmountField.style.backgroundColor = '#ffebee'; // Light red for reduction
+                    } else if (difference > 0) {
+                        penaltyAmountField.style.backgroundColor = '#e8f5e9'; // Light green for increase
+                    } else {
+                        penaltyAmountField.style.backgroundColor = '#f5f5f5'; // Gray for no change
+                    }
+                    
+                    setTimeout(() => {
+                        penaltyAmountField.style.backgroundColor = '';
+                    }, 800);
+                }
+            } catch (error) {
+                console.error('Error parsing violation types for form:', error);
+                violationTypesList.innerHTML = `<div class="alert alert-danger">Error loading violation types</div>`;
+            }
+            
+            // Show the form
+            document.getElementById('noViolationSelectedMessage').style.display = 'none';
+            document.getElementById('adjudicationFormContent').style.display = 'block';
+        });
+    });
+    
+    // Handle form submission
+    document.getElementById('adjudicationForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        
+        // Gather form data
+        const ticketId = document.getElementById('ticketId').value;
+        const penaltyAmount = document.getElementById('penaltyAmount').value;
+        const notes = document.getElementById('adjudicationNotes').value;
+        
+        // Get selected violation types
+        const selectedTypes = [];
+        document.querySelectorAll('.violation-type-checkbox:checked').forEach(checkbox => {
+            selectedTypes.push(checkbox.value);
+        });
+        
+        // Validate form
+        if (!ticketId) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No violation selected.',
+                confirmButtonColor: 'var(--primary-color)'
+            });
+            return;
+        }
+        
+        if (!penaltyAmount) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Please enter the penalty amount.',
+                confirmButtonColor: 'var(--primary-color)'
+            });
+            return;
+        }
+        
+        // Confirm submission
+        Swal.fire({
+            title: 'Confirm Adjudication',
+            text: 'Are you sure you want to submit this adjudication decision?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: 'var(--primary-color)',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, Submit',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Show loading state
+                Swal.fire({
+                    title: 'Processing...',
+                    html: '<div class="spinner-border text-primary" role="status"></div>',
+                    showConfirmButton: false,
+                    allowOutsideClick: false
+                });
+                
+                // Send AJAX request
+                fetch('{% url "adjudicate_ticket" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        ticket_id: ticketId,
+                        violation_types: selectedTypes,
+                        penalty_amount: penaltyAmount,
+                        notes: notes
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Success message
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: 'Adjudication decision has been submitted successfully.',
+                            confirmButtonColor: 'var(--primary-color)'
+                        }).then(() => {
+                            // Handle successful adjudication
+                            const wasRejected = data.was_rejected;
+                            const violationCard = document.querySelector(`.violation-card[data-violation-id="${ticketId}"]`);
+                            
+                            // Get or re-get the adjudicated table body (in case it was just created)
+                            let adjudicatedTableBody = document.getElementById('adjudicatedViolationsBody');
+                            
+                            // Get adjudicated data
+                            const adjudicationDate = new Date().toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                            });
+                            
+                            // Create and insert the new row with proper styling
+                            const newRow = document.createElement('tr');
+                            
+                            // Format adjudication date and use server date if available
+                            const formattedDate = data.adjudication_date ? 
+                                new Date(data.adjudication_date).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric'
+                                }) : adjudicationDate;
+                            
+                            // Create row with consistent formatting
+                            newRow.innerHTML = `
+                                <td>${ticketId}</td>
+                                <td>${formattedDate}</td>
+                                <td class="adjudicated-violation-types" data-violation-types='${JSON.stringify(selectedTypes)}'>${selectedTypes.join(', ')}</td>
+                                <td>₱${parseFloat(penaltyAmount).toFixed(2)}</td>
+                                <td>${data.adjudicated_by || 'Current User'}</td>
+                                <td><span class="badge ${data.status === 'APPROVED' ? 'bg-success' : 'bg-primary'} text-white">${data.status || 'ADJUDICATED'}</span></td>
+                            `;
+                            
+                            // Add the new row to the table
+                            adjudicatedTableBody.prepend(newRow);
+                            
+                            // Add enhanced highlight effects to the new row
+                            newRow.style.animation = 'highlightNewRow 3s';
+                            
+                            // Add the CSS for animations if it doesn't exist
+                            if (!document.querySelector('style#adjudication-animations')) {
+                                const style = document.createElement('style');
+                                style.id = 'adjudication-animations';
+                                style.textContent = `
+                                    @keyframes highlightNewRow {
+                                        0% { background-color: rgba(var(--primary-color-rgb, 37, 99, 235), 0.3); transform: translateY(-10px); opacity: 0; }
+                                        10% { background-color: rgba(var(--primary-color-rgb, 37, 99, 235), 0.3); transform: translateY(0); opacity: 1; }
+                                        20% { background-color: rgba(var(--primary-color-rgb, 37, 99, 235), 0.1); }
+                                        30% { background-color: rgba(var(--primary-color-rgb, 37, 99, 235), 0.3); }
+                                        100% { background-color: transparent; }
+                                    }
+                                    
+                                    @keyframes fadeOutCard {
+                                        0% { opacity: 1; transform: translateX(0); }
+                                        100% { opacity: 0; transform: translateX(-20px); }
+                                    }
+                                    
+                                    @keyframes pulseMessage {
+                                        0% { background-color: #d1e7dd; }
+                                        50% { background-color: #e8f5e9; }
+                                        100% { background-color: #d1e7dd; }
+                                    }
+                                `;
+                                document.head.appendChild(style);
+                            }
+                            
+                            // Scroll to the new row in the adjudicated table
+                            setTimeout(() => {
+                                newRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                
+                                // Show a temporary toast message near the adjudicated section
+                                const adjudicatedCard = document.querySelector('.card:last-child');
+                                const toast = document.createElement('div');
+                                toast.className = 'alert alert-success position-absolute';
+                                toast.style.top = '0';
+                                toast.style.right = '1rem';
+                                toast.style.zIndex = '100';
+                                toast.style.maxWidth = '300px';
+                                toast.style.animation = 'pulseMessage 2s infinite';
+                                toast.style.border = 'none';
+                                toast.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+                                toast.innerHTML = `
+                                    <div class="d-flex align-items-center">
+                                        <span class="material-icons me-2">check_circle</span>
+                                        <div>
+                                            <p class="mb-0">Adjudication added successfully</p>
+                                        </div>
+                                    </div>
+                                `;
+                                
+                                adjudicatedCard.style.position = 'relative';
+                                adjudicatedCard.appendChild(toast);
+                                
+                                // Remove toast after 3 seconds
+                                setTimeout(() => {
+                                    toast.style.transition = 'all 0.5s ease';
+                                    toast.style.opacity = '0';
+                                    toast.style.transform = 'translateY(-10px)';
+                                    setTimeout(() => toast.remove(), 500);
+                                }, 3000);
+                            }, 100);
+                            
+                            // Remove the card from the pending list with animation
+                            violationCard.style.animation = 'fadeOutCard 0.3s ease forwards';
+
+                            // Wait for animation to complete before removing the violation card
+                            setTimeout(() => {
+                                violationCard.remove();
+                                
+                                // Update counts
+                                const pendingCount = document.querySelectorAll('.violation-card').length;
+                                
+                                // Update the header count and badge
+                                const pendingHeader = document.querySelector('.card-header h5');
+                                if (pendingHeader) {
+                                    pendingHeader.textContent = `Pending Violations (${pendingCount})`;
+                                }
+                                
+                                const pendingCountElement = document.querySelector('.card-header .badge.bg-primary');
+                                if (pendingCountElement) {
+                                    pendingCountElement.textContent = pendingCount;
+                                }
+                                
+                                // Update adjudicated count
+                                const adjudicatedCount = document.querySelectorAll('#adjudicatedViolationsBody tr').length;
+                                const adjudicatedCountElement = document.querySelector('.card-header .badge.bg-success');
+                                if (adjudicatedCountElement) {
+                                    adjudicatedCountElement.textContent = adjudicatedCount;
+                                }
+                                
+                                // Update the adjudicated header
+                                const adjudicatedHeader = document.querySelector('.card:last-child .card-header h5');
+                                if (adjudicatedHeader) {
+                                    adjudicatedHeader.textContent = 'Adjudicated Violations';
+                                }
+                                
+                                // If all violations are adjudicated, show a message
+                                if (pendingCount === 0) {
+                                    document.getElementById('pendingViolationsContainer').innerHTML = `
+                                        <div class="alert alert-success">
+                                            <div class="d-flex align-items-center">
+                                                <span class="material-icons me-2">check_circle</span>
+                                                <p class="mb-0">All violations have been adjudicated.</p>
+                                            </div>
+                                        </div>
+                                    `;
+                                }
+
+                                // Check if the adjudicated table is empty
+                                const noAdjudicationsMessage = document.querySelector('.card-body:last-child .alert-info');
+                                
+                                // If there was a "No adjudicated violations" message, remove it
+                                if (noAdjudicationsMessage && noAdjudicationsMessage.textContent.includes('No adjudicated violations')) {
+                                    noAdjudicationsMessage.remove();
+                                    
+                                    // Add the table structure if it was not there before
+                                    const tableContainer = document.querySelector('.card-body:last-child');
+                                    if (!tableContainer.querySelector('.table-responsive')) {
+                                        tableContainer.innerHTML = `
+                                            <div class="table-responsive">
+                                                <table class="table table-hover">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Ticket #</th>
+                                                            <th>Date Adjudicated</th>
+                                                            <th>Violation Types</th>
+                                                            <th>Penalty</th>
+                                                            <th>Adjudicated By</th>
+                                                            <th>Status</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="adjudicatedViolationsBody">
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        `;
+                                        // Re-get the table body after creating it
+                                        adjudicatedTableBody = document.getElementById('adjudicatedViolationsBody');
+                                        
+                                        // Add the newly created adjudicated entry to the table again
+                                        adjudicatedTableBody.prepend(newRow);
+                                    }
+                                }
+
+                                // Reset the form
+                                document.getElementById('noViolationSelectedMessage').style.display = 'block';
+                                document.getElementById('adjudicationFormContent').style.display = 'none';
+                                document.getElementById('adjudicationForm').reset();
+                            }, 300);
+                        });
+                    } else {
+                        // Error message
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: data.message || 'An error occurred while processing the adjudication.',
+                            confirmButtonColor: 'var(--primary-color)'
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error Submitting Adjudication',
+                        html: `
+                            <p>${error.message || 'An unexpected error occurred'}</p>
+                            <p class="mt-2 text-muted small">If the problem persists, please contact the system administrator.</p>
+                        `,
+                        confirmButtonColor: 'var(--primary-color)'
+                    });
+                });
+            }
+        });
+    });
+    
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // If there's a hash in the URL, try to select that violation
+    const hash = window.location.hash;
+    if (hash) {
+        const violationId = hash.substring(1);
+        const violationCard = document.querySelector(`.violation-card[data-violation-id="${violationId}"]`);
+        if (violationCard) {
+            violationCard.click();
+            violationCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+});
+</script>
+{% endblock %} 

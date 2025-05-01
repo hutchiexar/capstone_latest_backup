@@ -1,0 +1,1 @@
+# QR Ticket preparation views 

@@ -46,4 +46,7 @@ urlpatterns = [
     # Admin Driver Application Management
     path('admin/driver-applications/', views.driver_applications_manage, name='driver_applications_manage'),
     path('admin/driver-application/<int:application_id>/review/', views.driver_application_review, name='driver_application_review'),
+    
+    # QR Code viewing and printing
+    path('profile/qr-code/', views.view_qr_code, name='view_qr_code'),
 ] 

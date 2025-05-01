@@ -105,6 +105,97 @@
                     {% endif %}
                 </div>
                 
+                <!-- Contact Information Section -->
+                <div class="row g-3 mt-3">
+                    <div class="col-12 col-md-6">
+                        <label for="{{ form.birthdate.id_for_label }}" class="form-label">Birthdate <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text"><span class="material-icons fs-5">cake</span></span>
+                            {{ form.birthdate }}
+                        </div>
+                        {% if form.birthdate.errors %}
+                        <div class="text-danger mt-1 small">
+                            {% for error in form.birthdate.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-12 col-md-6">
+                        <label for="{{ form.contact_number.id_for_label }}" class="form-label">Contact Number <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text"><span class="material-icons fs-5">phone</span></span>
+                            {{ form.contact_number }}
+                        </div>
+                        {% if form.contact_number.errors %}
+                        <div class="text-danger mt-1 small">
+                            {% for error in form.contact_number.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Emergency Contact Section -->
+                <div class="card border mt-3 p-3">
+                    <div class="card-header bg-transparent px-0 pt-0 pb-3 border-bottom">
+                        <div class="d-flex align-items-center">
+                            <span class="material-icons me-2" style="color: var(--primary-color);">emergency</span>
+                            <h6 class="mb-0 fw-bold">Emergency Contact Information</h6>
+                        </div>
+                    </div>
+                    <div class="card-body px-0 pt-3 pb-0">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label for="{{ form.emergency_contact_name.id_for_label }}" class="form-label">Emergency Contact Name <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><span class="material-icons fs-5">person</span></span>
+                                    {{ form.emergency_contact_name }}
+                                </div>
+                                {% if form.emergency_contact_name.errors %}
+                                <div class="text-danger mt-1 small">
+                                    {% for error in form.emergency_contact_name.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-12 col-md-6">
+                                <label for="{{ form.emergency_contact_number.id_for_label }}" class="form-label">Emergency Contact Number <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><span class="material-icons fs-5">call</span></span>
+                                    {{ form.emergency_contact_number }}
+                                </div>
+                                {% if form.emergency_contact_number.errors %}
+                                <div class="text-danger mt-1 small">
+                                    {% for error in form.emergency_contact_number.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-12">
+                                <label for="{{ form.emergency_contact.id_for_label }}" class="form-label">Relationship <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><span class="material-icons fs-5">family_restroom</span></span>
+                                    {{ form.emergency_contact }}
+                                </div>
+                                {% if form.emergency_contact.errors %}
+                                <div class="text-danger mt-1 small">
+                                    {% for error in form.emergency_contact.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- ID Information Section -->
                 <div class="row g-3 mt-3">
                     <div class="col-12 col-md-6">
@@ -127,7 +218,7 @@
                         <label for="{{ form.new_pd_number.id_for_label }}" class="form-label">New PD Number</label>
                         <div class="input-group">
                             <span class="input-group-text"><span class="material-icons fs-5">numbers</span></span>
-                            <input type="text" name="new_pd_number" id="{{ form.new_pd_number.id_for_label }}" class="form-control bg-light" readonly placeholder="Auto-generated">
+                            {{ form.new_pd_number }}
                         </div>
                         <div class="form-text">This field will be automatically generated (format: XXX)</div>
                     </div>
@@ -158,6 +249,30 @@
                                 <div>
                                     <p class="mb-0"><strong>1 Year Validity</strong></p>
                                     <p class="mb-0 small text-muted">This driver's record will be valid for 1 year from the creation date. The system will automatically calculate the expiration date.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Active Status checkbox -->
+                <div class="row g-3 mt-3">
+                    <div class="col-12">
+                        <div class="card border p-3">
+                            <div class="d-flex align-items-start">
+                                <span class="material-icons me-2 text-success">toggle_on</span>
+                                <div>
+                                    <h6 class="mb-2">Driver Status</h6>
+                                    <div class="form-check form-switch">
+                                        {{ form.active }}
+                                        <label class="form-check-label" for="{{ form.active.id_for_label }}">
+                                            <strong>Active</strong>
+                                        </label>
+                                    </div>
+                                    <div class="form-text mt-1">
+                                        <strong>Important:</strong> Inactive drivers will not appear in search results and cannot be assigned to vehicles. 
+                                        Only mark a driver as inactive if they are no longer employed.
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -268,6 +383,9 @@
     background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
 }
 </style>
+
+<!-- Add jQuery before using it -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <!-- Form validation script -->
 <script>

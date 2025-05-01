@@ -400,6 +400,12 @@ def edit_profile(request):
             user_profile.contact_number = request.POST.get('contact_number')
             user_profile.license_number = request.POST.get('license_number')
             user_profile.address = request.POST.get('address')
+            
+            # Save the new fields
+            user_profile.birthdate = request.POST.get('birthdate') or None
+            user_profile.emergency_contact_name = request.POST.get('emergency_contact_name')
+            user_profile.emergency_contact = request.POST.get('emergency_contact')
+            user_profile.emergency_contact_number = request.POST.get('emergency_contact_number')
 
             if 'avatar' in request.FILES:
                 user_profile.avatar = request.FILES['avatar']
@@ -1497,3 +1503,77 @@ def driver_id_verify(request, driver_id):
         }
     
     return render(request, 'user_portal/driver_id_verify.html', context) 
+
+@login_required
+def view_qr_code(request):
+    """
+    Display the user's QR code for viewing and printing.
+    The QR code can be attached to vehicles for easy scanning by enforcers.
+    """
+    user = request.user
+    profile = user.userprofile
+    
+    # Check if QR code exists
+    if not profile.qr_code:
+        # QR code doesn't exist, generate one
+        try:
+            import qrcode
+            from io import BytesIO
+            from django.core.files import File
+            
+            # Generate vehicle/user data to include in QR code
+            qr_data = {
+                "user_id": user.id,
+                "name": user.get_full_name(),
+                "license": profile.license_number or "",
+                "enforcer_id": profile.enforcer_id or "",
+            }
+            
+            # Add vehicle data if the user has registered vehicles
+            vehicles = user.registered_vehicles.filter(is_active=True)
+            if vehicles.exists():
+                vehicle = vehicles.first()
+                qr_data.update({
+                    "plate_number": vehicle.plate_number,
+                    "vehicle_type": vehicle.vehicle_type,
+                    "make": vehicle.make,
+                    "model": vehicle.model
+                })
+            
+            # Convert data to string
+            qr_content = "\n".join([f"{k}: {v}" for k, v in qr_data.items()])
+            
+            # Create QR code
+            qr = qrcode.QRCode(
+                version=1,
+                error_correction=qrcode.constants.ERROR_CORRECT_L,
+                box_size=10,
+                border=4,
+            )
+            qr.add_data(qr_content)
+            qr.make(fit=True)
+            
+            img = qr.make_image(fill_color="black", back_color="white")
+            buffer = BytesIO()
+            img.save(buffer, 'PNG')
+            
+            # Save QR code to profile
+            filename = f'qr_code_{user.username}.png'
+            profile.qr_code.save(filename, File(buffer), save=True)
+            
+            messages.success(request, "QR Code generated successfully.")
+            
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error generating QR code: {str(e)}")
+            messages.error(request, "There was a problem generating your QR code. Please try again later.")
+            return redirect('user_portal:user_profile')
+    
+    context = {
+        'user': user,
+        'profile': profile,
+        'page_title': 'Vehicle QR Code'
+    }
+    
+    return render(request, 'user_portal/view_qr_code.html', context) 

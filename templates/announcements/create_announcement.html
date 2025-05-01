@@ -300,10 +300,126 @@
                         </div>
 
                         <!-- Conditional Fields -->
-                        <div class="conditional-fields" id="popupAcknowledgeFields">
+                        <div class="conditional-fields" id="popupAcknowledgeFields" style="display: none;">
+                            <div class="form-section mb-4">
+                                <h5 class="form-section-title">
+                                    <span class="material-icons">open_in_new</span>
+                                    Popup Settings
+                                </h5>
+                                <div class="form-section-content">
                             <div class="alert alert-info mb-4">
                                 <span class="material-icons me-2">info</span>
                                 <strong>Popup Announcements:</strong> When an announcement is shown as a popup, it appears over the main content of the page, ensuring users see it immediately.
+                                    </div>
+                                    
+                                    <div class="row mb-4">
+                                        <div class="col-lg-6 mb-3 mb-lg-0">
+                                            <label for="popup_width" class="form-label">
+                                                Popup Width
+                                                <i class="material-icons tooltip-icon" data-bs-toggle="tooltip" title="Control how wide the popup should be on screen">help_outline</i>
+                                            </label>
+                                            <select class="form-select" id="popup_width" name="popup_width">
+                                                <option value="small">Small (400px)</option>
+                                                <option value="medium" selected>Medium (600px)</option>
+                                                <option value="large">Large (800px)</option>
+                                                <option value="xlarge">Extra Large (1000px)</option>
+                                            </select>
+                                            <div class="form-text">Choose the best size for your content length</div>
+                                        </div>
+                                        <div class="col-lg-6">
+                                            <label for="popup_position" class="form-label">
+                                                Popup Position
+                                                <i class="material-icons tooltip-icon" data-bs-toggle="tooltip" title="Where the popup should appear on screen">help_outline</i>
+                                            </label>
+                                            <select class="form-select" id="popup_position" name="popup_position">
+                                                <option value="center" selected>Center (Default)</option>
+                                                <option value="top">Top</option>
+                                                <option value="top-right">Top Right</option>
+                                                <option value="top-left">Top Left</option>
+                                                <option value="bottom">Bottom</option>
+                                            </select>
+                                            <div class="form-text">Position affects how the popup appears in the user's viewport</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row mb-4">
+                                        <div class="col-lg-6 mb-3 mb-lg-0">
+                                            <div class="setting-card">
+                                                <div class="setting-header">
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input" type="checkbox" id="allow_close" name="allow_close" checked>
+                                                        <label class="form-check-label fw-medium" for="allow_close">
+                                                            Allow Close Button
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="setting-description">
+                                                    <span class="material-icons">close</span>
+                                                    <div class="form-text">If enabled, users can dismiss the popup with a close button</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-6">
+                                            <div class="setting-card" id="auto_dismiss_card">
+                                                <div class="setting-header">
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input" type="checkbox" id="auto_dismiss" name="auto_dismiss">
+                                                        <label class="form-check-label fw-medium" for="auto_dismiss">
+                                                            Auto Dismiss
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="setting-description">
+                                                    <span class="material-icons">timer</span>
+                                                    <div class="form-text">If enabled, popup will automatically close after specified time</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div id="auto_dismiss_time_container" class="mb-4" style="display: none;">
+                                        <label for="auto_dismiss_time" class="form-label">Auto Dismiss After (seconds)</label>
+                                        <input type="number" class="form-control" id="auto_dismiss_time" name="auto_dismiss_time" min="3" max="60" value="10">
+                                        <div class="form-text">How long the popup will display before automatically closing (3-60 seconds)</div>
+                                    </div>
+                                    
+                                    <!-- Popup Preview -->
+                                    <div class="mb-2">
+                                        <label class="form-label d-flex align-items-center">
+                                            <span>Preview</span>
+                                            <button type="button" id="show_preview" class="btn btn-sm btn-outline-primary ms-3">
+                                                <span class="material-icons fs-6 me-1">visibility</span> Show Preview
+                                            </button>
+                                        </label>
+                                        <div class="form-text mb-2">Click the button above to see how your popup will appear to users</div>
+                                    </div>
+                                    
+                                    <div class="popup-preview border rounded p-3 bg-light">
+                                        <div class="d-flex align-items-center justify-content-between mb-2">
+                                            <div class="text-muted small"><span class="badge bg-secondary">Preview</span> How users will see your popup</div>
+                                            <div>
+                                                <div class="dropdown">
+                                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                        <span class="material-icons fs-6">devices</span> Preview As
+                                                    </button>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a class="dropdown-item active" href="#" data-device="desktop">Desktop</a></li>
+                                                        <li><a class="dropdown-item" href="#" data-device="tablet">Tablet</a></li>
+                                                        <li><a class="dropdown-item" href="#" data-device="mobile">Mobile</a></li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="popup-preview-frame border rounded bg-white" style="height: 300px; position: relative; overflow: hidden;">
+                                            <div class="text-center text-muted d-flex align-items-center justify-content-center h-100 popup-placeholder">
+                                                <div>
+                                                    <span class="material-icons d-block mb-2" style="font-size: 3rem;">open_in_new</span>
+                                                    <p>Click "Show Preview" to see how your popup will appear</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -328,16 +444,153 @@
 </div>
 
 <style>
+    :root {
+        --primary-color: #3b7ddd;
+        --focus-ring-color: rgba(59, 125, 221, 0.25);
+        --error-color: #dc3545;
+        --error-focus-color: rgba(220, 53, 69, 0.25);
+    }
+
+    .form-section {
+        transition: all 0.2s;
+    }
+
+    .form-section:focus-within {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.25rem var(--focus-ring-color);
+    }
+
+    .rich-text-editor {
+        min-height: 200px;
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+        padding: 0.75rem;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        overflow-y: auto;
+    }
+
+    .rich-text-editor:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.25rem var(--focus-ring-color);
+    }
+
+    .rich-text-editor.focused {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.25rem var(--focus-ring-color);
+    }
+
+    .rich-text-editor.is-invalid {
+        border-color: var(--error-color);
+    }
+
+    .rich-text-editor.is-invalid:focus {
+        box-shadow: 0 0 0 0.25rem var(--error-focus-color);
+    }
+
+    .rich-text-editor[data-placeholder]:empty:before {
+        content: attr(data-placeholder);
+        color: #6c757d;
+        font-style: italic;
+    }
+
+    .rich-text-toolbar {
+        padding: 0.5rem;
+        background-color: #f8f9fa;
+        border: 1px solid #ced4da;
+        border-bottom: none;
+        border-radius: 0.25rem 0.25rem 0 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+
+    .rich-text-toolbar button {
+        background-color: transparent;
+        border: 1px solid transparent;
+        border-radius: 0.25rem;
+        padding: 0.375rem;
+        cursor: pointer;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .rich-text-toolbar button:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+        border-color: #ced4da;
+    }
+
+    .rich-text-toolbar button:focus {
+        outline: none;
+        box-shadow: 0 0 0 0.25rem var(--focus-ring-color);
+    }
+
+    .rich-text-toolbar .dropdown-menu {
+        padding: 0.5rem;
+    }
+
+    .rich-text-toolbar .dropdown-item {
+        border-radius: 0.25rem;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .rich-text-toolbar .dropdown-item:focus {
+        background-color: rgba(59, 125, 221, 0.1);
+        color: #212529;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.25rem var(--focus-ring-color);
+    }
+
+    .form-control.is-invalid:focus, .form-select.is-invalid:focus {
+        box-shadow: 0 0 0 0.25rem var(--error-focus-color);
+    }
+
+    .input-group > .form-control:focus,
+    .input-group > .form-select:focus {
+        z-index: 3;
+    }
+
+    .input-group-text {
+        transition: border-color 0.15s ease-in-out;
+    }
+
+    .input-group:focus-within .input-group-text {
+        border-color: var(--primary-color);
+    }
+
+    .form-check-input:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.25rem var(--focus-ring-color);
+    }
+
+    .btn:focus {
+        box-shadow: 0 0 0 0.25rem var(--focus-ring-color);
+    }
+
+    .settings-card {
+        border: 1px solid rgba(0,0,0,.125);
+        border-radius: 0.25rem;
+        transition: all 0.2s;
+    }
+
+    .settings-card:focus-within {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.25rem var(--focus-ring-color);
+    }
+    
+    .form-switch .form-check-input:focus {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%233b7ddd'/%3e%3c/svg%3e");
+    }
+
 .form-control, .form-select {
     border-color: #e9ecef;
     padding: 0.75rem 1rem;
     font-size: 0.95rem;
     transition: all 0.2s ease;
-}
-
-.form-control:focus, .form-select:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.1);
+        background-color: #fff;
+        pointer-events: auto;
 }
 
 .form-control-lg {
@@ -443,19 +696,138 @@ textarea {
     color: var(--text-dark);
 }
 
-/* New styling for enhanced form */
+    /* Main form styles */
 .form-section {
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    overflow: hidden;
-    transition: all 0.3s ease;
+        position: relative;
+        border: 1px solid var(--light);
+        border-radius: 0.5rem;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .form-section:focus-within {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+    }
+
+    /* Rich text editor styles */
+    .rich-text-editor {
+        min-height: 200px;
+        padding: 0.75rem;
+        border: 1px solid var(--border-color);
+        border-radius: 0.375rem;
+        overflow-y: auto;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .rich-text-editor:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+    }
+
+    .rich-text-editor.is-invalid {
+        border-color: var(--danger);
+    }
+
+    .rich-text-editor[data-placeholder]:empty:before {
+        content: attr(data-placeholder);
+        color: var(--secondary);
+        pointer-events: none;
+    }
+
+    .rich-text-toolbar {
+        border: 1px solid var(--border-color);
+        border-bottom: none;
+        border-top-left-radius: 0.375rem;
+        border-top-right-radius: 0.375rem;
+        background-color: var(--light-bg);
+        padding: 0.5rem;
+    }
+
+    .rich-text-toolbar button {
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: 0.25rem;
+        padding: 0.25rem 0.5rem;
+        margin-right: 0.125rem;
+        color: var(--dark);
+        cursor: pointer;
 }
 
-.form-section:hover {
-    border-color: #dee2e6;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    .rich-text-toolbar button:hover {
+        background-color: rgba(var(--bs-primary-rgb), 0.1);
+    }
+
+    .rich-text-toolbar button:focus {
+        outline: none;
+        box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+    }
+
+    /* Form controls with better accessibility */
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+    }
+
+    .form-control.is-invalid, .form-select.is-invalid, .rich-text-editor.is-invalid {
+        border-color: var(--danger);
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right calc(0.375em + 0.1875rem) center;
+        background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+    }
+
+    .rich-text-editor.is-invalid {
+        background-position: right 0.75rem top 0.75rem;
+    }
+
+    /* Dropdown accessibility improvements */
+    .dropdown-item {
+        cursor: pointer;
+    }
+
+    .dropdown-item:focus {
+        outline: none;
+        background-color: rgba(var(--bs-primary-rgb), 0.1);
+    }
+
+    /* Settings card styles */
+    .setting-card {
+        border: 1px solid var(--light);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .setting-card.border-primary {
+        border-color: var(--primary);
+    }
+
+    .setting-description {
+        border-left: 3px solid var(--light);
+        padding-left: 1rem;
+        margin: 0.5rem 0;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .setting-description.border-primary {
+        border-left-color: var(--primary);
+    }
+
+    /* Switch toggle styles */
+    .form-check-input[type="checkbox"] {
+        cursor: pointer;
+    }
+
+    .form-check-input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
 }
 
+    /* New styling for enhanced form */
 .form-section-title {
     background-color: #f8f9fa;
     padding: 0.75rem 1rem;
@@ -781,321 +1153,261 @@ textarea {
         font-size: 1.25rem;
     }
 }
-
-/* Rich Text Editor Styles */
-.rich-text-toolbar {
-    background-color: #f8f9fa;
-    border-bottom: none !important;
-}
-
-.rich-text-editor {
-    min-height: 150px;
-    padding: 0.75rem;
-    background-color: white;
-    outline: none;
-    transition: border-color 0.2s;
-}
-
-.rich-text-editor:focus {
-    border-color: var(--primary-color) !important;
-    box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.1);
-}
-
-.rich-text-editor.is-invalid {
-    border-color: #dc3545 !important;
-}
-
-/* Placeholder for empty editor */
-.rich-text-editor:empty:before,
-.rich-text-editor.empty:before {
-    content: attr(data-placeholder);
-    color: #6c757d;
-    opacity: 0.7;
-}
-
-/* Formatting styles */
-.rich-text-editor h2 {
-    font-size: 1.5rem;
-    margin-bottom: 0.75rem;
-    color: #333;
-}
-
-.rich-text-editor h3 {
-    font-size: 1.3rem;
-    margin-bottom: 0.75rem;
-    color: #333;
-}
-
-.rich-text-editor h4 {
-    font-size: 1.1rem;
-    margin-bottom: 0.5rem;
-    color: #333;
-}
-
-.rich-text-editor p {
-    margin-bottom: 0.75rem;
-}
-
-.rich-text-editor ul, .rich-text-editor ol {
-    margin-bottom: 0.75rem;
-    padding-left: 1.5rem;
-}
-
-.rich-text-editor a {
-    color: var(--primary-color);
-    text-decoration: underline;
-}
-
-/* Fix for Firefox contenteditable */
-.rich-text-editor br {
-    display: block;
-    content: "";
-}
-
-.dropdown-item {
-    display: flex;
-    align-items: center;
-    padding: 0.5rem 1rem;
-}
-
-.dropdown-item[data-command="formatBlock"][data-value="h2"] {
-    font-size: 1.25rem;
-    font-weight: 600;
-}
-
-.dropdown-item[data-command="formatBlock"][data-value="h3"] {
-    font-size: 1.15rem;
-    font-weight: 600;
-}
-
-.dropdown-item[data-command="formatBlock"][data-value="h4"] {
-    font-size: 1.05rem;
-    font-weight: 600;
-}
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize tooltips and other existing functionality first
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl)
-    });
-    
-    // Update priority indicator when select changes
-    const prioritySelect = document.getElementById('priority');
-    prioritySelect.addEventListener('change', function() {
-        document.querySelector('.priority-indicator').style.backgroundColor = 
-            this.value === 'HIGH' ? 'var(--danger)' : 
-            this.value === 'MEDIUM' ? 'var(--warning)' : 
-            'var(--success)';
-    });
-    
-    // Update toggle switch visuals
-    const toggleSwitches = document.querySelectorAll('.form-check-input[type="checkbox"]');
-    toggleSwitches.forEach(toggle => {
-        toggle.addEventListener('change', function() {
-            // Toggle the setting card active appearance
-            if (this.checked) {
-                this.closest('.setting-card').classList.add('border-primary');
-                this.closest('.setting-card').querySelector('.setting-description').classList.add('border-primary');
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get elements
+        const form = document.getElementById('announcementForm');
+        const titleInput = document.getElementById('title');
+        const categorySelect = document.getElementById('category');
+        const editor = document.getElementById('editor');
+        const contentInput = document.getElementById('content');
+        const submitButton = document.getElementById('submit-button');
+        const isPopupCheckbox = document.getElementById('is_popup');
+        const requiresAcknowledgmentCheckbox = document.getElementById('requires_acknowledgment');
+        const requiresAcknowledgmentCard = requiresAcknowledgmentCheckbox.closest('.setting-card');
+        const popupAcknowledgeFields = document.getElementById('popupAcknowledgeFields');
+        
+        // New popup related elements
+        const autoDismissCheckbox = document.getElementById('auto_dismiss');
+        const autoDismissTimeContainer = document.getElementById('auto_dismiss_time_container');
+        const popupWidthSelect = document.getElementById('popup_width');
+        const popupPositionSelect = document.getElementById('popup_position');
+        const allowCloseCheckbox = document.getElementById('allow_close');
+        const showPreviewButton = document.getElementById('show_preview');
+        
+        // Initialize popup fields visibility
+        updatePopupRelatedFields();
+        
+        // Toggle popup fields when checkbox changes
+        isPopupCheckbox.addEventListener('change', updatePopupRelatedFields);
+        
+        function updatePopupRelatedFields() {
+            const isPopupEnabled = isPopupCheckbox.checked;
+            
+            // Show/hide additional popup info
+            popupAcknowledgeFields.style.display = isPopupEnabled ? 'block' : 'none';
+            
+            // Enable/disable acknowledgment checkbox based on popup status
+            if (!isPopupEnabled) {
+                requiresAcknowledgmentCheckbox.checked = false;
+                requiresAcknowledgmentCheckbox.disabled = true;
+                requiresAcknowledgmentCard.classList.add('opacity-50');
             } else {
-                this.closest('.setting-card').classList.remove('border-primary');
-                this.closest('.setting-card').querySelector('.setting-description').classList.remove('border-primary');
+                requiresAcknowledgmentCheckbox.disabled = false;
+                requiresAcknowledgmentCard.classList.remove('opacity-50');
+}
+        }
+        
+        // Toggle auto dismiss time input based on checkbox
+        autoDismissCheckbox.addEventListener('change', function() {
+            autoDismissTimeContainer.style.display = this.checked ? 'block' : 'none';
+        });
+        
+        // Preview functionality
+        showPreviewButton.addEventListener('click', function() {
+            const title = titleInput.value.trim() || 'Announcement Title';
+            const content = editor.innerHTML || '<p>Announcement content will appear here...</p>';
+            
+            // Create the preview modal using SweetAlert2
+            Swal.fire({
+                title: title,
+                html: content,
+                width: getPopupWidth(),
+                position: getPopupPosition(),
+                showConfirmButton: requiresAcknowledgmentCheckbox.checked,
+                showCloseButton: allowCloseCheckbox.checked,
+                confirmButtonText: 'Acknowledge',
+                confirmButtonColor: '#3b7ddd',
+                allowOutsideClick: !requiresAcknowledgmentCheckbox.checked,
+                allowEscapeKey: !requiresAcknowledgmentCheckbox.checked,
+                backdrop: true,
+                customClass: {
+                    container: 'popup-preview-container',
+                    popup: 'popup-preview-popup',
+                    header: 'popup-preview-header',
+                    title: 'popup-preview-title',
+                    content: 'popup-preview-content'
+                }
+    });
+    
+            // If auto dismiss is enabled, close the preview after the specified time
+            if (autoDismissCheckbox.checked && !requiresAcknowledgmentCheckbox.checked) {
+                const dismissTime = parseInt(document.getElementById('auto_dismiss_time').value) * 1000;
+                setTimeout(() => {
+                    Swal.close();
+                }, dismissTime);
             }
         });
         
-        // Initialize state
-        if (toggle.checked) {
-            toggle.closest('.setting-card').classList.add('border-primary');
-            toggle.closest('.setting-card').querySelector('.setting-description').classList.add('border-primary');
+        // Helper functions for preview
+        function getPopupWidth() {
+            const width = popupWidthSelect.value;
+            switch(width) {
+                case 'small': return '400px';
+                case 'large': return '800px';
+                case 'xlarge': return '1000px';
+                default: return '600px'; // medium
+            }
         }
-    });
-    
-    // Form validation with micro-interactions
-    const formInputs = document.querySelectorAll('.form-control, .form-select');
-    
-    formInputs.forEach(input => {
-        // Add focus animation
-        input.addEventListener('focus', function() {
-            this.closest('.form-section').classList.add('border-primary');
-        });
         
-        input.addEventListener('blur', function() {
-            this.closest('.form-section').classList.remove('border-primary');
-        });
+        function getPopupPosition() {
+            return popupPositionSelect.value;
+        }
+    
+        // Set focus on title input when page loads
+        titleInput.focus();
         
-        // Clear invalid state when user starts typing
-        input.addEventListener('input', function() {
-            this.classList.remove('is-invalid');
-        });
-    });
-    
-    /* Rich Text Editor Functionality */
-    
-    // Set up rich text editor
-    const editor = document.getElementById('editor');
-    const toolbar = document.getElementById('formatting-toolbar');
-    const contentTextarea = document.getElementById('content');
-    
-    // If there's already content in the textarea (e.g., when editing), load it into the editor
-    if (contentTextarea.value) {
-        editor.innerHTML = contentTextarea.value;
+        // Rich text editor toolbar buttons
+        const toolbar = document.querySelector('.rich-text-toolbar');
+        const toolbarButtons = toolbar.querySelectorAll('button:not(.dropdown-toggle)');
+        const dropdownItems = document.querySelectorAll('.dropdown-item[data-command]');
+        
+        // Function to check if editor has content
+        function editorHasContent() {
+            const text = editor.innerText || '';
+            return text.trim().length > 0;
+        }
+        
+        // Form validation
+        function validateForm() {
+            let isValid = true;
+            
+            // Check title
+            if (!titleInput.value.trim()) {
+                titleInput.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                titleInput.classList.remove('is-invalid');
+            }
+            
+            // Check category
+            if (!categorySelect.value) {
+                categorySelect.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                categorySelect.classList.remove('is-invalid');
+            }
+            
+            // Check editor content
+            if (!editorHasContent()) {
+                editor.classList.add('is-invalid');
+                isValid = false;
     } else {
-        // Initialize with a paragraph tag if empty
-        editor.innerHTML = '<p><br></p>';
+                editor.classList.remove('is-invalid');
+            }
+            
+            return isValid;
     }
     
-    // Add placeholder behavior
-    editor.dataset.placeholder = 'Write your announcement content here...';
-    if (editor.innerHTML === '<p><br></p>' || editor.innerHTML === '') {
-        editor.classList.add('empty');
-    }
-    
-    // Execute command when a toolbar button is clicked
-    toolbar.addEventListener('click', function(e) {
-        const target = e.target.closest('button, a');
-        if (!target) return;
-        
+        // Handle form submission
+        form.addEventListener('submit', function(e) {
+            if (!validateForm()) {
             e.preventDefault();
             
-        const command = target.dataset.command;
-        if (!command) return;
-        
-        if (command === 'createLink') {
-            const url = prompt('Enter the URL:');
-            if (url) {
-                document.execCommand(command, false, url);
-            }
-        } else if (command === 'formatBlock') {
-            document.execCommand(command, false, target.dataset.value);
+                // Focus on the first invalid field
+                const firstInvalid = form.querySelector('.is-invalid');
+                if (firstInvalid) {
+                    if (firstInvalid === editor) {
+                        editor.focus();
         } else {
-            document.execCommand(command, false, null);
+                        firstInvalid.focus();
         }
-        
-        // Focus back on the editor
-        editor.focus();
-    });
-    
-    // Prevent default action when pressing Enter in a heading
-    editor.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            const selection = window.getSelection();
-            const range = selection.getRangeAt(0);
-            const startNode = range.startContainer;
+                }
+                return;
+            }
             
-            // Check if we're in a heading element
-            const headingParent = startNode.parentElement.closest('h1, h2, h3, h4, h5, h6');
-            if (headingParent) {
-                // Insert a paragraph after the heading
-                e.preventDefault();
-                const paragraph = document.createElement('p');
-                paragraph.innerHTML = '<br>';
-                headingParent.parentNode.insertBefore(paragraph, headingParent.nextSibling);
+            // Update hidden content input with editor HTML
+            contentInput.value = editor.innerHTML;
+        });
+        
+        // Editor focus and blur events
+        editor.addEventListener('focus', function() {
+            editor.classList.add('focused');
+        });
+        
+        editor.addEventListener('blur', function() {
+            editor.classList.remove('focused');
+        });
+    
+        // Make editor work with execCommand
+        toolbarButtons.forEach(function(button) {
+            button.addEventListener('click', function(e) {
+        e.preventDefault();
+                const command = this.dataset.command;
                 
-                // Move cursor to the new paragraph
-                const newRange = document.createRange();
-                newRange.setStart(paragraph, 0);
-                newRange.collapse(true);
-                selection.removeAllRanges();
-                selection.addRange(newRange);
-            }
-        }
-    });
-    
-    // Track when the editor changes
-    editor.addEventListener('input', function() {
-        // Clear invalid state when user starts typing
-        editor.classList.remove('is-invalid');
-        
-        // If empty, add the placeholder styling
-        if (editor.innerHTML.trim() === '' || editor.innerHTML === '<br>') {
-            editor.classList.add('empty');
-        } else {
-            editor.classList.remove('empty');
-        }
-    });
-    
-    // Handle pasting to strip unwanted formatting
-    editor.addEventListener('paste', function(e) {
-        e.preventDefault();
-        const text = e.clipboardData.getData('text/plain');
-        document.execCommand('insertText', false, text);
-    });
-    
-    // Form submission with validation
-    document.getElementById('announcementForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const title = document.getElementById('title').value.trim();
-        const editorContent = document.getElementById('editor').innerHTML.trim();
-        let isValid = true;
-        
-        if (!title) {
-            document.getElementById('title').classList.add('is-invalid');
-            isValid = false;
-        }
-        
-        // Transfer the HTML content from the editor to the hidden textarea
-        contentTextarea.value = editorContent;
-        
-        if (!editorContent || editorContent === '<br>' || editorContent === '<p></p>') {
-            editor.classList.add('is-invalid');
-            isValid = false;
-        }
-        
-        if (!isValid) {
-            // Show validation error with SweetAlert
-            Swal.fire({
-                icon: 'error',
-                title: 'Form Validation Error',
-                text: 'Please fill in all required fields.',
-                confirmButtonText: 'OK'
+                if (command) {
+                    document.execCommand(command, false, null);
+                    editor.focus();
+                }
             });
-            
-            // Focus first invalid input
-            document.querySelector('.is-invalid').focus();
-            
-            return false;
-        }
+    });
+    
+        // Handle dropdown items (headings, font size, etc.)
+        dropdownItems.forEach(function(item) {
+            item.addEventListener('click', function(e) {
+        e.preventDefault();
+                const command = this.dataset.command;
+                const value = this.dataset.value;
         
-        // Show loading state with SweetAlert
-        Swal.fire({
-            title: 'Publishing Announcement...',
-            text: 'Please wait while we process your submission',
-            allowOutsideClick: false,
-            showConfirmButton: false,
-            didOpen: () => {
-                Swal.showLoading();
-                
-                // Submit the form
-                this.submit();
+                if (command && value) {
+                    document.execCommand(command, false, value);
+                    editor.focus();
+        }
+            });
+        });
+    
+        // Remove invalid state when content is entered
+        titleInput.addEventListener('input', function() {
+            if (this.value.trim()) {
+                this.classList.remove('is-invalid');
             }
         });
+        
+        categorySelect.addEventListener('input', function() {
+            if (this.value) {
+                this.classList.remove('is-invalid');
+            }
+        });
+        
+        editor.addEventListener('input', function() {
+            if (editorHasContent()) {
+                this.classList.remove('is-invalid');
+            }
     });
     
-    // Show conditional fields based on selections
-    const isPopupCheckbox = document.getElementById('is_popup');
-    const requireAcknowledgment = document.getElementById('requires_acknowledgment');
-    const popupAcknowledgeFields = document.getElementById('popupAcknowledgeFields');
-    
-    isPopupCheckbox.addEventListener('change', function() {
-        if (this.checked) {
-            // If popup is enabled, show the conditional fields and enable acknowledgment option
-            popupAcknowledgeFields.style.display = 'block';
-            requireAcknowledgment.disabled = false;
-            requireAcknowledgment.parentElement.parentElement.classList.remove('opacity-50');
-        } else {
-            // If popup is disabled, hide the conditional fields and disable acknowledgment
-            popupAcknowledgeFields.style.display = 'none';
-            requireAcknowledgment.checked = false;
-            requireAcknowledgment.disabled = true;
-            requireAcknowledgment.parentElement.parentElement.classList.add('opacity-50');
-        }
-    });
-    
-    // Initialize conditional fields state
-    isPopupCheckbox.dispatchEvent(new Event('change'));
+        // Device preview switcher
+        const devicePreviewButtons = document.querySelectorAll('.dropdown-item[data-device]');
+        const previewFrame = document.querySelector('.popup-preview-frame');
+        
+        devicePreviewButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Remove active class from all buttons
+                devicePreviewButtons.forEach(btn => btn.classList.remove('active'));
+                
+                // Add active class to clicked button
+                this.classList.add('active');
+                
+                // Update preview frame dimensions
+                const device = this.dataset.device;
+                switch(device) {
+                    case 'mobile':
+                        previewFrame.style.maxWidth = '375px';
+                        previewFrame.style.margin = '0 auto';
+                        break;
+                    case 'tablet':
+                        previewFrame.style.maxWidth = '768px';
+                        previewFrame.style.margin = '0 auto';
+                        break;
+                    default: // desktop
+                        previewFrame.style.maxWidth = '100%';
+                        previewFrame.style.margin = '0';
+                }
+            });
+        });
 });
 </script>
 {% endblock %} 

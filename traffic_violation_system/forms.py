@@ -291,21 +291,23 @@ class DriverForm(forms.ModelForm):
         model = Driver
         fields = [
             'last_name', 'first_name', 'middle_initial', 'address',
-            'old_pd_number', 'new_pd_number',
-            'license_number', 'contact_number', 'emergency_contact',
-            'emergency_contact_number', 'active'
+            'old_pd_number', 'new_pd_number', 'birthdate',
+            'license_number', 'contact_number', 'emergency_contact_name',
+            'emergency_contact', 'emergency_contact_number', 'active'
         ]
         widgets = {
-            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last Name'}),
-            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First Name'}),
-            'middle_initial': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'M.I.'}),
-            'address': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Address', 'rows': 3}),
-            'old_pd_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Previous PD number if available'}),
-            'new_pd_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Auto-generated', 'readonly': True}),
-            'license_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Driver license number'}),
-            'contact_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Contact number'}),
-            'emergency_contact': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Emergency contact name'}),
-            'emergency_contact_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Emergency contact number'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter last name'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter first name'}),
+            'middle_initial': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter middle initial'}),
+            'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Enter address'}),
+            'old_pd_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter old P.D. number'}),
+            'new_pd_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Will be auto-generated', 'readonly': True}),
+            'birthdate': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'license_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter license number'}),
+            'contact_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter contact number'}),
+            'emergency_contact_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter emergency contact name'}),
+            'emergency_contact': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter relationship (e.g., Spouse, Parent)'}),
+            'emergency_contact_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter emergency contact number'}),
             'active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 

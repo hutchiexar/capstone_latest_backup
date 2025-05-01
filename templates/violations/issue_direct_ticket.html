@@ -5,6 +5,8 @@
 <!-- Add violation types JSON data for JavaScript use -->
 <script>
     const violationTypesJSON = '{{ violation_types_json|safe }}';
+    // Store initial data from backend
+    const initialDataJSON = '{{ initial_data|safe|escapejs }}';
 </script>
 
 <div class="container-fluid py-4">
@@ -214,7 +216,7 @@
                                         <select class="minimal-select" id="violation_selector">
                                             <option value="">Select violation type to add</option>
                                             {% for violation_type in violation_types %}
-                                                {% if not violation_type.is_ncap %}
+                                                {% if violation_type.classification == 'REGULAR' %}
                                                     <option value="{{ violation_type.name }}" 
                                                             data-amount="{{ violation_type.amount }}"
                                                             data-category="{{ violation_type.category }}">
@@ -5763,8 +5765,133 @@ function updateViolationTotal() {
 // Make sure TDZ checkbox has a reliable event listener
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, setting up TDZ checkbox listener');
-    setupTdzCheckboxListener();
+    
+    // Only call setupTdzCheckboxListener if the function exists
+    if (typeof setupTdzCheckboxListener === 'function') {
+        setupTdzCheckboxListener();
+    } else {
+        console.log('setupTdzCheckboxListener function not found, skipping');
+    }
+    
+    // Only initialize signature canvas if the function exists
+    if (typeof initializeSignatureCanvas === 'function') {
+        initializeSignatureCanvas();
+    } else {
+        console.log('initializeSignatureCanvas function not found, skipping');
+    }
+    
+    // Populate form fields from initialData
+    populateFormFromInitialData();
 });
+
+// Safe function to update no violations message without causing errors
+function updateNoViolationsMessage() {
+    const violationsList = document.getElementById('minimal_violations_list');
+    const noViolationsMsg = document.getElementById('no_violations_message');
+    
+    // Only proceed if both elements exist
+    if (!violationsList || !noViolationsMsg) {
+        console.log('Required elements for updateNoViolationsMessage not found, skipping');
+        return;
+    }
+    
+    if (violationsList.children.length === 0) {
+        noViolationsMsg.style.display = 'block';
+    } else {
+        noViolationsMsg.style.display = 'none';
+    }
+}
+
+// Function to populate form fields from initialData
+function populateFormFromInitialData() {
+    // Check if initialDataJSON is defined
+    if (typeof initialDataJSON === 'undefined' || !initialDataJSON) {
+        console.log('No initial data available');
+        return;
+    }
+    
+    try {
+        // Parse the JSON data
+        const initialData = JSON.parse(initialDataJSON);
+        console.log('Initial data loaded:', initialData);
+        
+        // Safely set form field values with error handling
+        function setFieldValue(fieldId, value) {
+            const field = document.getElementById(fieldId);
+            if (field && value !== undefined && value !== null) {
+                field.value = value;
+                console.log(`Set ${fieldId} to:`, value);
+                
+                // Add visual indicator that field was auto-populated
+                field.classList.add('bg-light');
+                setTimeout(() => field.classList.remove('bg-light'), 1500);
+            }
+        }
+        
+        // Populate personal information
+        setFieldValue('first_name', initialData.first_name);
+        setFieldValue('last_name', initialData.last_name);
+        setFieldValue('license_number', initialData.license_number);
+        setFieldValue('phone_number', initialData.phone_number);
+        setFieldValue('address', initialData.address);
+        
+        // Set checkbox for no license if license_number is empty
+        const noLicenseCheckbox = document.getElementById('noLicense');
+        if (noLicenseCheckbox) {
+            if (!initialData.license_number) {
+                noLicenseCheckbox.checked = true;
+                // Toggle license input if the function exists
+                if (typeof toggleLicenseInput === 'function') {
+                    toggleLicenseInput();
+                }
+            }
+        }
+        
+        // Populate user account if available
+        setFieldValue('user_account_id', initialData.user_account_id);
+        if (initialData.user_account_id) {
+            setFieldValue('violator_source', 'user');
+        }
+        
+        // Populate vehicle information
+        setFieldValue('vehicle_type', initialData.vehicle_type);
+        setFieldValue('plate_number', initialData.plate_number);
+        setFieldValue('color', initialData.color);
+        
+        // Handle classification dropdown
+        if (initialData.classification) {
+            const classificationSelect = document.getElementById('classification');
+            if (classificationSelect) {
+                // Find matching option or default to first option
+                const options = classificationSelect.options;
+                for (let i = 0; i < options.length; i++) {
+                    if (options[i].value.toLowerCase() === initialData.classification.toLowerCase()) {
+                        classificationSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        setFieldValue('registration_number', initialData.registration_number);
+        setFieldValue('registration_date', initialData.registration_date);
+        setFieldValue('vehicle_owner', initialData.vehicle_owner);
+        setFieldValue('vehicle_owner_address', initialData.vehicle_owner_address);
+        
+        console.log('Form populated successfully from initial data');
+        
+        // If we're in step 1, maybe advance to step 2 if all fields are filled
+        const stepButton = document.querySelector('.step-button[data-step="2"]');
+        if (stepButton && initialData.first_name && initialData.last_name && initialData.address) {
+            console.log('All required personal info fields filled, could advance to step 2');
+            // Uncomment to auto-advance
+            // stepButton.click();
+        }
+        
+    } catch (e) {
+        console.error('Error populating form from initial data:', e);
+    }
+}
 
 // Separate function to setup TDZ checkbox
 function setupTdzCheckboxListener() {
@@ -5792,5 +5919,70 @@ function setupTdzCheckboxListener() {
         console.error('TDZ checkbox not found for listener setup!');
     }
 }
+
+// Safe wrapper for updateViolationTotal function
+const originalUpdateViolationTotal = updateViolationTotal;
+updateViolationTotal = function() {
+    try {
+        return originalUpdateViolationTotal();
+    } catch(e) {
+        console.error('Error in updateViolationTotal:', e);
+        return 0;
+    }
+};
+
+// Make sure the no violations message is properly initialized
+document.addEventListener('DOMContentLoaded', function() {
+    // Safe call to updateNoViolationsMessage
+    setTimeout(updateNoViolationsMessage, 100);
+});
+
+// Function to toggle license input based on no license checkbox
+function toggleLicenseInput() {
+    const noLicenseCheckbox = document.getElementById('noLicense');
+    const licenseInputGroup = document.getElementById('licenseInputGroup');
+    const licenseNumberInput = document.getElementById('license_number');
+    
+    if (!noLicenseCheckbox || !licenseInputGroup) {
+        console.error('Required elements for toggleLicenseInput not found');
+        return;
+    }
+    
+    if (noLicenseCheckbox.checked) {
+        // If checked, disable and hide the license input
+        licenseInputGroup.style.opacity = '0.5';
+        licenseInputGroup.style.pointerEvents = 'none';
+        if (licenseNumberInput) {
+            // Clear and mark as not required
+            licenseNumberInput.value = '';
+            licenseNumberInput.required = false;
+        }
+        
+        // Add unlicensed driver violation if the function exists
+        if (typeof handleNoLicenseSelection === 'function') {
+            handleNoLicenseSelection(true);
+        }
+    } else {
+        // If unchecked, enable the license input
+        licenseInputGroup.style.opacity = '1';
+        licenseInputGroup.style.pointerEvents = 'auto';
+        if (licenseNumberInput) {
+            licenseNumberInput.required = true;
+        }
+        
+        // Remove unlicensed driver violation if the function exists
+        if (typeof handleNoLicenseSelection === 'function') {
+            handleNoLicenseSelection(false);
+        }
+    }
+}
+
+// Add event listener to the no license checkbox
+document.addEventListener('DOMContentLoaded', function() {
+    const noLicenseCheckbox = document.getElementById('noLicense');
+    if (noLicenseCheckbox) {
+        noLicenseCheckbox.addEventListener('change', toggleLicenseInput);
+    }
+});
 </script>
 {% endblock %}

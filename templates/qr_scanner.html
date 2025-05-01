@@ -1,0 +1,1221 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}QR Code Scanner - CTTMO Traffic Violation System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .scanner-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .scanner-header {
+        background-color: var(--primary-color);
+        border-radius: 0.5rem 0.5rem 0 0;
+        padding: 1.5rem;
+        color: white;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+    
+    .scanner-body {
+        background-color: white;
+        padding: 1.5rem;
+        border-radius: 0 0 0.5rem 0.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    #reader {
+        width: 100%;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .result-container {
+        display: none;
+        padding: 1.25rem;
+        border-radius: 0.5rem;
+        margin-top: 1.5rem;
+        background-color: #f8f9fa;
+        border-left: 4px solid var(--primary-color);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    
+    .actions-container {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1.25rem;
+    }
+    
+    .scanner-instructions {
+        margin-top: 1.5rem;
+        padding: 1.25rem;
+        background-color: #f8f9fa;
+        border-radius: 0.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .instruction-step {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 0.75rem;
+    }
+    
+    .instruction-step .material-icons {
+        margin-right: 0.75rem;
+        color: var(--primary-color);
+    }
+    
+    .card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        border: none;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .card-title {
+        font-weight: 600;
+        letter-spacing: 0.01em;
+    }
+    
+    .btn {
+        font-weight: 500;
+        letter-spacing: 0.01em;
+        padding: 0.5rem 1.25rem;
+        transition: all 0.2s;
+    }
+    
+    .btn-primary {
+        box-shadow: 0 2px 4px rgba(var(--primary-color-rgb), 0.2);
+    }
+    
+    .btn-primary:hover {
+        box-shadow: 0 4px 8px rgba(var(--primary-color-rgb), 0.3);
+    }
+    
+    .section-heading {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #444;
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    
+    .loading-spinner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        background-color: #f8f9fa;
+    }
+    
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+    }
+    
+    @media (max-width: 768px) {
+        #reader {
+            width: 100%;
+            max-width: 100%;
+        }
+        
+        .actions-container {
+            flex-direction: column;
+        }
+        
+        .actions-container .btn {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="scanner-container">
+        <div class="scanner-header">
+            <div class="d-flex align-items-center">
+                <span class="material-icons me-3" style="font-size: 2.25rem;">qr_code_scanner</span>
+                <div>
+                    <h1 class="h3 mb-0 fw-bold">QR Code Scanner</h1>
+                    <p class="mb-0 small opacity-75">Scan QR codes to verify vehicle and driver information</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="scanner-body">
+            <!-- QR Code Reader Element -->
+            <div id="reader"></div>
+            
+            <!-- Instructions -->
+            <div class="scanner-instructions mb-4">
+                <h4 class="h5 mb-3 fw-bold text-dark">How to scan a QR code:</h4>
+                <div class="instruction-step">
+                    <span class="material-icons text-success">check_circle</span>
+                    <span>Allow camera access when prompted</span>
+                </div>
+                <div class="instruction-step">
+                    <span class="material-icons text-success">check_circle</span>
+                    <span>Position the QR code within the camera view</span>
+                </div>
+                <div class="instruction-step">
+                    <span class="material-icons text-success">check_circle</span>
+                    <span>Hold the camera steady until the QR code is recognized</span>
+                </div>
+                <div class="instruction-step">
+                    <span class="material-icons text-success">check_circle</span>
+                    <span>If scanning fails, try adjusting lighting or distance</span>
+                </div>
+            </div>
+            
+            <!-- Result Container (Hidden by default) -->
+            <div id="result-container" class="result-container">
+                <div class="d-flex align-items-center mb-3">
+                    <span class="material-icons me-2 text-success">check_circle</span>
+                    <h4 class="h5 mb-0 fw-bold">QR Code Detected</h4>
+                </div>
+                <p id="result-content" class="mb-3 fw-medium"></p>
+                
+                <!-- Detailed Information Section -->
+                <div id="detailed-info" class="mt-4" style="display: none;">
+                    <div class="text-center mb-4 loading-spinner">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mb-0 mt-3 text-muted">Fetching information...</p>
+                    </div>
+                    
+                    <!-- User Information -->
+                    <div id="user-info-section" class="mb-4" style="display: none;">
+                        <h5 class="section-heading">Personal Information</h5>
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <small class="text-muted fw-medium">Name:</small>
+                                            <div id="user-name" class="fw-medium">-</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <small class="text-muted fw-medium">ID Number:</small>
+                                            <div id="user-id" class="fw-medium">-</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <small class="text-muted fw-medium">License:</small>
+                                            <div id="user-license" class="fw-medium">-</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <small class="text-muted fw-medium">Role:</small>
+                                            <div id="user-role" class="fw-medium">-</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <small class="text-muted fw-medium">Expiration Date:</small>
+                                            <div id="user-expiration" class="fw-medium">-</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <small class="text-muted fw-medium">Address:</small>
+                                            <div id="user-address" class="fw-medium">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Driver Information -->
+                    <div id="driver-info-section" class="mb-4" style="display: none;">
+                        <h5 class="section-heading">Driver Information</h5>
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <small class="text-muted fw-medium">Driver ID:</small>
+                                            <div id="driver-id" class="fw-medium">-</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <small class="text-muted fw-medium">Status:</small>
+                                            <div id="driver-status" class="fw-medium">-</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <small class="text-muted fw-medium">Type:</small>
+                                            <div id="driver-type" class="fw-medium">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Vehicle Information -->
+                    <div id="vehicle-info-section" class="mb-4" style="display: none;">
+                        <h5 class="section-heading">Vehicle Information</h5>
+                        <div id="vehicle-info-container">
+                            <div id="no-vehicles-card" style="display: none;">
+                                <div class="card border-warning shadow-sm">
+                                    <div class="card-body text-center py-4">
+                                        <span class="material-icons text-warning mb-2" style="font-size: 2rem;">directions_car_off</span>
+                                        <p class="mb-0 fw-medium">No vehicles found</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="vehicle-cards" class="row row-cols-1 row-cols-md-2 g-3">
+                                <!-- Vehicle cards will be added here dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- No Data Message -->
+                    <div id="no-data-message" style="display: none;" class="text-center py-4">
+                        <div class="d-flex align-items-center justify-content-center">
+                            <span class="material-icons me-2">info</span>
+                            <div>No additional information available for this QR code.</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="actions-container mt-4">
+                    <a id="view-details-btn" href="#" class="btn btn-primary">
+                        <span class="material-icons me-1" style="font-size: 18px;">visibility</span>
+                        View Details
+                    </a>
+                    <button id="scan-new-btn" class="btn btn-outline-secondary">
+                        <span class="material-icons me-1" style="font-size: 18px;">qr_code_scanner</span>
+                        Scan Another
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- HTML5 QR Code Library -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const resultContainer = document.getElementById('result-container');
+    const resultContent = document.getElementById('result-content');
+    const viewDetailsBtn = document.getElementById('view-details-btn');
+    const scanNewBtn = document.getElementById('scan-new-btn');
+    const detailedInfo = document.getElementById('detailed-info');
+    
+    // User info elements
+    const userInfoSection = document.getElementById('user-info-section');
+    const userName = document.getElementById('user-name');
+    const userId = document.getElementById('user-id');
+    const userRole = document.getElementById('user-role');
+    const userLicense = document.getElementById('user-license');
+    const userExpiration = document.getElementById('user-expiration');
+    const userAddress = document.getElementById('user-address');
+    
+    // Driver info elements
+    const driverInfoSection = document.getElementById('driver-info-section');
+    const driverId = document.getElementById('driver-id');
+    const driverStatus = document.getElementById('driver-status');
+    const driverType = document.getElementById('driver-type');
+    
+    // Vehicle info elements
+    const vehicleInfoSection = document.getElementById('vehicle-info-section');
+    const vehicleInfoContainer = document.getElementById('vehicle-info-container');
+    const noVehiclesCard = document.getElementById('no-vehicles-card');
+    const vehicleCards = document.getElementById('vehicle-cards');
+    
+    // No data message
+    const noDataMessage = document.getElementById('no-data-message');
+    
+    // Function to show notifications to the user
+    function showNotification(title, message, type = 'info') {
+        // Create notification element if it doesn't exist
+        let notificationContainer = document.getElementById('notification-container');
+        if (!notificationContainer) {
+            notificationContainer = document.createElement('div');
+            notificationContainer.id = 'notification-container';
+            notificationContainer.style.position = 'fixed';
+            notificationContainer.style.top = '20px';
+            notificationContainer.style.right = '20px';
+            notificationContainer.style.zIndex = '1050';
+            document.body.appendChild(notificationContainer);
+        }
+        
+        // Create the notification element
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type} alert-dismissible fade show`;
+        notification.role = 'alert';
+        notification.innerHTML = `
+            <strong>${title}</strong> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        // Add to container
+        notificationContainer.appendChild(notification);
+        
+        // Remove after 5 seconds
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => {
+                notification.remove();
+            }, 300);
+        }, 5000);
+    }
+    
+    let html5QrcodeScanner = new Html5QrcodeScanner(
+        "reader",
+        {
+            fps: 10,
+            qrbox: {width: 250, height: 250},
+            rememberLastUsedCamera: true,
+            showTorchButtonIfSupported: true,
+            formatsToSupport: [
+                Html5QrcodeSupportedFormats.QR_CODE,
+                Html5QrcodeSupportedFormats.DATA_MATRIX
+            ]
+        },
+        /* verbose= */ false
+    );
+    
+    // Function to reset detailed info sections
+    function resetDetailedInfo() {
+        userInfoSection.style.display = 'none';
+        driverInfoSection.style.display = 'none';
+        vehicleInfoSection.style.display = 'none';
+        noDataMessage.style.display = 'none';
+        
+        // Reset the violations section if it exists
+        const violationsSection = document.getElementById('violations-info-section');
+        if (violationsSection) {
+            violationsSection.style.display = 'none';
+        }
+        
+        // Reset content
+        userName.textContent = '-';
+        userId.textContent = '-';
+        userRole.textContent = '-';
+        userLicense.textContent = '-';
+        userExpiration.textContent = '-';
+        userAddress.textContent = '-';
+        driverId.textContent = '-';
+        driverStatus.textContent = '-';
+        driverType.textContent = '-';
+        vehicleInfoContainer.style.display = 'none';
+        noVehiclesCard.style.display = 'none';
+        vehicleCards.innerHTML = '';
+    }
+    
+    // Function to fetch and display detailed information
+    function fetchDetailedInfo(url) {
+        // Show the detailed info container with loading spinner
+        detailedInfo.style.display = 'block';
+        resetDetailedInfo();
+        
+        // First check if this is a driver verification URL
+        const isDriverUrl = url.includes('/driver/') && url.includes('/verify');
+        
+        // For driver URLs, we'll fetch the HTML content directly
+        if (isDriverUrl) {
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.text(); // Get HTML content
+                })
+                .then(html => {
+                    // Hide loading spinner
+                    document.querySelector('#detailed-info .text-center').style.display = 'none';
+                    
+                    // Parse the HTML
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    // Extract and display driver information
+                    extractDriverInfo(doc);
+                })
+                .catch(error => {
+                    showErrorMessage('Error retrieving driver information');
+                });
+        } else {
+            // Original JSON fetching logic for other URLs
+        fetch(url, {
+            headers: {
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Hide loading spinner and show appropriate sections
+            document.querySelector('#detailed-info .text-center').style.display = 'none';
+            
+            let hasData = false;
+            
+            // Display user information if available
+            if (data.name) {
+                userInfoSection.style.display = 'block';
+                userName.textContent = data.name;
+                userId.textContent = data.id || '-';
+                userRole.textContent = data.role || '-';
+                userLicense.textContent = data.license_number || '-';
+                    userExpiration.textContent = data.expiration_date || '-';
+                    userAddress.textContent = data.address || '-';
+                hasData = true;
+            }
+            
+            // Display driver information if available
+            if (data.driver) {
+                driverInfoSection.style.display = 'block';
+                driverId.textContent = data.driver.id || '-';
+                driverStatus.textContent = data.driver.status || '-';
+                driverType.textContent = data.driver.type || 'Standard';
+                hasData = true;
+            }
+            
+            // Display vehicle information if available
+            if (data.vehicles && data.vehicles.length > 0) {
+                vehicleInfoSection.style.display = 'block';
+                vehicleInfoContainer.style.display = 'block';
+                vehicleCards.innerHTML = '';
+                
+                data.vehicles.forEach(vehicle => {
+                    let card = document.createElement('div');
+                    card.className = 'col';
+                    card.innerHTML = `
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body">
+                                <h6 class="card-title text-primary">${vehicle.plate_number || '-'}</h6>
+                                <div class="card-text">
+                                    <small class="text-muted">Make:</small>
+                                    <div>${vehicle.make || '-'}</div>
+                                    <small class="text-muted mt-2">Model:</small>
+                                    <div>${vehicle.model || '-'}</div>
+                                    <small class="text-muted mt-2">Year:</small>
+                                    <div>${vehicle.year || '-'}</div>
+                                    <small class="text-muted mt-2">Operator:</small>
+                                    <div>${vehicle.operator || '-'}</div>
+                                    ${vehicle.color ? `
+                                    <small class="text-muted mt-2">Color:</small>
+                                    <div>${vehicle.color}</div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    vehicleCards.appendChild(card);
+                });
+                hasData = true;
+            } else if (data.vehicles) {
+                // Show vehicle section with "No vehicles" message if array exists but is empty
+                vehicleInfoSection.style.display = 'block';
+                noVehiclesCard.style.display = '';
+                hasData = true;
+            }
+            
+            // Check for violations data
+            if (data.violations && data.violations.length > 0) {
+                // Create a violations section if it doesn't exist
+                let violationsSection = document.getElementById('violations-info-section');
+                if (!violationsSection) {
+                    violationsSection = document.createElement('div');
+                    violationsSection.id = 'violations-info-section';
+                    violationsSection.className = 'mb-4';
+                    violationsSection.innerHTML = `
+                        <h5 class="section-heading">Recent Violations</h5>
+                        <div class="card shadow-sm">
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-sm mb-0">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Type</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="violations-table-body">
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Insert after vehicle section
+                    detailedInfo.insertBefore(violationsSection, noDataMessage);
+                }
+                
+                // Display violations in the table
+                const tbody = document.getElementById('violations-table-body');
+                tbody.innerHTML = '';
+                
+                data.violations.forEach(violation => {
+                    const tr = document.createElement('tr');
+                    
+                    // Determine status badge color
+                    let statusBadgeClass = 'bg-secondary';
+                    if (violation.status === 'PAID') {
+                        statusBadgeClass = 'bg-success';
+                    } else if (violation.status === 'PENDING') {
+                        statusBadgeClass = 'bg-warning text-dark';
+                    } else if (['APPROVED', 'ADJUDICATED'].includes(violation.status)) {
+                        statusBadgeClass = 'bg-danger';
+                    }
+                    
+                    tr.innerHTML = `
+                        <td>${violation.date}</td>
+                        <td>${violation.violation_type.length > 20 ? violation.violation_type.substring(0, 20) + '...' : violation.violation_type}</td>
+                        <td><span class="badge ${statusBadgeClass}">${violation.status}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                
+                violationsSection.style.display = 'block';
+                hasData = true;
+            }
+            
+            // Show no data message if no information was available
+            if (!hasData) {
+                noDataMessage.style.display = 'block';
+            }
+        })
+        .catch(error => {
+                showErrorMessage('Error retrieving information');
+            });
+        }
+    }
+    
+    // Helper function to show error messages
+    function showErrorMessage(message) {
+            document.querySelector('#detailed-info .text-center').style.display = 'none';
+            noDataMessage.style.display = 'block';
+            noDataMessage.innerHTML = `
+                <div class="d-flex align-items-center justify-content-center">
+                    <span class="material-icons me-2">error</span>
+                <div>${message}</div>
+                </div>
+            `;
+    }
+    
+    // Function to extract driver information from HTML
+    function extractDriverInfo(doc) {
+        let hasData = false;
+        
+        try {
+            // Extract driver personal information
+            const personalInfo = extractPersonalInfo(doc);
+            if (personalInfo) {
+                userInfoSection.style.display = 'block';
+                userName.textContent = personalInfo.name || '-';
+                userId.textContent = personalInfo.id || '-';
+                userRole.textContent = 'Driver';
+                userLicense.textContent = personalInfo.license || '-';
+                userExpiration.textContent = personalInfo.expiration || '-';
+                userAddress.textContent = personalInfo.address || '-';
+                hasData = true;
+            }
+            
+            // Extract driver details
+            const driverDetails = extractDriverDetails(doc);
+            if (driverDetails) {
+                driverInfoSection.style.display = 'block';
+                driverId.textContent = driverDetails.id || '-';
+                driverStatus.textContent = driverDetails.status || '-';
+                driverType.textContent = driverDetails.type || 'Standard';
+                hasData = true;
+            }
+            
+            // Extract vehicle information
+            const vehicles = extractVehicleInfo(doc);
+            if (vehicles && vehicles.length > 0) {
+                vehicleInfoSection.style.display = 'block';
+                vehicleInfoContainer.style.display = 'block';
+                vehicleCards.innerHTML = '';
+                
+                vehicles.forEach(vehicle => {
+                    let card = document.createElement('div');
+                    card.className = 'col';
+                    card.innerHTML = `
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body">
+                                <h6 class="card-title text-primary">${vehicle.plateNumber || '-'}</h6>
+                                <div class="card-text">
+                                    <small class="text-muted">Make:</small>
+                                    <div>${vehicle.make || '-'}</div>
+                                    <small class="text-muted mt-2">Model:</small>
+                                    <div>${vehicle.model || '-'}</div>
+                                    <small class="text-muted mt-2">Year:</small>
+                                    <div>${vehicle.year || '-'}</div>
+                                    <small class="text-muted mt-2">Operator:</small>
+                                    <div>${vehicle.operator || '-'}</div>
+                                    ${vehicle.color ? `
+                                    <small class="text-muted mt-2">Color:</small>
+                                    <div>${vehicle.color}</div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    vehicleCards.appendChild(card);
+                });
+                hasData = true;
+            } else {
+                vehicleInfoSection.style.display = 'block';
+                noVehiclesCard.style.display = '';
+                hasData = true;
+            }
+            
+            // Extract violations information
+            const violations = extractViolationsInfo(doc);
+            if (violations && violations.length > 0) {
+                // Create a violations section if it doesn't exist
+                let violationsSection = document.getElementById('violations-info-section');
+                if (!violationsSection) {
+                    violationsSection = document.createElement('div');
+                    violationsSection.id = 'violations-info-section';
+                    violationsSection.className = 'mb-4';
+                    violationsSection.innerHTML = `
+                        <h5 class="section-heading">Recent Violations</h5>
+                        <div class="card shadow-sm">
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-sm mb-0">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Type</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="violations-table-body">
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Insert after vehicle section
+                    detailedInfo.insertBefore(violationsSection, noDataMessage);
+                }
+                
+                // Display violations in the table
+                const tbody = document.getElementById('violations-table-body');
+                tbody.innerHTML = '';
+                
+                violations.forEach(violation => {
+                    const tr = document.createElement('tr');
+                    
+                    // Determine status badge color
+                    let statusBadgeClass = 'bg-secondary';
+                    if (violation.status === 'PAID') {
+                        statusBadgeClass = 'bg-success';
+                    } else if (violation.status === 'PENDING') {
+                        statusBadgeClass = 'bg-warning text-dark';
+                    } else if (['APPROVED', 'ADJUDICATED'].includes(violation.status)) {
+                        statusBadgeClass = 'bg-danger';
+                    }
+                    
+                    tr.innerHTML = `
+                        <td>${violation.date}</td>
+                        <td>${violation.type.length > 20 ? violation.type.substring(0, 20) + '...' : violation.type}</td>
+                        <td><span class="badge ${statusBadgeClass}">${violation.status}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                
+                violationsSection.style.display = 'block';
+                hasData = true;
+            }
+            
+            // Show no data message if no information was available
+            if (!hasData) {
+                noDataMessage.style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Error parsing driver information:', error);
+            showErrorMessage('Error extracting driver information');
+        }
+    }
+    
+    // Helper function to find field value by label in the document
+    function findFieldValueByLabel(doc, label) {
+        // Try to find elements that have a label text followed by the value
+        const elements = doc.querySelectorAll('.row .col-md-6, .row .col-sm-6, .card-body .row .col-md-6, .form-group, .field-row, .form-row, .detail-field');
+        
+        for (const element of elements) {
+            // Check if this element or its children contain the label text
+            if (element.textContent.includes(label)) {
+                // Look for elements that might contain the value
+                const valueElements = element.querySelectorAll('div, p, span, strong, .form-control-static, .field-value, .data-value');
+                
+                for (const valueEl of valueElements) {
+                    // Skip elements that contain the label text
+                    if (valueEl.textContent.trim() === label || valueEl.textContent.includes(label + ':')) {
+                        continue;
+                    }
+                    
+                    // Found a potential value element
+                    const value = valueEl.textContent.trim();
+                    if (value && value !== '-') {
+                        return value;
+                    }
+                }
+                
+                // If we didn't find a distinct value element, try to parse the text
+                const text = element.textContent.trim();
+                const labelIndex = text.indexOf(label);
+                if (labelIndex >= 0) {
+                    // Get text after the label, which should be the value
+                    let value = text.substring(labelIndex + label.length).trim();
+                    
+                    // Remove any colon
+                    if (value.startsWith(':')) {
+                        value = value.substring(1).trim();
+                    }
+                    
+                    // Remove any lines after the first line
+                    const newlineIndex = value.indexOf('\n');
+                    if (newlineIndex > 0) {
+                        value = value.substring(0, newlineIndex).trim();
+                    }
+                    
+                    if (value && value !== '-') {
+                        return value;
+                    }
+                }
+            }
+        }
+        
+        // Try finding by looking for label elements followed by other elements
+        const labelElements = Array.from(doc.querySelectorAll('label, th, dt, .field-label, strong, small'));
+        const labelElement = labelElements.find(el => el.textContent.trim() === label || 
+                                                    el.textContent.trim() === label + ':' ||
+                                                    el.textContent.trim().startsWith(label + ' '));
+                                                    
+        if (labelElement) {
+            // Try to find the value in the next sibling element
+            let valueElement = labelElement.nextElementSibling;
+            while (valueElement) {
+                if (valueElement.tagName !== 'BR' && valueElement.tagName !== 'HR') {
+                    const value = valueElement.textContent.trim();
+                    if (value && value !== '-') {
+                        return value;
+                    }
+                }
+                valueElement = valueElement.nextElementSibling;
+            }
+            
+            // Try to find value in parent's next sibling
+            const parentNext = labelElement.parentElement?.nextElementSibling;
+            if (parentNext) {
+                const value = parentNext.textContent.trim();
+                if (value && value !== '-') {
+                    return value;
+                }
+            }
+            
+            // For dt/dd pattern
+            if (labelElement.tagName === 'DT') {
+                const ddElement = labelElement.nextElementSibling;
+                if (ddElement && ddElement.tagName === 'DD') {
+                    return ddElement.textContent.trim();
+                }
+            }
+            
+            // Look for elements with specific CSS relationships
+            if (labelElement.htmlFor) {
+                const targetElement = doc.getElementById(labelElement.htmlFor);
+                if (targetElement) {
+                    // If it's an input with a value
+                    if (targetElement.value) {
+                        return targetElement.value;
+                    }
+                    // Otherwise get the text content
+                    return targetElement.textContent.trim();
+                }
+            }
+        }
+        
+        // Try table pattern - find a row with the label in first cell
+        const tableRows = doc.querySelectorAll('tr');
+        for (const row of tableRows) {
+            const cells = row.querySelectorAll('td, th');
+            if (cells.length >= 2) {
+                const firstCell = cells[0];
+                if (firstCell.textContent.trim() === label || 
+                    firstCell.textContent.trim() === label + ':' ||
+                    firstCell.textContent.trim().includes(label)) {
+                    
+                    // Value is likely in the second cell
+                    const valueCell = cells[1];
+                    return valueCell.textContent.trim();
+                }
+            }
+        }
+        
+        // Try for list item pattern
+        const listItems = doc.querySelectorAll('li');
+        for (const item of listItems) {
+            if (item.textContent.includes(label + ':')) {
+                const text = item.textContent.trim();
+                const valueStart = text.indexOf(':') + 1;
+                if (valueStart > 0) {
+                    return text.substring(valueStart).trim();
+                }
+            }
+        }
+        
+        return null;
+    }
+    
+    // Extract personal information from the driver detail page
+    function extractPersonalInfo(doc) {
+        const personalInfo = {
+            name: null,
+            id: null,
+            license: null,
+            expiration: null,
+            address: null
+        };
+        
+        // Find driver name - first try to find it in a header or prominent element
+        const headerElements = doc.querySelectorAll('h1, h2, h3, h4, h5, h6, .card-title, .page-header, .profile-name');
+        for (const header of headerElements) {
+            const text = header.textContent.trim();
+            // Skip headers that are likely section titles
+            if (text.includes('Driver') || 
+                text.includes('Profile') || 
+                text.includes('Information') ||
+                text.includes('Details')) {
+                
+                // If we found a header, check if there's a name element nearby
+                const nameElement = header.nextElementSibling;
+                if (nameElement && !nameElement.textContent.includes('ID') && 
+                    !nameElement.textContent.includes('License')) {
+                    personalInfo.name = nameElement.textContent.trim();
+                    break;
+                }
+            } else if (!text.includes(':') && text.length > 3 && /[A-Z][a-z]+ [A-Z][a-z]+/.test(text)) {
+                // This looks like a name (e.g., "John Smith")
+                personalInfo.name = text;
+                break;
+            }
+        }
+        
+        // If header search didn't work, try finding by labels
+        if (!personalInfo.name) {
+            personalInfo.name = findFieldValueByLabel(doc, 'Name') || 
+                               findFieldValueByLabel(doc, 'Driver Name') || 
+                               findFieldValueByLabel(doc, 'Full Name');
+        }
+        
+        // If still no name, look for a prominent element that might contain the name
+        if (!personalInfo.name) {
+            const prominentElements = doc.querySelectorAll('.profile-header, .user-info, .driver-name, .driver-header');
+            for (const element of prominentElements) {
+                const text = element.textContent.trim();
+                if (text && text.length > 3 && !text.includes(':') && /[A-Z][a-z]+/.test(text)) {
+                    personalInfo.name = text;
+                    break;
+                }
+            }
+        }
+        
+        // As a last resort, look for first strong or b element with name-like content
+        if (!personalInfo.name) {
+            const boldElements = doc.querySelectorAll('strong, b');
+            for (const element of boldElements) {
+                const text = element.textContent.trim();
+                if (text && text.length > 3 && !text.includes(':') && /[A-Z][a-z]+/.test(text)) {
+                    personalInfo.name = text;
+                    break;
+                }
+            }
+        }
+        
+        // Find driver ID
+        personalInfo.id = findFieldValueByLabel(doc, 'Driver ID') || 
+                         findFieldValueByLabel(doc, 'ID Number') || 
+                         findFieldValueByLabel(doc, 'ID');
+        
+        // Find license information
+        personalInfo.license = findFieldValueByLabel(doc, 'License Number') || 
+                             findFieldValueByLabel(doc, 'License') || 
+                             findFieldValueByLabel(doc, 'License #');
+        
+        // Find license expiration
+        personalInfo.expiration = findFieldValueByLabel(doc, 'Expiration Date') || 
+                                findFieldValueByLabel(doc, 'Expires On') || 
+                                findFieldValueByLabel(doc, 'Valid Until');
+        
+        // Find address
+        personalInfo.address = findFieldValueByLabel(doc, 'Address') || 
+                             findFieldValueByLabel(doc, 'Residence') || 
+                             findFieldValueByLabel(doc, 'Home Address');
+        
+        return personalInfo.name ? personalInfo : null;
+    }
+    
+    // Extract driver details from the driver detail page
+    function extractDriverDetails(doc) {
+        const driverDetails = {
+            id: null,
+            status: null,
+            type: null
+        };
+        
+        // Extract driver ID if not already found in personal info
+        driverDetails.id = findFieldValueByLabel(doc, 'Driver ID') || 
+                          findFieldValueByLabel(doc, 'ID Number');
+        
+        // Extract status
+        driverDetails.status = findFieldValueByLabel(doc, 'Status') || 
+                             findFieldValueByLabel(doc, 'Driver Status');
+        
+        // Extract driver type
+        driverDetails.type = findFieldValueByLabel(doc, 'Type') || 
+                           findFieldValueByLabel(doc, 'Driver Type') || 
+                           findFieldValueByLabel(doc, 'License Type');
+        
+        return driverDetails.id || driverDetails.status || driverDetails.type ? driverDetails : null;
+    }
+    
+    // Extract vehicle information from the driver detail page
+    function extractVehicleInfo(doc) {
+        const vehicles = [];
+        
+        // Look for vehicle sections or cards
+        const vehicleSections = doc.querySelectorAll('.card, .vehicle-card, .vehicle-section');
+        
+        for (const section of vehicleSections) {
+            // Skip if this doesn't look like a vehicle card
+            if (!section.textContent.includes('Plate') && 
+                !section.textContent.includes('Vehicle') && 
+                !section.textContent.includes('Make') && 
+                !section.textContent.includes('Model')) {
+                continue;
+            }
+            
+            const vehicle = {
+                plateNumber: null,
+                make: null,
+                model: null,
+                year: null,
+                color: null,
+                operator: null
+            };
+            
+            // Extract vehicle details from this section
+            vehicle.plateNumber = findFieldValueByLabel(section, 'Plate Number') || 
+                                findFieldValueByLabel(section, 'Plate') || 
+                                findFieldValueByLabel(section, 'License Plate');
+                                
+            vehicle.make = findFieldValueByLabel(section, 'Make') || 
+                         findFieldValueByLabel(section, 'Manufacturer');
+                         
+            vehicle.model = findFieldValueByLabel(section, 'Model');
+            
+            vehicle.year = findFieldValueByLabel(section, 'Year') || 
+                         findFieldValueByLabel(section, 'Model Year');
+                         
+            vehicle.color = findFieldValueByLabel(section, 'Color');
+            
+            vehicle.operator = findFieldValueByLabel(section, 'Operator') || 
+                             findFieldValueByLabel(section, 'Type');
+            
+            // Only add if we have at least plate number, make or model
+            if (vehicle.plateNumber || vehicle.make || vehicle.model) {
+                vehicles.push(vehicle);
+            }
+        }
+        
+        // If we didn't find any vehicles in cards, try to find a table
+        if (vehicles.length === 0) {
+            const tables = doc.querySelectorAll('table');
+            for (const table of tables) {
+                if (table.textContent.includes('Plate') || 
+                    table.textContent.includes('Vehicle') || 
+                    table.textContent.includes('Make') || 
+                    table.textContent.includes('Model')) {
+                    
+                    // This looks like a vehicle table
+                    const rows = table.querySelectorAll('tbody tr');
+                    for (const row of rows) {
+                        const cells = row.querySelectorAll('td');
+                        if (cells.length >= 3) {
+                            const vehicle = {
+                                plateNumber: cells[0]?.textContent.trim() || null,
+                                make: cells[1]?.textContent.trim() || null,
+                                model: cells[2]?.textContent.trim() || null,
+                                year: cells.length > 3 ? cells[3]?.textContent.trim() : null,
+                                color: cells.length > 4 ? cells[4]?.textContent.trim() : null,
+                                operator: cells.length > 5 ? cells[5]?.textContent.trim() : null
+                            };
+                            
+                            if (vehicle.plateNumber || vehicle.make || vehicle.model) {
+                                vehicles.push(vehicle);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return vehicles;
+    }
+    
+    // Extract violations information from the driver detail page
+    function extractViolationsInfo(doc) {
+        const violations = [];
+        
+        // Look for violations table
+        const tables = doc.querySelectorAll('table');
+        for (const table of tables) {
+            if (table.textContent.includes('Violation') || 
+                table.textContent.includes('Offense') || 
+                table.textContent.includes('Ticket')) {
+                
+                const rows = table.querySelectorAll('tbody tr');
+                for (const row of rows) {
+                    const cells = row.querySelectorAll('td');
+                    if (cells.length >= 3) {
+                        const violation = {
+                            date: cells[0]?.textContent.trim() || 'N/A',
+                            type: cells[1]?.textContent.trim() || 'Unknown',
+                            status: cells[2]?.textContent.trim() || 'PENDING'
+                        };
+                        violations.push(violation);
+                    }
+                }
+            }
+        }
+        
+        return violations;
+    }
+    
+    // Success callback when QR code is successfully scanned
+    function onScanSuccess(decodedText, decodedResult) {
+        // Stop the scanner
+        html5QrcodeScanner.clear();
+        
+        // Show result container
+        resultContainer.style.display = "block";
+        
+        // Debug log the scanned QR code
+        console.log("QR Code scanned:", decodedText);
+        
+        try {
+            // Normalize URL - add base URL to relative URLs
+            let processedUrl = decodedText;
+            if (decodedText.startsWith('/')) {
+                // This is a relative URL, prepend with base URL
+                const baseUrl = window.location.origin;
+                processedUrl = baseUrl + decodedText;
+            }
+            
+            // Parse the URL to better handle different formats
+            let url;
+            try {
+                url = new URL(processedUrl);
+            } catch (e) {
+                // If not a valid URL, just use the raw text
+                url = null;
+            }
+            
+            // Extract path parts if this is a URL
+            const pathParts = url ? url.pathname.split('/').filter(part => part) : [];
+            console.log("Path parts:", pathParts);
+            
+            // Check if this is a driver verification URL
+            if (url && (url.pathname.includes('/driver/') && url.pathname.includes('/verify'))) {
+                // For proper URL paths like /driver/{id}/verify/
+                window.location.href = processedUrl;
+                return;
+            } 
+            // If it's just a driver ID with no URL structure
+            else if (pathParts.length >= 1 && pathParts[0] === 'driver') {
+                // Extract the driver ID from the path
+                const driverId = pathParts[1];
+                if (driverId) {
+                    window.location.href = `/driver/${driverId}/verify/`;
+                    return;
+                }
+            }
+            // If no URL but appears to be a driver ID format
+            else if (!url && decodedText.trim() !== '') {
+                // Assume this might be a direct driver ID
+                const driverId = decodedText.trim();
+                window.location.href = `/driver/${driverId}/verify/`;
+                return;
+            }
+            
+            // Check if this is enforcer/user QR code
+            if (url && url.pathname.includes('/qr/')) {
+                // This is a user/enforcer QR code
+                window.location.href = processedUrl;
+                return;
+            }
+            
+            // If reached here, it's an unknown format
+            resultContent.textContent = `QR code detected: ${decodedText}`;
+            viewDetailsBtn.href = processedUrl;
+            showNotification('Unknown QR Code', 'QR code detected but type is unknown', 'warning');
+            
+        } catch (error) {
+            console.error("Error processing QR code:", error);
+            resultContent.textContent = "Error processing QR code";
+            showNotification('Error', 'There was an error processing the QR code', 'error');
+        }
+    }
+    
+    // Error callback when QR code scanning fails
+    function onScanError(errorMessage) {
+        // We can ignore scan errors as they're common and expected
+    }
+    
+    // Initialize the scanner
+    html5QrcodeScanner.render(onScanSuccess, onScanError);
+    
+    // Button to scan a new QR code
+    scanNewBtn.addEventListener('click', function() {
+        // Hide the result container
+        resultContainer.style.display = "none";
+        detailedInfo.style.display = "none";
+        resetDetailedInfo();
+        
+        // Re-initialize the scanner
+        html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader",
+            {
+                fps: 10,
+                qrbox: {width: 250, height: 250},
+                rememberLastUsedCamera: true,
+                showTorchButtonIfSupported: true
+            },
+            /* verbose= */ false
+        );
+        html5QrcodeScanner.render(onScanSuccess, onScanError);
+    });
+});
+</script>
+{% endblock %} 

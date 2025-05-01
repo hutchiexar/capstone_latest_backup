@@ -297,11 +297,11 @@
                         {% if violation.adjudicated_by %}
                         <div class="info-group">
                             <label>Adjudicated By</label>
-                            <div class="info-value">{{ violation.adjudicated_by.get_full_name }}</div>
+                            <div class="info-value">{{ violation.adjudicated_by.get_full_name|default:violation.adjudicated_by.username }}</div>
                         </div>
                         <div class="info-group">
                             <label>Adjudication Date</label>
-                            <div class="info-value">{{ violation.adjudication_date|date:"F d, Y H:i" }}</div>
+                            <div class="info-value">{{ violation.adjudication_date|date:"F d, Y H:i"|default:"Not recorded" }}</div>
                         </div>
                         <div class="info-group">
                             <label>Remarks</label>
@@ -311,6 +311,11 @@
                         <div class="text-center py-4">
                             <span class="material-icons text-muted mb-2" style="font-size: 2rem;">pending_actions</span>
                             <p class="text-muted">This violation has not been adjudicated yet.</p>
+                            <a href="{% url 'redirect_to_adjudication_page' violation_id=violation.id %}" 
+                               class="btn btn-primary mt-2">
+                                <span class="material-icons me-1">gavel</span>
+                                Adjudicate Now
+                            </a>
                         </div>
                         {% endif %}
                     </div>
@@ -510,7 +515,7 @@
                             <h6 class="mb-1">Violation Issued</h6>
                             <div class="timeline-date">{{ violation.violation_date|date:"F d, Y H:i" }}</div>
                             <div class="text-muted small">
-                                Issued by: {{ violation.enforcer.get_full_name|default:"Unknown" }}
+                                Issued by: {% if violation.enforcer %}{{ violation.enforcer.get_full_name|default:violation.enforcer.username }}{% else %}Unknown{% endif %}
                             </div>
                         </div>
                     </div>
@@ -525,7 +530,7 @@
                             {% if violation.adjudication_date %}
                             <div class="timeline-date">{{ violation.adjudication_date|date:"F d, Y H:i" }}</div>
                             <div class="text-muted small">
-                                Adjudicated by: {{ violation.adjudicated_by.get_full_name }}
+                                Adjudicated by: {% if violation.adjudicated_by %}{{ violation.adjudicated_by.get_full_name|default:violation.adjudicated_by.username }}{% else %}Unknown{% endif %}
                             </div>
                             {% else %}
                             <div class="text-muted small">Pending</div>
@@ -543,7 +548,7 @@
                             {% if violation.payment_date %}
                             <div class="timeline-date">{{ violation.payment_date|date:"F d, Y H:i" }}</div>
                             <div class="text-muted small">
-                                Processed by: {{ violation.processed_by.get_full_name|default:"System" }}
+                                Processed by: {% if violation.processed_by %}{{ violation.processed_by.get_full_name|default:violation.processed_by.username }}{% else %}System{% endif %}
                             </div>
                             {% elif violation.status == 'SETTLED' %}
                             <div class="text-muted small">Not required (Settled)</div>

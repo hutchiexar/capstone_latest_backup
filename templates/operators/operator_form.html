@@ -5,43 +5,51 @@
 
 {% block content %}
 <div class="container-fluid py-4">
-    <!-- Header Section -->
-    <div class="card shadow-sm border-0 rounded-3 mb-4">
+    <!-- Enhanced Header Section -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4 bg-white">
         <div class="card-body p-4">
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center me-3" 
+                             style="width: 48px; height: 48px; background-color: var(--primary-color);">
+                            <span class="material-icons text-white">{% if operator %}edit_note{% else %}add_circle{% endif %}</span>
+                        </div>
                 <div>
-                    <div class="d-flex align-items-center">
-                        <span class="material-icons me-2" style="color: var(--primary-color)">{% if operator %}edit_note{% else %}add_circle{% endif %}</span>
-                        <h4 class="mb-0">{% if operator %}Update Operator{% else %}Create Operator{% endif %}</h4>
+                            <h4 class="mb-0 fw-bold">{% if operator %}Update Operator{% else %}Create Operator{% endif %}</h4>
+                            <p class="text-muted mb-0">{% if operator %}Update the information for {{ operator.last_name }}, {{ operator.first_name }}{% else %}Add a new operator to the system{% endif %}</p>
+                        </div>
                     </div>
-                    <p class="text-muted mt-2 mb-0">{% if operator %}Update the information for {{ operator.last_name }}, {{ operator.first_name }}{% else %}Add a new operator to the system{% endif %}</p>
                 </div>
-                <div>
-                    <a href="{% url 'operator_list' %}" class="btn btn-outline-primary d-flex align-items-center px-3 py-2">
+                <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                    <a href="{% url 'operator_list' %}" class="btn btn-outline-primary d-inline-flex align-items-center px-3 py-2">
                         <span class="material-icons fs-5 me-2">arrow_back</span> 
-                        <span class="d-none d-sm-inline">Back to List</span>
-                        <span class="d-inline d-sm-none">Back</span>
+                        <span>Back to List</span>
                     </a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Form Card -->
+    <form method="post" id="operatorForm" novalidate>
+        {% csrf_token %}
+        
+        <!-- Form Card - Operator Information -->
     <div class="card shadow-sm border-0 rounded-3 mb-4">
-        <div class="card-header bg-transparent d-flex align-items-center px-4 py-3 border-bottom">
+            <div class="card-header bg-white d-flex align-items-center px-4 py-3 border-bottom">
             <span class="material-icons me-2" style="color: var(--primary-color); font-size: 24px;">person</span>
             <h5 class="mb-0 fw-bold">Operator Information</h5>
         </div>
 
         <div class="card-body p-4">
-            <form method="post">
-                {% csrf_token %}
-                
-                <div class="row g-3">
+                <div class="row g-4">
                     <!-- Last Name -->
-                    <div class="col-12 col-md-4">
-                        <label for="{{ form.last_name.id_for_label }}" class="form-label">Last Name <span class="text-danger">*</span></label>
+                    <div class="col-md-4">
+                        <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                            Last Name <span class="text-danger">*</span>
+                            <i class="material-icons fs-6 text-muted ms-1 align-middle" 
+                               data-bs-toggle="tooltip" title="Operator's family name">help_outline</i>
+                        </label>
                         <div class="input-group">
                             <span class="input-group-text"><span class="material-icons fs-5">person</span></span>
                             {{ form.last_name }}
@@ -53,11 +61,16 @@
                             {% endfor %}
                         </div>
                         {% endif %}
+                        <div class="form-text">Enter the operator's complete last name</div>
                     </div>
                     
                     <!-- First Name -->
-                    <div class="col-12 col-md-4">
-                        <label for="{{ form.first_name.id_for_label }}" class="form-label">First Name <span class="text-danger">*</span></label>
+                    <div class="col-md-4">
+                        <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                            First Name <span class="text-danger">*</span>
+                            <i class="material-icons fs-6 text-muted ms-1 align-middle" 
+                               data-bs-toggle="tooltip" title="Operator's given name">help_outline</i>
+                        </label>
                         <div class="input-group">
                             <span class="input-group-text"><span class="material-icons fs-5">badge</span></span>
                             {{ form.first_name }}
@@ -69,11 +82,16 @@
                             {% endfor %}
                         </div>
                         {% endif %}
+                        <div class="form-text">Enter the operator's complete first name</div>
                     </div>
                     
                     <!-- Middle Initial -->
-                    <div class="col-12 col-md-4">
-                        <label for="{{ form.middle_initial.id_for_label }}" class="form-label">Middle Initial</label>
+                    <div class="col-md-4">
+                        <label for="{{ form.middle_initial.id_for_label }}" class="form-label">
+                            Middle Initial
+                            <i class="material-icons fs-6 text-muted ms-1 align-middle" 
+                               data-bs-toggle="tooltip" title="Operator's middle initial (optional)">help_outline</i>
+                        </label>
                         <div class="input-group">
                             <span class="input-group-text"><span class="material-icons fs-5">short_text</span></span>
                             {{ form.middle_initial }}
@@ -85,61 +103,18 @@
                             {% endfor %}
                         </div>
                         {% endif %}
+                        <div class="form-text">Optional - Enter the operator's middle initial</div>
                     </div>
                 </div>
-                
-                <!-- Vehicle Information Section -->
-                <div class="mt-4">
-                    <h5 class="fw-bold mb-3 d-flex align-items-center border-bottom pb-2">
-                        <span class="material-icons me-2" style="color: var(--primary-color); font-size: 22px;">directions_car</span>
-                        Vehicle Information
-                    </h5>
-                    
-                    <div class="row g-3">
-                        <!-- Vehicle Type Dropdown -->
-                        <div class="col-12 col-md-6">
-                            <label for="id_vehicle_type" class="form-label">Vehicle Type <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <span class="input-group-text"><span class="material-icons fs-5">commute</span></span>
-                                <select name="vehicle_type" id="id_vehicle_type" class="form-select">
-                                    <option value="Potpot" selected>Potpot</option>
-                                    <option value="Tricycle">Tricycle</option>
-                                    <option value="Jeepney">Jeepney</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </div>
-                            <div class="form-text text-muted mt-1">
-                                <small>Select the type of vehicle for all units to be created</small>
-                            </div>
-                        </div>
-
-                        <!-- Number of Units/Potpot -->
-                        <div class="col-12 col-md-6">
-                            <label for="id_number_of_units" class="form-label">Number of Units <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <span class="input-group-text"><span class="material-icons fs-5">directions_car</span></span>
-                                <input type="number" name="number_of_units" id="id_number_of_units" class="form-control" min="1" max="100" value="1" placeholder="Enter number of units">
-                            </div>
-                            <div class="form-text text-muted mt-1">
-                                <small>Each unit will get a unique identification number (format: XXX)</small>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Potpot preview will be inserted here by JavaScript -->
-                    <div id="potpot-preview-container" class="mt-3"></div>
-                </div>
-                
-                <!-- Contact Information Section -->
-                <div class="mt-4">
-                    <h5 class="fw-bold mb-3 d-flex align-items-center border-bottom pb-2">
-                        <span class="material-icons me-2" style="color: var(--primary-color); font-size: 22px;">contact_mail</span>
-                        Contact Information
-                    </h5>
                     
                 <!-- Address -->
-                <div class="mt-3">
-                    <label for="{{ form.address.id_for_label }}" class="form-label">Address <span class="text-danger">*</span></label>
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <label for="{{ form.address.id_for_label }}" class="form-label">
+                            Address <span class="text-danger">*</span>
+                            <i class="material-icons fs-6 text-muted ms-1 align-middle" 
+                               data-bs-toggle="tooltip" title="Operator's complete address">help_outline</i>
+                        </label>
                     <div class="input-group">
                         <span class="input-group-text"><span class="material-icons fs-5">home</span></span>
                         {{ form.address }}
@@ -151,60 +126,204 @@
                         {% endfor %}
                     </div>
                     {% endif %}
+                        <div class="form-text">Enter the complete address of the operator</div>
                     </div>
                 </div>
+            </div>
+        </div>
+        
+        <!-- Form Card - Vehicle Information -->
+        <div class="card shadow-sm border-0 rounded-3 mb-4">
+            <div class="card-header bg-white d-flex align-items-center px-4 py-3 border-bottom">
+                <span class="material-icons me-2" style="color: var(--primary-color); font-size: 24px;">directions_car</span>
+                <h5 class="mb-0 fw-bold">Vehicle Information</h5>
+            </div>
+            
+            <div class="card-body p-4">
+                {% if operator and existing_vehicles %}
+                <!-- Existing Vehicles Section (for edit mode) -->
+                <div class="card border mb-4">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 d-flex align-items-center">
+                            <span class="material-icons me-2 text-primary">inventory</span>
+                            Existing Vehicles
+                        </h6>
+                        <span class="badge bg-primary">{{ existing_vehicles|length }} total</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped mb-0">
+                                <thead>
+                                    <tr class="bg-light">
+                                        <th class="ps-4">Vehicle Type</th>
+                                        <th>Vehicle Number</th>
+                                        <th>PD Number</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for vehicle_type, vehicles in vehicle_groups.items %}
+                                        <tr class="table-secondary">
+                                            <th colspan="4" class="ps-4">
+                                                <div class="d-flex align-items-center">
+                                                    <span class="material-icons me-2">{% if vehicle_type == 'Potpot' %}electric_rickshaw{% elif vehicle_type == 'Tricycle' %}two_wheeler{% elif vehicle_type == 'Jeepney' %}airport_shuttle{% else %}directions_car{% endif %}</span>
+                                                    {{ vehicle_type }} <span class="badge bg-secondary ms-2">{{ vehicles|length }}</span>
+                                                </div>
+                                            </th>
+                                        </tr>
+                                        {% for vehicle in vehicles %}
+                                        <tr data-vehicle-id="{{ vehicle.id }}">
+                                            <td class="ps-4">{{ vehicle.vehicle_type }}</td>
+                                            <td>
+                                                <span class="badge bg-info">{{ vehicle.potpot_number }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary">{{ vehicle.new_pd_number }}</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-sm btn-outline-danger delete-vehicle-btn" 
+                                                        data-vehicle-id="{{ vehicle.id }}"
+                                                        data-vehicle-number="{{ vehicle.potpot_number }}">
+                                                    <span class="material-icons" style="font-size: 16px;">delete</span>
+                                                    <span class="d-none d-md-inline ms-1">Delete</span>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
                 
-                <!-- System Information Section -->
-                <div class="mt-4">
-                    <h5 class="fw-bold mb-3 d-flex align-items-center border-bottom pb-2">
-                        <span class="material-icons me-2" style="color: var(--primary-color); font-size: 22px;">numbers</span>
-                        System Information
-                    </h5>
-                
-                    <div class="row g-3">
+                <!-- New Vehicles Section -->
+                <div class="card border mb-4">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 d-flex align-items-center">
+                            <span class="material-icons me-2 text-success">add_circle</span>
+                            {% if operator %}Add New Vehicles{% else %}Add Vehicles{% endif %}
+                        </h6>
+                        <button type="button" id="add-vehicle-btn" class="btn btn-sm btn-outline-primary">
+                            <span class="material-icons me-1" style="font-size: 16px;">add_circle</span>
+                            Add Vehicle
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <!-- Vehicle Table -->
+                        <div class="table-responsive mb-3">
+                            <table class="table table-hover" id="vehicles-table">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Vehicle Type</th>
+                                        <th>Count</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="vehicle-rows">
+                                    <!-- Vehicle rows will be added here dynamically -->
+                                    <tr id="empty-row">
+                                        <td colspan="3" class="text-center py-4 text-muted">
+                                            <div class="py-3">
+                                                <span class="material-icons d-block mb-2" style="font-size: 48px; opacity: 0.5;">directions_car_off</span>
+                                                <p class="mb-1">No new vehicles added yet</p>
+                                                <p class="small mb-0">Click "Add Vehicle" to add vehicles to this operator</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-light">
+                        <div class="d-flex align-items-start">
+                            <span class="material-icons me-2 text-primary fs-5">info</span>
+                            <div class="small">
+                                <p class="mb-1"><strong>Note:</strong> Vehicle numbers will be automatically generated when the form is submitted.</p>
+                                <p class="mb-0">Each vehicle will be assigned a unique identification number in sequential format.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Form Card - System Information -->
+        <div class="card shadow-sm border-0 rounded-3 mb-4">
+            <div class="card-header bg-white d-flex align-items-center px-4 py-3 border-bottom">
+                <span class="material-icons me-2" style="color: var(--primary-color); font-size: 24px;">numbers</span>
+                <h5 class="mb-0 fw-bold">System Information</h5>
+            </div>
+            
+            <div class="card-body p-4">
+                <div class="row g-4">
                     <!-- Old P.D. Number -->
-                        <div class="col-12 col-md-6">
-                        <label for="{{ form.old_pd_number.id_for_label }}" class="form-label">Old P.O. Number</label>
+                    <div class="col-md-6">
+                        <label for="{{ form.old_pd_number.id_for_label }}" class="form-label">
+                            Old P.O. Number
+                            <i class="material-icons fs-6 text-muted ms-1 align-middle" 
+                               data-bs-toggle="tooltip" title="Previously assigned P.O. number (if any)">help_outline</i>
+                        </label>
                         <div class="input-group">
                             <span class="input-group-text"><span class="material-icons fs-5">history</span></span>
-                            <input type="text" name="old_pd_number" id="{{ form.old_pd_number.id_for_label }}" class="form-control bg-light" readonly placeholder="Leave blank">
+                            <input type="text" name="old_pd_number" id="{{ form.old_pd_number.id_for_label }}" 
+                                  class="form-control bg-light" readonly 
+                                  placeholder="Leave blank" 
+                                  value="{{ form.old_pd_number.value|default:'' }}">
                         </div>
-                        <div class="form-text text-muted mt-1">
-                            <small>This field will remain blank</small>
-                        </div>
+                        <div class="form-text text-muted mt-1">This field will remain blank for new operators</div>
                     </div>
                     
                     <!-- New P.D. Number -->
-                        <div class="col-12 col-md-6">
-                        <label for="{{ form.new_pd_number.id_for_label }}" class="form-label">P.O. Number</label>
+                    <div class="col-md-6">
+                        <label for="{{ form.new_pd_number.id_for_label }}" class="form-label">
+                            P.O. Number
+                            <i class="material-icons fs-6 text-muted ms-1 align-middle" 
+                               data-bs-toggle="tooltip" title="System-assigned P.O. number">help_outline</i>
+                        </label>
                         <div class="input-group">
                             <span class="input-group-text"><span class="material-icons fs-5">numbers</span></span>
-                            <input type="text" name="new_pd_number" id="{{ form.new_pd_number.id_for_label }}" class="form-control bg-light" readonly placeholder="Auto-generated">
+                            <input type="text" name="new_pd_number" id="{{ form.new_pd_number.id_for_label }}" 
+                                  class="form-control bg-light" readonly 
+                                  placeholder="Auto-generated" 
+                                  value="{{ form.new_pd_number.value|default:'' }}">
                         </div>
                         <div class="form-text text-muted mt-1">
-                            <small>This field will be automatically generated</small>
+                            {% if operator %}This is the assigned P.O. number{% else %}This field will be automatically generated{% endif %}
                         </div>
                     </div>
                 </div>
                 
                 <!-- PO Number Auto-generation Note -->
-                <div class="alert alert-info mt-3">
+                {% if not operator %}
+                <div class="alert alert-info mt-4">
                     <div class="d-flex">
                         <span class="material-icons me-2">info</span>
                         <div>
-                            <strong>Automatic Number Generation</strong>
-                            <p class="mb-0 small">The following unique number will be automatically generated for this operator:</p>
-                            <ul class="mb-0 mt-1 small">
-                                <li><strong>P.O. Number:</strong> A unique identifier in XXX format</li>
-                            </ul>
-                            <p class="mt-1 mb-0 small text-muted">The number is sequentially assigned and guaranteed to be unique across the system.</p>
+                            <p class="mb-0"><strong>Automatic Number Generation</strong></p>
+                            <p class="mb-0 small">The system will automatically generate a unique P.O. Number for this operator when submitted.</p>
+                            <p class="mb-0 small">Each vehicle added will also receive a sequential identification number.</p>
                         </div>
                     </div>
                 </div>
+                {% endif %}
+                </div>
                 </div>
                 
-                <div class="mt-4 d-flex justify-content-end flex-wrap gap-2">
-                    <a href="{% url 'operator_list' %}" class="btn btn-outline-secondary d-flex align-items-center px-3 py-2">
+        <!-- Form Submission Section -->
+        <div class="card shadow-sm border-0 rounded-3 mb-4">
+            <div class="card-body p-4">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+                    <div class="text-muted">
+                        <div class="d-flex align-items-center">
+                            <span class="material-icons me-2 text-warning">warning</span>
+                            <span>Required fields are marked with <span class="text-danger">*</span></span>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{% if operator %}{% url 'operator_detail' operator.id %}{% else %}{% url 'operator_list' %}{% endif %}" 
+                           class="btn btn-outline-secondary d-flex align-items-center px-3 py-2">
                         <span class="material-icons fs-5 me-2">cancel</span>
                         <span>Cancel</span>
                     </a>
@@ -213,29 +332,37 @@
                         <span>{% if operator %}Update{% else %}Create{% endif %} Operator</span>
                     </button>
                 </div>
-            </form>
-
-            <!-- Server-side processing note -->
-            <div class="alert alert-light border mt-4">
-                <h6 class="d-flex align-items-center">
-                    <span class="material-icons text-primary me-2">lightbulb</span>
-                    Server-side Processing Information
-                </h6>
-                <p class="mb-0 small">
-                    When the form is submitted, the server will create:
-                    <ol class="mb-0 small">
-                        <li>One Operator record with the provided information</li>
-                        <li>Multiple Vehicle records (based on "Number of Units" value) with automatically generated potpot numbers</li>
-                        <li>Each potpot number will follow the format "XXX" (e.g., 001, 002, 003, etc.)</li>
-                    </ol>
-                </p>
+                </div>
             </div>
         </div>
-    </div>
+    </form>
 </div>
 
+<!-- Vehicle Row Template (hidden) -->
+<template id="vehicle-row-template">
+    <tr class="vehicle-row">
+        <td>
+            <select name="vehicles[INDEX][vehicle_type]" class="form-select vehicle-type-select">
+                <option value="" disabled selected>Select vehicle type</option>
+                <option value="Potpot">Potpot</option>
+                <option value="Tricycle">Tricycle</option>
+                <option value="Jeepney">Jeepney</option>
+                <option value="Other">Other</option>
+            </select>
+        </td>
+        <td>
+            <input type="number" name="vehicles[INDEX][count]" class="form-control" min="1" max="100" value="1" placeholder="Number of vehicles">
+        </td>
+        <td class="text-center">
+            <button type="button" class="btn btn-sm btn-outline-danger remove-vehicle-btn">
+                <span class="material-icons" style="font-size: 18px;">delete</span>
+            </button>
+        </td>
+    </tr>
+</template>
+
 <style>
-/* Style the form controls */
+/* Enhanced form styles */
 .form-control, .form-select {
     padding: 0.5rem 0.75rem;
     border-radius: 0.375rem;
@@ -249,6 +376,11 @@
     box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
 
+.form-text {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
 .input-group-text {
     background-color: #f8f9fa;
     border: 1px solid #dee2e6;
@@ -259,9 +391,90 @@
     font-size: 18px;
 }
 
+/* Badge styling */
+.badge {
+    font-weight: 500;
+    padding: 0.35em 0.65em;
+    border-radius: 0.25rem;
+}
+
+/* Table styling */
+.table th {
+    font-weight: 600;
+    color: #495057;
+}
+
+.table tbody tr {
+    vertical-align: middle;
+}
+
+/* Card styling */
+.card {
+    transition: all 0.2s ease;
+    overflow: hidden;
+}
+
+.card-header {
+    background-color: transparent;
+    border-bottom: 1px solid rgba(0,0,0,.125);
+}
+
 /* Required asterisk */
 .text-danger {
     color: #dc3545;
+}
+
+/* Hover effects */
+.vehicle-row:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.05);
+}
+
+/* SweetAlert2 custom styles */
+.swal2-popup {
+    font-size: 0.9rem;
+    border-radius: 0.5rem;
+    padding: 2rem;
+}
+.swal2-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #4a4a4a;
+}
+.swal2-html-container {
+    margin-top: 1rem;
+    font-size: 1rem;
+}
+.swal2-actions {
+    margin-top: 1.5rem;
+}
+.swal2-styled.swal2-confirm {
+    background-color: #dc3545;
+    font-weight: 500;
+    padding: 0.5rem 1.25rem;
+    border-radius: 0.25rem;
+}
+.swal2-styled.swal2-cancel {
+    background-color: #6c757d;
+    font-weight: 500;
+    padding: 0.5rem 1.25rem;
+    border-radius: 0.25rem;
+}
+.warning-container {
+    background-color: #ef5350;
+    color: white;
+    padding: 1rem;
+    border-radius: 0.25rem;
+    margin: 1.5rem 0;
+    display: flex;
+    align-items: flex-start;
+}
+.warning-container i {
+    margin-right: 0.5rem;
+    font-size: 1.25rem;
+}
+.warning-text {
+    flex: 1;
+    text-align: left;
 }
 
 /* Responsive styles */
@@ -274,23 +487,14 @@
         font-size: 16px; /* Prevent iOS zoom on focus */
     }
     
-    .input-group-text .material-icons {
-        font-size: 16px;
-    }
-    
     .btn {
         width: 100%;
         justify-content: center;
-        margin-bottom: 0.5rem;
     }
     
-    /* Stack buttons on mobile */
-    .d-flex.justify-content-end {
-        flex-direction: column-reverse;
-    }
-    
-    .d-flex.justify-content-end .btn {
-        width: 100%;
+    /* Reset button width in tables */
+    .table .btn {
+        width: auto;
     }
 }
 
@@ -308,43 +512,74 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- SweetAlert2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <script>
     $(document).ready(function() {
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+        
         // Add Bootstrap form-control class to all form inputs
-        $('input, select, textarea').addClass('form-control');
+        $('input, select, textarea').not('.form-select').addClass('form-control');
         
         // Auto-focus first field
         $('.form-control:first').focus();
         
-        // Submit form on Enter key in the last field
-        $('.form-control:last').keypress(function(e) {
-            if (e.which == 13) { // Enter key
-                $('form').submit();
+        // Vehicle management
+        let vehicleIndex = 0;
+        
+        // Function to update empty row visibility
+        function updateEmptyRowVisibility() {
+            if ($('.vehicle-row').length > 0) {
+                $('#empty-row').hide();
+            } else {
+                $('#empty-row').show();
             }
-        });
-
-        // Handle number of units change
-        $('#id_number_of_units').on('change keyup', function() {
-            const numUnits = parseInt($(this).val()) || 0;
+        }
+        
+        // Add a new vehicle row
+        $('#add-vehicle-btn').on('click', function() {
+            // Get the template content
+            const template = document.getElementById('vehicle-row-template');
+            const clone = document.importNode(template.content, true);
             
-            // Validate the number of units
-            if (numUnits > 100) {
-                $(this).val(100);
-                showAlert('warning', 'Maximum 100 units allowed.');
-                return updatePotpotPreview();
-            } else if (numUnits < 0) {
-                $(this).val(1);
-                return updatePotpotPreview();
-            }
+            // Replace INDEX placeholder with actual index
+            const elements = clone.querySelectorAll('[name*="INDEX"]');
+            elements.forEach(element => {
+                element.name = element.name.replace('INDEX', vehicleIndex);
+            });
             
-            updatePotpotPreview();
+            // Append the new row
+            $('#vehicle-rows').append(clone);
+            vehicleIndex++;
+            
+            // Update empty row visibility
+            updateEmptyRowVisibility();
+            
+            // Setup remove button
+            setupRemoveButtons();
+            
+            // Focus the new row's select
+            $('.vehicle-row:last-child .vehicle-type-select').focus();
         });
-
-        // Function to show an alert message
+        
+        // Setup remove buttons for vehicle rows
+        function setupRemoveButtons() {
+            $('.remove-vehicle-btn').off('click').on('click', function() {
+                $(this).closest('tr').remove();
+                updateEmptyRowVisibility();
+            });
+        }
+        
+        // Show alert message
         function showAlert(type, message) {
             const alertHTML = `
                 <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                    <span class="material-icons fs-5 align-middle me-1">${type === 'warning' ? 'warning' : 'info'}</span>
+                    <span class="material-icons fs-5 align-middle me-1">${type === 'warning' ? 'warning' : type === 'success' ? 'check_circle' : 'info'}</span>
                     ${message}
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
@@ -354,7 +589,7 @@
             $('.alert-dismissible').remove();
             
             // Insert the alert before the form
-            $('form').before(alertHTML);
+            $('#operatorForm').before(alertHTML);
             
             // Auto-dismiss after 5 seconds
             setTimeout(() => {
@@ -362,116 +597,249 @@
             }, 5000);
         }
 
-        // Initialize potpot preview
-        updatePotpotPreview();
-
-        // Function to update the potpot number preview
-        function updatePotpotPreview() {
-            const numUnits = parseInt($('#id_number_of_units').val()) || 0;
-            const vehicleType = $('#id_vehicle_type').val();
-            let previewHTML = '';
+        // Enhanced form validation
+        $('#operatorForm').on('submit', function(e) {
+            e.preventDefault(); // Prevent the form from submitting immediately
             
-            // Clear the preview container
-            $('#potpot-preview-container').empty();
+            // Basic validation for required fields
+            let isValid = true;
+            let focusSet = false;
             
-            if (numUnits > 0) {
-                previewHTML = '<div class="card border-0 shadow-sm rounded-3">';
-                previewHTML += '<div class="card-header bg-transparent d-flex align-items-center px-4 py-3 border-bottom">';
-                previewHTML += '<span class="material-icons me-2" style="color: var(--primary-color); font-size: 24px;">preview</span>';
-                previewHTML += `<h5 class="mb-0 fw-bold">${vehicleType} Numbers Preview</h5>`;
-                previewHTML += '</div>';
-                previewHTML += '<div class="card-body p-4">';
-                
-                // Add explanation about system-wide uniqueness
-                previewHTML += `
-                    <div class="alert alert-info mb-4">
-                        <div class="d-flex align-items-start">
-                            <span class="material-icons me-3 mt-1">info</span>
-                            <div>
-                                <p class="mb-1"><strong>System-wide unique ${vehicleType.toLowerCase()} numbers</strong></p>
-                                <p class="mb-0">The system will automatically assign ${numUnits} sequential ${vehicleType.toLowerCase()} numbers starting from the highest existing number in the database + 1. Each ${vehicleType.toLowerCase()} will have a unique XXX format number (e.g., 001, 002, 045, 123, etc.) that is not used by any other vehicle in the system.</p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                previewHTML += '<div class="row">';
-                
-                // Determine the icon based on vehicle type
-                let vehicleIcon = 'directions_car';
-                if (vehicleType === 'Jeepney') {
-                    vehicleIcon = 'airport_shuttle';
-                } else if (vehicleType === 'Tricycle') {
-                    vehicleIcon = 'moped';
-                } else if (vehicleType === 'Potpot') {
-                    vehicleIcon = 'pedal_bike';
+            // Check operator fields
+            const requiredFields = [
+                { id: '#id_first_name', name: 'First Name' },
+                { id: '#id_last_name', name: 'Last Name' },
+                { id: '#id_address', name: 'Address' }
+            ];
+            
+            // Check each required field
+            requiredFields.forEach(field => {
+                const $field = $(field.id);
+                if (!$field.val().trim()) {
+                    isValid = false;
+                    $field.addClass('is-invalid').removeClass('is-valid');
+                    
+                    // Add error message if not exists
+                    if ($field.siblings('.invalid-feedback').length === 0) {
+                        $field.after(`<div class="invalid-feedback">${field.name} is required</div>`);
+                    }
+                    
+                    // Set focus on first invalid field
+                    if (!focusSet) {
+                        $field.focus();
+                        focusSet = true;
+                    }
+                } else {
+                    $field.addClass('is-valid').removeClass('is-invalid');
+                    $field.siblings('.invalid-feedback').remove();
                 }
-                
-                // Show sample format but not actual numbers
-                for (let i = 1; i <= Math.min(numUnits, 12); i++) {
-                    previewHTML += `
-                        <div class="col-md-3 col-sm-4 col-6 mb-3">
-                            <div class="card border-0 shadow-sm h-100">
-                                <div class="card-body p-2 text-center">
-                                    <span class="material-icons text-primary mb-1">${vehicleIcon}</span>
-                                    <div class="badge bg-primary p-2 w-100 fs-6">XXX</div>
-                                    <div class="mt-1">
-                                        <small class="text-muted">Unique ID</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
-                
-                if (numUnits > 12) {
-                    previewHTML += `
-                        <div class="col-12 mt-2">
-                            <div class="alert alert-info py-2 mb-0">
-                                <span class="material-icons fs-6 align-middle me-1">info</span>
-                                ${numUnits - 12} more units will be created with unique sequential IDs.
-                            </div>
-                        </div>
-                    `;
-                }
-                
-                previewHTML += '</div></div></div>';
-                
-                // Append the preview to the container
-                $('#potpot-preview-container').html(previewHTML);
+            });
+            
+            // Check if at least one vehicle has been added when creating a new operator
+            if (!$('#id_new_pd_number').val() && $('.vehicle-row').length === 0) {
+                isValid = false;
+                showAlert('warning', 'Please add at least one vehicle before submitting the form.');
+                $('#add-vehicle-btn').addClass('btn-pulse').focus();
+                setTimeout(() => $('#add-vehicle-btn').removeClass('btn-pulse'), 2000);
             }
-        }
-        
-        // Also update preview when vehicle type changes
-        $('#id_vehicle_type').on('change', function() {
-            updatePotpotPreview();
+            
+            // Validate vehicle rows
+            $('.vehicle-row').each(function() {
+                const typeSelect = $(this).find('.vehicle-type-select');
+                const countInput = $(this).find('input[name*="[count]"]');
+                const count = parseInt(countInput.val());
+                
+                // Validate vehicle type
+                if (!typeSelect.val()) {
+                    isValid = false;
+                    typeSelect.addClass('is-invalid').removeClass('is-valid');
+                    if (typeSelect.siblings('.invalid-feedback').length === 0) {
+                        typeSelect.after('<div class="invalid-feedback">Please select a vehicle type</div>');
+                    }
+                    if (!focusSet) {
+                        typeSelect.focus();
+                        focusSet = true;
+                    }
+                } else {
+                    typeSelect.addClass('is-valid').removeClass('is-invalid');
+                    typeSelect.siblings('.invalid-feedback').remove();
+                }
+                
+                // Validate count
+                if (isNaN(count) || count < 1) {
+                    isValid = false;
+                    countInput.addClass('is-invalid').removeClass('is-valid');
+                    if (countInput.siblings('.invalid-feedback').length === 0) {
+                        countInput.after('<div class="invalid-feedback">Vehicle count must be at least 1</div>');
+                    }
+                    if (!focusSet) {
+                        countInput.focus();
+                        focusSet = true;
+                    }
+                } else if (count > 100) {
+                    countInput.val(100);
+                    countInput.addClass('is-valid').removeClass('is-invalid');
+                    countInput.siblings('.invalid-feedback').remove();
+                    
+                    if (!focusSet) {
+                        showAlert('warning', 'Maximum 100 vehicles of one type allowed. Count has been adjusted.');
+                    }
+                } else {
+                    countInput.addClass('is-valid').removeClass('is-invalid');
+                    countInput.siblings('.invalid-feedback').remove();
+                }
+            });
+            
+            // If validation successful, show submission indicator and submit
+            if (isValid) {
+                // Show loading state
+                const submitBtn = $(this).find('button[type="submit"]');
+                const originalText = submitBtn.html();
+                submitBtn.prop('disabled', true).html(`
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    <span class="ms-2">Processing...</span>
+                `);
+                
+                // Submit the form
+                this.submit();
+            }
         });
         
-        // Function to update server-side processing note
-        function updateServerSideNote() {
-            const vehicleType = $('#id_vehicle_type').val();
-            
-            // Find the second list item in the server-side processing note and update it
-            const processingList = $('.alert-light.border ol.small');
-            if (processingList.length) {
-                const listItems = processingList.find('li');
-                if (listItems.length >= 2) {
-                    $(listItems[1]).html(`Multiple Vehicle records (based on "Number of Units" value) with automatically generated ${vehicleType.toLowerCase()} numbers and the selected vehicle type (${vehicleType})`);
-                    
-                    // Also update the third list item
-                    if (listItems.length >= 3) {
-                        $(listItems[2]).html(`Each ${vehicleType.toLowerCase()} number will follow the format "XXX" (e.g., 001, 002, 003, etc.)`);
-                    }
+        // Handle form field validation on input
+        $('#operatorForm input, #operatorForm select, #operatorForm textarea').on('input change', function() {
+            if ($(this).hasClass('is-invalid')) {
+                if ($(this).val().trim()) {
+                    $(this).removeClass('is-invalid').addClass('is-valid');
+                    $(this).siblings('.invalid-feedback').remove();
                 }
             }
+        });
+        
+        // Add one vehicle row by default when the page loads (for new operators)
+        if (!$('#id_new_pd_number').val()) {
+            $('#add-vehicle-btn').click();
         }
         
-        // Call the update function initially
-        updateServerSideNote();
-        
-        // Update the note when the vehicle type changes
-        $('#id_vehicle_type').on('change', function() {
-            updateServerSideNote();
+        // Handle delete vehicle button clicks using SweetAlert2
+        $('.delete-vehicle-btn').on('click', function() {
+            const vehicleId = $(this).data('vehicle-id');
+            const vehicleNumber = $(this).data('vehicle-number');
+            const vehicleType = $(this).closest('tr').find('td:first').text();
+            
+            // Create warning message HTML
+            const warningHtml = `
+                <div>
+                    <p>Are you sure you want to delete <strong>${vehicleType} ${vehicleNumber}</strong>?</p>
+                    <div class="warning-container">
+                        <span class="material-icons">warning</span>
+                        <div class="warning-text">
+                            This action cannot be undone. All information associated with this vehicle will be permanently deleted.
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Show SweetAlert confirmation dialog
+            Swal.fire({
+                title: 'Delete Vehicle',
+                html: warningHtml,
+                showCancelButton: true,
+                confirmButtonText: 'Delete Vehicle',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true,
+                customClass: {
+                    confirmButton: 'btn btn-danger',
+                    cancelButton: 'btn btn-secondary me-3'
+                },
+                buttonsStyling: false,
+                focusCancel: true,
+                showConfirmButton: true,
+                showCloseButton: false,
+                allowOutsideClick: () => !Swal.isLoading()
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Show loading state
+                    Swal.fire({
+                        title: 'Deleting...',
+                        text: 'Please wait while we delete the vehicle',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        allowEnterKey: false,
+                        showConfirmButton: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    // Send AJAX request to delete the vehicle
+                    $.ajax({
+                        url: `/operator/vehicles/${vehicleId}/delete/`,
+                        type: 'POST',
+                        headers: {
+                            'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
+                        },
+                        dataType: 'json',
+                        success: function(response) {
+                            // Show success message
+                            Swal.fire({
+                                title: 'Deleted!',
+                                text: 'Vehicle deleted successfully. The page will refresh.',
+                                icon: 'success',
+                                confirmButtonText: 'OK',
+                                confirmButtonColor: '#28a745',
+                                timer: 2000,
+                                timerProgressBar: true
+                            }).then(() => {
+                                // Remove the vehicle row from the table without page reload
+                                $(`tr[data-vehicle-id="${vehicleId}"]`).fadeOut(300, function() {
+                                    $(this).remove();
+                                    
+                                    // Reload the page to update the vehicle counts
+                                    location.reload();
+                                });
+                            });
+                        },
+                        error: function(xhr, status, error) {
+                            console.log("AJAX Error:", status, error);
+                            console.log("Response:", xhr.responseText);
+                            
+                            // Check if the response contains HTML (likely a redirect)
+                            if (xhr.responseText.includes('<!DOCTYPE html>') || 
+                                xhr.responseText.includes('<html')) {
+                                // If we got HTML back, the operation was successful but returned HTML
+                                Swal.fire({
+                                    title: 'Deleted!',
+                                    text: 'Vehicle deleted successfully. The page will refresh.',
+                                    icon: 'success',
+                                    confirmButtonText: 'OK',
+                                    confirmButtonColor: '#28a745',
+                                    timer: 2000,
+                                    timerProgressBar: true
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            } else {
+                                // Show error message
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: 'Error deleting vehicle. Please try again.',
+                                    icon: 'error',
+                                    confirmButtonColor: '#dc3545'
+                                });
+                            }
+                        },
+                        complete: function() {
+                            // Add a fallback reload after 3 seconds in case of any issues
+                            setTimeout(function() {
+                                if (Swal.isVisible()) {
+                                    Swal.close();
+                                    location.reload();
+                                }
+                            }, 3000);
+                        }
+                    });
+                }
+            });
         });
     });
 </script>

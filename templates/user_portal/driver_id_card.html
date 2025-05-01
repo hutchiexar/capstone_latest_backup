@@ -891,7 +891,13 @@
                                             <span class="info-icon"><i class="material-icons" style="font-size: 10px;">cake</i></span>
                                             Birth Date:
                                         </span>
-                                        <span class="personal-details-value">{% if profile.birthdate %}{{ profile.birthdate|date:"n/j/Y" }}{% else %}N/A{% endif %}</span>
+                                        <span class="personal-details-value">
+                                            {% if profile.birthdate %}
+                                                {{ profile.birthdate|date:"F j, Y" }}
+                                            {% else %}
+                                                N/A
+                                            {% endif %}
+                                        </span>
                                     </div>
                                     
                                     <div class="personal-details-row">
@@ -914,17 +920,42 @@
                                     
                                     <div class="personal-details-row">
                                         <span class="personal-details-label">
-                                            <span class="info-icon"><i class="material-icons" style="font-size: 10px;">emergency</i></span>
-                                            Emergency:
+                                            <span class="info-icon"><i class="material-icons" style="font-size: 10px;">person</i></span>
+                                            Emergency Name:
                                         </span>
                                         <span class="personal-details-value">
                                             {% if profile.emergency_contact_name %}
                                                 {{ profile.emergency_contact_name }}
-                                                {% if profile.emergency_contact_number %}
-                                                    <br>{{ profile.emergency_contact_number }}
-                                                {% endif %}
+                                            {% else %}
+                                                N/A
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    
+                                    <div class="personal-details-row">
+                                        <span class="personal-details-label">
+                                            <span class="info-icon"><i class="material-icons" style="font-size: 10px;">family_restroom</i></span>
+                                            Relationship:
+                                        </span>
+                                        <span class="personal-details-value">
+                                            {% if profile.emergency_contact %}
+                                                {{ profile.emergency_contact }}
                                             {% elif application.emergency_contact %}
                                                 {{ application.emergency_contact }}
+                                            {% else %}
+                                                N/A
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    
+                                    <div class="personal-details-row">
+                                        <span class="personal-details-label">
+                                            <span class="info-icon"><i class="material-icons" style="font-size: 10px;">phone</i></span>
+                                            Emergency Phone:
+                                        </span>
+                                        <span class="personal-details-value">
+                                            {% if profile.emergency_contact_number %}
+                                                {{ profile.emergency_contact_number }}
                                             {% else %}
                                                 N/A
                                             {% endif %}

@@ -307,12 +307,12 @@
 <div class="modal fade" id="batchAdjudicationModal" tabindex="-1" aria-labelledby="batchAdjudicationModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
+            <div class="modal-header bg-white text-dark border-bottom">
                 <h5 class="modal-title" id="batchAdjudicationModalLabel">
                     <span class="material-icons align-middle me-2">fact_check</span>
                     Batch Adjudication Details
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-0">
                 <!-- Batch Summary Card -->
@@ -407,8 +407,7 @@
                                         <th scope="col" class="ps-4">Citation #</th>
                                         <th scope="col">Violation Type</th>
                                         <th scope="col">Location</th>
-                                        <th scope="col" class="text-end">Penalty</th>
-                                        <th scope="col" class="text-center pe-4">Actions</th>
+                                        <th scope="col" class="text-end pe-4">Penalty</th>
                                     </tr>
                                 </thead>
                                 <tbody id="batchViolationsTableBody">
@@ -435,6 +434,15 @@
                         <div class="bg-light p-3 rounded">
                             <p class="mb-0" id="batchRemarks">Loading...</p>
                         </div>
+                        <div class="alert alert-info mt-3 mb-0">
+                            <div class="d-flex align-items-center">
+                                <span class="material-icons me-2">info</span>
+                                <p class="mb-0">
+                                    Individual violations may have specific adjudicator notes. 
+                                    Click the <span class="material-icons align-middle text-info" style="font-size: 14px;">description</span> button next to each violation to view its specific notes.
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -443,14 +451,7 @@
                 
                 <!-- Action buttons only visible if status is pending approval -->
                 <div id="batchApprovalActions">
-                    <button type="button" class="btn btn-success" id="approveBatchBtn">
-                        <span class="material-icons align-middle me-1">check_circle</span>
-                        Approve Batch
-                    </button>
-                    <button type="button" class="btn btn-danger" id="rejectBatchBtn">
-                        <span class="material-icons align-middle me-1">cancel</span>
-                        Reject Batch
-                    </button>
+                    <!-- Batch approval buttons removed as requested -->
                 </div>
             </div>
         </div>
@@ -953,16 +954,27 @@
     vertical-align: middle;
 }
 
-/* Notes modal styles */
+/* Adjudicator Notes Modal Styles */
 #modal-adjudicator-notes .modal__container {
+    width: 90%;
   max-width: 600px;
 }
 
 #modal-adjudicator-notes .notes-content {
-  background-color: #f8f9fa;
-  padding: 15px;
-  border-radius: 8px;
-  border-left: 4px solid var(--primary-color);
+    padding: 20px;
+    border-radius: 5px;
+    background-color: #ffffff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+#modal-adjudicator-notes .card-header {
+    border-bottom: 1px solid #eaeaea;
+}
+
+#modal-adjudicator-notes .card {
+    border: none;
+    border-radius: 10px;
+    overflow: hidden;
 }
 
 /* Batch Adjudication Modal Styles */
@@ -1436,13 +1448,7 @@ function showBatchDetails(batchIds) {
                             <td class="ps-4">${v.id}</td>
                             <td>${violationTypeDisplay}</td>
                             <td>${v.location || 'N/A'}</td>
-                            <td class="text-end">₱${parseFloat(v.fine_amount || 0).toFixed(2)}</td>
-                            <td class="text-center pe-4">
-                                <button type="button" class="btn btn-sm btn-primary" 
-                                        onclick="showViolationDetail(${v.id})">
-                                    <span class="material-icons" style="font-size: 16px;">visibility</span>
-                                </button>
-                            </td>
+                            <td class="text-end pe-4">₱${parseFloat(v.fine_amount || 0).toFixed(2)}</td>
                         </tr>
                     `;
                 }
@@ -1450,9 +1456,23 @@ function showBatchDetails(batchIds) {
             
             document.getElementById('batchViolationsTableBody').innerHTML = tableHtml;
             
-            // Set up action buttons
-            document.getElementById('approveBatchBtn').onclick = () => approveBatch(batchIds);
-            document.getElementById('rejectBatchBtn').onclick = () => rejectBatch(batchIds);
+            // Set up action buttons - check if they exist first
+            const approveBatchBtn = document.getElementById('approveBatchBtn');
+            const rejectBatchBtn = document.getElementById('rejectBatchBtn');
+            
+            if (approveBatchBtn) {
+                approveBatchBtn.onclick = () => approveBatch(batchIds);
+            }
+            
+            if (rejectBatchBtn) {
+                rejectBatchBtn.onclick = () => rejectBatch(batchIds);
+            }
+            
+            // Reinitialize tooltips for the newly added buttons
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
         })
         .catch(error => {
             console.error('Error loading batch details:', error);
@@ -1931,25 +1951,18 @@ function rejectAdjudication(violationId) {
 }
 
 function showAdjudicatorNotes(violationId) {
-    if (!violationId) return;
-    
-    // Get modal content element
     const modalContent = document.getElementById('modal-adjudicator-notes-content');
-    
-    // Update title
-    document.getElementById('modal-adjudicator-notes-title').textContent = `Adjudicator Notes - Violation #${violationId}`;
-    
-    // Show loading spinner in the modal
     modalContent.innerHTML = `
-        <div class="text-center py-5">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <p class="mt-3">Loading adjudicator notes...</p>
+        <div class="d-flex justify-content-center align-items-center p-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <span class="ms-3">Loading notes...</span>
         </div>
     `;
     
-    // Show the modal using Micromodal
+    // Update modal title
+    document.getElementById('modal-adjudicator-notes-title').textContent = 'Adjudicator Notes';
+    
+    // Show modal with loading state
     MicroModal.show('modal-adjudicator-notes');
     
     // Fetch adjudicator notes
@@ -1961,33 +1974,51 @@ function showAdjudicatorNotes(violationId) {
             return response.json();
         })
         .then(data => {
-            if (data.notes) {
-                // Update modal content with fetched notes
+            if (data && data.notes && data.notes.trim()) {
+                // Display adjudicator's name and when notes were added
+                const adjudicatorName = data.adjudicator_name || 'Unknown';
+                const timestamp = data.timestamp ? new Date(data.timestamp).toLocaleString() : 'Unknown time';
+                
                 modalContent.innerHTML = `
-                    <div class="notes-content">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-light">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <span class="material-icons text-primary me-2">person</span>
+                                    <strong>${adjudicatorName}</strong>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <span class="material-icons text-muted me-1" style="font-size: 16px;">schedule</span>
+                                    <small class="text-muted">${timestamp}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body notes-content">
                         <p class="mb-0">${data.notes}</p>
                     </div>
-                    <div class="mt-3">
-                        <small class="text-muted">Adjudicated by: ${data.adjudicator_name}</small>
-                        <br>
-                        <small class="text-muted">Date: ${data.adjudication_date}</small>
                     </div>
                 `;
             } else {
-                // No notes found
                 modalContent.innerHTML = `
-                    <div class="alert alert-info">
-                        <p class="mb-0">No adjudicator notes available for this violation.</p>
+                    <div class="alert alert-info d-flex align-items-center">
+                        <span class="material-icons me-3">info</span>
+                        <div>
+                            <p class="mb-0">No notes were provided by the adjudicator for this violation.</p>
+                        </div>
                     </div>
                 `;
             }
         })
         .catch(error => {
-            // Show error message in the modal
+            console.error('Error fetching adjudicator notes:', error);
             modalContent.innerHTML = `
-                <div class="alert alert-danger">
-                    <p>Error loading adjudicator notes:</p>
-                    <p>${error.message}</p>
+                <div class="alert alert-danger d-flex align-items-center">
+                    <span class="material-icons me-3">error</span>
+                    <div>
+                        <p class="mb-1 fw-bold">Unable to load adjudicator notes</p>
+                        <p class="mb-0 small">Error: ${error.message}</p>
+                        <p class="mb-0 small">Please try again later or contact support if the problem persists.</p>
+                    </div>
                 </div>
             `;
         });
@@ -2029,6 +2060,61 @@ jQuery.expr[':'].contains = function(a, i, m) {
         .indexOf(m[3].toUpperCase()) >= 0;
 };
 </script>
+
+<!-- Adjudicator Notes Modal Styles -->
+<style>
+    #modal-adjudicator-notes .modal__container {
+        width: 90%; 
+        max-width: 600px;
+    }
+    
+    #modal-adjudicator-notes .notes-content {
+        background-color: #ffffff;
+        padding: 1.25rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+    
+    #modal-adjudicator-notes .card-header {
+        border-bottom: 1px solid #eaeaea;
+    }
+    
+    #modal-adjudicator-notes .alert {
+        border-left: 4px solid;
+    }
+    
+    #modal-adjudicator-notes .alert-info {
+        border-left-color: #0dcaf0;
+    }
+    
+    #modal-adjudicator-notes .alert-danger {
+        border-left-color: #dc3545;
+    }
+    
+    /* Improved loading animation */
+    #modal-adjudicator-notes .spinner-border {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 576px) {
+        #modal-adjudicator-notes .modal__container {
+            width: 95%;
+            margin: 0 auto;
+        }
+        
+        #modal-adjudicator-notes .card-header {
+            padding: 0.75rem;
+        }
+        
+        #modal-adjudicator-notes .notes-content {
+            padding: 1rem;
+        }
+    }
+</style>
 
 {% include 'includes/pagination.html' %}
 {% endblock %} 

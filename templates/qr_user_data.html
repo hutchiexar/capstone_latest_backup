@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}User Profile - CTTMO Traffic Violation System{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Verification Header -->
+            <div class="card shadow-sm border-0 rounded-3 mb-4">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <span class="material-icons me-3" style="color: var(--primary-color); font-size: 2.5rem;">account_circle</span>
+                        <div>
+                            <h1 class="h3 mb-0">User Profile</h1>
+                            <p class="text-muted mb-0">User information from QR code</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if is_valid %}
+            <!-- Valid User Information -->
+            <div class="card shadow-sm border-0 rounded-3 mb-4">
+                <div class="card-header bg-transparent d-flex align-items-center py-3">
+                    <span class="material-icons me-2 text-success">check_circle</span>
+                    <h5 class="mb-0">Valid User Information</h5>
+                </div>
+                <div class="card-body p-4">
+                    <!-- User Personal Info -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3 border-bottom pb-2">Personal Information</h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <small class="text-muted fw-medium">Name:</small>
+                                <div class="fw-medium">{{ data.name }}</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <small class="text-muted fw-medium">User ID:</small>
+                                <div class="fw-medium">{{ data.id }}</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <small class="text-muted fw-medium">License Number:</small>
+                                <div class="fw-medium">{{ data.license_number|default:"Not provided" }}</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <small class="text-muted fw-medium">Role:</small>
+                                <div class="fw-medium">{{ data.role }}</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <small class="text-muted fw-medium">Email:</small>
+                                <div class="fw-medium">{{ data.email|default:"Not provided" }}</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <small class="text-muted fw-medium">Address:</small>
+                                <div class="fw-medium">{{ data.address|default:"Not provided" }}</div>
+                            </div>
+                            {% if data.phone_number %}
+                            <div class="col-md-6 mb-3">
+                                <small class="text-muted fw-medium">Contact Number:</small>
+                                <div class="fw-medium">{{ data.phone_number }}</div>
+                            </div>
+                            {% endif %}
+                            {% if data.contact_number and data.contact_number != data.phone_number %}
+                            <div class="col-md-6 mb-3">
+                                <small class="text-muted fw-medium">Alt. Contact:</small>
+                                <div class="fw-medium">{{ data.contact_number }}</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Driver Information (if available) -->
+                    {% if data.driver %}
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3 border-bottom pb-2">Driver Information</h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <small class="text-muted fw-medium">Driver ID:</small>
+                                <div class="fw-medium">{{ data.driver.id }}</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <small class="text-muted fw-medium">Status:</small>
+                                <div class="fw-medium">
+                                    {% if "Active" in data.driver.status %}
+                                    <span class="badge bg-success">{{ data.driver.status }}</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">{{ data.driver.status }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <small class="text-muted fw-medium">Type:</small>
+                                <div class="fw-medium">{{ data.driver.type }}</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <small class="text-muted fw-medium">License Number:</small>
+                                <div class="fw-medium">{{ data.driver.license_number }}</div>
+                            </div>
+                            {% if data.driver.expiration_date %}
+                            <div class="col-md-6 mb-3">
+                                <small class="text-muted fw-medium">Expiration Date:</small>
+                                <div class="fw-medium">{{ data.driver.expiration_date }}</div>
+                            </div>
+                            {% endif %}
+                            {% if data.driver.emergency_contact %}
+                            <div class="col-md-6 mb-3">
+                                <small class="text-muted fw-medium">Emergency Contact:</small>
+                                <div class="fw-medium">{{ data.driver.emergency_contact }}</div>
+                            </div>
+                            {% endif %}
+                            {% if data.driver.emergency_contact_number %}
+                            <div class="col-md-6 mb-3">
+                                <small class="text-muted fw-medium">Emergency Number:</small>
+                                <div class="fw-medium">{{ data.driver.emergency_contact_number }}</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Assigned Vehicles -->
+                    {% if data.vehicles %}
+                    <div>
+                        <h6 class="fw-bold mb-3 border-bottom pb-2">Vehicles</h6>
+                        <div class="row row-cols-1 row-cols-md-2 g-3">
+                            {% for vehicle in data.vehicles %}
+                            <div class="col">
+                                <div class="card h-100 shadow-sm">
+                                    <div class="card-body">
+                                        <h6 class="card-title text-primary">{{ vehicle.plate_number }}</h6>
+                                        <div class="card-text">
+                                            <small class="text-muted">Make:</small>
+                                            <div>{{ vehicle.make|default:"N/A" }}</div>
+                                            <small class="text-muted mt-2">Model:</small>
+                                            <div>{{ vehicle.model|default:"N/A" }}</div>
+                                            <small class="text-muted mt-2">Year:</small>
+                                            <div>{{ vehicle.year|default:"N/A" }}</div>
+                                            <small class="text-muted mt-2">Operator:</small>
+                                            <div>{{ vehicle.operator|default:"N/A" }}</div>
+                                            {% if vehicle.color %}
+                                            <small class="text-muted mt-2">Color:</small>
+                                            <div>{{ vehicle.color }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <span class="material-icons me-2">info</span>
+                        <span>No vehicles found for this user.</span>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-transparent py-3">
+                    <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
+                        <div class="d-flex align-items-center text-success">
+                            <span class="material-icons me-2">verified</span>
+                            <span>This user information was verified on {{ now|date:"F j, Y" }} at {{ now|time:"g:i A" }}</span>
+                        </div>
+                        {% if user.is_authenticated and user.userprofile.role != 'USER' %}
+                        <div>
+                            <a href="{% url 'prepare_user_ticket' enforcer_id=enforcer_id %}" class="btn btn-danger d-flex align-items-center">
+                                <span class="material-icons me-2">gavel</span>
+                                <span>Issue Ticket</span>
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Violation History Section -->
+            {% if data.violations %}
+            <div class="card shadow-sm border-0 rounded-3 mb-4">
+                <div class="card-header bg-transparent d-flex align-items-center py-3">
+                    <span class="material-icons me-2" style="color: var(--primary-color)">gavel</span>
+                    <h5 class="mb-0">Violation History</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row">
+                        {% for violation in data.violations %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-header bg-light py-2 px-3">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge {% if violation.status == 'PAID' or violation.status == 'SETTLED' %}bg-success{% elif violation.status == 'PENDING' %}bg-warning{% elif violation.status == 'CONTESTED' %}bg-info{% elif violation.status == 'EXPIRED' %}bg-danger{% else %}bg-secondary{% endif %} text-white">
+                                            {{ violation.status }}
+                                        </span>
+                                        <small class="text-muted">{{ violation.date }}</small>
+                                    </div>
+                                </div>
+                                <div class="card-body py-2 px-3">
+                                    <h6 class="card-title mb-2">{{ violation.violation_type }}</h6>
+                                    <div class="small text-muted mb-2">
+                                        <span class="material-icons" style="font-size: 16px; vertical-align: text-bottom;">location_on</span>
+                                        {{ violation.location }}
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong class="d-block">Fine Amount:</strong>
+                                            <span class="text-danger fw-bold">₱{{ violation.fine_amount }}</span>
+                                        </div>
+                                        {% if violation.vehicle_type or violation.plate_number %}
+                                        <div class="text-end">
+                                            <small class="text-muted d-block">Vehicle: {{ violation.vehicle_type }}</small>
+                                            {% if violation.plate_number %}
+                                            <small class="text-muted">Plate: {{ violation.plate_number }}</small>
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% else %}
+            <!-- Invalid User ID -->
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-header bg-transparent d-flex align-items-center py-3">
+                    <span class="material-icons me-2 text-danger">error</span>
+                    <h5 class="mb-0">Invalid User ID</h5>
+                </div>
+                <div class="card-body p-4 text-center">
+                    <div class="mb-4">
+                        <span class="material-icons text-danger" style="font-size: 3rem;">person_off</span>
+                        <h4 class="mt-3">User Verification Failed</h4>
+                        <p class="text-muted">The user ID "{{ enforcer_id }}" could not be verified in our system.</p>
+                        {% if error %}
+                        <p class="text-danger">{{ error }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="alert alert-warning">
+                        <span class="material-icons me-2">warning</span>
+                        <span>This may indicate an invalid or expired user ID. Please contact an administrator for assistance.</span>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Back button -->
+            <div class="text-center mt-4">
+                <a href="{% url 'qr_scanner' %}" class="btn btn-outline-primary d-inline-flex align-items-center">
+                    <span class="material-icons me-2">qr_code_scanner</span>
+                    <span>Scan Another QR Code</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

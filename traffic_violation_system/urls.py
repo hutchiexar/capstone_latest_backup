@@ -8,6 +8,15 @@ from django.conf import settings
 from django.conf.urls.static import static
 from . import operator_views
 from traffic_violation_system.operator_views import operator_print_slip, operator_create_with_potpots, operator_enable, operator_print_own_slip
+from .submit_violations_for_approval import submit_violations_for_approval
+from . import adjudication_views
+from .educational import views as educational_views
+from . import views_qr_code  # Import the QR code views
+from . import views_driver_verify  # Import the driver verification views
+from .views_qr_ticket.views import prepare_driver_ticket, prepare_user_ticket
+from .views_qr_ticket.issue_direct import issue_direct_ticket
+from .views_registration import register
+from .views_email_verification import verify_email, resend_verification, verification_pending, verification_required
 
 urlpatterns = [
     # Landing Pages
@@ -18,7 +27,7 @@ urlpatterns = [
     path('track/', views.track_violation, name='track_violation'),
 
     path('accounts/login/', views.login_view, name='login'),
-    path('accounts/register/', views.register, name='register'),
+    path('accounts/register/', register, name='register'),
     path('accounts/profile/', views.profile, name='profile'),
     path('accounts/profile/edit/', views.edit_profile, name='edit_profile'),
     path('logout/', LogoutView.as_view(next_page='login'), name='logout'),
@@ -51,8 +60,8 @@ urlpatterns = [
     path('ncap-violations/save/', views.save_ncap_violation, name='save_ncap_violation'),
     
     path('adjudication/', views.adjudication_list, name='adjudication_list'),
-    path('violation/<int:violation_id>/adjudicate/', views.adjudication_form, name='adjudication_form'),
     path('violation/<int:violation_id>/submit-adjudication/', views.submit_adjudication, name='submit_adjudication'),
+    path('submit_violations_for_approval/', submit_violations_for_approval, name='submit_violations_for_approval'),
 
     # Announcement URLs
     path('announcements/', views.announcements_list, name='announcements_list'),
@@ -128,7 +137,7 @@ urlpatterns = [
     path('operators/', views.operator_list, name='operator_list'),
     path('operators/<int:pk>/', views.operator_detail, name='operator_detail'),
     path('operators/create/', operator_views.operator_create_with_potpots, name='operator_create'),
-    path('operators/<int:pk>/update/', views.operator_update, name='operator_update'),
+    path('operators/update/<int:pk>/', operator_views.operator_update_with_vehicles, name='operator_update'),
     path('operators/<int:pk>/delete/', views.operator_delete, name='operator_delete'),
     path('operators/<int:pk>/enable/', operator_views.operator_enable, name='operator_enable'),
     path('operators/<int:operator_id>/vehicles/', views.operator_vehicles, name='operator_vehicles'),
@@ -207,5 +216,38 @@ urlpatterns = [
 
     # Adjudication dashboard
     path('adjudication/dashboard/', views.adjudication_dashboard, name='adjudication_dashboard'),
+    path('adjudication/list/', views.adjudication_list, name='adjudication_list'),
     path('adjudication/rejected/', views.rejected_adjudications, name='rejected_adjudications'),
+
+    # Adjudication views
+    path('adjudication/violator/<int:violator_id>/', adjudication_views.adjudication_page, name='adjudication_page'),
+    path('adjudication/ticket/adjudicate/', adjudication_views.adjudicate_ticket, name='adjudicate_ticket'),
+    path('adjudication/violator/<int:violator_id>/submit/', adjudication_views.submit_all_adjudications, name='submit_all_adjudications'),
+    path('adjudication/violation/<int:violation_id>/data/', adjudication_views.get_violation_data, name='get_violation_data'),
+    path('violation/<int:violation_id>/redirect-to-adjudication/', adjudication_views.redirect_to_adjudication_page, name='redirect_to_adjudication_page'),
+
+    # QR code URL pattern - Update to point to the new module
+    path('qr/<str:enforcer_id>/', views_qr_code.qr_profile_view, name='qr_profile_view'),
+    
+    # QR code scanner page
+    path('qr-scanner/', views_qr_code.qr_scanner, name='qr_scanner'),
+    
+    # QR code user data display page
+    path('qr/user/<str:enforcer_id>/', views_qr_code.qr_user_data, name='qr_user_data'),
+
+    # Driver verification - public endpoint for QR scan verification
+    path('driver/<str:driver_id>/verify/', views_driver_verify.driver_verify, name='driver_verify'),
+    
+    # Ticket preparation from QR scans
+    path('driver/<str:driver_id>/ticket/', prepare_driver_ticket, name='prepare_driver_ticket'),
+    path('qr/user/<str:enforcer_id>/ticket/', prepare_user_ticket, name='prepare_user_ticket'),
+    
+    # Direct ticket issue with session data
+    path('violations/issue-direct-ticket/', issue_direct_ticket, name='issue_direct_ticket'),
+
+    # Email verification URLs
+    path('verification/verify/<uuid:token>/', verify_email, name='verify_email'),
+    path('verification/pending/', verification_pending, name='verification_pending'),
+    path('verification/required/', verification_required, name='verification_required'),
+    path('verification/resend/', resend_verification, name='resend_verification'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

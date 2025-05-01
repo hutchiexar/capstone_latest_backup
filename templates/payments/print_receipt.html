@@ -278,11 +278,21 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>{{ violation.violation_type }}</td>
-                        <td>{{ violation.violation_date|date:"F d, Y" }}</td>
-                        <td>₱{{ violation.fine_amount|floatformat:2 }}</td>
-                    </tr>
+                    {% if violation.get_violation_types %}
+                        {% for type in violation.get_violation_types %}
+                        <tr>
+                            <td>{{ type }}</td>
+                            <td>{{ violation.violation_date|date:"F d, Y" }}</td>
+                            <td>₱{{ violation.fine_amount|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td>{{ violation.violation_type }}</td>
+                            <td>{{ violation.violation_date|date:"F d, Y" }}</td>
+                            <td>₱{{ violation.fine_amount|floatformat:2 }}</td>
+                        </tr>
+                    {% endif %}
                     <tr class="amount-row">
                         <td colspan="2" style="text-align: right;"><strong>TOTAL AMOUNT PAID:</strong></td>
                         <td>₱{{ violation.fine_amount|floatformat:2 }}</td>

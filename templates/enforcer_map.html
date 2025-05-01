@@ -90,38 +90,27 @@
                 </div>
             </div>
             
+            <!-- Enforcers Lists Section -->
             <div class="card shadow-sm border-0">
                 <div class="card-body p-3">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div>
-                            <h5 class="mb-1">Enforcers List</h5>
-                            <p class="text-muted mb-0 small">Track location and status</p>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <div class="status-legend">
-                                <span class="status-dot active"></span>
-                                <small>Active</small>
-                            </div>
-                            <div class="status-legend">
-                                <span class="status-dot inactive"></span>
-                                <small>Inactive</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Filters -->
-                    <div class="d-flex gap-2 mb-3">
-                        <button class="btn btn-sm btn-filter active" data-filter="all" aria-pressed="true">
-                            All
-                        </button>
-                        <button class="btn btn-sm btn-filter" data-filter="active" aria-pressed="false">
-                            Active
-                        </button>
-                        <button class="btn btn-sm btn-filter" data-filter="inactive" aria-pressed="false">
-                            Inactive
-                        </button>
-                    </div>
-
+                    <!-- Tabs for Active/Inactive Enforcers -->
+                    <ul class="nav nav-tabs mb-3" id="enforcerTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active-enforcers" 
+                                    type="button" role="tab" aria-controls="active-enforcers" aria-selected="true">
+                                <span class="status-dot active d-inline-block me-1"></span>
+                                Active Enforcers
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="inactive-tab" data-bs-toggle="tab" data-bs-target="#inactive-enforcers" 
+                                    type="button" role="tab" aria-controls="inactive-enforcers" aria-selected="false">
+                                <span class="status-dot inactive d-inline-block me-1"></span>
+                                Inactive Enforcers
+                            </button>
+                        </li>
+                    </ul>
+                    
                     <!-- Search Box -->
                     <div class="input-group mb-3">
                         <span class="input-group-text border-0 bg-light">
@@ -131,65 +120,94 @@
                                placeholder="Search enforcer..." aria-label="Search for an enforcer">
                     </div>
                     
-                    <!-- Sort Options -->
-                    <div class="dropdown mb-3">
-                        <button class="btn btn-sm btn-light dropdown-toggle w-100 d-flex align-items-center justify-content-between" 
-                                type="button" data-bs-toggle="dropdown" aria-expanded="false" 
-                                aria-label="Sort enforcers list">
-                            <span>Sort by: <span id="currentSort">Name (A-Z)</span></span>
-                        </button>
-                        <ul class="dropdown-menu w-100" aria-labelledby="sortDropdown">
-                            <li><a class="dropdown-item sort-option" data-sort="name-asc" href="#">Name (A-Z)</a></li>
-                            <li><a class="dropdown-item sort-option" data-sort="name-desc" href="#">Name (Z-A)</a></li>
-                            <li><a class="dropdown-item sort-option" data-sort="status" href="#">Status (Active first)</a></li>
-                            <li><a class="dropdown-item sort-option" data-sort="recent" href="#">Recently Updated</a></li>
-                            <li><a class="dropdown-item sort-option" data-sort="distance" href="#">Distance (Nearest first)</a></li>
-                        </ul>
-                    </div>
-
-                    <!-- Enforcers List -->
-                    <div id="enforcersList" class="enforcer-list" style="height: calc(100vh - 27rem); overflow-y: auto;">
-                        <!-- Skeleton Loaders for Enforcer Items -->
-                        <div id="enforcersSkeletonList">
-                            <!-- Skeleton Item 1 -->
-                            <div class="skeleton-enforcer-item">
-                                <div class="skeleton skeleton-avatar"></div>
-                                <div class="skeleton-details">
-                                    <div class="skeleton skeleton-text"></div>
-                                    <div class="skeleton skeleton-text short"></div>
-                                </div>
+                    <!-- Tab Content -->
+                    <div class="tab-content" id="enforcerTabContent">
+                        <!-- Active Enforcers Tab -->
+                        <div class="tab-pane fade show active" id="active-enforcers" role="tabpanel" aria-labelledby="active-tab">
+                            <!-- Active Sort Options -->
+                            <div class="dropdown mb-3">
+                                <button class="btn btn-sm btn-light dropdown-toggle w-100 d-flex align-items-center justify-content-between" 
+                                        type="button" data-bs-toggle="dropdown" aria-expanded="false" 
+                                        aria-label="Sort active enforcers list">
+                                    <span>Sort by: <span id="currentSortActive">Name (A-Z)</span></span>
+                                </button>
+                                <ul class="dropdown-menu w-100">
+                                    <li><a class="dropdown-item sort-option" data-list="active" data-sort="name-asc" href="#">Name (A-Z)</a></li>
+                                    <li><a class="dropdown-item sort-option" data-list="active" data-sort="name-desc" href="#">Name (Z-A)</a></li>
+                                    <li><a class="dropdown-item sort-option" data-list="active" data-sort="recent" href="#">Recently Updated</a></li>
+                                    <li><a class="dropdown-item sort-option" data-list="active" data-sort="distance" href="#">Distance (Nearest first)</a></li>
+                                </ul>
                             </div>
-                            <!-- Skeleton Item 2 -->
-                            <div class="skeleton-enforcer-item">
-                                <div class="skeleton skeleton-avatar"></div>
-                                <div class="skeleton-details">
-                                    <div class="skeleton skeleton-text"></div>
-                                    <div class="skeleton skeleton-text short"></div>
+                            
+                            <!-- Active Enforcers List -->
+                            <div id="activeEnforcersList" class="enforcer-list" style="height: calc(100vh - 28rem); overflow-y: auto;">
+                                <!-- Skeleton Loaders for Enforcer Items (will be replaced by JS) -->
+                                <div class="skeleton-enforcer-item">
+                                    <div class="skeleton skeleton-avatar"></div>
+                                    <div class="skeleton-details">
+                                        <div class="skeleton skeleton-text"></div>
+                                        <div class="skeleton skeleton-text short"></div>
+                                    </div>
                                 </div>
-                            </div>
-                            <!-- Skeleton Item 3 -->
-                            <div class="skeleton-enforcer-item">
-                                <div class="skeleton skeleton-avatar"></div>
-                                <div class="skeleton-details">
-                                    <div class="skeleton skeleton-text"></div>
-                                    <div class="skeleton skeleton-text short"></div>
+                                <div class="skeleton-enforcer-item">
+                                    <div class="skeleton skeleton-avatar"></div>
+                                    <div class="skeleton-details">
+                                        <div class="skeleton skeleton-text"></div>
+                                        <div class="skeleton skeleton-text short"></div>
+                                    </div>
                                 </div>
-                            </div>
-                            <!-- Skeleton Item 4 -->
-                            <div class="skeleton-enforcer-item">
-                                <div class="skeleton skeleton-avatar"></div>
-                                <div class="skeleton-details">
-                                    <div class="skeleton skeleton-text"></div>
-                                    <div class="skeleton skeleton-text short"></div>
+                                
+                                <!-- No Active Enforcers Message -->
+                                <div id="noActiveEnforcersMessage" class="text-center p-4 d-none">
+                                    <div class="text-muted">
+                                        <span class="material-icons d-block mb-2" style="font-size: 2.5rem; opacity: 0.5;">person_off</span>
+                                        <p class="mb-0">No active enforcers found</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- No Enforcers Message -->
-                        <div id="noEnforcersMessage" class="text-center p-4 d-none">
-                            <div class="text-muted">
-                                <span class="material-icons d-block mb-2" style="font-size: 2.5rem; opacity: 0.5;">person_off</span>
-                                <p class="mb-0">No online enforcers</p>
+                        <!-- Inactive Enforcers Tab -->
+                        <div class="tab-pane fade" id="inactive-enforcers" role="tabpanel" aria-labelledby="inactive-tab">
+                            <!-- Inactive Sort Options -->
+                            <div class="dropdown mb-3">
+                                <button class="btn btn-sm btn-light dropdown-toggle w-100 d-flex align-items-center justify-content-between" 
+                                        type="button" data-bs-toggle="dropdown" aria-expanded="false" 
+                                        aria-label="Sort inactive enforcers list">
+                                    <span>Sort by: <span id="currentSortInactive">Last Active Time</span></span>
+                                </button>
+                                <ul class="dropdown-menu w-100">
+                                    <li><a class="dropdown-item sort-option" data-list="inactive" data-sort="name-asc" href="#">Name (A-Z)</a></li>
+                                    <li><a class="dropdown-item sort-option" data-list="inactive" data-sort="name-desc" href="#">Name (Z-A)</a></li>
+                                    <li><a class="dropdown-item sort-option" data-list="inactive" data-sort="recent" href="#">Last Active Time</a></li>
+                                </ul>
+                            </div>
+                            
+                            <!-- Inactive Enforcers List -->
+                            <div id="inactiveEnforcersList" class="enforcer-list" style="height: calc(100vh - 28rem); overflow-y: auto;">
+                                <!-- Skeleton Loaders for Enforcer Items (will be replaced by JS) -->
+                                <div class="skeleton-enforcer-item">
+                                    <div class="skeleton skeleton-avatar"></div>
+                                    <div class="skeleton-details">
+                                        <div class="skeleton skeleton-text"></div>
+                                        <div class="skeleton skeleton-text short"></div>
+                                    </div>
+                                </div>
+                                <div class="skeleton-enforcer-item">
+                                    <div class="skeleton skeleton-avatar"></div>
+                                    <div class="skeleton-details">
+                                        <div class="skeleton skeleton-text"></div>
+                                        <div class="skeleton skeleton-text short"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- No Inactive Enforcers Message -->
+                                <div id="noInactiveEnforcersMessage" class="text-center p-4 d-none">
+                                    <div class="text-muted">
+                                        <span class="material-icons d-block mb-2" style="font-size: 2.5rem; opacity: 0.5;">check_circle</span>
+                                        <p class="mb-0">No inactive enforcers found</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -230,7 +248,9 @@ document.addEventListener('DOMContentLoaded', function() {
         sortMethod: 'name-asc',
         filter: 'all',
         searchTerm: '',
-        userLocation: null
+        userLocation: null,
+        activeSortMethod: 'name-asc',
+        inactiveSortMethod: 'recent'
     };
     
     // DOM elements
@@ -247,7 +267,13 @@ document.addEventListener('DOMContentLoaded', function() {
         filterButtons: document.querySelectorAll('.btn-filter'),
         sortOptions: document.querySelectorAll('.sort-option'),
         currentSort: document.getElementById('currentSort'),
-        focusLocationBtn: document.getElementById('focusMyLocation')
+        focusLocationBtn: document.getElementById('focusMyLocation'),
+        activeEnforcersList: document.getElementById('activeEnforcersList'),
+        inactiveEnforcersList: document.getElementById('inactiveEnforcersList'),
+        noActiveEnforcersMessage: document.getElementById('noActiveEnforcersMessage'),
+        noInactiveEnforcersMessage: document.getElementById('noInactiveEnforcersMessage'),
+        currentSortActive: document.getElementById('currentSortActive'),
+        currentSortInactive: document.getElementById('currentSortInactive')
     };
     
     // Log element initialization status
@@ -314,61 +340,87 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateEnforcersList(locations) {
         // Show skeleton loaders during fetch
         if (state.isLoading) {
-            if (elements.enforcersSkeletonList) {
-                elements.enforcersSkeletonList.classList.remove('d-none');
-            }
             return;
-        } else {
-            if (elements.enforcersSkeletonList) {
-                elements.enforcersSkeletonList.classList.add('d-none');
-            }
         }
         
         // Update counts
         const activeEnforcers = locations.filter(e => e.is_active);
+        const inactiveEnforcers = locations.filter(e => !e.is_active);
+        
         if (elements.activeCount) elements.activeCount.textContent = activeEnforcers.length;
-        if (elements.inactiveCount) elements.inactiveCount.textContent = locations.length - activeEnforcers.length;
+        if (elements.inactiveCount) elements.inactiveCount.textContent = inactiveEnforcers.length;
         
         // Update last updated time
         state.lastUpdated = new Date();
         if (elements.lastUpdated) elements.lastUpdated.textContent = `Last updated: ${state.lastUpdated.toLocaleTimeString()}`;
         
         const searchTerm = elements.searchInput ? elements.searchInput.value.toLowerCase() : '';
-        let filteredLocations = [...locations];
         
-        // Apply search filter
+        // Filter active enforcers
+        let filteredActiveEnforcers = [...activeEnforcers];
         if (searchTerm) {
-            filteredLocations = filteredLocations.filter(enforcer => 
+            filteredActiveEnforcers = filteredActiveEnforcers.filter(enforcer => 
                 enforcer.name.toLowerCase().includes(searchTerm) || 
                 enforcer.enforcer_id.toLowerCase().includes(searchTerm)
             );
         }
         
-        // Apply active/inactive filter
-        if (state.filter !== 'all') {
-            const isActive = state.filter === 'active';
-            filteredLocations = filteredLocations.filter(enforcer => enforcer.is_active === isActive);
+        // Filter inactive enforcers
+        let filteredInactiveEnforcers = [...inactiveEnforcers];
+        if (searchTerm) {
+            filteredInactiveEnforcers = filteredInactiveEnforcers.filter(enforcer => 
+                enforcer.name.toLowerCase().includes(searchTerm) || 
+                enforcer.enforcer_id.toLowerCase().includes(searchTerm)
+            );
         }
         
-        // Sort the list based on current sort method
-        filteredLocations = sortEnforcers(filteredLocations, state.sortMethod);
+        // Sort the lists based on current sort methods
+        filteredActiveEnforcers = sortEnforcers(filteredActiveEnforcers, state.activeSortMethod || 'name-asc');
+        filteredInactiveEnforcers = sortEnforcers(filteredInactiveEnforcers, state.inactiveSortMethod || 'recent');
+        
+        // Generate HTML for active enforcers list
+        updateEnforcerListContent(filteredActiveEnforcers, 'activeEnforcersList', 'noActiveEnforcersMessage');
+        
+        // Generate HTML for inactive enforcers list
+        updateEnforcerListContent(filteredInactiveEnforcers, 'inactiveEnforcersList', 'noInactiveEnforcersMessage');
+        
+        // Initialize tooltips
+        initializeTooltips();
+        
+        // Lazy load images
+        setTimeout(lazyLoadImages, 100);
+    }
+
+    // Helper function to update a specific enforcer list element
+    function updateEnforcerListContent(enforcers, listElementId, noEnforcersMessageId) {
+        const listElement = document.getElementById(listElementId);
+        const noEnforcersMessage = document.getElementById(noEnforcersMessageId);
+        
+        if (!listElement || !noEnforcersMessage) return;
         
         // Generate HTML for the list
         let html = '';
         
-        if (filteredLocations.length === 0) {
+        if (enforcers.length === 0) {
             // Show no enforcers message
-            elements.noEnforcersMessage.classList.remove('d-none');
+            noEnforcersMessage.classList.remove('d-none');
         } else {
-            elements.noEnforcersMessage.classList.add('d-none');
+            noEnforcersMessage.classList.add('d-none');
             
             // Create list items with lazy loading
-            filteredLocations.forEach(enforcer => {
+            enforcers.forEach(enforcer => {
                 const avatarSrc = enforcer.avatar_url || generateAvatarSvg(enforcer.name);
                 const lastUpdateTime = new Date(enforcer.last_update).toLocaleTimeString([], { 
                     hour: '2-digit', 
                     minute: '2-digit' 
                 });
+                
+                // Calculate time since last active if inactive
+                let inactiveTimeDisplay = '';
+                if (!enforcer.is_active) {
+                    const timeSince = Math.floor((new Date() - new Date(enforcer.last_update)) / (1000 * 60));
+                    inactiveTimeDisplay = `<span class="inactive-time ms-2">(${timeSince} min ago)</span>`;
+                }
                 
                 html += `
                     <div class="enforcer-item ${enforcer.is_active ? 'active' : 'inactive'}" 
@@ -379,20 +431,18 @@ document.addEventListener('DOMContentLoaded', function() {
                          aria-label="Focus on ${enforcer.name}">
                         <div class="d-flex align-items-center gap-3">
                             <div class="avatar-container">
-                                <img src="${generateAvatarSvg(enforcer.name)}" 
-                                     data-src="${avatarSrc}"
+                                <img src="${avatarSrc}" 
                                      alt="${enforcer.name}" 
-                                     class="rounded-circle lazy-image"
-                                     loading="lazy"
-                                     onload="this.classList.add('loaded')">
+                                     class="rounded-circle avatar-image"
+                                     onerror="this.src='${generateAvatarSvg(enforcer.name)}'">
                                 <span class="status-badge ${enforcer.is_active ? 'active' : 'inactive'}"></span>
                             </div>
                             <div class="enforcer-details">
                                 <h6 class="mb-1 text-truncate">${enforcer.name}</h6>
-                                <div class="d-flex align-items-center gap-2">
+                                <div class="d-flex align-items-center text-truncate">
                                     <small class="text-muted">${enforcer.enforcer_id}</small>
-                                    <small class="text-muted">•</small>
-                                    <small class="text-muted">${lastUpdateTime}</small>
+                                    <small class="text-muted mx-1">•</small>
+                                    <small class="text-muted">${lastUpdateTime}${inactiveTimeDisplay}</small>
                                 </div>
                             </div>
                         </div>
@@ -401,29 +451,20 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        // Update the list
-        const listContent = document.createElement('div');
-        listContent.innerHTML = html;
-        
-        // Replace content (faster than innerHTML)
-        while (elements.enforcersList.firstChild) {
-            if (elements.enforcersList.firstChild.id === 'noEnforcersMessage' || 
-                elements.enforcersList.firstChild.id === 'enforcersSkeletonList') {
+        // Clear old list items but keep special elements
+        while (listElement.firstChild) {
+            if (listElement.firstChild.id === noEnforcersMessageId) {
                 break;
             }
-            elements.enforcersList.removeChild(elements.enforcersList.firstChild);
+            listElement.removeChild(listElement.firstChild);
         }
         
-        // Add new content at the beginning
-        Array.from(listContent.children).reverse().forEach(child => {
-            elements.enforcersList.insertBefore(child, elements.enforcersList.firstChild);
+        // Add new list items
+        const tempContainer = document.createElement('div');
+        tempContainer.innerHTML = html;
+        Array.from(tempContainer.children).forEach(child => {
+            listElement.insertBefore(child, listElement.firstChild);
         });
-        
-        // Initialize tooltips
-        initializeTooltips();
-        
-        // Lazy load images
-        setTimeout(lazyLoadImages, 100);
     }
 
     // Helper function to sort enforcers
@@ -1465,7 +1506,8 @@ document.addEventListener('DOMContentLoaded', function() {
     margin-bottom: 0.75rem;
     background: #f8fafc;
     border: 1px solid rgba(0,0,0,0.05);
-    transition: all 0.2s ease;
+    transition: all 0.25s ease;
+    cursor: pointer;
 }
 
 .enforcer-item:hover {
@@ -1483,12 +1525,82 @@ document.addEventListener('DOMContentLoaded', function() {
 .enforcer-item.inactive {
     background: linear-gradient(to right, #f8fafc, #f8fafc);
     border-left: 3px solid #9ca3af;
-    opacity: 0.8;
+    opacity: 0.85;
 }
 
 .enforcer-details {
     flex: 1;
     min-width: 0;
+}
+
+/* Enhanced Avatar Styling */
+.avatar-container {
+    position: relative;
+    width: 45px;
+    height: 45px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.avatar-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.enforcer-item:hover .avatar-image {
+    transform: scale(1.1);
+}
+
+.status-badge {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+}
+
+.status-badge.active {
+    background: #22c55e;
+}
+
+.status-badge.inactive {
+    background: #9ca3af;
+}
+
+/* Tab styling */
+.nav-tabs .nav-link {
+    color: #6b7280;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.nav-tabs .nav-link:hover {
+    border-color: rgba(0,0,0,0.1);
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    background: transparent;
+}
+
+/* Status indicator for inactive time */
+.inactive-time {
+    font-size: 0.7rem;
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+    padding: 1px 5px;
+    border-radius: 10px;
+    white-space: nowrap;
 }
 
 .status-legend {
@@ -2330,11 +2442,18 @@ document.addEventListener('DOMContentLoaded', function() {
             option.addEventListener('click', function(e) {
                 e.preventDefault();
                 
-                // Update selected sort
-                state.sortMethod = this.dataset.sort;
-                document.getElementById('currentSort').textContent = this.textContent;
+                const listType = this.dataset.list;
+                const sortMethod = this.dataset.sort;
                 
-                // Update list
+                if (listType === 'active') {
+                    state.activeSortMethod = sortMethod;
+                    elements.currentSortActive.textContent = this.textContent;
+                } else if (listType === 'inactive') {
+                    state.inactiveSortMethod = sortMethod;
+                    elements.currentSortInactive.textContent = this.textContent;
+                }
+                
+                // Update lists
                 const locations = Object.values(state.enforcerData);
                 updateEnforcersList(locations);
             });

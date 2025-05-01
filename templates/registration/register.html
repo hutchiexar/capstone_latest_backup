@@ -35,6 +35,18 @@
         </div>
         {% endif %}
 
+        <!-- QR Code Information Alert -->
+        <div class="alert alert-info alert-dismissible fade show mb-4">
+            <div class="d-flex align-items-center">
+                <i class="material-icons me-2">qr_code_2</i>
+                <div>
+                    <strong>QR Code Generated on Registration</strong>
+                    <p class="mb-0 small">Upon successful registration, a unique QR code will be automatically generated for your profile. This QR code will contain your driver information, license details, and associated vehicles.</p>
+                </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
         <form method="post" enctype="multipart/form-data" id="registrationForm" class="needs-validation" novalidate>
             {% csrf_token %}
             

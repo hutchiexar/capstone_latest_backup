@@ -81,7 +81,6 @@
                         <th style="width: 18%;" class="px-4 py-3 fw-semibold">Address</th>
                         <th style="width: 10%;" class="px-4 py-3 fw-semibold">Old PD Number</th>
                         <th style="width: 10%;" class="px-4 py-3 fw-semibold">New PD Number</th>
-                        <th style="width: 10%;" class="px-4 py-3 fw-semibold">Operator</th>
                         <th style="width: 10%;" class="px-4 py-3 fw-semibold">Expires</th>
                         <th style="width: 15%;" class="px-4 py-3 text-end fw-semibold">Actions</th>
                     </tr>
@@ -101,7 +100,6 @@
                         <td class="px-4 py-3">{{ driver.address }}</td>
                         <td class="px-4 py-3">{% if driver.old_pd_number and driver.old_pd_number != 'New' %}{{ driver.old_pd_number }}{% else %}none{% endif %}</td>
                         <td class="px-4 py-3">{{ driver.new_pd_number }}</td>
-                        <td class="px-4 py-3">{{ driver.operator|default:"-" }}</td>
                         <td class="px-4 py-3">
                             {% if driver.expiration_date %}
                             <span class="badge {% if driver.expiration_status == 'EXPIRED' %}bg-danger{% elif driver.expiration_status == 'EXPIRING_SOON' %}bg-warning{% else %}bg-success{% endif %}">
@@ -233,16 +231,6 @@
                             </div>
                             <div class="col-8">
                                 {{ driver.old_pd_number }}
-                            </div>
-                        </div>
-                        {% endif %}
-                        {% if driver.operator %}
-                        <div class="row mb-2">
-                            <div class="col-4">
-                                <small class="text-muted">Operator:</small>
-                            </div>
-                            <div class="col-8">
-                                {{ driver.operator }}
                             </div>
                         </div>
                         {% endif %}
@@ -550,6 +538,9 @@
         background-color: #198754;
     }
 </style>
+
+<!-- Add jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
     // Add SweetAlert2 Library
