@@ -33,10 +33,17 @@ class AuthenticationMiddleware:
             reverse('contact'),
             reverse('register'),
             reverse('track_violation'),
+            reverse('verification_pending'),
+            reverse('verification_required'),
         ]
+        
+        # Check if URL is verification-related
+        if 'verification' in request.path or 'verify_email' in request.path:
+            return None
         
         # Allow access to landing pages, static files, and media files
         if (request.path in exempt_urls or 
+            any(url in request.path for url in ['/verification/', '/verify/']) or
             request.path.startswith('/static/') or 
             request.path.startswith('/media/')):
             return None

@@ -16,7 +16,17 @@ from . import views_driver_verify  # Import the driver verification views
 from .views_qr_ticket.views import prepare_driver_ticket, prepare_user_ticket
 from .views_qr_ticket.issue_direct import issue_direct_ticket
 from .views_registration import register
-from .views_email_verification import verify_email, resend_verification, verification_pending, verification_required
+from . import receipt_views  # Import the receipt summary views
+from .views_email_verification import (
+    verify_email, 
+    verify_code,
+    resend_verification, 
+    verification_pending, 
+    verification_required,
+    verification_success,
+    verification_failed,
+    verification_expired
+)
 
 urlpatterns = [
     # Landing Pages
@@ -98,6 +108,10 @@ urlpatterns = [
     # Payment processing URLs
     path('payment-processing/', views.payment_processing, name='payment_processing'),
     path('violation/<int:violation_id>/record-payment/', views.record_payment, name='record_payment'),
+    
+    # Receipt Summary URLs
+    path('violation/<int:violation_id>/receipt-summary/', receipt_views.receipt_summary_view, name='receipt_summary'),
+    path('violation/batch-receipt-summary/<str:violation_ids>/', receipt_views.batch_receipt_summary_view, name='batch_receipt_summary'),
 
     # Authentication URLs
     path('accounts/password_reset/', auth_views.PasswordResetView.as_view(
@@ -247,7 +261,11 @@ urlpatterns = [
 
     # Email verification URLs
     path('verification/verify/<uuid:token>/', verify_email, name='verify_email'),
+    path('verification/verify-code/', verify_code, name='verify_code'),
     path('verification/pending/', verification_pending, name='verification_pending'),
     path('verification/required/', verification_required, name='verification_required'),
+    path('verification/success/', verification_success, name='verification_success'),
+    path('verification/failed/', verification_failed, name='verification_failed'),
+    path('verification/expired/', verification_expired, name='verification_expired'),
     path('verification/resend/', resend_verification, name='resend_verification'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

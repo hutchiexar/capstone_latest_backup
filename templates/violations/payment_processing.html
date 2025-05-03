@@ -1590,6 +1590,10 @@ function showBatchPaymentModal(batchIds) {
     batchTotalAmount = 0;
     
     // Process violations sequentially
+    let successCount = 0;
+    let errorCount = 0;
+    let currentIndex = 0;
+    
     function processNextViolation(index) {
         if (index >= batchIds.length) {
             // All done, update form
@@ -1780,24 +1784,16 @@ function processBatchPayment(data) {
     let successCount = 0;
     let errorCount = 0;
     let currentIndex = 0;
-    let receiptUrls = [];
     
     function processNextPayment() {
         if (currentIndex >= currentBatchIds.length) {
             // All done, show results
             MicroModal.close('modal-payment-form');
             
-            // Open receipts in new windows for printing
-            if (receiptUrls.length > 0) {
-                // Open receipts with a slight delay between each one to prevent browser popup blocking
-                receiptUrls.forEach((url, index) => {
-                    setTimeout(() => {
-                        window.open(url, '_blank');
-                    }, index * 500);
-                });
-            }
-            
             if (errorCount === 0) {
+                // Open a single batch receipt instead of individual receipts
+                window.open(`/violation/batch-receipt-summary/${currentBatchIds.join(',')}`, '_blank');
+                
                 Swal.fire({
                     icon: 'success',
                     title: 'Batch Payment Recorded',
@@ -1856,14 +1852,6 @@ function processBatchPayment(data) {
         .then(responseData => {
             if (responseData.success) {
                 successCount++;
-                
-                // Collect receipt URL for printing
-                if (responseData.receipt_url) {
-                    receiptUrls.push(responseData.receipt_url);
-                } else {
-                    // Use the batch summary view for printing
-                    receiptUrls.push(`/violation/${violationId}/receipt-summary/`);
-                }
             } else {
                 errorCount++;
                 console.error(`Error recording payment for violation #${violationId}:`, responseData.message);

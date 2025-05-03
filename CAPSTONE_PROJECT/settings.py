@@ -220,6 +220,10 @@ PAYPAL_CLIENT_SECRET = 'yEPApFknBCa218RIXGFHVZU7QdFfeZFGHp53QVw79ZblnBVpUl3wqqbf
 PAYMONGO_PUBLIC_KEY = 'pk_test_yourpaymongokeypublicvalue'
 PAYMONGO_SECRET_KEY = 'sk_test_yourpaymongosecretkeyvalue'
 
+# ID Analyzer API Keys
+ID_ANALYZER_API_KEY = os.getenv('ID_ANALYZER_API_KEY', 'iM7raOQ6XZmE2yxmOHFXtfKAue4JCZS4')
+ID_ANALYZER_RESTRICTED_KEY = os.getenv('ID_ANALYZER_RESTRICTED_KEY', 'qBYFepghQVytiBMLoQTBKm1d2qFI8skm')
+
 # Django REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
@@ -242,7 +246,7 @@ CORS_ORIGIN_WHITELIST = [
 
 # Brevo API settings
 BREVO_API_KEY = os.environ.get('BREVO_API_KEY', '')
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@cttmo.com')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'hutchiejn@gmail.com')
 SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
 
 # Email verification settings

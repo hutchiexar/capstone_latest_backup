@@ -31,6 +31,20 @@
                     <!-- Driver Personal Info -->
                     <div class="mb-4">
                         <h6 class="fw-bold mb-3 border-bottom pb-2">Personal Information</h6>
+                        
+                        <!-- Driver Photo/Avatar -->
+                        <div class="text-center mb-4">
+                            {% if driver.user.userprofile.avatar %}
+                                <img src="{{ driver.user.userprofile.avatar.url }}" alt="{{ driver.first_name }} {{ driver.last_name }}" class="rounded-circle img-thumbnail" style="width: 150px; height: 150px; object-fit: cover;">
+                            {% elif user_profile and user_profile.avatar %}
+                                <img src="{{ user_profile.avatar.url }}" alt="{{ driver.first_name }} {{ driver.last_name }}" class="rounded-circle img-thumbnail" style="width: 150px; height: 150px; object-fit: cover;">
+                            {% else %}
+                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center mx-auto" style="width: 150px; height: 150px; border: 1px solid #ddd;">
+                                    <span class="material-icons" style="font-size: 80px; color: #aaa;">person</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <small class="text-muted fw-medium">Name:</small>

@@ -421,12 +421,12 @@
                         {% for violation in violations %}
                         <div class="col-md-6 col-lg-4 mb-3">
                             <div class="card h-100 shadow-sm">
-                                <div class="card-header bg-light py-2 px-3">
+                                <div class="card-header py-2 px-3 {% if violation.is_ncap %}bg-primary text-white{% else %}bg-info text-white{% endif %}">
                                     <div class="d-flex justify-content-between align-items-center">
-                                        <span class="badge {% if violation.status == 'PAID' or violation.status == 'SETTLED' %}bg-success{% elif violation.status == 'PENDING' %}bg-warning{% elif violation.status == 'CONTESTED' %}bg-info{% elif violation.status == 'EXPIRED' %}bg-danger{% else %}bg-secondary{% endif %} text-white">
+                                        <span class="badge bg-light {% if violation.is_ncap %}text-primary{% else %}text-info{% endif %}">
                                             {{ violation.get_status_display }}
                                         </span>
-                                        <small class="text-muted">{{ violation.violation_date|date:"M d, Y" }}</small>
+                                        <small>{{ violation.violation_date|date:"M d, Y" }}</small>
                                     </div>
                                 </div>
                                 <div class="card-body py-2 px-3">

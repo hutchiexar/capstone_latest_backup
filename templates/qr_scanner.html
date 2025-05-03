@@ -201,6 +201,10 @@
                         <h5 class="section-heading">Personal Information</h5>
                         <div class="card shadow-sm">
                             <div class="card-body">
+                                <!-- Add avatar display section -->
+                                <div id="user-avatar-container" class="text-center mb-3" style="display:none;">
+                                    <img id="user-avatar" src="" alt="User Avatar" class="rounded-circle img-thumbnail mb-2" style="width: 120px; height: 120px; object-fit: cover;">
+                                </div>
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="mb-3">
@@ -398,6 +402,12 @@ document.addEventListener('DOMContentLoaded', function() {
         vehicleInfoSection.style.display = 'none';
         noDataMessage.style.display = 'none';
         
+        // Reset the avatar display
+        const userAvatarContainer = document.getElementById('user-avatar-container');
+        const userAvatar = document.getElementById('user-avatar');
+        if (userAvatarContainer) userAvatarContainer.style.display = 'none';
+        if (userAvatar) userAvatar.src = '';
+        
         // Reset the violations section if it exists
         const violationsSection = document.getElementById('violations-info-section');
         if (violationsSection) {
@@ -479,6 +489,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 userLicense.textContent = data.license_number || '-';
                     userExpiration.textContent = data.expiration_date || '-';
                     userAddress.textContent = data.address || '-';
+                
+                // Handle avatar if available
+                const userAvatarContainer = document.getElementById('user-avatar-container');
+                const userAvatar = document.getElementById('user-avatar');
+                
+                if (data.avatar) {
+                    userAvatarContainer.style.display = 'block';
+                    userAvatar.src = data.avatar;
+                    userAvatar.alt = data.name;
+                } else {
+                    userAvatarContainer.style.display = 'none';
+                }
+                
                 hasData = true;
             }
             
@@ -631,6 +654,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 userLicense.textContent = personalInfo.license || '-';
                 userExpiration.textContent = personalInfo.expiration || '-';
                 userAddress.textContent = personalInfo.address || '-';
+                
+                // Handle avatar if available
+                const userAvatarContainer = document.getElementById('user-avatar-container');
+                const userAvatar = document.getElementById('user-avatar');
+                
+                if (personalInfo.avatar) {
+                    userAvatarContainer.style.display = 'block';
+                    userAvatar.src = personalInfo.avatar;
+                    userAvatar.alt = personalInfo.name;
+                } else {
+                    userAvatarContainer.style.display = 'none';
+                }
+                
                 hasData = true;
             }
             
@@ -895,8 +931,59 @@ document.addEventListener('DOMContentLoaded', function() {
             id: null,
             license: null,
             expiration: null,
-            address: null
+            address: null,
+            avatar: null
         };
+        
+        // Look for avatar/profile images
+        const avatarElements = doc.querySelectorAll('.profile-avatar, .user-avatar, .avatar-img, .user-photo, .profile-img, img.avatar, img.profile-pic, img.user-img, .img-thumbnail, .rounded-circle');
+        for (const element of avatarElements) {
+            if (element.src && element.src.length > 0) {
+                personalInfo.avatar = element.src;
+                break;
+            }
+        }
+        
+        // If no specific avatar element found, check for img tags within profile containers
+        if (!personalInfo.avatar) {
+            const profileContainers = doc.querySelectorAll('.profile-header, .user-info, .profile-container, .card-body, .verification-body, .driver-photo');
+            for (const container of profileContainers) {
+                const imgElements = container.querySelectorAll('img');
+                for (const img of imgElements) {
+                    if (img.src && img.src.length > 0 && 
+                        !img.src.includes('icon') && 
+                        !img.src.includes('logo')) {
+                        personalInfo.avatar = img.src;
+                        break;
+                    }
+                }
+                if (personalInfo.avatar) break;
+            }
+        }
+        
+        // Additional check for placeholder avatars with initials
+        if (!personalInfo.avatar) {
+            const avatarPlaceholders = doc.querySelectorAll('.rounded-circle');
+            for (const placeholder of avatarPlaceholders) {
+                // If we found a circular placeholder element that's likely an avatar
+                if (placeholder.style && 
+                    (placeholder.style.width.includes('px') || placeholder.classList.contains('img-thumbnail'))) {
+                    // Use a default avatar icon as fallback
+                    personalInfo.avatar = 'https://via.placeholder.com/150?text=Driver';
+                    
+                    // Try to get initials if available
+                    const name = personalInfo.name;
+                    if (name) {
+                        const nameParts = name.split(' ');
+                        if (nameParts.length >= 2) {
+                            const initials = `${nameParts[0][0]}${nameParts[nameParts.length-1][0]}`;
+                            personalInfo.avatar = `https://via.placeholder.com/150?text=${initials}`;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
         
         // Find driver name - first try to find it in a header or prominent element
         const headerElements = doc.querySelectorAll('h1, h2, h3, h4, h5, h6, .card-title, .page-header, .profile-name');
@@ -1118,13 +1205,23 @@ document.addEventListener('DOMContentLoaded', function() {
         // Stop the scanner
         html5QrcodeScanner.clear();
         
-        // Show result container
+        // Show result container for debugging purposes only - will be hidden when redirecting
         resultContainer.style.display = "block";
         
         // Debug log the scanned QR code
         console.log("QR Code scanned:", decodedText);
         
         try {
+            // Display scanning message (will be briefly shown before redirect)
+            resultContent.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3">Processing QR code...</p>
+                </div>
+            `;
+            
             // Normalize URL - add base URL to relative URLs
             let processedUrl = decodedText;
             if (decodedText.startsWith('/')) {
@@ -1133,57 +1230,136 @@ document.addEventListener('DOMContentLoaded', function() {
                 processedUrl = baseUrl + decodedText;
             }
             
-            // Parse the URL to better handle different formats
-            let url;
-            try {
-                url = new URL(processedUrl);
-            } catch (e) {
-                // If not a valid URL, just use the raw text
-                url = null;
+            // HANDLE USER QR CODES (universal approach for all formats)
+            
+            // CASE 1: Direct enforcer ID without URL structure
+            const enforcer_id_pattern = /^[A-Za-z0-9_-]{6,32}$/;  // Basic pattern for IDs
+            if (enforcer_id_pattern.test(decodedText.trim())) {
+                console.log("Direct enforcer ID detected:", decodedText.trim());
+                window.location.href = `${window.location.origin}/qr/user/${decodedText.trim()}/`;
+                return;
             }
             
-            // Extract path parts if this is a URL
-            const pathParts = url ? url.pathname.split('/').filter(part => part) : [];
-            console.log("Path parts:", pathParts);
+            // CASE 2: Legacy format like "2-Rossvan"
+            const custom_id_pattern = /^\d+-[A-Za-z]+$/;  // Pattern like "2-Rossvan"
+            if (custom_id_pattern.test(decodedText.trim())) {
+                console.log("Legacy format ID detected:", decodedText.trim());
+                window.location.href = `${window.location.origin}/qr/user/${decodedText.trim()}/`;
+                return;
+            }
             
-            // Check if this is a driver verification URL
+            // Parse the URL if possible
+            let url = null;
+            let pathParts = [];
+            
+            try {
+                url = new URL(processedUrl);
+                console.log("Parsed URL:", url.toString());
+                pathParts = url.pathname.split('/').filter(part => part);
+                console.log("Path parts:", pathParts);
+            } catch (e) {
+                // If not a valid URL, we'll handle it differently below
+                console.log("Not a valid URL, using raw text:", processedUrl);
+            }
+            
+            // CASE 3: Driver verification URL
             if (url && (url.pathname.includes('/driver/') && url.pathname.includes('/verify'))) {
-                // For proper URL paths like /driver/{id}/verify/
+                console.log("Driver verification URL detected, redirecting to:", processedUrl);
                 window.location.href = processedUrl;
                 return;
             } 
-            // If it's just a driver ID with no URL structure
+            // CASE 4: Driver ID in URL path
             else if (pathParts.length >= 1 && pathParts[0] === 'driver') {
-                // Extract the driver ID from the path
                 const driverId = pathParts[1];
                 if (driverId) {
-                    window.location.href = `/driver/${driverId}/verify/`;
+                    const driverUrl = `/driver/${driverId}/verify/`;
+                    console.log("Driver ID detected, redirecting to:", driverUrl);
+                    window.location.href = driverUrl;
                     return;
                 }
             }
-            // If no URL but appears to be a driver ID format
-            else if (!url && decodedText.trim() !== '') {
-                // Assume this might be a direct driver ID
-                const driverId = decodedText.trim();
-                window.location.href = `/driver/${driverId}/verify/`;
+            
+            // CASE 5: User QR code with URL path containing /qr/
+            if (url && (pathParts.length >= 1 && pathParts[0] === 'qr')) {
+                console.log("User QR code URL pattern detected");
+                
+                // Get the enforcer ID from the path (should be the second segment)
+                let enforcer_id = pathParts.length >= 2 ? pathParts[1] : '';
+                
+                // Skip 'user' segment if present (handles both /qr/user/ID/ and /qr/ID/)
+                if (enforcer_id === 'user' && pathParts.length >= 3) {
+                    enforcer_id = pathParts[2];
+                }
+                
+                if (enforcer_id && enforcer_id !== 'scanner') {
+                    // Always redirect to qr_user_data endpoint for consistent handling
+                    const userDataUrl = `${window.location.origin}/qr/user/${enforcer_id}/`;
+                    console.log("Redirecting to user data endpoint:", userDataUrl);
+                    window.location.href = userDataUrl;
+                    return;
+                } else if (url.pathname.includes('/qr/scanner')) {
+                    // Don't redirect if we're already on the scanner page
+                    console.log("Already on scanner page, not redirecting");
+                    scanNewBtn.click();
+                    return;
+                }
+            }
+            
+            // CASE 6: Try to extract an ID from any URL or string
+            const extractedId = decodedText.trim().replace(/^.*[\/=:]([A-Za-z0-9_-]{6,32})[\/?]?.*$/, '$1');
+            if (extractedId !== decodedText.trim() && (enforcer_id_pattern.test(extractedId) || 
+                extractedId.match(/^\d+-[A-Za-z]+$/))) {
+                console.log("Extracted possible enforcer ID:", extractedId);
+                window.location.href = `${window.location.origin}/qr/user/${extractedId}/`;
                 return;
             }
             
-            // Check if this is enforcer/user QR code
-            if (url && url.pathname.includes('/qr/')) {
-                // This is a user/enforcer QR code
-                window.location.href = processedUrl;
-                return;
-            }
+            // If we reach here, it's an unknown format - show options
+            console.log("Unknown QR code format detected");
             
-            // If reached here, it's an unknown format
-            resultContent.textContent = `QR code detected: ${decodedText}`;
-            viewDetailsBtn.href = processedUrl;
-            showNotification('Unknown QR Code', 'QR code detected but type is unknown', 'warning');
+            // Updated UI for unknown formats - showing clearer options
+            resultContent.innerHTML = `
+                <div class="alert alert-warning">
+                    <p><strong>Unrecognized QR Code Format:</strong> "${decodedText.trim()}"</p>
+                    <p>This QR code doesn't match any known format in our system.</p>
+                </div>
+                <div class="d-grid gap-2">
+                    <button id="try-as-user" class="btn btn-primary mb-2">
+                        <span class="material-icons me-2">person</span>
+                        Try As User ID
+                    </button>
+                    <button id="try-as-driver" class="btn btn-outline-secondary mb-2">
+                        <span class="material-icons me-2">drive_eta</span>
+                        Try As Driver ID
+                    </button>
+                    <button id="scan-new" class="btn btn-outline-dark">
+                        <span class="material-icons me-2">qr_code_scanner</span>
+                        Scan Another Code
+                    </button>
+                </div>
+            `;
+            
+            // Add event listeners for manual options
+            document.getElementById('try-as-user').addEventListener('click', function() {
+                const cleanId = decodedText.trim().replace(/[^A-Za-z0-9_-]/g, '');
+                window.location.href = `${window.location.origin}/qr/user/${cleanId}/`;
+            });
+            
+            document.getElementById('try-as-driver').addEventListener('click', function() {
+                const cleanId = decodedText.trim().replace(/[^A-Za-z0-9_-]/g, '');
+                window.location.href = `${window.location.origin}/driver/${cleanId}/verify/`;
+            });
+            
+            document.getElementById('scan-new').addEventListener('click', function() {
+                scanNewBtn.click();
+            });
+            
+            // Hide the default view details button for unknown formats
+            viewDetailsBtn.style.display = 'none';
             
         } catch (error) {
             console.error("Error processing QR code:", error);
-            resultContent.textContent = "Error processing QR code";
+            resultContent.textContent = "Error processing QR code: " + error.message;
             showNotification('Error', 'There was an error processing the QR code', 'error');
         }
     }

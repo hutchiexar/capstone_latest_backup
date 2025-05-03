@@ -1,0 +1,401 @@
+{% extends 'base_print.html' %}
+{% load static %}
+
+{% block title %}Batch Receipt #{{ receipt_number }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    @page {
+        size: A4;
+        margin: 0;
+    }
+    
+    body {
+        font-family: 'Arial', sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f8f8f8;
+        color: #333;
+    }
+    
+    .receipt-container {
+        position: relative;
+        width: 21cm;
+        margin: 0 auto;
+        background-color: white;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        padding: 1.5cm;
+        box-sizing: border-box;
+    }
+    
+    .watermark {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-45deg);
+        font-size: 120px;
+        color: rgba(0,0,0,0.03);
+        z-index: 0;
+        pointer-events: none;
+        font-weight: bold;
+        white-space: nowrap;
+    }
+    
+    .header {
+        text-align: center;
+        border-bottom: 2px solid #000;
+        padding-bottom: 15px;
+        margin-bottom: 20px;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .logo-container {
+        display: flex;
+        width: 100%;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .logo {
+        width: 80px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .logo img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+    
+    .header-text {
+        text-align: center;
+        flex-grow: 1;
+        padding: 0 15px;
+    }
+    
+    .header-text h1 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+    
+    .header-text h2 {
+        margin: 5px 0;
+        font-size: 20px;
+        font-weight: bold;
+        color: #000;
+        text-transform: uppercase;
+    }
+    
+    .header-text p {
+        margin: 2px 0;
+        font-size: 14px;
+    }
+    
+    .receipt-title {
+        text-align: center;
+        margin: 20px 0;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .receipt-title h3 {
+        display: inline-block;
+        padding: 5px 20px;
+        border: 2px solid #000;
+        font-size: 16px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        background-color: white;
+    }
+    
+    .content {
+        position: relative;
+        z-index: 1;
+    }
+    
+    .receipt-info-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 20px;
+        border: 1px solid #ddd;
+        padding: 15px;
+    }
+    
+    .receipt-info-item {
+        line-height: 1.8;
+    }
+    
+    .receipt-info-item p {
+        margin: 5px 0;
+    }
+    
+    .receipt-info-item strong {
+        display: inline-block;
+        min-width: 130px;
+    }
+    
+    .violation-types-section {
+        margin-top: 20px;
+        margin-bottom: 20px;
+        border: 1px solid #ddd;
+        padding: 15px;
+    }
+    
+    .violation-types-section h4 {
+        margin-top: 0;
+        margin-bottom: 10px;
+        font-size: 16px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 8px;
+    }
+    
+    .violation-types {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .violation-type {
+        background-color: #f1f1f1;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 13px;
+    }
+    
+    .details-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 25px;
+    }
+    
+    .details-table th, .details-table td {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: left;
+    }
+    
+    .details-table th {
+        background-color: #2563eb;
+        color: white;
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 12px;
+    }
+    
+    .details-table tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+    
+    .amount-row td {
+        font-weight: bold;
+        background-color: #f2f2f2;
+    }
+    
+    .signatures {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 40px;
+        margin-bottom: 20px;
+    }
+    
+    .signature-block {
+        text-align: center;
+        width: 45%;
+    }
+    
+    .signature-line {
+        border-top: 1px solid #000;
+        padding-top: 5px;
+        margin-top: 40px;
+        font-weight: bold;
+        font-size: 14px;
+    }
+    
+    .signature-title {
+        font-size: 12px;
+        margin-top: 5px;
+    }
+    
+    .footer {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 12px;
+        border-top: 1px solid #000;
+        padding-top: 10px;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .document-number {
+        position: absolute;
+        top: 1.5cm;
+        right: 1.5cm;
+        font-size: 14px;
+        font-weight: bold;
+        border: 1px solid #000;
+        padding: 5px 10px;
+        background-color: #f2f2f2;
+    }
+    
+    .paid-status {
+        color: #16a34a; 
+        font-weight: bold;
+    }
+    
+    .print-buttons {
+        margin-top: 20px;
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+    }
+    
+    .print-button, .close-button {
+        padding: 10px 25px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        color: white;
+        font-size: 14px;
+    }
+    
+    .print-button {
+        background-color: #2563eb;
+    }
+    
+    .close-button {
+        background-color: #dc2626;
+    }
+    
+    @media print {
+        body {
+            background-color: white;
+        }
+        
+        .receipt-container {
+            box-shadow: none;
+            padding: 0.5cm;
+            width: 100%;
+        }
+        
+        .print-buttons {
+            display: none;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="receipt-container">
+    <div class="watermark">OFFICIAL RECEIPT</div>
+    
+    <div class="document-number">No. {{ receipt_number }}</div>
+    
+    <div class="header">
+        <div class="logo-container">
+            <div class="logo">
+                <img src="{% static 'images/logo.png' %}" alt="City of Bayawan Seal">
+            </div>
+            <div class="header-text">
+                <div class="republic-title">REPUBLIC OF THE PHILIPPINES</div>
+                <div class="office-title">CITY TRANSPORT AND TRAFFIC MANAGEMENT OFFICE</div>
+                <p>Traffic Violation Management System</p>
+                <p>City Government of Bayawan City</p>
+            </div>
+            <div class="logo">
+                <img src="{% static 'images/logo_ibayaw.png' %}" alt="iBayaw TriGrp Logo">
+            </div>
+        </div>
+    </div>
+    
+    <div class="receipt-title">
+        <h3>Official Receipt - Batch Payment</h3>
+    </div>
+    
+    <div class="content">
+        <div class="receipt-info-container">
+            <div class="receipt-info-item">
+                <p><strong>Receipt Number:</strong> {{ receipt_number }}</p>
+                <p><strong>Receipt Date:</strong> {{ receipt_date|date:"F d, Y" }}</p>
+                <p><strong>Total Violations:</strong> {{ violations|length }}</p>
+            </div>
+            <div class="receipt-info-item">
+                <p><strong>Violator:</strong> {{ violator_name }}</p>
+                <p><strong>Amount Paid:</strong> ₱{{ total_amount|floatformat:2 }}</p>
+                <p><strong>Payment Status:</strong> <span class="paid-status">PAID</span></p>
+            </div>
+        </div>
+        
+        <div class="violation-types-section">
+            <h4>Violation Types</h4>
+            <div class="violation-types">
+                {% for type in violation_types %}
+                <div class="violation-type">{{ type }}</div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <table class="details-table">
+            <thead>
+                <tr>
+                    <th style="width: 15%;">CASE ID</th>
+                    <th style="width: 15%;">RECEIPT #</th>
+                    <th style="width: 50%;">VIOLATION TYPE</th>
+                    <th style="width: 20%;">AMOUNT</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for violation in violations %}
+                <tr>
+                    <td>{{ violation.id }}</td>
+                    <td>{{ receipt_number }}</td>
+                    <td>
+                        {% for type in violation.violation_types %}
+                        {{ type }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </td>
+                    <td>₱{{ violation.amount|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+                <tr class="amount-row">
+                    <td colspan="3" style="text-align: right;"><strong>TOTAL AMOUNT PAID:</strong></td>
+                    <td><strong>₱{{ total_amount|floatformat:2 }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div class="signatures">
+            <div class="signature-block">
+                <div class="signature-line">{{ processed_by }}</div>
+                <div class="signature-title">Cashier/Authorized Officer</div>
+            </div>
+            <div class="signature-block">
+                <div class="signature-line">{{ violator_name }}</div>
+                <div class="signature-title">Received by</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>This is an official document of the City Transport and Traffic Management Office.</p>
+        <p>Any alteration or erasure on this receipt renders it void.</p>
+        <p>Receipt generated: {% now "F d, Y h:i A" %}</p>
+    </div>
+</div>
+
+<div class="print-buttons">
+    <button class="print-button" onclick="window.print();">
+        Print Receipt
+    </button>
+    <button class="close-button" onclick="window.close();">
+        Close
+    </button>
+</div>
+{% endblock %} 

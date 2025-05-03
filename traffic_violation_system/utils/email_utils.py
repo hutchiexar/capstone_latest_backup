@@ -16,28 +16,31 @@ def get_brevo_api_client():
 
 def send_verification_email(user, token, request=None):
     """
-    Send verification email to newly registered users.
+    Send verification email with one-time code to newly registered users.
     
     Args:
         user: User object
-        token: EmailVerificationToken object
+        token: EmailVerificationToken object with verification_code
         request: HTTP request object (for building absolute URLs)
     
     Returns:
         bool: True if email was sent successfully, False otherwise
     """
     try:
+        # Log API key status (masked for security)
+        api_key = os.environ.get('BREVO_API_KEY', '')
+        if not api_key:
+            logger.error("BREVO_API_KEY not found in environment variables")
+            return False
+        
+        masked_key = f"{api_key[:5]}...{api_key[-5:]}" if len(api_key) > 10 else "***"
+        logger.info(f"Using Brevo API Key: {masked_key}")
+        
         # Create API client instance
         api_instance = sib_api_v3_sdk.TransactionalEmailsApi(get_brevo_api_client())
         
-        # Build verification URL
-        if request:
-            base_url = request.build_absolute_uri('/')[:-1]  # Remove trailing slash
-            verification_link = f"{base_url}{reverse('verify_email', kwargs={'token': token.token})}"
-        else:
-            # Fallback if request is not available
-            site_url = os.environ.get('SITE_URL', 'http://localhost:8000')
-            verification_link = f"{site_url}{reverse('verify_email', kwargs={'token': token.token})}"
+        # Get verification code
+        verification_code = token.verification_code
         
         # Get email expiration time (human readable)
         expiration_time = token.expires_at.strftime('%Y-%m-%d %H:%M:%S')
@@ -45,7 +48,7 @@ def send_verification_email(user, token, request=None):
         
         # Set up email content
         subject = "Verify Your CTTMO Traffic Violation Management System Account"
-        sender = {"name": "CTTMO Support", "email": os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@cttmo.com')}
+        sender = {"name": "CTTMO Support", "email": os.environ.get('DEFAULT_FROM_EMAIL', 'hutchiejn@gmail.com')}
         
         # Email content with HTML
         html_content = f"""
@@ -56,13 +59,11 @@ def send_verification_email(user, token, request=None):
                         <h2 style="color: #0d6efd;">CTTMO Traffic Violation Management System</h2>
                     </div>
                     <p>Hello {user.first_name},</p>
-                    <p>Thank you for registering with the CTTMO Traffic Violation Management System. To complete your registration and verify your email address, please click the button below:</p>
+                    <p>Thank you for registering with the CTTMO Traffic Violation Management System. To complete your registration and verify your email address, please use the verification code below:</p>
                     <div style="text-align: center; margin: 30px 0;">
-                        <a href="{verification_link}" style="background-color: #0d6efd; color: white; padding: 12px 30px; text-decoration: none; border-radius: 4px; font-weight: bold;">Verify My Email</a>
+                        <div style="font-size: 28px; letter-spacing: 5px; font-weight: bold; background-color: #f5f5f5; padding: 15px; border-radius: 4px; display: inline-block;">{verification_code}</div>
                     </div>
-                    <p>Alternatively, you can copy and paste the following link into your browser:</p>
-                    <p style="word-break: break-all; background-color: #f5f5f5; padding: 10px; border-radius: 4px;">{verification_link}</p>
-                    <p><strong>Please note:</strong> This verification link will expire in {hours_valid} hours (at {expiration_time}).</p>
+                    <p><strong>Please note:</strong> This verification code will expire in {hours_valid} hours (at {expiration_time}).</p>
                     <p>If you did not create an account, please disregard this email.</p>
                     <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eaeaea; font-size: 12px; color: #666;">
                         <p>This is an automated message. Please do not reply to this email.</p>
@@ -76,11 +77,11 @@ def send_verification_email(user, token, request=None):
         text_content = f"""
         Hello {user.first_name},
         
-        Thank you for registering with the CTTMO Traffic Violation Management System. To complete your registration and verify your email address, please visit the following link:
+        Thank you for registering with the CTTMO Traffic Violation Management System. To complete your registration and verify your email address, please use the following verification code:
         
-        {verification_link}
+        {verification_code}
         
-        Please note: This verification link will expire in {hours_valid} hours (at {expiration_time}).
+        Please note: This verification code will expire in {hours_valid} hours (at {expiration_time}).
         
         If you did not create an account, please disregard this email.
         
@@ -110,18 +111,13 @@ def send_verification_email(user, token, request=None):
         return False
 
 def send_verification_reminder(user, token, request=None):
-    """Send a reminder to verify email."""
+    """Send a reminder to verify email with verification code."""
     try:
         # Create API client instance
         api_instance = sib_api_v3_sdk.TransactionalEmailsApi(get_brevo_api_client())
         
-        # Build verification URL
-        if request:
-            base_url = request.build_absolute_uri('/')[:-1]
-            verification_link = f"{base_url}{reverse('verify_email', kwargs={'token': token.token})}"
-        else:
-            site_url = os.environ.get('SITE_URL', 'http://localhost:8000')
-            verification_link = f"{site_url}{reverse('verify_email', kwargs={'token': token.token})}"
+        # Get verification code
+        verification_code = token.verification_code
         
         # Get email expiration time
         expiration_time = token.expires_at.strftime('%Y-%m-%d %H:%M:%S')
@@ -133,7 +129,7 @@ def send_verification_reminder(user, token, request=None):
         
         # Set up email content
         subject = "Reminder: Verify Your CTTMO Account"
-        sender = {"name": "CTTMO Support", "email": os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@cttmo.com')}
+        sender = {"name": "CTTMO Support", "email": os.environ.get('DEFAULT_FROM_EMAIL', 'hutchiejn@gmail.com')}
         
         # Email content with HTML
         html_content = f"""
@@ -144,13 +140,11 @@ def send_verification_reminder(user, token, request=None):
                         <h2 style="color: #0d6efd;">CTTMO Traffic Violation Management System</h2>
                     </div>
                     <p>Hello {user.first_name},</p>
-                    <p>This is a friendly reminder that you still need to verify your email address for your CTTMO account. To complete your registration, please click the button below:</p>
+                    <p>This is a friendly reminder that you still need to verify your email address for your CTTMO account. To complete your registration, please use the verification code below:</p>
                     <div style="text-align: center; margin: 30px 0;">
-                        <a href="{verification_link}" style="background-color: #0d6efd; color: white; padding: 12px 30px; text-decoration: none; border-radius: 4px; font-weight: bold;">Verify My Email</a>
+                        <div style="font-size: 28px; letter-spacing: 5px; font-weight: bold; background-color: #f5f5f5; padding: 15px; border-radius: 4px; display: inline-block;">{verification_code}</div>
                     </div>
-                    <p>Alternatively, you can copy and paste the following link into your browser:</p>
-                    <p style="word-break: break-all; background-color: #f5f5f5; padding: 10px; border-radius: 4px;">{verification_link}</p>
-                    <p><strong>Please note:</strong> This verification link will expire in {int(hours_remaining)} hours (at {expiration_time}).</p>
+                    <p><strong>Please note:</strong> This verification code will expire in {int(hours_remaining)} hours (at {expiration_time}).</p>
                     <p>If you did not create an account, please disregard this email.</p>
                     <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eaeaea; font-size: 12px; color: #666;">
                         <p>This is an automated message. Please do not reply to this email.</p>
@@ -164,11 +158,11 @@ def send_verification_reminder(user, token, request=None):
         text_content = f"""
         Hello {user.first_name},
         
-        This is a friendly reminder that you still need to verify your email address for your CTTMO account. To complete your registration, please visit the following link:
+        This is a friendly reminder that you still need to verify your email address for your CTTMO account. To complete your registration, please use the following verification code:
         
-        {verification_link}
+        {verification_code}
         
-        Please note: This verification link will expire in {int(hours_remaining)} hours (at {expiration_time}).
+        Please note: This verification code will expire in {int(hours_remaining)} hours (at {expiration_time}).
         
         If you did not create an account, please disregard this email.
         

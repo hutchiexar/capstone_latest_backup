@@ -31,6 +31,14 @@
                     <!-- User Personal Info -->
                     <div class="mb-4">
                         <h6 class="fw-bold mb-3 border-bottom pb-2">Personal Information</h6>
+                        
+                        <!-- User Profile Photo/Avatar -->
+                        {% if data.avatar %}
+                        <div class="text-center mb-4">
+                            <img src="{{ data.avatar }}" alt="{{ data.name }}" class="rounded-circle img-thumbnail" style="width: 150px; height: 150px; object-fit: cover;">
+                        </div>
+                        {% endif %}
+                        
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <small class="text-muted fw-medium">Name:</small>
@@ -187,12 +195,12 @@
                         {% for violation in data.violations %}
                         <div class="col-md-6 mb-3">
                             <div class="card h-100 shadow-sm">
-                                <div class="card-header bg-light py-2 px-3">
+                                <div class="card-header py-2 px-3 {% if violation.is_ncap %}bg-primary text-white{% else %}bg-info text-white{% endif %}">
                                     <div class="d-flex justify-content-between align-items-center">
-                                        <span class="badge {% if violation.status == 'PAID' or violation.status == 'SETTLED' %}bg-success{% elif violation.status == 'PENDING' %}bg-warning{% elif violation.status == 'CONTESTED' %}bg-info{% elif violation.status == 'EXPIRED' %}bg-danger{% else %}bg-secondary{% endif %} text-white">
+                                        <span class="badge bg-light {% if violation.is_ncap %}text-primary{% else %}text-info{% endif %}">
                                             {{ violation.status }}
                                         </span>
-                                        <small class="text-muted">{{ violation.date }}</small>
+                                        <small>{{ violation.date }}</small>
                                     </div>
                                 </div>
                                 <div class="card-body py-2 px-3">
@@ -215,6 +223,11 @@
                                         </div>
                                         {% endif %}
                                     </div>
+                                    <div class="mt-2">
+                                        <span class="badge {% if violation.is_ncap %}bg-primary{% else %}bg-info{% endif %} mt-1">
+                                            {% if violation.is_ncap %}NCAP Violation{% else %}Regular Violation{% endif %}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -236,12 +249,82 @@
                         <h4 class="mt-3">User Verification Failed</h4>
                         <p class="text-muted">The user ID "{{ enforcer_id }}" could not be verified in our system.</p>
                         {% if error %}
-                        <p class="text-danger">{{ error }}</p>
+                        <div class="alert alert-danger">
+                            <p class="mb-0">{{ error }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if legacy_format %}
+                        <div class="alert alert-warning">
+                            <h5 class="alert-heading">
+                                <span class="material-icons me-2 align-middle">history</span>
+                                Legacy QR Code Detected
+                            </h5>
+                            <p>This appears to be an older QR code format that is no longer supported by the current system.</p>
+                            <p>The user may need to generate a new QR code in the current format (typically starting with "ENF" followed by numbers).</p>
+                        </div>
                         {% endif %}
                     </div>
+                    
+                    <!-- Enhanced Error Information -->
+                    {% if similar_profiles %}
+                    <div class="mb-4">
+                        <h5 class="mb-3">Similar User IDs Found</h5>
+                        <div class="row row-cols-1 row-cols-md-2 g-3">
+                            {% for profile in similar_profiles %}
+                            <div class="col">
+                                <div class="card h-100 shadow-sm">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-title">{{ profile.user.get_full_name }}</h6>
+                                        <p class="text-muted">ID: {{ profile.enforcer_id }}</p>
+                                        <a href="{% url 'qr_user_data' enforcer_id=profile.enforcer_id %}" class="btn btn-sm btn-primary">
+                                            <span class="material-icons me-1" style="font-size: 16px;">visibility</span>
+                                            View User
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
                     <div class="alert alert-warning">
                         <span class="material-icons me-2">warning</span>
-                        <span>This may indicate an invalid or expired user ID. Please contact an administrator for assistance.</span>
+                        <span>This may indicate an invalid or expired user ID, incorrect QR code, or a user that doesn't exist in the system.</span>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h5 class="mb-3">Troubleshooting Steps</h5>
+                        <div class="list-group text-start mb-4">
+                            <div class="list-group-item">
+                                <div class="d-flex align-items-center">
+                                    <span class="material-icons text-primary me-3">check_circle</span>
+                                    <div>
+                                        <strong>Verify the QR code</strong>
+                                        <p class="mb-0 small text-muted">Make sure the QR code belongs to a registered user</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="d-flex align-items-center">
+                                    <span class="material-icons text-primary me-3">check_circle</span>
+                                    <div>
+                                        <strong>Check the format</strong>
+                                        <p class="mb-0 small text-muted">User IDs should be in the correct format</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="d-flex align-items-center">
+                                    <span class="material-icons text-primary me-3">check_circle</span>
+                                    <div>
+                                        <strong>Try scanning again</strong>
+                                        <p class="mb-0 small text-muted">Sometimes scanning errors can occur due to lighting or camera focus</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

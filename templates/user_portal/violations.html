@@ -288,6 +288,90 @@
         border-radius: 0.25rem; 
     }
     
+    /* Type-specific styling */
+    .violation-card {
+        border-left: 4px solid transparent;
+        transition: all 0.3s ease;
+    }
+    
+    .violation-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    .violation-regular {
+        border-left-color: var(--info-color);
+    }
+    
+    .violation-ncap {
+        border-left-color: var(--primary-color);
+    }
+    
+    .violation-type-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .regular-badge {
+        background-color: rgba(77, 167, 255, 0.15);
+        color: var(--info-color);
+    }
+    
+    .ncap-badge {
+        background-color: rgba(53, 99, 233, 0.15);
+        color: var(--primary-color);
+    }
+    
+    /* Tabs styling */
+    .nav-tabs {
+        border-bottom: none;
+        margin-bottom: 1.5rem;
+    }
+    
+    .nav-tabs .nav-link {
+        border: none;
+        border-radius: 0.5rem;
+        padding: 0.75rem 1.25rem;
+        font-weight: 500;
+        color: var(--neutral-gray);
+        background-color: transparent;
+        transition: all 0.2s ease;
+        margin-right: 0.5rem;
+        position: relative;
+    }
+    
+    .nav-tabs .nav-link:hover {
+        color: var(--primary-color);
+        background-color: var(--primary-light);
+    }
+    
+    .nav-tabs .nav-link.active {
+        color: var(--white);
+        background-color: var(--primary-color);
+    }
+    
+    .nav-tabs .nav-link .badge {
+        position: relative;
+        top: -1px;
+        margin-left: 5px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        padding: 0.25rem 0.5rem;
+        border-radius: 50px;
+    }
+    
+    .nav-tabs .nav-link.active .badge {
+        background-color: white;
+        color: var(--primary-color);
+    }
+    
     /* Responsive Adjustments */
     @media (max-width: 992px) {
         .header-section {
@@ -347,6 +431,18 @@
         .header-title h1 {
             font-size: 1.5rem;
         }
+        
+        .nav-tabs {
+            display: flex;
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 0.5rem;
+        }
+        
+        .nav-tabs .nav-link {
+            flex-shrink: 0;
+        }
     }
 </style>
 {% endblock %}
@@ -363,7 +459,7 @@
                         </div>
                         <div>
                             <h4 class="card-title fw-bold mb-1">My Violations</h4>
-                            <p class="text-muted mb-0">View and manage all your traffic violations (both direct and NCAP violations)</p>
+                            <p class="text-muted mb-0">View and manage your traffic violations (both direct and NCAP violations)</p>
                         </div>
                     </div>
 
@@ -372,14 +468,40 @@
                         <div class="d-flex">
                             <span class="material-icons me-2">info</span>
                             <div>
-                                <h6 class="alert-heading mb-1">All Traffic Violations</h6>
-                                <p class="mb-0">This page displays all your traffic violations, including both direct citations and NCAP (Non-Contact Apprehension Program) violations captured by traffic cameras.</p>
+                                <h6 class="alert-heading mb-1">My Traffic Violations</h6>
+                                <p class="mb-0">This page displays your traffic violations, including both regular citations and NCAP (Non-Contact Apprehension Program) violations captured by traffic cameras.</p>
                             </div>
                         </div>
                     </div>
 
+                    <!-- Navigation Tabs -->
+                    <ul class="nav nav-tabs" id="violations-tabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link {% if active_tab == 'all' %}active{% endif %}" 
+                               href="?tab=all{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" 
+                               role="tab">
+                                All Violations <span class="badge bg-light text-dark">{{ total_count }}</span>
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link {% if active_tab == 'regular' %}active{% endif %}" 
+                               href="?tab=regular{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" 
+                               role="tab">
+                                Regular Violations <span class="badge bg-light text-dark">{{ regular_count }}</span>
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link {% if active_tab == 'ncap' %}active{% endif %}" 
+                               href="?tab=ncap{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" 
+                               role="tab">
+                                NCAP Violations <span class="badge bg-light text-dark">{{ ncap_count }}</span>
+                            </a>
+                        </li>
+                    </ul>
+
                     <!-- Search and Filter Form -->
                     <form method="get" class="mb-4 row g-3">
+                        <input type="hidden" name="tab" value="{{ active_tab }}">
                         <div class="col-md-4">
                             <div class="input-group">
                                 <input type="text" name="search" class="form-control" placeholder="Search violations..." value="{{ search_query }}">
@@ -400,7 +522,7 @@
                         </div>
                         <div class="col-md-4 text-end">
                             {% if search_query or status_filter %}
-                            <a href="{% url 'user_portal:user_violations' %}" class="btn btn-secondary">Reset Filters</a>
+                            <a href="?tab={{ active_tab }}" class="btn btn-secondary">Reset Filters</a>
                             {% endif %}
                         </div>
                     </form>
@@ -448,6 +570,7 @@
                                                         <th>ID</th>
                                                         <th>Date</th>
                                                         <th>Violation</th>
+                                                        <th>Type</th>
                                                         <th>Status</th>
                                                         <th>Penalty</th>
                                                         <th>Images</th>
@@ -456,10 +579,18 @@
                                                 </thead>
                                                 <tbody>
                                                     {% for violation in violations %}
+                                                    {% comment %}{% endcomment %}
                                                     <tr>
                                                         <td>{{ violation.id }}</td>
                                                         <td>{{ violation.violation_date|date:"M d, Y" }}</td>
                                                         <td>{{ violation.violation_type }}</td>
+                                                        <td>
+                                                            {% if violation.image or violation.driver_photo or violation.vehicle_photo or violation.secondary_photo %}
+                                                            <span class="badge bg-primary">NCAP</span>
+                                                            {% else %}
+                                                            <span class="badge bg-info">Regular</span>
+                                                            {% endif %}
+                                                        </td>
                                                         <td>
                                                             <span class="status-badge
                                                                 {% if violation.status == 'PENDING' %}status-badge-pending
@@ -493,7 +624,7 @@
                                                     </tr>
                                                     {% empty %}
                                                     <tr>
-                                                        <td colspan="7">
+                                                        <td colspan="8">
                                                             <div class="empty-state">
                                                                 <div class="empty-state-icon">
                                                                     <span class="material-icons" style="font-size: 32px; color: var(--primary-color);">check_circle</span>
@@ -511,8 +642,9 @@
                                         <!-- Mobile Card View -->
                                         <div class="d-md-none mt-4">
                                             {% for violation in violations %}
-                                            <div class="card mb-3 shadow-sm">
-                                                <div class="card-header d-flex justify-content-between align-items-center">
+                                            {% comment %}{% endcomment %}
+                                            <div class="card mb-3 shadow-sm violation-card {% if violation.image or violation.driver_photo or violation.vehicle_photo or violation.secondary_photo %}violation-ncap{% else %}violation-regular{% endif %}">
+                                                <div class="card-header d-flex justify-content-between align-items-center position-relative">
                                                     <span class="fw-bold">ID: {{ violation.id }}</span>
                                                     <span class="status-badge 
                                                         {% if violation.status == 'PENDING' %}status-badge-pending
@@ -523,6 +655,9 @@
                                                         {% else %}status-badge-other{% endif %}
                                                     ">
                                                         {{ violation.get_status_display }}
+                                                    </span>
+                                                    <span class="violation-type-badge {% if violation.image or violation.driver_photo or violation.vehicle_photo or violation.secondary_photo %}ncap-badge{% else %}regular-badge{% endif %}">
+                                                        {% if violation.image or violation.driver_photo or violation.vehicle_photo or violation.secondary_photo %}NCAP{% else %}Regular{% endif %}
                                                     </span>
                                                 </div>
                                                 <div class="card-body">
@@ -573,7 +708,7 @@
                                     <ul class="pagination justify-content-center">
                                         {% if violations.has_previous %}
                                         <li class="page-item">
-                                            <a class="page-link" href="?page={{ violations.previous_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                            <a class="page-link" href="?tab={{ active_tab }}&page={{ violations.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">
                                                     <span class="material-icons" style="font-size: 20px;">chevron_left</span>
                                             </a>
                                         </li>
@@ -587,7 +722,7 @@
 
                                         {% for num in violations.paginator.page_range %}
                                         <li class="page-item {% if violations.number == num %}active{% endif %}">
-                                            <a class="page-link" href="?page={{ num }}{% if current_status %}&status={{ current_status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                            <a class="page-link" href="?tab={{ active_tab }}&page={{ num }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">
                                                 {{ num }}
                                             </a>
                                         </li>
@@ -595,7 +730,7 @@
 
                                         {% if violations.has_next %}
                                         <li class="page-item">
-                                            <a class="page-link" href="?page={{ violations.next_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                            <a class="page-link" href="?tab={{ active_tab }}&page={{ violations.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">
                                                     <span class="material-icons" style="font-size: 20px;">chevron_right</span>
                                             </a>
                                         </li>

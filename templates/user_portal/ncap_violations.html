@@ -221,10 +221,21 @@
                         <img src="{{ violation.vehicle_photo.url }}" class="ncap-card-img" alt="Vehicle Photo">
                         {% elif violation.secondary_photo %}
                         <img src="{{ violation.secondary_photo.url }}" class="ncap-card-img" alt="Secondary Photo">
+                        {% else %}
+                        <!-- Default image for driver NCAP violations without photos -->
+                        <div class="ncap-card-img d-flex align-items-center justify-content-center bg-light">
+                            <span class="material-icons" style="font-size: 48px; color: var(--neutral-gray);">description</span>
+                        </div>
                         {% endif %}
                         <div class="image-badge">
-                            <span class="material-icons" style="font-size: 14px;">photo_camera</span>
-                            NCAP Evidence
+                            <span class="material-icons" style="font-size: 14px;">
+                                {% if violation.image or violation.driver_photo or violation.vehicle_photo or violation.secondary_photo %}
+                                photo_camera
+                                {% else %}
+                                description
+                                {% endif %}
+                            </span>
+                            NCAP {% if violation.pd_number and request.user.userprofile.is_driver and not violation.image and not violation.driver_photo and not violation.vehicle_photo and not violation.secondary_photo %}Driver{% endif %} Evidence
                         </div>
                     </div>
                     <div class="card-body">

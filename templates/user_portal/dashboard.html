@@ -657,7 +657,7 @@
                             </thead>
                             <tbody>
                                 {% for violation in recent_violations %}
-                                {% if not violation.image and not violation.driver_photo and not violation.vehicle_photo and not violation.secondary_photo %}
+                                {% if not violation.image.name and not violation.driver_photo.name and not violation.vehicle_photo.name and not violation.secondary_photo.name %}
                                 <tr>
                                     <td>{{ violation.violation_date|date:"M d, Y" }}</td>
                                     <td>{{ violation.violation_type }}</td>
@@ -711,7 +711,7 @@
                             </thead>
                             <tbody>
                                 {% for violation in recent_violations %}
-                                {% if violation.image or violation.driver_photo or violation.vehicle_photo or violation.secondary_photo %}
+                                {% if violation.image.name or violation.driver_photo.name or violation.vehicle_photo.name or violation.secondary_photo.name or violation.pd_number and request.user.userprofile.is_driver %}
                                 <tr>
                                     <td>{{ violation.violation_date|date:"M d, Y" }}</td>
                                     <td>{{ violation.violation_type }}</td>

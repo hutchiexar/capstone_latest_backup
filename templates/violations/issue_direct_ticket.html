@@ -2314,17 +2314,14 @@ function addViolationToMinimalList(name, amount, category, autoAdded = false) {
     deleteButton.addEventListener('click', function(e) {
         e.stopPropagation(); // Prevent event bubbling
         
+        // Mark the item as being removed
+        item.setAttribute('data-being-removed', 'true');
+        
         // Add animated deletion
         item.style.opacity = '0';
         item.style.transform = 'translateX(10px)';
         
         setTimeout(() => {
-            // Add shake animation to the container if this was the last item
-            if (violationsList.children.length === 1) {
-                violationsList.classList.add('empty-shake');
-                setTimeout(() => violationsList.classList.remove('empty-shake'), 500);
-            }
-            
             item.remove();
             
             // If auto-added unlicensed driver is removed, uncheck the box
@@ -2338,18 +2335,12 @@ function addViolationToMinimalList(name, amount, category, autoAdded = false) {
             // Update UI
             if (violationsList.children.length === 0) {
                 noViolationsMsg.style.display = 'block';
-                // Fade in the no violations message
-                noViolationsMsg.style.opacity = '0';
-                setTimeout(() => {
-                    noViolationsMsg.style.opacity = '1';
-                }, 10);
             }
             
             // Update total
             updateViolationTotal();
         }, 300);
     });
-    
     deleteContainer.appendChild(deleteButton);
     item.appendChild(deleteContainer);
     
@@ -3388,11 +3379,13 @@ document.getElementById('ticketForm').addEventListener('submit', async function(
         // Create a new FormData object
         const formData = new FormData(this);
         
-        // Get all selected violations from the new UI
-        const selectedViolations = document.querySelectorAll('#minimal_violations_list .violation-item');
+        // Get all selected violations from the new UI - filter out items being removed
+        const selectedViolations = Array.from(
+            document.querySelectorAll('#minimal_violations_list .violation-item')
+        ).filter(item => !item.hasAttribute('data-being-removed'));
         
         // Debug log for violation types
-        console.log('Selected violation types:', Array.from(selectedViolations).map(v => v.getAttribute('data-name')));
+        console.log('Selected violation types:', selectedViolations.map(v => v.getAttribute('data-name')));
         
         // Remove any existing violation_type[] entries
         formData.delete('violation_type[]');
@@ -4857,113 +4850,67 @@ function updateViolationTotal() {
     // Default fine amount for unlisted violations
     const DEFAULT_FINE = 300;
     
-    // Get all selected violations
-    const selectedViolations = document.querySelectorAll('#selected_violations li');
+    // Get all selected violations - FIXED: Now check BOTH old and new UI formats
     let totalAmount = 0;
+    let selectedViolations = [];
     
-    // Check if TDZ checkbox is checked - Fix: use is_tdz_violation instead of is_tdz
-    const isTdzChecked = document.getElementById('is_tdz_violation') && document.getElementById('is_tdz_violation').checked;
-    console.log('TDZ checkbox state:', isTdzChecked, document.getElementById('is_tdz_violation'));
+    // Try new format first (minimal-violations-list with violation-item)
+    const newFormatViolations = Array.from(
+        document.querySelectorAll('#minimal_violations_list .violation-item')
+    ).filter(item => !item.hasAttribute('data-being-removed')); // Filter out items being removed
     
-    // Fetch violation types from the server if not already cached
-    if (!window.violationTypesCache) {
-        // Use a synchronous approach for immediate calculation
-        // Try to find violation type data on the page first (might be passed from server)
-        const violationTypesData = window.violationTypesData || [];
+    if (newFormatViolations && newFormatViolations.length > 0) {
+        console.log('Using new format UI, found violations:', newFormatViolations.length);
+        selectedViolations = newFormatViolations;
+    } else {
+        // Fall back to old format (selected_violations with li), also filter removed items
+        const oldFormatViolations = Array.from(
+            document.querySelectorAll('#selected_violations li')
+        ).filter(item => !item.hasAttribute('data-being-removed'));
         
-        if (violationTypesData.length > 0) {
-            window.violationTypesCache = violationTypesData;
-        } else {
-            // Default to original hardcoded values if server data not available
-            window.violationTypesCache = [
-                { name: 'Jaywalking', amount: 200 },
-                { name: 'No Seat Belt', amount: 200 },
-                { name: 'Speeding', amount: 300 },
-                { name: 'Illegal Parking', amount: 250 },
-                { name: 'Obstruction', amount: 250 },
-                { name: 'Reckless Driving', amount: 300 },
-                { name: 'Unlicensed Driver', amount: 500 },
-                { name: 'Permitting Hitching', amount: 500 },
-                { name: 'No License', amount: 100 },
-                { name: 'DUI', amount: 300 },
-                { name: 'Using Phone While Driving', amount: 300 },
-                { name: 'Disobedience to Traffic Control', amount: 200 },
-                { name: 'Smoking While Driving', amount: 200 },
-                { name: 'Improper Use of Horn/Muffler', amount: 250 },
-                { name: 'Failure to Give Way to Pedestrian', amount: 200 },
-                { name: 'Driving Through Funeral Procession', amount: 200 },
-                { name: 'Unauthorized Sirens/Lights', amount: 300 },
-                { name: 'Driving on Reserved Lanes', amount: 100 },
-                { name: 'No Early Warning Device', amount: 200 },
-                { name: 'Defective Lights', amount: 250 },
-                { name: 'Tampered/Fake Plates', amount: 200 },
-                { name: 'Unregistered MV', amount: 500 },
-                { name: 'No Loading/Unloading Violation', amount: 100 },
-                { name: 'Sports Activities on Streets', amount: 300 },
-                { name: 'Throwing Objects on Road', amount: 300 },
-                { name: 'Drying Products on Roads', amount: 300 },
-                { name: 'Unauthorized Signs', amount: 200 },
-                { name: 'No Franchise/Fare Matrix', amount: 175 },
-                { name: 'Overloading', amount: 250 },
-                { name: 'Out-of-Route Operation', amount: 275 },
-                { name: 'Unsecured Cargo', amount: 200 },
-                { name: 'Dirty PUV', amount: 150 },
-                { name: 'Improper Attire on Motorcycle', amount: 200 },
-                { name: 'Entering Prohibited Zones', amount: 250 },
-                { name: 'Refusal to Convey', amount: 250 },
-                { name: 'Discourteous Driver', amount: 200 },
-                { name: 'Expired OR/CR', amount: 300 },
-                { name: 'No Permit', amount: 250 },
-                { name: 'Overcharging', amount: 250 },
-                { name: 'Defective Muffler', amount: 250 },
-                { name: 'Dilapidated', amount: 300 },
-                { name: 'Others', amount: 300 }
-            ];
-    
-            // Initiate an async fetch for future use
-            fetch('/management/violation-types/api/list/')
-                .then(response => response.json())
-                .then(data => {
-                    window.violationTypesCache = data;
-                    console.log('Violation types loaded from server');
-                    // Recalculate after data is fetched
-                    updateViolationTotal();
-                })
-                .catch(error => {
-                    console.error('Error fetching violation types:', error);
-                });
-        }
+        console.log('Using old format UI, found violations:', oldFormatViolations.length);
+        selectedViolations = oldFormatViolations;
     }
     
-    // Convert violation types to a map for easier lookup
-    const violationAmounts = {};
-    window.violationTypesCache.forEach(vt => {
-        violationAmounts[vt.name] = parseFloat(vt.amount);
-    });
+    console.log('Total selected violations count:', selectedViolations.length);
+    
+    // Check if TDZ checkbox is checked
+    const isTdzChecked = document.getElementById('is_tdz_violation') && document.getElementById('is_tdz_violation').checked;
+    console.log('TDZ checkbox state:', isTdzChecked);
     
     // Calculate total from selected violations
     selectedViolations.forEach(violation => {
-        const violationText = violation.textContent.trim();
         let amount = DEFAULT_FINE;
         
-        // Look up the amount for this violation
-        for (const name in violationAmounts) {
-            if (violationText.includes(name)) {
-                amount = violationAmounts[name];
-                break;
+        // Try to get amount from data attribute (new format)
+        const amountAttr = violation.getAttribute('data-amount');
+        if (amountAttr) {
+            amount = parseFloat(amountAttr);
+            console.log('Using data-amount attribute:', amount);
+        } else {
+            // Try to extract from text content (old format)
+            const violationText = violation.textContent.trim();
+            
+            // Only search in cached types if needed
+            if (window.violationTypesCache) {
+                // Look up the amount for this violation
+                for (const vt of window.violationTypesCache) {
+                    if (violationText.includes(vt.name)) {
+                        amount = parseFloat(vt.amount);
+                        console.log('Found amount from cache:', amount, 'for', vt.name);
+                        break;
+                    }
+                }
             }
         }
         
-        // Check if we have a custom amount stored in the data attribute
-        const customAmount = violation.getAttribute('data-amount');
-        if (customAmount) {
-            amount = parseFloat(customAmount);
-        }
-        
+        console.log('Adding violation amount:', amount);
         totalAmount += amount;
     });
     
-    // Apply TDZ multiplier - Fix: use 2.0 multiplier instead of 1.5
+    console.log('Total before TDZ multiplier:', totalAmount);
+    
+    // Apply TDZ multiplier if checked
     if (isTdzChecked) {
         console.log('TDZ is checked - DOUBLING total from', totalAmount, 'to', totalAmount * 2);
         totalAmount *= 2.0; // Double the fine amount for TDZ violations
@@ -4978,7 +4925,7 @@ function updateViolationTotal() {
         totalDisplay.textContent = '₱' + totalAmount.toFixed(2);
     }
     
-    console.log('Total amount calculated:', totalAmount, 'TDZ applied:', isTdzChecked);
+    return totalAmount; // Return value for testing
 }
 
 // Load violation types when page loads
@@ -5086,9 +5033,18 @@ document.addEventListener('DOMContentLoaded', function() {
         removeBtn.innerHTML = '<i class="fas fa-times"></i>';
         removeBtn.title = 'Remove violation';
         removeBtn.addEventListener('click', function() {
-            listItem.remove();
-            updateNoViolationsMessage();
-            updateViolationTotal();
+            // Mark the item as being removed
+            listItem.setAttribute('data-being-removed', 'true');
+            
+            // Add animation
+            listItem.style.opacity = '0';
+            listItem.style.transform = 'translateX(10px)';
+            
+            setTimeout(() => {
+                listItem.remove();
+                updateNoViolationsMessage();
+                updateViolationTotal();
+            }, 300);
         });
         listItem.appendChild(removeBtn);
         
@@ -5326,6 +5282,10 @@ function addViolationToMinimalList(name, amount, category, autoAdded = false) {
     deleteButton.title = 'Remove violation';
     deleteButton.addEventListener('click', function() {
         item.style.opacity = '0';
+        
+        // Mark the item as being removed by adding a data attribute
+        item.setAttribute('data-being-removed', 'true');
+        
         setTimeout(() => {
             item.remove();
             
@@ -5580,6 +5540,9 @@ function addViolationToMinimalList(name, amount, category, autoAdded = false) {
         // Add animated deletion
         item.style.opacity = '0';
         item.style.transform = 'translateX(10px)';
+        
+        // Mark the item as being removed by adding a data attribute
+        item.setAttribute('data-being-removed', 'true');
         
         setTimeout(() => {
             // Add shake animation to the container if this was the last item

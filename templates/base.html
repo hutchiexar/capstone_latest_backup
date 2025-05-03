@@ -3031,6 +3031,7 @@
                     <div class="sidebar-section">
                         <div class="sidebar-section-title">Main</div>
                         <div class="list-group list-group-flush">
+                            {% if user.userprofile.role != 'EDUCATOR' %}
                             <a href="{% url 'admin_dashboard' %}" class="list-group-item {% if request.path == '/' %}active{% endif %}">
                                 <span class="material-icons">dashboard</span>Dashboard
                             </a>
@@ -3057,6 +3058,7 @@
                                     </a>
                                 </div>
                             </div>
+                            {% endif %}
 
                             <!-- Processing Submenu -->
                             {% if user.userprofile.role == 'SUPERVISOR' or user.userprofile.role == 'TREASURER' or user.userprofile.role == 'ADMIN' %}
@@ -3093,6 +3095,7 @@
                     <div class="sidebar-section">
                         <div class="sidebar-section-title">Actions</div>
                         <div class="list-group list-group-flush">
+                            {% if user.userprofile.role != 'EDUCATOR' %}
                             <div class="submenu">
                                 <button class="list-group-item submenu-toggle {% if 'issue-ticket' in request.path or 'upload-violation' in request.path %}active{% endif %}" data-bs-toggle="collapse" data-bs-target="#ticketingSubmenu">
                                     <span class="material-icons">receipt</span>
@@ -3108,6 +3111,7 @@
                                     </a>
                                 </div>
                             </div>
+                            {% endif %}
 
                             {% if user.userprofile.role == 'ADMIN' %}
                             {% endif %}
@@ -3121,9 +3125,11 @@
                             <a href="{% url 'announcements_list' %}" class="list-group-item {% if 'announcements' in request.path %}active{% endif %}">
                                 <span class="material-icons">campaign</span>Announcements
                             </a>
+                            {% if user.userprofile.role != 'EDUCATOR' %}
                             <a href="{% url 'qr_scanner' %}" class="list-group-item {% if 'qr-scanner' in request.path %}active{% endif %}">
                                 <span class="material-icons">qr_code_scanner</span>QR Scanner
                             </a>
+                            {% endif %}
                         </div>
                     </div>
 
@@ -3197,6 +3203,33 @@
                             <!-- Management menu items will go here -->
                             <a href="{% url 'violation_types' %}" class="list-group-item {% if 'violation_types' in request.path %}active{% endif %}">
                                 <span class="material-icons">paid</span>Violation Types
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Educator Menu Items -->
+                    {% if user.is_authenticated and user.userprofile.role == 'EDUCATOR' %}
+                    <div class="sidebar-section">
+                        <div class="sidebar-section-title">Education Portal</div>
+                        <div class="list-group list-group-flush">
+                            <a href="{% url 'educational:admin_index' %}" class="list-group-item {% if 'educational/admin' in request.path and not 'categories' in request.path and not 'topics' in request.path and not 'quizzes' in request.path %}active{% endif %}">
+                                <span class="material-icons">dashboard</span>Dashboard
+                            </a>
+                            <a href="{% url 'educational:admin_category_list' %}" class="list-group-item {% if 'educational/admin/categories' in request.path %}active{% endif %}">
+                                <span class="material-icons">category</span>Categories
+                            </a>
+                            <a href="{% url 'educational:admin_topic_list' %}" class="list-group-item {% if 'educational/admin/topics' in request.path %}active{% endif %}">
+                                <span class="material-icons">menu_book</span>Topics
+                            </a>
+                            <a href="{% url 'educational:admin_quiz_list' %}" class="list-group-item {% if 'educational/admin/quizzes' in request.path %}active{% endif %}">
+                                <span class="material-icons">quiz</span>Quizzes
+                            </a>
+                            <a href="{% url 'activity_history' %}" class="list-group-item {% if 'activity_history' in request.path %}active{% endif %}">
+                                <span class="material-icons">history</span>Activity Logs
+                            </a>
+                            <a href="{% url 'profile' %}" class="list-group-item {% if 'profile' in request.path %}active{% endif %}">
+                                <span class="material-icons">person</span>My Profile
                             </a>
                         </div>
                     </div>

@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 
 class UserNotification(models.Model):
     NOTIFICATION_TYPES = [
@@ -112,27 +113,103 @@ class UserReport(models.Model):
 
 
 class UserViolationManager(models.Manager):
+    def get_queryset(self):
+        """
+        Override the default queryset to ensure this manager is properly used with the Violation model
+        """
+        return super().get_queryset()
+        
     def get_active_violations(self, user):
+        """Get active violations for a user"""
+        from django.db.models import Q
+        
+        if not hasattr(user, 'userprofile') or not user.userprofile.license_number:
+            return self.filter(
+                user_account=user,
+                status__in=['PENDING', 'ADJUDICATED', 'APPROVED']
+            )
+            
         return self.filter(
-            violator__license_number=user.userprofile.license_number,
+            Q(violator__license_number=user.userprofile.license_number) | Q(user_account=user),
             status__in=['PENDING', 'ADJUDICATED', 'APPROVED']
         )
 
     def get_due_soon_violations(self, user):
+        """Get violations due soon for a user"""
+        from django.db.models import Q
         seven_days_from_now = timezone.now() + timezone.timedelta(days=7)
+        
+        if not hasattr(user, 'userprofile') or not user.userprofile.license_number:
+            return self.filter(
+                user_account=user,
+                status__in=['PENDING', 'ADJUDICATED', 'APPROVED'],
+                payment_due_date__lte=seven_days_from_now
+            )
+            
         return self.filter(
-            violator__license_number=user.userprofile.license_number,
+            Q(violator__license_number=user.userprofile.license_number) | Q(user_account=user),
             status__in=['PENDING', 'ADJUDICATED', 'APPROVED'],
             payment_due_date__lte=seven_days_from_now
         )
 
     def get_total_paid(self, user):
+        """Get total paid amount for a user"""
+        from django.db.models import Q, Sum
+        
+        if not hasattr(user, 'userprofile') or not user.userprofile.license_number:
+            return self.filter(
+                user_account=user,
+                status='PAID'
+            ).aggregate(
+                total=Sum('fine_amount')
+            )['total'] or 0
+            
         return self.filter(
-            violator__license_number=user.userprofile.license_number,
+            Q(violator__license_number=user.userprofile.license_number) | Q(user_account=user),
             status='PAID'
         ).aggregate(
-            total=models.Sum('fine_amount')
+            total=Sum('fine_amount')
         )['total'] or 0
+        
+    def get_user_violations(self, user):
+        """
+        Get all violations associated with this user, either by license number
+        or directly associated with the user account
+        """
+        from django.db.models import Q
+        
+        # If user doesn't have a profile or license number, just filter by user account
+        if not hasattr(user, 'userprofile'):
+            return self.filter(user_account=user)
+            
+        # Build a query for all possible ways this user could be connected to violations
+        query = Q(user_account=user)
+        
+        # Add license number check if license number exists
+        if user.userprofile.license_number:
+            query |= Q(violator__license_number=user.userprofile.license_number)
+        
+        # If user is a driver, check for driver PD number
+        if user.userprofile.is_driver:
+            # Try to get the driver's PD number from the Driver model
+            try:
+                from traffic_violation_system.models import Driver
+                drivers = Driver.objects.filter(
+                    first_name=user.first_name,
+                    last_name=user.last_name
+                )
+                if drivers.exists():
+                    driver = drivers.first()
+                    if driver.new_pd_number:
+                        query |= Q(pd_number=driver.new_pd_number)
+            except Exception as e:
+                # If there's an error, just log it and continue without this part of the filter
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Error getting driver PD number: {str(e)}")
+        
+        # Return violations matching any of the conditions
+        return self.filter(query)
 
 
 class VehicleRegistration(models.Model):

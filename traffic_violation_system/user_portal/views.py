@@ -35,9 +35,8 @@ def user_dashboard(request):
     profile = user.userprofile
     
     # Get violations linked to this user's license number and user account
-    all_violations = Violation.objects.filter(
-        Q(violator__license_number=profile.license_number) | Q(user_account=user)
-    ).order_by('-violation_date')
+    # Use the UserViolationManager to ensure we only get violations for this user
+    all_violations = Violation.user_violations.get_user_violations(user).order_by('-violation_date')
     
     # Get the 5 most recent violations for the dashboard
     recent_violations = all_violations[:5]
@@ -92,12 +91,10 @@ def user_violations(request):
     Display a list of all user violations (includes both regular and NCAP violations).
     """
     user = request.user
-    license_number = user.userprofile.license_number
     
     # Get violations linked to this user's license number and user account
-    violations = Violation.objects.filter(
-        Q(violator__license_number=license_number) | Q(user_account=user)
-    ).order_by('-violation_date')
+    # Use the UserViolationManager to ensure we only get violations for this user
+    violations = Violation.user_violations.get_user_violations(user).order_by('-violation_date')
     
     # Search functionality
     search_query = request.GET.get('search', '')
@@ -113,9 +110,37 @@ def user_violations(request):
     status_filter = request.GET.get('status', '')
     if status_filter:
         violations = violations.filter(status=status_filter)
+        
+    # Separate NCAP and regular violations
+    # NCAP violations have images, regular ones don't
+    ncap_violations = violations.filter(
+        Q(image__isnull=False, image__gt='') | 
+        Q(driver_photo__isnull=False, driver_photo__gt='') | 
+        Q(vehicle_photo__isnull=False, vehicle_photo__gt='') | 
+        Q(secondary_photo__isnull=False, secondary_photo__gt='')
+    )
+    
+    # For regular violations, ensure all image fields are either NULL or empty
+    regular_violations = violations.exclude(
+        Q(image__isnull=False, image__gt='') | 
+        Q(driver_photo__isnull=False, driver_photo__gt='') | 
+        Q(vehicle_photo__isnull=False, vehicle_photo__gt='') | 
+        Q(secondary_photo__isnull=False, secondary_photo__gt='')
+    )
+    
+    # Get the active tab from the request, default to 'all'
+    active_tab = request.GET.get('tab', 'all')
+    
+    # Determine which violations to paginate based on the active tab
+    if active_tab == 'regular':
+        violations_to_paginate = regular_violations
+    elif active_tab == 'ncap':
+        violations_to_paginate = ncap_violations
+    else:
+        violations_to_paginate = violations
     
     # Pagination
-    paginator = Paginator(violations, 10)  # 10 items per page
+    paginator = Paginator(violations_to_paginate, 10)  # 10 items per page
     page = request.GET.get('page')
     
     try:
@@ -136,9 +161,13 @@ def user_violations(request):
     context = {
         'title': 'My Violations',
         'violations': violations_page,
+        'total_count': violations.count(),
+        'regular_count': regular_violations.count(),
+        'ncap_count': ncap_violations.count(),
         'search_query': search_query,
         'status_filter': status_filter,
         'status_choices': status_choices,
+        'active_tab': active_tab,
     }
     
     return render(request, 'user_portal/violations.html', context)
@@ -149,21 +178,38 @@ def user_ncap_violations(request):
     Display a list of the user's NCAP violations (with camera evidence).
     """
     user = request.user
-    license_number = user.userprofile.license_number
     
     # Get violations linked to this user's license number and user account
-    violations = Violation.objects.filter(
-        Q(violator__license_number=license_number) | Q(user_account=user)
-    ).order_by('-violation_date')
+    # Use the UserViolationManager to ensure we only get violations for this user
+    violations = Violation.user_violations.get_user_violations(user).order_by('-violation_date')
     
-    # Filter to only include NCAP violations (with images)
-    # Ensure we check if ANY image field is not null
-    violations = violations.filter(
-        Q(image__isnull=False) | 
-        Q(driver_photo__isnull=False) | 
-        Q(vehicle_photo__isnull=False) | 
-        Q(secondary_photo__isnull=False)
+    # Initialize the query for NCAP violations 
+    from django.db.models import Q
+    ncap_query = (
+        Q(image__isnull=False, image__gt='') | 
+        Q(driver_photo__isnull=False, driver_photo__gt='') | 
+        Q(vehicle_photo__isnull=False, vehicle_photo__gt='') | 
+        Q(secondary_photo__isnull=False, secondary_photo__gt='')
     )
+    
+    # If user is a driver, also include violations assigned to their PD number as NCAP violations
+    if hasattr(user, 'userprofile') and user.userprofile.is_driver:
+        try:
+            from traffic_violation_system.models import Driver
+            drivers = Driver.objects.filter(
+                first_name=user.first_name,
+                last_name=user.last_name
+            )
+            if drivers.exists():
+                driver = drivers.first()
+                if driver.new_pd_number:
+                    ncap_query |= Q(pd_number=driver.new_pd_number)
+        except Exception:
+            # If there's an error, just continue without this part of the filter
+            pass
+            
+    # Filter to only include NCAP violations using the built query
+    violations = violations.filter(ncap_query)
     
     # Search functionality
     search_query = request.GET.get('search', '')
@@ -215,25 +261,22 @@ def user_ncap_violations(request):
 
 @login_required
 def violation_detail(request, violation_id):
-    # Try to find the violation either by license number or user account
+    """
+    Display details of a specific violation.
+    Ensures that users can only view their own violations.
+    """
+    user = request.user
+    
     try:
-        # First check if it's linked to the user's license
-        user_profile = request.user.userprofile
-        try:
-            violation = Violation.objects.get(
-                id=violation_id,
-                violator__license_number=user_profile.license_number
-            )
-        except Violation.DoesNotExist:
-            # If not found, check if it's linked to the user account
-            violation = get_object_or_404(
-                Violation,
-                id=violation_id,
-                user_account=request.user
-            )
+        # Use the custom manager to enforce user-specific access
+        user_violations = Violation.user_violations.get_user_violations(user)
+        violation = get_object_or_404(user_violations, id=violation_id)
         
-        # Check if it's an NCAP violation by checking for any images
-        is_ncap = bool(violation.image) or bool(violation.driver_photo) or bool(violation.vehicle_photo) or bool(violation.secondary_photo)
+        # Check if it's an NCAP violation by checking if any image fields exist AND aren't empty
+        is_ncap = (bool(violation.image and violation.image.name) or 
+                   bool(violation.driver_photo and violation.driver_photo.name) or 
+                   bool(violation.vehicle_photo and violation.vehicle_photo.name) or 
+                   bool(violation.secondary_photo and violation.secondary_photo.name))
         
         # Choose the appropriate template
         template_name = 'user_portal/ncap_violation_detail.html' if is_ncap else 'user_portal/violation_detail.html'

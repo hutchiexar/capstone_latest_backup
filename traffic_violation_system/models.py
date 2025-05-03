@@ -13,6 +13,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 import json
 import os
+from traffic_violation_system.user_portal.models import UserViolationManager
 
 
 
@@ -177,6 +178,10 @@ class Violation(models.Model):
         ('Government', 'Government'),
         ('Commercial', 'Commercial')
     ]
+    
+    # Add custom manager
+    objects = models.Manager()  # The default manager
+    user_violations = UserViolationManager()  # Custom manager for user violations
 
     # Add a submission tracking field
     submission_id = models.CharField(max_length=36, blank=True, null=True, 
@@ -332,7 +337,7 @@ class UserProfile(models.Model):
         ('ENFORCER', 'Traffic Enforcer'),
         ('SUPERVISOR', 'Supervisor'),
         ('TREASURER', 'Treasurer'),
-        ('CLERK', 'Office Clerk'),
+        ('EDUCATOR', 'Educator'),
         ('USER', 'Regular User'),
     ]
 
@@ -424,10 +429,12 @@ class UserProfile(models.Model):
                 'View approved violations',
                 'Generate payment reports',
             ],
-            'CLERK': [
-                'Process payments',
-                'View violations',
-                'Generate basic reports',
+            'EDUCATOR': [
+                'Manage educational content',
+                'Create and edit topics',
+                'Manage categories',
+                'Create and manage quizzes',
+                'View learning analytics',
             ],
             'USER': [
                 'View own violations',
@@ -519,7 +526,7 @@ class Announcement(models.Model):
         ('ENFORCER', 'Traffic Enforcers'),
         ('SUPERVISOR', 'Supervisors'),
         ('TREASURER', 'Treasurers'),
-        ('CLERK', 'Office Clerks'),
+        ('EDUCATOR', 'Educators'),
         ('USER', 'Regular Users'),
     ]
     
@@ -815,6 +822,7 @@ class ViolationCertificate(models.Model):
 class EmailVerificationToken(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='verification_tokens')
     token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    verification_code = models.CharField(max_length=8, blank=True, null=True, help_text="One-time verification code sent via email")
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
     
@@ -828,4 +836,13 @@ class EmailVerificationToken(models.Model):
         # Set expiration date to 24 hours from creation if not set
         if not self.expires_at:
             self.expires_at = timezone.now() + timezone.timedelta(hours=24)
+        
+        # Generate a random alphanumeric verification code if not set
+        if not self.verification_code:
+            import random
+            import string
+            # Generate a random 6-character alphanumeric code
+            chars = string.ascii_uppercase + string.digits
+            self.verification_code = ''.join(random.choice(chars) for _ in range(6))
+            
         super().save(*args, **kwargs)

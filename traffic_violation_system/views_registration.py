@@ -3,12 +3,18 @@ from django.contrib import messages
 from django.contrib.auth.models import User
 from django.db import IntegrityError
 from django.utils import timezone
+import logging
+from django.urls import reverse
 
 from .models import UserProfile, EmailVerificationToken
 from .utils.email_utils import send_verification_email
 
+# Configure logger
+logger = logging.getLogger(__name__)
+
 def register(request):
     """User registration view with email verification"""
+    logger.info("Register view called with method: %s", request.method)
     if request.method == 'POST':
         try:
             # Check for existing username
@@ -73,8 +79,30 @@ def register(request):
             else:
                 messages.warning(request, 'Registration successful, but we could not send a verification email. Please request a new one from the verification page.')
             
-            # Redirect to verification pending page
-            return redirect('verification_pending')
+            # Store the email in session for verification_pending page
+            request.session['registration_email'] = email
+            
+            # Log the redirection target
+            logger.info("Redirecting to verification_pending page after successful registration for email: %s", email)
+            
+            # Add a more robust redirect
+            try:
+                verification_url = reverse('verification_pending')
+                logger.info("Generated verification_pending URL: %s", verification_url)
+                
+                # Redirect to verification pending page and return immediately
+                response = redirect('verification_pending')
+                # Set cache control headers to prevent caching
+                response['Cache-Control'] = 'no-store, must-revalidate'
+                response['Pragma'] = 'no-cache'
+                response['Expires'] = '0'
+                
+                logger.info("Created redirect response to verification_pending")
+                return response
+            except Exception as e:
+                logger.exception("Error during redirect to verification_pending: %s", str(e))
+                # Fallback to direct redirect
+                return redirect('verification_pending')
 
         except IntegrityError as e:
             # Handle database integrity errors (e.g., unique constraints)
@@ -88,7 +116,9 @@ def register(request):
                 messages.error(request, f'Registration failed due to database error: {str(e)}')
             return render(request, 'registration/register.html', {'form_data': request.POST})
         except Exception as e:
+            logger.exception("Registration failed with exception: %s", str(e))
             messages.error(request, f'Registration failed: {str(e)}')
             return render(request, 'registration/register.html', {'form_data': request.POST})
 
+    logger.info("Rendering registration form template (GET request)")
     return render(request, 'registration/register.html') 

@@ -16200,7 +16200,7 @@ def record_payment(request, violation_id):
             )
             
             messages.success(request, 'Payment recorded successfully.')
-            return redirect('payment_processing')
+            return redirect('receipt_summary', violation_id=violation.id)
         except Exception as e:
             messages.error(request, f'Error recording payment: {str(e)}')
     
@@ -16532,12 +16532,13 @@ def record_payment(request, violation_id):
             if request.content_type == 'application/json':
                 return JsonResponse({
                     'success': True,
-                    'message': 'Payment recorded successfully'
+                    'message': 'Payment recorded successfully',
+                    'receipt_url': reverse('receipt_summary', args=[violation.id])
                 })
             
             # For form submissions, redirect
             messages.success(request, 'Payment recorded successfully.')
-            return redirect('payment_processing')
+            return redirect('receipt_summary', violation_id=violation.id)
             
         except Exception as e:
             # Return JSON error response for AJAX requests
@@ -16586,7 +16587,7 @@ def scan_document(request):
             return JsonResponse({'success': False, 'message': 'No image provided'})
             
         # Initialize ID Analyzer API
-        api_key = os.getenv('ID_ANALYZER_API_KEY')
+        api_key = os.getenv('ID_ANALYZER_API_KEY', 'iM7raOQ6XZmE2yxmOHFXtfKAue4JCZS4')
         if not api_key:
             print("Error: ID Analyzer API key not configured")
             return JsonResponse({'success': False, 'message': 'ID Analyzer API key not configured'})
@@ -18683,6 +18684,10 @@ def driver_detail(request, pk):
         
         # Get violations associated with this driver based on PD number
         driver_violations = Violation.objects.filter(pd_number=driver.new_pd_number).order_by('-violation_date')
+        
+        # Add is_ncap flag to each violation
+        for violation in driver_violations:
+            violation.is_ncap = hasattr(violation, 'ncap_violation') and violation.ncap_violation is not None
         
         return render(request, 'drivers/driver_detail.html', {
             'driver': driver,

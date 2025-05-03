@@ -5,14 +5,16 @@ from dotenv import load_dotenv
 # Load environment variables from .env file if it exists
 load_dotenv()
 
-# Brevo API settings
-BREVO_API_KEY = ''
-DEFAULT_FROM_EMAIL = 'hutchiexar@gmail.com'
-SITE_URL = 'http://192.168.1.4:8004'
+# Hard-coded values are now fallbacks in case environment variables aren't set
+# Always prefer to use environment variables for sensitive data
+BREVO_API_KEY = os.environ.get('BREVO_API_KEY', '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')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'hutchiejn@gmail.com')
+SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
 
 # Email verification settings
 EMAIL_VERIFICATION_REQUIRED = True
-EMAIL_VERIFICATION_TIMEOUT_HOURS = 24  # Token expiration in hours
+EMAIL_VERIFICATION_TIMEOUT_HOURS = int(os.environ.get('EMAIL_VERIFICATION_TIMEOUT_HOURS', 24))
+EMAIL_VERIFICATION_CODE_LENGTH = int(os.environ.get('EMAIL_VERIFICATION_CODE_LENGTH', 6))
 
 # File Storage
 DEFAULT_FILE_STORAGE = 'traffic_violation_system.storage.SafeFileStorage'

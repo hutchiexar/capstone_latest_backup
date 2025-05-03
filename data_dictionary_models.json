@@ -1,0 +1,1195 @@
+{
+  "Violator": {
+    "fields": [
+      {
+        "name": "first_name",
+        "type": "CharField",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "max_length": "100"
+        },
+        "description": ""
+      },
+      {
+        "name": "last_name",
+        "type": "CharField",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "max_length": "100"
+        },
+        "description": ""
+      },
+      {
+        "name": "license_number",
+        "type": "CharField",
+        "constraints": {
+          "nullable": true,
+          "blank": true,
+          "max_length": "20"
+        },
+        "description": ""
+      },
+      {
+        "name": "phone_number",
+        "type": "CharField",
+        "constraints": {
+          "nullable": true,
+          "blank": true,
+          "max_length": "15"
+        },
+        "description": ""
+      },
+      {
+        "name": "address",
+        "type": "TextField",
+        "constraints": {
+          "nullable": true,
+          "blank": true
+        },
+        "description": ""
+      },
+      {
+        "name": "created_at",
+        "type": "DateTimeField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "updated_at",
+        "type": "DateTimeField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "condition",
+        "type": "Q",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      }
+    ],
+    "description": "",
+    "file": "models.py"
+  },
+  "ViolationType": {
+    "fields": [],
+    "description": "\"\"\"Model to store violation types and their associated fine amounts\"\"\" name = models.CharField(max_length=100, unique=True) description = models.TextField(blank=True, null=True) amount = models.DecimalField(max_digits=10, decimal_places=2) category = models.CharField(max_length=100, choices=[ ('LICENSING', 'Licensing Violations'), ('REGISTRATION', 'Registration & Accessories'), ('DIMENSION', 'Dimensions & Load Limits'), ('FRANCHISE', 'Franchise & Permits'), ('OTHER', 'Other Violations') ]) classification = models.CharField( max_length=50, choices=[ ('REGULAR', 'Regular Violations'), ('NCAP', 'NCAP') ], default='REGULAR', help_text=\"Classification of violation (Regular for direct tickets, NCAP for uploaded violations)\" ) is_active = models.BooleanField(default=True) is_ncap = models.BooleanField(default=False, help_text=\"Whether this violation type is for NCAP (Non-Contact Apprehension Program)\") created_at = models.DateTimeField(auto_now_add=True) updated_at = models.DateTimeField(auto_now=True)  class Meta: verbose_name = \"Violation Type\" verbose_name_plural = \"Violation Types\" ordering = ['category', 'name']  def __str__(self): return f\"{self.name} (\u00e2\u201a\u00b1{self.amount})\"  def save(self, *args, **kwargs): # Ensure is_ncap and classification stay in sync if self.classification == 'NCAP': self.is_ncap = True else: self.is_ncap = False super().save(*args, **kwargs)   def get_ncap_image_path(instance, filename):",
+    "file": "models.py"
+  },
+  "Operator": {
+    "fields": [],
+    "description": "",
+    "file": "models.py"
+  },
+  "Violation": {
+    "fields": [],
+    "description": "\"\"\"Model to store operator information\"\"\" last_name = models.CharField(max_length=100, db_index=True) first_name = models.CharField(max_length=100, db_index=True) middle_initial = models.CharField(max_length=10, blank=True, null=True) address = models.TextField() old_pd_number = models.CharField(max_length=50, blank=True, null=True, verbose_name=\"Old P.O. Number\") new_pd_number = models.CharField(max_length=50, unique=True, verbose_name=\"New P.O. Number\") po_number = models.CharField(max_length=20, unique=True, blank=True, null=True, verbose_name=\"Permit Operator Number\") # Foreign key to operator type (will be added later as requested) # operator_type = models.ForeignKey(OperatorType, on_delete=models.PROTECT, related_name='operators') # Foreign key to user account (will be added later as requested) user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='operator_profile') active = models.BooleanField(default=True) created_at = models.DateTimeField(auto_now_add=True) updated_at = models.DateTimeField(auto_now=True)  class Meta: verbose_name = 'Operator' verbose_name_plural = 'Operators' ordering = ['last_name', 'first_name'] indexes = [ models.Index(fields=['last_name', 'first_name']), models.Index(fields=['new_pd_number']), ]  def __str__(self): return f\"{self.last_name}, {self.first_name} {self.middle_initial or ''} - {self.new_pd_number}\"  def full_name(self): mi = f\" {self.middle_initial}.\" if self.middle_initial else \"\" return f\"{self.first_name}{mi} {self.last_name}\"   STATUS_CHOICES = ( ('PENDING', 'Pending'), ('ADJUDICATED', 'Adjudicated'), ('APPROVED', 'Approved'), ('REJECTED', 'Rejected'), ('PAID', 'Paid'), ('SETTLED', 'Settled'), ('CONTESTED', 'Contested'), ('HEARING_SCHEDULED', 'Hearing Scheduled'), ('DISMISSED', 'Dismissed'), ('EXPIRED', 'Expired'), )  VIOLATION_CHOICES = [ ('Illegal Parking', 'Illegal Parking (DTS)'), ('Entering Prohibited Zones', 'Entering Prohibited Zones'), ('Obstruction', 'Obstruction'), ('Unlicensed Driver', 'Unlicensed Driver'), ('Permitting Hitching', 'Permitting Hitching/Over Loading Passenger(s)'), ('Unregistered MV', 'Unregistered MV'), ('Refusal to Convey', 'Refusal to convey to proper destination'), ('Discourteous Driver', 'Discourteous driver/Conduct'), ('Defective Lights', 'No/Defective Lights'), ('Expired OR/CR', 'Expired OR/CR'), ('No License', 'Failure to Carry DL'), ('No Permit', 'No MAYOR\\'S PERMIT/MTOP/POP/PDP'), ('Overcharging', 'Overcharging'), ('DUI', 'Driving under the influence of liquor/drugs'), ('Defective Muffler', 'Operating a vehicle with Defective Muffler'), ('Dilapidated', 'Operating a Dilapidated Motorcab'), ('Reckless Driving', 'Reckless Driving'), ('Others', 'Others') ]  VEHICLE_CLASSIFICATIONS = [ ('Private', 'Private'), ('Public', 'Public'), ('Government', 'Government'), ('Commercial', 'Commercial') ]  # Add a submission tracking field submission_id = models.CharField(max_length=36, blank=True, null=True, help_text=\"UUID to track violations submitted together\")  # Driver's Details novr_number = models.CharField(max_length=50, blank=True, null=True) pin_number = models.CharField(max_length=50, blank=True, null=True) pd_number = models.CharField(max_length=50, blank=True, null=True) driver_photo = models.ImageField(upload_to='driver_photos/', blank=True, null=True) driver_address = models.TextField(blank=True, null=True) driver_name = models.CharField(max_length=200, blank=True, null=True)  # Operator's Details potpot_number = models.CharField(max_length=50, blank=True, null=True) operator = models.ForeignKey(Operator, on_delete=models.SET_NULL, null=True, blank=True, related_name='violations') operator_address = models.TextField(blank=True, null=True) operator_name = models.CharField(max_length=200, blank=True, null=True) operator_pd_number = models.CharField(max_length=50, blank=True, null=True)  # Additional Violation Details street_name = models.CharField(max_length=200, blank=True, null=True) landmark = models.CharField(max_length=200, blank=True, null=True) violation_code = models.CharField(max_length=10, blank=True, null=True) violation_time = models.TimeField(null=True, blank=True) vehicle_photo = models.ImageField(upload_to='vehicle_photos/', blank=True, null=True) secondary_photo = models.ImageField(upload_to='secondary_photos/', blank=True, null=True)  # Existing Fields violator = models.ForeignKey(Violator, on_delete=models.CASCADE, related_name='violations') user_account = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='account_violations', help_text=\"If the violator is a registered user, link violation to their account\") enforcer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='issued_violations') violation_date = models.DateTimeField(default=timezone.now) location = models.CharField(max_length=200) violation_type = models.TextField(help_text=\"Type of violation or comma-separated list of violations\") violation_type_obj = models.ForeignKey(ViolationType, on_delete=models.SET_NULL, null=True, blank=True, related_name='violations', verbose_name=\"Violation Type\") fine_amount = models.DecimalField(max_digits=10, decimal_places=2) is_tdz_violation = models.BooleanField(default=False, help_text=\"Whether the violation occurred in a Traffic Discipline Zone, which doubles the fine\") image = models.ImageField(upload_to=get_ncap_image_path, null=True, blank=True) status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING') description = models.TextField(blank=True) payment_due_date = models.DateField(null=True, blank=True) enforcer_signature_date = models.DateTimeField(null=True, blank=True) violator_signature = models.ImageField(upload_to='signatures/', null=True, blank=True) violator_signature_date = models.DateTimeField(null=True, blank=True) vehicle_type = models.CharField(max_length=100, choices=[ ('Jeepney', 'Jeepney'), ('Tricycle', 'Tricycle'), ('Potpot', 'Potpot'), ('Other', 'Other') ], default='Tricycle') classification = models.CharField(max_length=20, choices=VEHICLE_CLASSIFICATIONS, blank=True, null=True) plate_number = models.CharField(max_length=20, blank=True, null=True) color = models.CharField(max_length=50, blank=True, null=True) registration_number = models.CharField(max_length=50, blank=True, null=True) registration_date = models.DateField(null=True, blank=True) vehicle_owner = models.CharField(max_length=200, blank=True, null=True) vehicle_owner_address = models.TextField(blank=True, null=True) violation_types = models.TextField(default='[]')  # Store JSON as text original_violation_types = models.TextField(blank=True, null=True, help_text=\"Original violation types before adjudication (stored as JSON)\") original_fine_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text=\"Original fine amount before adjudication\") receipt_number = models.CharField(max_length=50, blank=True, null=True) receipt_date = models.DateField(blank=True, null=True) payment_remarks = models.TextField(blank=True, null=True)  # Adjudication fields adjudicated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='adjudicated_violations') adjudication_date = models.DateTimeField(null=True, blank=True) adjudication_remarks = models.TextField(blank=True, null=True)  # Approval fields approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='approved_violations') approval_date = models.DateTimeField(null=True, blank=True) rejection_reason = models.TextField(blank=True, null=True)  # Payment fields payment_date = models.DateTimeField(null=True, blank=True) payment_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True) processed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='processed_payments')  def save(self, *args, **kwargs): if not self.payment_due_date: self.payment_due_date = timezone.now() + timezone.timedelta(days=7)  # If using a ViolationType object and this is a new record or the type changed, update the fine amount if self.violation_type_obj and (not self.pk or 'violation_type_obj' in kwargs.get('update_fields', [])): # Set the fine amount from the violation type, but only if not manually overridden if not self.fine_amount or self.fine_amount == 0: self.fine_amount = self.violation_type_obj.amount  # If in a Traffic Discipline Zone, double the fine amount if self.is_tdz_violation: self.fine_amount *= 2  super().save(*args, **kwargs)  def __str__(self): return f\"Citation {self.id} - {self.violator.license_number}\"  class Meta: ordering = ['-violation_date']  def set_violation_types(self, types_list): self.violation_types = json.dumps(types_list)  def get_violation_types(self):",
+    "file": "models.py"
+  },
+  "Payment": {
+    "fields": [
+      {
+        "name": "violation",
+        "type": "OneToOneField",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "related_model": "Violation"
+        },
+        "description": ""
+      },
+      {
+        "name": "amount_paid",
+        "type": "DecimalField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "payment_date",
+        "type": "DateTimeField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "payment_method",
+        "type": "CharField",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "max_length": "50"
+        },
+        "description": ""
+      },
+      {
+        "name": "transaction_id",
+        "type": "CharField",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "max_length": "100"
+        },
+        "description": ""
+      }
+    ],
+    "description": "",
+    "file": "models.py"
+  },
+  "UserProfile": {
+    "fields": [
+      {
+        "name": "user",
+        "type": "OneToOneField",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "related_model": "User"
+        },
+        "description": ""
+      },
+      {
+        "name": "enforcer_id",
+        "type": "CharField",
+        "constraints": {
+          "nullable": true,
+          "blank": true,
+          "unique": true,
+          "max_length": "10"
+        },
+        "description": ""
+      },
+      {
+        "name": "avatar",
+        "type": "ImageField",
+        "constraints": {
+          "nullable": true,
+          "blank": true
+        },
+        "description": ""
+      },
+      {
+        "name": "phone_number",
+        "type": "CharField",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "max_length": "15"
+        },
+        "description": ""
+      },
+      {
+        "name": "contact_number",
+        "type": "CharField",
+        "constraints": {
+          "nullable": true,
+          "blank": true,
+          "max_length": "15"
+        },
+        "description": ""
+      },
+      {
+        "name": "address",
+        "type": "TextField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "qr_code",
+        "type": "ImageField",
+        "constraints": {
+          "nullable": false,
+          "blank": true
+        },
+        "description": ""
+      },
+      {
+        "name": "role",
+        "type": "CharField",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "max_length": "20"
+        },
+        "description": ""
+      },
+      {
+        "name": "latitude",
+        "type": "DecimalField",
+        "constraints": {
+          "nullable": true,
+          "blank": true
+        },
+        "description": ""
+      },
+      {
+        "name": "longitude",
+        "type": "DecimalField",
+        "constraints": {
+          "nullable": true,
+          "blank": true
+        },
+        "description": ""
+      },
+      {
+        "name": "last_location_update",
+        "type": "DateTimeField",
+        "constraints": {
+          "nullable": true,
+          "blank": true
+        },
+        "description": ""
+      },
+      {
+        "name": "is_active_duty",
+        "type": "BooleanField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "license_number",
+        "type": "CharField",
+        "constraints": {
+          "nullable": true,
+          "blank": true,
+          "max_length": "20"
+        },
+        "description": ""
+      },
+      {
+        "name": "is_operator",
+        "type": "BooleanField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "is_driver",
+        "type": "BooleanField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "operator_since",
+        "type": "DateTimeField",
+        "constraints": {
+          "nullable": true,
+          "blank": true
+        },
+        "description": ""
+      },
+      {
+        "name": "birthdate",
+        "type": "DateField",
+        "constraints": {
+          "nullable": true,
+          "blank": true
+        },
+        "description": ""
+      },
+      {
+        "name": "emergency_contact_name",
+        "type": "CharField",
+        "constraints": {
+          "nullable": true,
+          "blank": true,
+          "max_length": "100"
+        },
+        "description": ""
+      },
+      {
+        "name": "emergency_contact_number",
+        "type": "CharField",
+        "constraints": {
+          "nullable": true,
+          "blank": true,
+          "max_length": "15"
+        },
+        "description": ""
+      },
+      {
+        "name": "is_email_verified",
+        "type": "BooleanField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      }
+    ],
+    "description": "",
+    "file": "models.py"
+  },
+  "ActivityLog": {
+    "fields": [
+      {
+        "name": "user",
+        "type": "ForeignKey",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "related_model": "User"
+        },
+        "description": ""
+      },
+      {
+        "name": "timestamp",
+        "type": "DateTimeField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "action",
+        "type": "CharField",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "max_length": "255"
+        },
+        "description": ""
+      },
+      {
+        "name": "details",
+        "type": "TextField",
+        "constraints": {
+          "nullable": false,
+          "blank": true
+        },
+        "description": ""
+      },
+      {
+        "name": "category",
+        "type": "CharField",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "max_length": "20"
+        },
+        "description": ""
+      },
+      {
+        "name": "ip_address",
+        "type": "GenericIPAddressField",
+        "constraints": {
+          "nullable": true,
+          "blank": true
+        },
+        "description": ""
+      }
+    ],
+    "description": "",
+    "file": "models.py"
+  },
+  "Announcement": {
+    "fields": [
+      {
+        "name": "title",
+        "type": "CharField",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "max_length": "200"
+        },
+        "description": ""
+      },
+      {
+        "name": "content",
+        "type": "TextField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "created_by",
+        "type": "ForeignKey",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "related_model": "User"
+        },
+        "description": ""
+      },
+      {
+        "name": "created_at",
+        "type": "DateTimeField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "updated_at",
+        "type": "DateTimeField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "is_active",
+        "type": "BooleanField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "priority",
+        "type": "CharField",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "max_length": "20"
+        },
+        "description": ""
+      },
+      {
+        "name": "category",
+        "type": "CharField",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "max_length": "20"
+        },
+        "description": ""
+      },
+      {
+        "name": "target_audience",
+        "type": "CharField",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "max_length": "20"
+        },
+        "description": ""
+      },
+      {
+        "name": "is_popup",
+        "type": "BooleanField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "requires_acknowledgment",
+        "type": "BooleanField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "publish_date",
+        "type": "DateTimeField",
+        "constraints": {
+          "nullable": true,
+          "blank": true
+        },
+        "description": ""
+      },
+      {
+        "name": "expiration_date",
+        "type": "DateTimeField",
+        "constraints": {
+          "nullable": true,
+          "blank": true
+        },
+        "description": ""
+      },
+      {
+        "name": "geographic_area",
+        "type": "CharField",
+        "constraints": {
+          "nullable": true,
+          "blank": true,
+          "max_length": "255"
+        },
+        "description": ""
+      },
+      {
+        "name": "view_count",
+        "type": "PositiveIntegerField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      }
+    ],
+    "description": "",
+    "file": "models.py"
+  },
+  "AnnouncementAcknowledgment": {
+    "fields": [],
+    "description": "",
+    "file": "models.py"
+  },
+  "LocationHistory": {
+    "fields": [],
+    "description": "",
+    "file": "models.py"
+  },
+  "OperatorType": {
+    "fields": [],
+    "description": "",
+    "file": "models.py"
+  },
+  "Vehicle": {
+    "fields": [],
+    "description": "\"\"\"Model to track which users have acknowledged which announcements\"\"\" announcement = models.ForeignKey(Announcement, on_delete=models.CASCADE) user = models.ForeignKey(User, on_delete=models.CASCADE) acknowledged_at = models.DateTimeField(auto_now_add=True)  class Meta: unique_together = ['announcement', 'user'] verbose_name = 'Announcement Acknowledgment' verbose_name_plural = 'Announcement Acknowledgments'  def __str__(self): return f\"{self.user.username} acknowledged {self.announcement.title}\"  \"\"\"Model to track location history for enforcers\"\"\" user_profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='location_history') latitude = models.DecimalField(max_digits=9, decimal_places=6) longitude = models.DecimalField(max_digits=9, decimal_places=6) accuracy = models.FloatField(blank=True, null=True) heading = models.FloatField(blank=True, null=True) speed = models.FloatField(blank=True, null=True) is_active_duty = models.BooleanField(default=True) battery_level = models.FloatField(blank=True, null=True) timestamp = models.DateTimeField(auto_now_add=True) device_info = models.JSONField(blank=True, null=True)  class Meta: verbose_name = 'Location History' verbose_name_plural = 'Location Histories' ordering = ['-timestamp'] indexes = [ models.Index(fields=['timestamp']), models.Index(fields=['user_profile', 'timestamp']), ]  def __str__(self): return f\"{self.user_profile.user.get_full_name()} - {self.timestamp}\"   \"\"\"Model to store different types of operators (Potpot, Jeepney, Tricycle, etc.)\"\"\" name = models.CharField(max_length=100, unique=True) description = models.TextField(blank=True, null=True) created_at = models.DateTimeField(auto_now_add=True) updated_at = models.DateTimeField(auto_now=True)  class Meta: verbose_name = 'Operator Type' verbose_name_plural = 'Operator Types' ordering = ['name']  def __str__(self): return self.name   \"\"\"Model to store vehicle information linked to an operator\"\"\" operator = models.ForeignKey(Operator, on_delete=models.CASCADE) old_pd_number = models.CharField(max_length=50, blank=True, null=True) new_pd_number = models.CharField(max_length=50, unique=True, blank=True, null=True) potpot_number = models.CharField(max_length=50, blank=True, null=True, help_text=\"Potpot identification number\") vehicle_type = models.CharField(max_length=100, choices=[ ('Jeepney', 'Jeepney'), ('Tricycle', 'Tricycle'), ('Potpot', 'Potpot'), ('Other', 'Other') ], default='Tricycle') plate_number = models.CharField(max_length=20, blank=True, null=True) engine_number = models.CharField(max_length=50, blank=True, null=True) chassis_number = models.CharField(max_length=50, blank=True, null=True) capacity = models.PositiveIntegerField(default=4, blank=True, null=True) year_model = models.CharField(max_length=4, blank=True, null=True) color = models.CharField(max_length=50, blank=True, null=True) active = models.BooleanField(default=True) notes = models.TextField(blank=True, null=True) created_at = models.DateTimeField(auto_now_add=True) updated_at = models.DateTimeField(auto_now=True)  class Meta: verbose_name = 'Vehicle' verbose_name_plural = 'Vehicles' ordering = ['operator__last_name', 'operator__first_name', 'new_pd_number']  def __str__(self): return f\"{self.new_pd_number or 'No PD Number'} - {self.operator.full_name()}\"  def generate_pd_number(self):",
+    "file": "models.py"
+  },
+  "Driver": {
+    "fields": [],
+    "description": "\"\"\"Model representing a driver\"\"\" last_name = models.CharField(max_length=100) first_name = models.CharField(max_length=100) middle_initial = models.CharField(max_length=10, blank=True, null=True) address = models.TextField() old_pd_number = models.CharField(max_length=20, blank=True, null=True) new_pd_number = models.CharField(max_length=20, unique=True, blank=True, null=True) license_number = models.CharField(max_length=50, blank=True, null=True) contact_number = models.CharField(max_length=20, blank=True, null=True) birthdate = models.DateField(blank=True, null=True) emergency_contact_name = models.CharField(max_length=100, blank=True, null=True) emergency_contact = models.CharField(max_length=100, blank=True, null=True) emergency_contact_number = models.CharField(max_length=20, blank=True, null=True) active = models.BooleanField(default=True) expiration_date = models.DateField(blank=True, null=True) operator = models.ForeignKey(Operator, on_delete=models.SET_NULL, null=True, blank=True, related_name='drivers') created_at = models.DateTimeField(auto_now_add=True) updated_at = models.DateTimeField(auto_now=True)  class Meta: ordering = ['last_name', 'first_name']  def __str__(self): return f\"{self.last_name}, {self.first_name} ({self.new_pd_number})\"  def get_full_name(self):",
+    "file": "models.py"
+  },
+  "DriverVehicleAssignment": {
+    "fields": [],
+    "description": "\"\"\"Model to track the relationship between drivers and vehicles with history\"\"\" driver = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name='vehicle_assignments') vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name='driver_assignments') start_date = models.DateTimeField(auto_now_add=True) end_date = models.DateTimeField(null=True, blank=True) is_active = models.BooleanField(default=True) notes = models.TextField(blank=True, null=True) created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)  class Meta: verbose_name = 'Driver-Vehicle Assignment' verbose_name_plural = 'Driver-Vehicle Assignments' ordering = ['-start_date']  def __str__(self): return f\"{self.driver} assigned to {self.vehicle}\"  def end_assignment(self):",
+    "file": "models.py"
+  },
+  "OperatorApplication": {
+    "fields": [],
+    "description": "",
+    "file": "models.py"
+  },
+  "ViolationCertificate": {
+    "fields": [],
+    "description": "",
+    "file": "models.py"
+  },
+  "EmailVerificationToken": {
+    "fields": [],
+    "description": "",
+    "file": "models.py"
+  },
+  "EducationalCategory": {
+    "fields": [
+      {
+        "name": "title",
+        "type": "CharField",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "max_length": "100"
+        },
+        "description": ""
+      },
+      {
+        "name": "description",
+        "type": "TextField",
+        "constraints": {
+          "nullable": true,
+          "blank": true
+        },
+        "description": ""
+      },
+      {
+        "name": "order",
+        "type": "IntegerField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "created_at",
+        "type": "DateTimeField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      }
+    ],
+    "description": "",
+    "file": "models.py"
+  },
+  "EducationalTopic": {
+    "fields": [
+      {
+        "name": "title",
+        "type": "CharField",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "max_length": "200"
+        },
+        "description": ""
+      },
+      {
+        "name": "content",
+        "type": "TextField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "category",
+        "type": "ForeignKey",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "related_model": "EducationalCategory",
+          "related_name": "topics"
+        },
+        "description": ""
+      },
+      {
+        "name": "is_published",
+        "type": "BooleanField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "created_by",
+        "type": "ForeignKey",
+        "constraints": {
+          "nullable": true,
+          "blank": false,
+          "related_model": "User",
+          "related_name": "created_topics"
+        },
+        "description": ""
+      },
+      {
+        "name": "created_at",
+        "type": "DateTimeField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "updated_at",
+        "type": "DateTimeField",
+        "constraints": {
+          "nullable": true,
+          "blank": false
+        },
+        "description": ""
+      }
+    ],
+    "description": "",
+    "file": "models.py"
+  },
+  "TopicAttachment": {
+    "fields": [
+      {
+        "name": "topic",
+        "type": "ForeignKey",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "related_model": "EducationalTopic",
+          "related_name": "attachments"
+        },
+        "description": ""
+      },
+      {
+        "name": "file",
+        "type": "FileField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "file_type",
+        "type": "CharField",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "max_length": "10"
+        },
+        "description": ""
+      },
+      {
+        "name": "title",
+        "type": "CharField",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "max_length": "255"
+        },
+        "description": ""
+      },
+      {
+        "name": "description",
+        "type": "TextField",
+        "constraints": {
+          "nullable": true,
+          "blank": true
+        },
+        "description": ""
+      },
+      {
+        "name": "created_at",
+        "type": "DateTimeField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      }
+    ],
+    "description": "",
+    "file": "models.py"
+  },
+  "UserBookmark": {
+    "fields": [
+      {
+        "name": "user",
+        "type": "ForeignKey",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "related_model": "User",
+          "related_name": "bookmarks"
+        },
+        "description": ""
+      },
+      {
+        "name": "topic",
+        "type": "ForeignKey",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "related_model": "EducationalTopic",
+          "related_name": "bookmarked_by"
+        },
+        "description": ""
+      },
+      {
+        "name": "created_at",
+        "type": "DateTimeField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      }
+    ],
+    "description": "",
+    "file": "models.py"
+  },
+  "UserProgress": {
+    "fields": [
+      {
+        "name": "user",
+        "type": "ForeignKey",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "related_model": "User",
+          "related_name": "progress"
+        },
+        "description": ""
+      },
+      {
+        "name": "topic",
+        "type": "ForeignKey",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "related_model": "EducationalTopic",
+          "related_name": "user_progress"
+        },
+        "description": ""
+      },
+      {
+        "name": "is_completed",
+        "type": "BooleanField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "last_accessed",
+        "type": "DateTimeField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "completed_at",
+        "type": "DateTimeField",
+        "constraints": {
+          "nullable": true,
+          "blank": true
+        },
+        "description": ""
+      }
+    ],
+    "description": "",
+    "file": "models.py"
+  },
+  "Quiz": {
+    "fields": [
+      {
+        "name": "title",
+        "type": "CharField",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "max_length": "200"
+        },
+        "description": ""
+      },
+      {
+        "name": "description",
+        "type": "TextField",
+        "constraints": {
+          "nullable": true,
+          "blank": true
+        },
+        "description": ""
+      },
+      {
+        "name": "topic",
+        "type": "ForeignKey",
+        "constraints": {
+          "nullable": true,
+          "blank": true,
+          "related_model": "EducationalTopic",
+          "related_name": "quizzes"
+        },
+        "description": ""
+      },
+      {
+        "name": "passing_score",
+        "type": "PositiveIntegerField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": "Minimum percentage required to pass"
+      },
+      {
+        "name": "is_published",
+        "type": "BooleanField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "created_by",
+        "type": "ForeignKey",
+        "constraints": {
+          "nullable": true,
+          "blank": false,
+          "related_model": "User",
+          "related_name": "created_quizzes"
+        },
+        "description": ""
+      },
+      {
+        "name": "created_at",
+        "type": "DateTimeField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "updated_at",
+        "type": "DateTimeField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      }
+    ],
+    "description": "",
+    "file": "models.py"
+  },
+  "QuizQuestion": {
+    "fields": [
+      {
+        "name": "quiz",
+        "type": "ForeignKey",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "related_model": "Quiz",
+          "related_name": "questions"
+        },
+        "description": ""
+      },
+      {
+        "name": "text",
+        "type": "TextField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "question_type",
+        "type": "CharField",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "max_length": "20"
+        },
+        "description": ""
+      },
+      {
+        "name": "points",
+        "type": "PositiveIntegerField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "order",
+        "type": "PositiveIntegerField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "image",
+        "type": "ImageField",
+        "constraints": {
+          "nullable": true,
+          "blank": true
+        },
+        "description": ""
+      }
+    ],
+    "description": "",
+    "file": "models.py"
+  },
+  "QuizAnswer": {
+    "fields": [
+      {
+        "name": "question",
+        "type": "ForeignKey",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "related_model": "QuizQuestion",
+          "related_name": "answers"
+        },
+        "description": ""
+      },
+      {
+        "name": "text",
+        "type": "CharField",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "max_length": "255"
+        },
+        "description": ""
+      },
+      {
+        "name": "is_correct",
+        "type": "BooleanField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "explanation",
+        "type": "TextField",
+        "constraints": {
+          "nullable": true,
+          "blank": true
+        },
+        "description": "Explanation for why this answer is correct/incorrect"
+      }
+    ],
+    "description": "",
+    "file": "models.py"
+  },
+  "UserQuizAttempt": {
+    "fields": [
+      {
+        "name": "user",
+        "type": "ForeignKey",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "related_model": "User",
+          "related_name": "quiz_attempts"
+        },
+        "description": ""
+      },
+      {
+        "name": "quiz",
+        "type": "ForeignKey",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "related_model": "Quiz",
+          "related_name": "attempts"
+        },
+        "description": ""
+      },
+      {
+        "name": "start_time",
+        "type": "DateTimeField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "end_time",
+        "type": "DateTimeField",
+        "constraints": {
+          "nullable": true,
+          "blank": true
+        },
+        "description": ""
+      },
+      {
+        "name": "score",
+        "type": "DecimalField",
+        "constraints": {
+          "nullable": true,
+          "blank": true
+        },
+        "description": ""
+      },
+      {
+        "name": "is_passed",
+        "type": "BooleanField",
+        "constraints": {
+          "nullable": true,
+          "blank": true
+        },
+        "description": ""
+      },
+      {
+        "name": "is_completed",
+        "type": "BooleanField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      }
+    ],
+    "description": "",
+    "file": "models.py"
+  },
+  "UserQuestionResponse": {
+    "fields": [
+      {
+        "name": "attempt",
+        "type": "ForeignKey",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "related_model": "UserQuizAttempt",
+          "related_name": "responses"
+        },
+        "description": ""
+      },
+      {
+        "name": "question",
+        "type": "ForeignKey",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "related_model": "QuizQuestion"
+        },
+        "description": ""
+      },
+      {
+        "name": "selected_answer",
+        "type": "ForeignKey",
+        "constraints": {
+          "nullable": false,
+          "blank": false,
+          "related_model": "QuizAnswer"
+        },
+        "description": ""
+      },
+      {
+        "name": "is_correct",
+        "type": "BooleanField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      },
+      {
+        "name": "points_earned",
+        "type": "PositiveIntegerField",
+        "constraints": {
+          "nullable": false,
+          "blank": false
+        },
+        "description": ""
+      }
+    ],
+    "description": "",
+    "file": "models.py"
+  }
+}

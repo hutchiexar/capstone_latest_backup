@@ -1,11 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth.decorators import user_passes_test
 from django.http import JsonResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.utils import timezone
 from django.contrib import messages
-from django.db.models import Count, Q, Prefetch, Sum, Avg, F, Max
+from django.db.models import Count, Q, Prefetch, Sum, Avg, F, Max, Case, When, Value, IntegerField
 from .models import EducationalCategory, EducationalTopic, TopicAttachment, UserBookmark, UserProgress, Quiz, QuizQuestion, QuizAnswer, UserQuizAttempt, UserQuestionResponse
 from django.views.decorators.http import require_http_methods, require_POST
 from PyPDF2 import PdfReader
@@ -17,14 +18,19 @@ from PIL import Image
 from django.core.paginator import Paginator
 from django.conf import settings
 
+from .decorators import educator_required
 
-# Helper function to check if a user is an admin
+# Helper function to check if a user is an admin or educator
 def is_admin(user):
-    return user.is_superuser or (hasattr(user, 'userprofile') and user.userprofile.role == 'ADMIN')
+    return user.is_superuser or (hasattr(user, 'userprofile') and user.userprofile.role in ['ADMIN', 'EDUCATOR'])
+
+# Helper function to check if a user is an educator
+def is_educator(user):
+    return hasattr(user, 'userprofile') and user.userprofile.role == 'EDUCATOR'
 
 # Admin views
 @login_required
-@user_passes_test(is_admin)
+@educator_required
 def admin_educational_dashboard(request):
     categories_count = EducationalCategory.objects.count()
     topics_count = EducationalTopic.objects.count()
@@ -43,7 +49,7 @@ def admin_educational_dashboard(request):
 
 
 @login_required
-@user_passes_test(is_admin)
+@educator_required
 def admin_category_list(request):
     categories = EducationalCategory.objects.all().annotate(topics_count=Count('topics'))
     context = {
@@ -53,7 +59,7 @@ def admin_category_list(request):
 
 
 @login_required
-@user_passes_test(is_admin)
+@educator_required
 def admin_category_create(request):
     if request.method == 'POST':
         title = request.POST.get('title')
@@ -77,7 +83,7 @@ def admin_category_create(request):
 
 
 @login_required
-@user_passes_test(is_admin)
+@educator_required
 def admin_category_edit(request, category_id):
     category = get_object_or_404(EducationalCategory, id=category_id)
     
@@ -106,7 +112,7 @@ def admin_category_edit(request, category_id):
 
 
 @login_required
-@user_passes_test(is_admin)
+@educator_required
 def admin_category_delete(request, category_id):
     category = get_object_or_404(EducationalCategory, id=category_id)
     
@@ -123,7 +129,7 @@ def admin_category_delete(request, category_id):
 
 
 @login_required
-@user_passes_test(is_admin)
+@educator_required
 def admin_topic_list(request):
     topics = EducationalTopic.objects.all().select_related('category', 'created_by')
     
@@ -160,7 +166,7 @@ def admin_topic_list(request):
 
 
 @login_required
-@user_passes_test(is_admin)
+@educator_required
 def admin_topic_create(request):
     categories = EducationalCategory.objects.all()
     
@@ -220,7 +226,7 @@ def admin_topic_create(request):
 
 
 @login_required
-@user_passes_test(is_admin)
+@educator_required
 def admin_topic_edit(request, topic_id):
     topic = get_object_or_404(EducationalTopic, id=topic_id)
     categories = EducationalCategory.objects.all()
@@ -295,7 +301,7 @@ def admin_topic_edit(request, topic_id):
 
 
 @login_required
-@user_passes_test(is_admin)
+@educator_required
 def admin_topic_delete(request, topic_id):
     topic = get_object_or_404(EducationalTopic, id=topic_id)
     
@@ -321,7 +327,7 @@ def admin_topic_delete(request, topic_id):
 
 
 @login_required
-@user_passes_test(is_admin)
+@educator_required
 def admin_topic_publish(request, topic_id):
     topic = get_object_or_404(EducationalTopic, id=topic_id)
     
@@ -335,7 +341,7 @@ def admin_topic_publish(request, topic_id):
 
 
 @login_required
-@user_passes_test(is_admin)
+@educator_required
 def admin_topic_preview(request, topic_id):
     topic = get_object_or_404(EducationalTopic, id=topic_id)
     attachments = TopicAttachment.objects.filter(topic=topic)
@@ -783,7 +789,7 @@ def admin_index(request):
     return render(request, 'admin/educational/dashboard.html', context)
 
 @login_required
-@user_passes_test(is_admin)
+@educator_required
 def admin_educational_data(request):
     """
     Comprehensive admin view that displays all educational data (topics, categories, attachments)
@@ -839,7 +845,7 @@ def admin_educational_data(request):
     return render(request, 'admin/educational/admin_educational_data.html', context)
 
 @login_required
-@user_passes_test(is_admin)
+@educator_required
 @require_http_methods(["POST"])
 def extract_pdf_text(request):
     try:
@@ -1012,6 +1018,7 @@ def extract_pdf_text(request):
 # Quiz Views - Admin
 
 @login_required
+@educator_required
 def admin_quiz_list(request):
     """View for admins to see all quizzes."""
     if not request.user.is_staff:
@@ -1061,6 +1068,7 @@ def admin_quiz_list(request):
     return render(request, 'educational/admin/quiz_list.html', context)
 
 @login_required
+@educator_required
 def admin_quiz_detail(request, quiz_id):
     """View for admins to see quiz details, including questions and statistics."""
     if not request.user.is_staff:
@@ -1095,6 +1103,7 @@ def admin_quiz_detail(request, quiz_id):
     return render(request, 'educational/admin/quiz_detail.html', context)
 
 @login_required
+@educator_required
 def admin_create_quiz(request):
     """View for admins to create a new quiz."""
     if not request.user.is_staff:
@@ -1136,6 +1145,7 @@ def admin_create_quiz(request):
     return render(request, 'educational/admin/quiz_form.html', context)
 
 @login_required
+@educator_required
 def admin_edit_quiz(request, quiz_id):
     """View for admins to edit an existing quiz."""
     if not request.user.is_staff:
@@ -1184,6 +1194,7 @@ def admin_edit_quiz(request, quiz_id):
     return render(request, 'educational/admin/quiz_form.html', context)
 
 @login_required
+@educator_required
 def admin_add_question(request, quiz_id):
     """View for admins to add a question to a quiz."""
     if not request.user.is_staff:
@@ -1254,6 +1265,7 @@ def admin_add_question(request, quiz_id):
     return render(request, 'educational/admin/question_form.html', context)
 
 @login_required
+@educator_required
 def admin_edit_question(request, question_id):
     """View for admins to edit a question and its answers."""
     if not request.user.is_staff:
@@ -1353,6 +1365,7 @@ def admin_edit_question(request, question_id):
     return render(request, 'educational/admin/question_form.html', context)
 
 @login_required
+@educator_required
 @require_POST
 def admin_add_answer(request, question_id):
     """View for admins to add an answer to a question."""
@@ -1385,6 +1398,7 @@ def admin_add_answer(request, question_id):
     return redirect('educational:admin_edit_question', question_id=question.id)
 
 @login_required
+@educator_required
 @require_POST
 def admin_delete_question(request, question_id):
     """View for admins to delete a question."""
@@ -1408,6 +1422,7 @@ def admin_delete_question(request, question_id):
     return redirect('educational:admin_edit_quiz', quiz_id=quiz_id)
 
 @login_required
+@educator_required
 @require_POST
 def admin_delete_answer(request, answer_id):
     """View for admins to delete an answer."""
@@ -1435,6 +1450,7 @@ def admin_delete_answer(request, answer_id):
     return redirect('educational:admin_edit_question', question_id=question_id)
 
 @login_required
+@educator_required
 @require_POST
 def admin_publish_quiz(request, quiz_id):
     """View for admins to publish a quiz."""
@@ -1469,6 +1485,7 @@ def admin_publish_quiz(request, quiz_id):
     return redirect('educational:admin_quiz_detail', quiz_id=quiz.id)
 
 @login_required
+@educator_required
 @require_POST
 def admin_unpublish_quiz(request, quiz_id):
     """View for admins to unpublish a quiz."""
@@ -1483,6 +1500,7 @@ def admin_unpublish_quiz(request, quiz_id):
     return redirect('educational:admin_quiz_detail', quiz_id=quiz.id)
 
 @login_required
+@educator_required
 @require_POST
 def admin_delete_quiz(request, quiz_id):
     """View for admins to delete a quiz."""
@@ -1713,6 +1731,7 @@ def take_quiz(request, attempt_id):
     return render(request, 'user_portal/educational/quiz/take_quiz.html', context)
 
 @login_required
+@educator_required
 @require_POST
 def complete_quiz(request, attempt_id):
     """View for users to complete a quiz attempt."""

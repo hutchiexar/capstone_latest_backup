@@ -1,0 +1,57 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Receipt{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}" type="image/x-icon">
+    
+    <!-- Base styles for print pages -->
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f9f9f9;
+        }
+        
+        /* Common print styles - will be hidden on screen but applied for printing */
+        @media print {
+            body {
+                background: white;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+    </style>
+    
+    <!-- Page-specific styles -->
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    {% block content %}{% endblock %}
+    
+    <!-- Base scripts -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-focus print button if present
+            const printButton = document.querySelector('.print-button');
+            if (printButton) {
+                printButton.focus();
+            }
+        });
+    </script>
+    
+    <!-- Page-specific scripts -->
+    {% block extra_js %}{% endblock %}
+</body>
+</html> 
