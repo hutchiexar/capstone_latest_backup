@@ -751,10 +751,11 @@ def get_category_topics(request):
     except EducationalCategory.DoesNotExist:
         return JsonResponse({'error': 'Category not found'}, status=404)
 
-@staff_member_required
+@login_required
+@educator_required
 def admin_index(request):
     """
-    Display the educational dashboard for administrators.
+    Display the educational dashboard for administrators and educators.
     Shows statistics and summary of educational content.
     """
     # Get counts
@@ -1020,11 +1021,8 @@ def extract_pdf_text(request):
 @login_required
 @educator_required
 def admin_quiz_list(request):
-    """View for admins to see all quizzes."""
-    if not request.user.is_staff:
-        messages.error(request, "You don't have permission to access this page.")
-        return redirect('educational:topic_list')
-        
+    """View for admins and educators to see all quizzes."""
+    # The @educator_required decorator already ensures only educators and admins can access this
     quizzes = Quiz.objects.select_related('topic', 'created_by')
     
     # Filter by search query
@@ -1070,11 +1068,8 @@ def admin_quiz_list(request):
 @login_required
 @educator_required
 def admin_quiz_detail(request, quiz_id):
-    """View for admins to see quiz details, including questions and statistics."""
-    if not request.user.is_staff:
-        messages.error(request, "You don't have permission to access this page.")
-        return redirect('educational:topic_list')
-    
+    """View for admins and educators to see quiz details, including questions and statistics."""
+    # The @educator_required decorator already ensures only educators and admins can access this
     quiz = get_object_or_404(Quiz.objects.select_related('topic', 'created_by'), pk=quiz_id)
     
     # Get questions with answers
@@ -1105,10 +1100,8 @@ def admin_quiz_detail(request, quiz_id):
 @login_required
 @educator_required
 def admin_create_quiz(request):
-    """View for admins to create a new quiz."""
-    if not request.user.is_staff:
-        messages.error(request, "You don't have permission to access this page.")
-        return redirect('educational:topic_list')
+    """View for admins and educators to create a new quiz."""
+    # The @educator_required decorator already ensures only educators and admins can access this
     
     if request.method == 'POST':
         title = request.POST.get('title')
@@ -1147,10 +1140,8 @@ def admin_create_quiz(request):
 @login_required
 @educator_required
 def admin_edit_quiz(request, quiz_id):
-    """View for admins to edit an existing quiz."""
-    if not request.user.is_staff:
-        messages.error(request, "You don't have permission to access this page.")
-        return redirect('educational:topic_list')
+    """View for admins and educators to edit an existing quiz."""
+    # The @educator_required decorator already ensures only educators and admins can access this
     
     quiz = get_object_or_404(Quiz, pk=quiz_id)
     
@@ -1196,10 +1187,8 @@ def admin_edit_quiz(request, quiz_id):
 @login_required
 @educator_required
 def admin_add_question(request, quiz_id):
-    """View for admins to add a question to a quiz."""
-    if not request.user.is_staff:
-        messages.error(request, "You don't have permission to access this page.")
-        return redirect('educational:topic_list')
+    """View for admins and educators to add a question to a quiz."""
+    # The @educator_required decorator already ensures only educators and admins can access this
     
     quiz = get_object_or_404(Quiz, pk=quiz_id)
     
@@ -1267,10 +1256,8 @@ def admin_add_question(request, quiz_id):
 @login_required
 @educator_required
 def admin_edit_question(request, question_id):
-    """View for admins to edit a question and its answers."""
-    if not request.user.is_staff:
-        messages.error(request, "You don't have permission to access this page.")
-        return redirect('educational:topic_list')
+    """View for admins and educators to edit a question and its answers."""
+    # The @educator_required decorator already ensures only educators and admins can access this
     
     question = get_object_or_404(QuizQuestion.objects.select_related('quiz'), pk=question_id)
     
@@ -1368,10 +1355,8 @@ def admin_edit_question(request, question_id):
 @educator_required
 @require_POST
 def admin_add_answer(request, question_id):
-    """View for admins to add an answer to a question."""
-    if not request.user.is_staff:
-        messages.error(request, "You don't have permission to access this page.")
-        return redirect('educational:topic_list')
+    """View for admins and educators to add an answer to a question."""
+    # The @educator_required decorator already ensures only educators and admins can access this
     
     question = get_object_or_404(QuizQuestion, pk=question_id)
     
@@ -1401,12 +1386,11 @@ def admin_add_answer(request, question_id):
 @educator_required
 @require_POST
 def admin_delete_question(request, question_id):
-    """View for admins to delete a question."""
-    if not request.user.is_staff:
-        messages.error(request, "You don't have permission to access this page.")
-        return redirect('educational:topic_list')
+    """View for admins and educators to delete a question."""
+    # The @educator_required decorator already ensures only educators and admins can access this
     
     question = get_object_or_404(QuizQuestion, pk=question_id)
+    
     quiz_id = question.quiz.id
     
     # Delete the question and its answers (CASCADE will handle answers)
@@ -1425,12 +1409,11 @@ def admin_delete_question(request, question_id):
 @educator_required
 @require_POST
 def admin_delete_answer(request, answer_id):
-    """View for admins to delete an answer."""
-    if not request.user.is_staff:
-        messages.error(request, "You don't have permission to access this page.")
-        return redirect('educational:topic_list')
+    """View for admins and educators to delete an answer."""
+    # The @educator_required decorator already ensures only educators and admins can access this
     
     answer = get_object_or_404(QuizAnswer, pk=answer_id)
+    
     question_id = answer.question.id
     
     # Ensure we're not deleting the only correct answer for multiple choice
@@ -1453,10 +1436,8 @@ def admin_delete_answer(request, answer_id):
 @educator_required
 @require_POST
 def admin_publish_quiz(request, quiz_id):
-    """View for admins to publish a quiz."""
-    if not request.user.is_staff:
-        messages.error(request, "You don't have permission to access this page.")
-        return redirect('educational:topic_list')
+    """View for admins and educators to publish a quiz."""
+    # The @educator_required decorator already ensures only educators and admins can access this
     
     quiz = get_object_or_404(Quiz, pk=quiz_id)
     
@@ -1488,12 +1469,11 @@ def admin_publish_quiz(request, quiz_id):
 @educator_required
 @require_POST
 def admin_unpublish_quiz(request, quiz_id):
-    """View for admins to unpublish a quiz."""
-    if not request.user.is_staff:
-        messages.error(request, "You don't have permission to access this page.")
-        return redirect('educational:topic_list')
+    """View for admins and educators to unpublish a quiz."""
+    # The @educator_required decorator already ensures only educators and admins can access this
     
     quiz = get_object_or_404(Quiz, pk=quiz_id)
+    
     quiz.unpublish()
     messages.success(request, f"Quiz '{quiz.title}' has been unpublished.")
     
@@ -1503,12 +1483,11 @@ def admin_unpublish_quiz(request, quiz_id):
 @educator_required
 @require_POST
 def admin_delete_quiz(request, quiz_id):
-    """View for admins to delete a quiz."""
-    if not request.user.is_staff:
-        messages.error(request, "You don't have permission to access this page.")
-        return redirect('educational:topic_list')
+    """View for admins and educators to delete a quiz."""
+    # The @educator_required decorator already ensures only educators and admins can access this
     
     quiz = get_object_or_404(Quiz, pk=quiz_id)
+    
     quiz_title = quiz.title
     
     try:

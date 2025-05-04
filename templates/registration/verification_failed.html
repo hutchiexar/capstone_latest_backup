@@ -1,4 +1,4 @@
-{% extends 'user_portal/base_user.html' %}
+{% extends 'registration/base_auth.html' %}
 {% load static %}
 
 {% block title %}Verification Failed - CTTMO{% endblock %}
@@ -82,12 +82,9 @@
         </div>
 
         <!-- Action Links -->
-        <div class="d-flex justify-content-between align-items-center">
-            <a href="{% url 'login' %}" class="btn btn-link text-muted">
-                <i class="material-icons small align-middle me-1">arrow_back</i> Back to Login
-            </a>
-            <a href="{% url 'register' %}" class="btn btn-link text-muted">
-                Different Account <i class="material-icons small align-middle ms-1">person_add</i>
+        <div class="text-center">
+            <a href="/accounts/login/" class="btn btn-outline-primary">
+                <i class="material-icons small align-middle me-1">login</i> Back to Login
             </a>
         </div>
     </div>
@@ -130,8 +127,8 @@
 }
 
 .failed-circle {
-    width: 80px;
-    height: 80px;
+    width: 70px;
+    height: 70px;
     border-radius: 50%;
     background-color: #fff3cd;
     display: flex;
@@ -141,7 +138,7 @@
 }
 
 .failed-circle i {
-    font-size: 48px;
+    font-size: 40px;
     color: #ffc107;
 }
 
@@ -163,7 +160,7 @@
     }
     
     .failed-circle i {
-        font-size: 36px;
+        font-size: 32px;
     }
 }
 </style>

@@ -12,12 +12,6 @@
                         <span class="material-icons me-2 text-primary">history</span>
                         <h4 class="mb-0 fs-5 fs-md-4">Activity History</h4>
                     </div>
-                    <!-- Role-based info message -->
-                    {% if user.userprofile.role == "ADMIN" %}
-                    <small class="text-muted">You can see all activity logs across the system.</small>
-                    {% else %}
-                    <small class="text-muted">You can see only your own activity logs.</small>
-                    {% endif %}
                 </div>
                 <!-- Search Form -->
                 <div class="col-lg-9">
@@ -34,7 +28,7 @@
                             </div>
                         </div>
                         <!-- Category Select -->
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="search-input">
                                 <span class="material-icons">category</span>
                                 <select name="category" class="form-select">
@@ -47,6 +41,23 @@
                                 </select>
                             </div>
                         </div>
+                        
+                        <!-- Role Select -->
+                        <div class="col-md-3">
+                            <div class="search-input">
+                                <span class="material-icons">person</span>
+                                <select name="role" class="form-select">
+                                    <option value="">All Roles</option>
+                                    <option value="ADMIN" {% if request.GET.role == 'ADMIN' %}selected{% endif %}>Administrator</option>
+                                    <option value="SUPERVISOR" {% if request.GET.role == 'SUPERVISOR' %}selected{% endif %}>Supervisor</option>
+                                    <option value="ENFORCER" {% if request.GET.role == 'ENFORCER' %}selected{% endif %}>Enforcer</option>
+                                    <option value="TREASURER" {% if request.GET.role == 'TREASURER' %}selected{% endif %}>Treasurer</option>
+                                    <option value="EDUCATOR" {% if request.GET.role == 'EDUCATOR' %}selected{% endif %}>Educator</option>
+                                    <option value="USER" {% if request.GET.role == 'USER' %}selected{% endif %}>Regular User</option>
+                                </select>
+                            </div>
+                        </div>
+                        
                         <!-- Search Button -->
                         <div class="col-md-3">
                             <button type="submit" class="btn btn-primary w-100 d-flex align-items-center justify-content-center">
@@ -76,7 +87,6 @@
                 </thead>
                 <tbody>
                     {% for activity in activities %}
-                    {% if user.userprofile.role == "ADMIN" or activity.user.id == user.id %}
                     <tr>
                         <td class="ps-4">{{ activity.timestamp|date:"M d, Y H:i" }}</td>
                         <td>
@@ -107,7 +117,6 @@
                         </td>
                         <td class="pe-4">{{ activity.details }}</td>
                     </tr>
-                    {% endif %}
                     {% empty %}
                     <tr>
                         <td colspan="5" class="text-center py-5">
@@ -125,7 +134,6 @@
         <!-- Mobile Card View -->
         <div class="d-md-none px-2 py-2">
             {% for activity in activities %}
-            {% if user.userprofile.role == "ADMIN" or activity.user.id == user.id %}
             <div class="activity-card mb-3">
                 <div class="activity-card-header d-flex justify-content-between align-items-center">
                     <div class="d-flex align-items-center">
@@ -171,7 +179,6 @@
                     </div>
                 </div>
             </div>
-            {% endif %}
             {% empty %}
             <div class="text-center py-5">
                 <span class="material-icons d-block mb-2" style="font-size: 3rem; opacity: 0.5;">search_off</span>

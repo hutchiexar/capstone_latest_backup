@@ -5,52 +5,171 @@
 
 {% block extra_css %}
 <style>
-    .qr-container {
-        background-color: #fff;
-        border-radius: 0.75rem;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.08);
-        padding: 2rem;
-        max-width: 500px;
+    /* Modern Color Palette - matching user portal */
+    :root {
+        --primary-color: #3563E9;
+        --primary-light: #EEF3FF;
+        --success-color: #0CAA1D;
+        --danger-color: #F53D3D;
+        --warning-color: #FFB800;
+        --dark-blue: #0F1C3F;
+        --neutral-gray: #737791;
+        --light-gray: #F6F7F9;
+        --white: #FFFFFF;
+    }
+
+    /* Card and Container Styling */
+    .page-container {
+        max-width: 1200px;
         margin: 0 auto;
+        padding: 2rem;
+    }
+    
+    .header-card {
+        background-color: white;
+        border-radius: 1rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        padding: 1.5rem 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .content-card {
+        background-color: white;
+        border-radius: 1rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        padding: 2rem;
+        height: 100%;
+    }
+    
+    /* QR Code Styling */
+    .qr-code-container {
+        padding: 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        background-color: white;
+        width: fit-content;
+        margin: 0 auto 1.5rem auto;
     }
     
     .qr-code-img {
         width: 100%;
-        max-width: 300px;
+        max-width: 200px;
         height: auto;
-        display: block;
-        margin: 0 auto 1.5rem auto;
     }
     
-    .print-qr-btn {
-        background-color: #3563E9;
-        color: white;
+    .user-info {
+        background-color: var(--primary-light);
+        border-radius: 0.75rem;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    
+    /* Typography */
+    .page-title {
+        color: var(--dark-blue);
+        font-size: 1.5rem;
         font-weight: 600;
-        padding: 0.625rem 1.25rem;
-        border-radius: 0.5rem;
-        display: inline-flex;
+        margin-bottom: 0.5rem;
+    }
+    
+    .page-subtitle {
+        color: var(--neutral-gray);
+        font-size: 0.95rem;
+    }
+    
+    .card-title {
+        color: var(--dark-blue);
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 1.25rem;
+        text-align: center;
+    }
+    
+    .section-title {
+        color: var(--primary-color);
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
         align-items: center;
-        justify-content: center;
-        border: none;
-        box-shadow: 0 4px 6px rgba(53, 99, 233, 0.2);
-        transition: all 0.2s ease;
     }
     
-    .print-qr-btn:hover {
-        background-color: #2954d8;
-        transform: translateY(-2px);
-        box-shadow: 0 6px 8px rgba(53, 99, 233, 0.3);
+    .section-title .material-icons {
+        margin-right: 0.5rem;
+        color: var(--primary-color);
     }
     
+    /* Instructions */
     .instruction-list {
-        margin-top: 1.5rem;
-        padding-left: 1.5rem;
+        list-style: none;
+        padding-left: 0;
     }
     
     .instruction-list li {
-        margin-bottom: 0.75rem;
+        position: relative;
+        padding-left: 1.5rem;
+        margin-bottom: 1rem;
+        color: var(--dark-blue);
     }
     
+    .instruction-list li:before {
+        content: "•";
+        position: absolute;
+        left: 0;
+        color: var(--primary-color);
+        font-weight: bold;
+    }
+    
+    .info-box {
+        background-color: var(--primary-light);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-top: 1.5rem;
+    }
+    
+    .info-box-title {
+        display: flex;
+        align-items: center;
+        color: var(--dark-blue);
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .info-box-title .material-icons {
+        margin-right: 0.5rem;
+        color: var(--primary-color);
+    }
+    
+    .info-box-text {
+        color: var(--neutral-gray);
+        font-size: 0.9rem;
+        margin-bottom: 0;
+    }
+    
+    /* Buttons */
+    .back-btn {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        color: var(--primary-color);
+        background-color: white;
+        border: 1px solid var(--primary-color);
+        border-radius: 0.5rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+    
+    .back-btn:hover {
+        background-color: var(--primary-light);
+    }
+    
+    .back-btn .material-icons {
+        font-size: 1.25rem;
+        margin-right: 0.5rem;
+    }
+    
+    /* Print Styling */
     @media print {
         body * {
             visibility: hidden;
@@ -71,98 +190,124 @@
         .non-printable {
             display: none !important;
         }
-        
-        .qr-container {
-            box-shadow: none;
-            padding: 0;
-        }
-        
-        .qr-title {
-            margin-top: 0;
-            font-size: 16pt;
-        }
-        
-        .qr-code-img {
-            max-width: 250px;
-        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="mb-4 d-flex justify-content-between align-items-center">
-        <h1 class="h3 mb-0">Vehicle QR Code</h1>
-        <a href="{% url 'user_portal:user_profile' %}" class="btn btn-outline-primary btn-sm">
-            <span class="material-icons align-middle me-1" style="font-size: 18px;">arrow_back</span>
-            Back to Profile
-        </a>
+<div class="page-container">
+    <!-- Header -->
+    <div class="header-card">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">Vehicle QR Code</h1>
+                <p class="page-subtitle">View and print your official CTTMO vehicle identification QR code</p>
+            </div>
+            <a href="{% url 'user_portal:user_profile' %}" class="back-btn">
+                <span class="material-icons">arrow_back</span>
+                Back to Profile
+            </a>
+        </div>
     </div>
     
     <div class="row">
-        <div class="col-md-8">
-            <!-- QR Code Container -->
-            <div class="qr-print-section">
-                <div class="qr-container">
-                    <h2 class="h4 text-center mb-3 qr-title">CTTMO Vehicle QR Code</h2>
+        <!-- QR Code Card -->
+        <div class="col-md-7 mb-4">
+            <div class="content-card qr-print-section">
+                <div class="text-center">
+                    <div class="d-flex align-items-center justify-content-center mb-3">
+                        <span class="material-icons me-2" style="color: var(--primary-color);">qr_code_2</span>
+                        <h2 class="card-title mb-0">CTTMO Vehicle QR Code</h2>
+                    </div>
                     
                     {% if profile.qr_code %}
-                    <img src="{{ profile.qr_code.url }}" alt="Vehicle QR Code" class="qr-code-img">
+                    <div class="qr-code-container">
+                        <img src="{{ profile.qr_code.url }}" alt="Vehicle QR Code" class="qr-code-img">
+                    </div>
                     {% else %}
-                    <div class="alert alert-warning">
+                    <div class="alert alert-warning d-flex align-items-center">
+                        <span class="material-icons me-2">warning</span>
                         QR code not found. Please try generating a new one.
                     </div>
                     {% endif %}
                     
-                    <div class="text-center mb-3">
-                        <p class="mb-2"><strong>{{ user.get_full_name }}</strong></p>
+                    <div class="user-info">
+                        <div class="fw-bold mb-2">{{ user.get_full_name }}</div>
+                        
                         {% if profile.license_number %}
-                        <p class="mb-2">License: {{ profile.license_number }}</p>
+                        <div class="d-flex align-items-center justify-content-center mb-2">
+                            <span class="material-icons me-1" style="font-size: 18px; color: var(--neutral-gray);">badge</span>
+                            <div>License: <span class="fw-medium">{{ profile.license_number }}</span></div>
+                        </div>
                         {% endif %}
                         
                         {% if user.registered_vehicles.exists %}
                         {% with vehicle=user.registered_vehicles.first %}
-                        <p class="mb-0">Vehicle: {{ vehicle.plate_number }} ({{ vehicle.make }} {{ vehicle.model }})</p>
+                        <div class="d-flex align-items-center justify-content-center">
+                            <span class="material-icons me-1" style="font-size: 18px; color: var(--neutral-gray);">directions_car</span>
+                            <div>Vehicle: <span class="fw-medium">{{ vehicle.plate_number }}</span> ({{ vehicle.make }} {{ vehicle.model }})</div>
+                        </div>
                         {% endwith %}
                         {% endif %}
                     </div>
                 </div>
-            </div>
-            
-            <!-- Print Button (non-printable) -->
-            <div class="text-center mt-4 non-printable">
-                <button onclick="window.print()" class="print-qr-btn">
-                    <span class="material-icons me-2">print</span>
-                    Print QR Code
-                </button>
+                
+                <!-- Print Button (non-printable) -->
+                <div class="text-center mt-4 non-printable">
+                    <button onclick="window.print()" class="btn btn-primary d-inline-flex align-items-center">
+                        <span class="material-icons me-2">print</span>
+                        Print QR Code
+                    </button>
+                </div>
             </div>
         </div>
         
-        <div class="col-md-4 non-printable">
-            <div class="card border-0 shadow-sm rounded-lg mt-4 mt-md-0">
-                <div class="card-body">
-                    <h3 class="h5 mb-3">
-                        <span class="material-icons align-middle me-2" style="color: #3563E9;">info</span>
-                        Instructions
-                    </h3>
-                    
-                    <ul class="instruction-list">
-                        <li>Print this QR code and <strong>attach it to your vehicle</strong> where it can be easily scanned.</li>
-                        <li>Place it preferably on your windshield or a visible location.</li>
-                        <li>This QR code helps enforcers quickly verify your vehicle information.</li>
-                        <li>CTTMO cameras can also detect and scan this QR code.</li>
-                        <li>Keep the QR code clean and undamaged for proper scanning.</li>
-                    </ul>
-                    
-                    <div class="alert alert-info mt-3 mb-0">
-                        <div class="d-flex">
-                            <span class="material-icons me-2" style="font-size: 24px;">qr_code_scanner</span>
-                            <div>
-                                <strong>Why use a QR code?</strong>
-                                <p class="mb-0 small">QR codes allow for quick verification and reduce the need for manual checks during traffic enforcement.</p>
-                            </div>
-                        </div>
+        <!-- Instructions Card -->
+        <div class="col-md-5 mb-4">
+            <div class="content-card non-printable">
+                <div class="section-title">
+                    <span class="material-icons">info</span>
+                    Instructions
+                </div>
+                
+                <ul class="instruction-list">
+                    <li>Print this QR code and <strong>attach it to your vehicle</strong> where it can be easily scanned.</li>
+                    <li>Place it preferably on your windshield or a visible location.</li>
+                    <li>This QR code helps enforcers quickly verify your vehicle information.</li>
+                    <li>CTTMO cameras can also detect and scan this QR code.</li>
+                    <li>Keep the QR code clean and undamaged for proper scanning.</li>
+                </ul>
+                
+                <div class="info-box">
+                    <div class="info-box-title">
+                        <span class="material-icons">qr_code_scanner</span>
+                        Why use a QR code?
                     </div>
+                    <p class="info-box-text">
+                        QR codes allow for quick verification and reduce the need for manual checks during traffic enforcement.
+                    </p>
+                </div>
+                
+                <!-- Download Option -->
+                <div class="mt-4">
+                    <div class="section-title">
+                        <span class="material-icons">cloud_download</span>
+                        Save Digital Copy
+                    </div>
+                    
+                    <p class="text-muted mb-3">Download a digital copy of your QR code to keep on your mobile device.</p>
+                    
+                    {% if profile.qr_code %}
+                    <a href="{{ profile.qr_code.url }}" download class="btn btn-outline-primary d-flex align-items-center justify-content-center">
+                        <span class="material-icons me-2">save_alt</span>
+                        Download QR Code
+                    </a>
+                    {% else %}
+                    <button disabled class="btn btn-outline-secondary d-flex align-items-center justify-content-center">
+                        <span class="material-icons me-2">save_alt</span>
+                        Download QR Code
+                    </button>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -173,8 +318,8 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // This block would contain any JavaScript needed for the QR code page
-        // Currently, we only need the print functionality which is handled by the button's onclick
+        // Ensure page is fully loaded before any animations
+        console.log("QR code page loaded");
     });
 </script>
 {% endblock %} 

@@ -56,4 +56,18 @@ urlpatterns = [
     path('quiz-attempts/<int:attempt_id>/', views.take_quiz, name='take_quiz'),
     path('quiz-attempts/<int:attempt_id>/complete/', views.complete_quiz, name='complete_quiz'),
     path('quiz-attempts/<int:attempt_id>/results/', views.quiz_results, name='quiz_results'),
+
+    # Alternate admin routes with better URL structure
+    path('educator-dashboard/', views.admin_index, name='educator_dashboard'),
+    path('categories-management/', views.admin_category_list, name='categories_management'),
+    path('categories-management/create/', views.admin_category_create, name='create_category'),
+    path('categories-management/<int:category_id>/edit/', views.admin_category_edit, name='edit_category'),
+    path('topics-management/', views.admin_topic_list, name='topics_management'),
+    path('topics-management/create/', views.admin_topic_create, name='create_topic'),
+    path('topics-management/<int:topic_id>/edit/', views.admin_topic_edit, name='edit_topic'),
+    path('quizzes-management/', views.admin_quiz_list, name='quizzes_management'),
+    path('quizzes-management/create/', views.admin_create_quiz, name='create_quiz'),
+    path('quizzes-management/<int:quiz_id>/', views.admin_quiz_detail, name='quiz_detail_admin'),
+    path('quizzes-management/<int:quiz_id>/edit/', views.admin_edit_quiz, name='edit_quiz'),
+    path('quizzes-management/<int:quiz_id>/questions/add/', views.admin_add_question, name='add_quiz_question'),
 ] 

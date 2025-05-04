@@ -67,6 +67,8 @@ MIDDLEWARE = [
     'traffic_violation_system.middleware.AuthenticationMiddleware',
     'traffic_violation_system.middleware.EmailVerificationMiddleware',
     'traffic_violation_system.middleware.NoCacheMiddleware',
+    'traffic_violation_system.middleware.EducatorAccessMiddleware',
+    'traffic_violation_system.middleware.AdjudicationAccessMiddleware',
     'django.middleware.cache.UpdateCacheMiddleware',
     'django.middleware.cache.FetchFromCacheMiddleware',
 ]

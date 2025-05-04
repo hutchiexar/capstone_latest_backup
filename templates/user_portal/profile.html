@@ -390,6 +390,29 @@ image.png{% extends 'user_portal/base_user.html' %}
         </div>
     </div>
 
+    <!-- Driver ID Card Section -->
+    {% if user.userprofile.is_driver %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-lg rounded-xl">
+                <div class="card-body p-4 d-flex align-items-center">
+                    <div class="flex-shrink-0 me-3">
+                        <span class="material-icons" style="color: var(--primary-color); font-size: 2.5rem;">badge</span>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h5 class="card-title mb-1">Driver ID Card</h5>
+                        <p class="card-text text-muted mb-2">View and print your official CTTMO driver identification card</p>
+                        <a href="{% url 'user_portal:driver_id_card' %}" class="btn btn-sm btn-primary">
+                            <span class="material-icons me-1" style="font-size: 16px;">credit_card</span>
+                            View ID Card
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Profile Details -->
     <div class="row g-4">
             <div class="col-12 col-md-6">
@@ -537,27 +560,6 @@ image.png{% extends 'user_portal/base_user.html' %}
             </div>
         </div>
     </div>
-
-    <!-- Add driver ID card link for approved drivers -->
-    {% if user_profile.is_driver %}
-    <div class="col-lg-6 mt-4">
-        <div class="card shadow-sm border-0 rounded-lg">
-            <div class="card-body d-flex align-items-center">
-                <div class="flex-shrink-0 me-3">
-                    <span class="material-icons text-primary" style="font-size: 2.5rem;">badge</span>
-                </div>
-                <div class="flex-grow-1">
-                    <h5 class="card-title mb-1">Driver ID Card</h5>
-                    <p class="card-text text-muted mb-2">View and print your official CTTMO driver identification card</p>
-                    <a href="{% url 'user_portal:driver_id_card' %}" class="btn btn-sm btn-primary">
-                        <span class="material-icons me-1" style="font-size: 16px;">credit_card</span>
-                        View ID Card
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
 </div>
 
 <!-- Success Toast Notification -->

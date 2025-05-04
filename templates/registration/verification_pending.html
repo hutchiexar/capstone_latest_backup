@@ -1,4 +1,4 @@
-{% extends 'user_portal/base_user.html' %}
+{% extends 'registration/base_auth.html' %}
 {% load static %}
 
 {% block title %}Email Verification Required - CTTMO{% endblock %}
@@ -114,12 +114,9 @@
         </div>
 
         <!-- Action Links -->
-        <div class="d-flex justify-content-between align-items-center">
-            <a href="{% url 'login' %}" class="btn btn-link text-muted">
-                <i class="material-icons small align-middle me-1">arrow_back</i> Back to Login
-            </a>
-            <a href="{% url 'register' %}" class="btn btn-link text-muted">
-                Different Account <i class="material-icons small align-middle ms-1">person_add</i>
+        <div class="text-center">
+            <a href="/accounts/login/" class="btn btn-outline-primary">
+                <i class="material-icons small align-middle me-1">login</i> Back to Login
             </a>
         </div>
     </div>
@@ -163,8 +160,8 @@
 
 .timer-circle {
     margin: 0 auto;
-    width: 80px;
-    height: 80px;
+    width: 70px;
+    height: 70px;
     border-radius: 50%;
     background-color: #f8f9fa;
     border: 2px solid #dee2e6;
@@ -176,18 +173,18 @@
 
 .timer-circle #timerIcon {
     color: #0d6efd;
-    font-size: 24px;
-    margin-bottom: 5px;
+    font-size: 20px;
+    margin-bottom: 3px;
 }
 
 .timer-circle #timer {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     color: #495057;
 }
 
 .verification-code-input {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     font-weight: 600;
     letter-spacing: 0.5rem;
     text-transform: uppercase;
@@ -204,6 +201,24 @@
     
     .verification-title {
         font-size: 1.2rem;
+    }
+    
+    .timer-circle {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .timer-circle #timerIcon {
+        font-size: 18px;
+    }
+    
+    .timer-circle #timer {
+        font-size: 12px;
+    }
+    
+    .verification-code-input {
+        font-size: 1.1rem;
+        width: 160px;
     }
 }
 </style>

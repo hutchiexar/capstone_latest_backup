@@ -447,6 +447,23 @@
                     </div>
                     {% endif %}
 
+                    <!-- Common issues alert -->
+                    <div class="alert alert-info mb-4">
+                        <div class="d-flex">
+                            <span class="material-icons me-3">info</span>
+                            <div>
+                                <h5 class="mb-2">Tips for Successful Registration</h5>
+                                <ul class="mb-0 ps-3">
+                                    <li><strong>All fields are required</strong> - Make sure to fill all information</li>
+                                    <li><strong>Unique IDs</strong> - Plate number, OR number, and CR number must not already be in the system</li>
+                                    <li><strong>OR/CR Image</strong> - Must be a JPG, PNG, or PDF file less than 5MB</li>
+                                    <li><strong>Dates</strong> - Expiry date must be after registration date</li>
+                                    <li><strong>Year Model</strong> - Must be a valid year (1900 to current year)</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
                         <form method="POST" enctype="multipart/form-data" class="needs-validation" id="registerVehicleForm" novalidate>
                         {% csrf_token %}
                         
@@ -601,12 +618,112 @@ document.addEventListener('DOMContentLoaded', function() {
             confirmButtonColor: '#3563E9'
         });
         {% endif %}
+        
+        // Repopulate form with previous data if available
+        {% if form_data %}
+        try {
+            const formData = {
+                {% for key, value in form_data.items %}
+                '{{ key }}': '{{ value|escapejs }}',
+                {% endfor %}
+            };
+            
+            // Populate all form fields except file inputs
+            Object.keys(formData).forEach(key => {
+                const field = document.querySelector(`[name="${key}"]`);
+                if (field && field.type !== 'file') {
+                    field.value = formData[key];
+                }
+            });
+            
+            // Mark form as validated to show any validation errors
+            document.getElementById('registerVehicleForm').classList.add('was-validated');
+        } catch (e) {
+            console.error('Error repopulating form:', e);
+        }
+        {% endif %}
     }, 800);
+    
+    // Form field validation
+    const plateNumberField = document.getElementById('plate_number');
+    const yearModelField = document.getElementById('year_model');
+    const registrationDateField = document.getElementById('registration_date');
+    const expiryDateField = document.getElementById('expiry_date');
+    const orNumberField = document.getElementById('or_number');
+    const crNumberField = document.getElementById('registration_number');
+    
+    // Validate plate number format (common formats: ABC 123, ABC-123, ABC123)
+    if (plateNumberField) {
+        plateNumberField.addEventListener('blur', function() {
+            const value = this.value.trim();
+            const regex = /^[A-Za-z0-9\- ]{4,10}$/;
+            
+            if (value && !regex.test(value)) {
+                this.setCustomValidity('Please enter a valid plate number format');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    }
+    
+    // Validate year model is a number between 1900 and current year + 1
+    if (yearModelField) {
+        yearModelField.addEventListener('blur', function() {
+            const value = parseInt(this.value.trim());
+            const currentYear = new Date().getFullYear();
+            
+            if (isNaN(value) || value < 1900 || value > currentYear + 1) {
+                this.setCustomValidity(`Please enter a valid year between 1900 and ${currentYear + 1}`);
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    }
+    
+    // Validate registration date isn't in the future
+    if (registrationDateField) {
+        registrationDateField.addEventListener('change', function() {
+            const registrationDate = new Date(this.value);
+            const today = new Date();
+            
+            if (registrationDate > today) {
+                this.setCustomValidity('Registration date cannot be in the future');
+            } else {
+                this.setCustomValidity('');
+                validateDateRange();
+            }
+        });
+    }
+    
+    // Validate expiry date is after registration date
+    if (expiryDateField && registrationDateField) {
+        expiryDateField.addEventListener('change', validateDateRange);
+        
+        function validateDateRange() {
+            const registrationDate = new Date(registrationDateField.value);
+            const expiryDate = new Date(expiryDateField.value);
+            
+            if (registrationDateField.value && expiryDateField.value && expiryDate <= registrationDate) {
+                expiryDateField.setCustomValidity('Expiry date must be after registration date');
+            } else {
+                expiryDateField.setCustomValidity('');
+            }
+        }
+    }
     
     // Form validation
     const form = document.getElementById('registerVehicleForm');
     
     form.addEventListener('submit', function(event) {
+        // Trigger all field validations
+        form.querySelectorAll('input, select').forEach(field => {
+            if (field.type !== 'file') {
+                // Trigger any custom validation logic
+                const event = new Event('blur');
+                field.dispatchEvent(event);
+            }
+        });
+        
         if (!form.checkValidity()) {
             event.preventDefault();
             event.stopPropagation();
@@ -683,6 +800,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 this.value = '';
                 fileUploadText.textContent = 'Drag & drop OR/CR image or click to browse';
+                this.setCustomValidity('Please upload a smaller file (maximum 5MB)');
                 return;
             }
             
@@ -693,68 +811,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     icon: 'error',
                     title: 'Invalid File Type',
                     html: `<p>Please select a valid file type.</p>
-                           <p>Accepted file types: JPG, PNG, PDF</p>`,
+                           <p>Accepted file types: JPG, PNG, PDF</p>
+                           <p>Your file type: ${file.type || 'unknown'}</p>`,
                     confirmButtonText: 'OK',
                     confirmButtonColor: '#3563E9'
                 });
                 
                 this.value = '';
                 fileUploadText.textContent = 'Drag & drop OR/CR image or click to browse';
+                this.setCustomValidity('Please upload a valid file type (JPG, PNG, PDF)');
                 return;
             }
             
-            // Update file name display
-            fileUploadText.textContent = `Selected file: ${file.name}`;
-        } else {
-            fileUploadText.textContent = 'Drag & drop OR/CR image or click to browse';
+            // Valid file - update UI and clear validation errors
+            this.setCustomValidity('');
+            fileUploadText.textContent = `Selected: ${file.name}`;
         }
     });
-
-    // Date validation
-    const registrationDate = document.getElementById('registration_date');
-    const expiryDate = document.getElementById('expiry_date');
-    
-    // Set default date for registration date to today
-    const today = new Date().toISOString().split('T')[0];
-    registrationDate.value = today;
-    
-    // Update expiry date minimum when registration date changes
-    registrationDate.addEventListener('change', function() {
-        expiryDate.min = this.value;
-        if (expiryDate.value && expiryDate.value < this.value) {
-            expiryDate.value = this.value;
-        }
-    });
-
-    // Set expiry date min to registration date on page load
-    expiryDate.min = registrationDate.value;
-    
-    // Prepopulate form fields from previous submission if available
-    {% if form_data %}
-    // Populate text/select fields
-    const fields = ['or_number', 'cr_number', 'plate_number', 'vehicle_type', 'make', 
-                    'model', 'year_model', 'color', 'classification'];
-    
-    fields.forEach(field => {
-        const element = document.getElementById(field);
-        if (element) {
-            {% for field_name, field_value in form_data.items %}
-            if (field === "{{ field_name|escapejs }}") {
-                element.value = "{{ field_value|escapejs }}";
-            }
-            {% endfor %}
-        }
-    });
-    
-    // Handle dates separately
-    {% if form_data.registration_date %}
-    document.getElementById('registration_date').value = "{{ form_data.registration_date|escapejs }}";
-    {% endif %}
-    
-    {% if form_data.expiry_date %}
-    document.getElementById('expiry_date').value = "{{ form_data.expiry_date|escapejs }}";
-    {% endif %}
-    {% endif %}
 });
 </script>
 {% endblock %} 

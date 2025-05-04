@@ -338,6 +338,7 @@ class UserProfile(models.Model):
         ('SUPERVISOR', 'Supervisor'),
         ('TREASURER', 'Treasurer'),
         ('EDUCATOR', 'Educator'),
+        ('ADJUDICATOR', 'Adjudicator'),
         ('USER', 'Regular User'),
     ]
 
@@ -436,6 +437,13 @@ class UserProfile(models.Model):
                 'Create and manage quizzes',
                 'View learning analytics',
             ],
+            'ADJUDICATOR': [
+                'Review violations',
+                'Adjudicate violations',
+                'Modify violation status',
+                'Schedule hearings',
+                'Generate adjudication reports',
+            ],
             'USER': [
                 'View own violations',
                 'Pay violations',
@@ -527,6 +535,7 @@ class Announcement(models.Model):
         ('SUPERVISOR', 'Supervisors'),
         ('TREASURER', 'Treasurers'),
         ('EDUCATOR', 'Educators'),
+        ('ADJUDICATOR', 'Adjudicators'),
         ('USER', 'Regular Users'),
     ]
     

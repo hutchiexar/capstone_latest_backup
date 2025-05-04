@@ -528,6 +528,9 @@ def vehicle_list(request):
 def register_vehicle(request):
     if request.method == 'POST':
         try:
+            # Log registration attempt for debugging
+            print(f"Vehicle registration attempt by user: {request.user.username} ({request.user.id})")
+            
             # Validate required fields first 
             required_fields = ['or_number', 'cr_number', 'plate_number', 'vehicle_type', 
                               'make', 'model', 'year_model', 'color', 'classification',
@@ -536,6 +539,7 @@ def register_vehicle(request):
             for field in required_fields:
                 if not request.POST.get(field):
                     field_name = field.replace('_', ' ').title()
+                    print(f"Missing required field: {field_name}")
                     raise KeyError(f"The {field_name} is required")
             
             # Validate date formats
@@ -545,12 +549,14 @@ def register_vehicle(request):
                 
                 # Validate expiry date is after registration date
                 if expiry_date <= registration_date:
+                    print(f"Date validation error: Expiry date ({expiry_date}) is not after registration date ({registration_date})")
                     raise ValueError("The expiry date must be after the registration date")
                 
                 # Validate year model is a valid year
                 year_model = int(request.POST['year_model'])
                 current_year = datetime.now().year
                 if year_model < 1900 or year_model > current_year + 1:
+                    print(f"Year model validation error: {year_model} is not between 1900 and {current_year + 1}")
                     raise ValueError(f"The year model must be between 1900 and {current_year + 1}")
                 
                 # Validate capacity if provided
@@ -558,6 +564,7 @@ def register_vehicle(request):
                 if request.POST.get('capacity'):
                     capacity = int(request.POST.get('capacity'))
                     if capacity <= 0:
+                        print(f"Capacity validation error: {capacity} is less than or equal to 0")
                         raise ValueError("Capacity must be at least 1")
                 
             except ValueError as e:
@@ -568,7 +575,42 @@ def register_vehicle(request):
                 elif "Capacity must be" in str(e):
                     raise ValueError(str(e))
                 else:
+                    print(f"Date format error: {str(e)}")
                     raise ValueError("Please check the date format. It should be YYYY-MM-DD.")
+            
+            # Check for file upload
+            if 'or_cr_image' not in request.FILES:
+                print("Missing OR/CR image file")
+                raise KeyError("OR/CR Image file is missing")
+                
+            # Validate file
+            file = request.FILES['or_cr_image']
+            # Validate file size (5MB max)
+            if file.size > 5 * 1024 * 1024:
+                print(f"File size too large: {file.size / (1024 * 1024):.2f}MB exceeds 5MB limit")
+                raise ValueError(f"The image file is too large ({file.size / (1024 * 1024):.2f}MB). Maximum size is 5MB.")
+            
+            # Validate file type
+            valid_types = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf']
+            if file.content_type not in valid_types:
+                print(f"Invalid file type: {file.content_type}")
+                raise ValueError(f"Please upload a valid file type (JPG, PNG, or PDF). You uploaded: {file.content_type}")
+            
+            # Check for duplicate records before creating
+            plate_check = VehicleRegistration.objects.filter(plate_number=request.POST['plate_number']).exists()
+            if plate_check:
+                print(f"Duplicate plate number: {request.POST['plate_number']}")
+                raise IntegrityError("Plate number already exists", None, None)
+                
+            or_check = VehicleRegistration.objects.filter(or_number=request.POST['or_number']).exists()
+            if or_check:
+                print(f"Duplicate OR number: {request.POST['or_number']}")
+                raise IntegrityError("OR number already exists", None, None)
+                
+            cr_check = VehicleRegistration.objects.filter(cr_number=request.POST['cr_number']).exists()
+            if cr_check:
+                print(f"Duplicate CR number: {request.POST['cr_number']}")
+                raise IntegrityError("CR number already exists", None, None)
             
             # Create new vehicle registration
             vehicle = VehicleRegistration(
@@ -593,23 +635,12 @@ def register_vehicle(request):
             except:
                 pass  # Field might not exist yet
             
-            # Handle OR/CR image upload
-            if request.FILES.get('or_cr_image'):
-                file = request.FILES['or_cr_image']
-                # Validate file size (5MB max)
-                if file.size > 5 * 1024 * 1024:
-                    raise ValueError("The image file is too large. Maximum size is 5MB.")
-                
-                # Validate file type
-                valid_types = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf']
-                if file.content_type not in valid_types:
-                    raise ValueError("Please upload a valid file type (JPG, PNG, or PDF).")
-                
-                vehicle.or_cr_image = file
-            else:
-                raise KeyError("OR/CR Image")
+            # Set the OR/CR image
+            vehicle.or_cr_image = file
             
             vehicle.save()
+            print(f"Vehicle registered successfully: {vehicle.plate_number} (ID: {vehicle.id})")
+            
             # Use URL parameter for success message instead of Django messages
             return redirect(f"{reverse('user_portal:vehicle_list')}?register=success")
             
@@ -633,12 +664,12 @@ def register_vehicle(request):
         except IntegrityError as e:
             # More specific duplicate entry messages
             error_str = str(e).lower()
-            if 'unique constraint' in error_str or 'duplicate key' in error_str:
-                if 'plate_number' in error_str:
+            if 'unique constraint' in error_str or 'duplicate key' in error_str or 'plate number already exists' in error_str:
+                if 'plate_number' in error_str or 'plate number already exists' in error_str:
                     error_message = "This plate number is already registered in our system. If this is your vehicle, it may have been registered previously."
-                elif 'or_number' in error_str:
+                elif 'or_number' in error_str or 'or number already exists' in error_str:
                     error_message = "This OR number is already registered in our system. Please check if you entered the correct number from your OR/CR."
-                elif 'cr_number' in error_str:
+                elif 'cr_number' in error_str or 'cr number already exists' in error_str:
                     error_message = "This CR number is already registered in our system. Please check if you entered the correct number from your OR/CR."
                 else:
                     error_message = "This vehicle information is already in our system. Please check your OR/CR details."
@@ -657,7 +688,7 @@ def register_vehicle(request):
             else:
                 # Log the actual error for debugging but show a friendly message to the user
                 print(f"Vehicle registration error: {type(e).__name__}: {str(e)}")
-                error_message = "Something went wrong with your vehicle registration. Please check your information and try again."
+                error_message = f"Something went wrong with your vehicle registration: {str(e)}"
             
         # Render the form again with the error message and previous data
         return render(request, 'user_portal/register_vehicle.html', {

@@ -3031,12 +3031,14 @@
                     <div class="sidebar-section">
                         <div class="sidebar-section-title">Main</div>
                         <div class="list-group list-group-flush">
-                            {% if user.userprofile.role != 'EDUCATOR' %}
+                            {% if user.userprofile.role != 'EDUCATOR' and user.userprofile.role != 'ENFORCER' %}
                             <a href="{% url 'admin_dashboard' %}" class="list-group-item {% if request.path == '/' %}active{% endif %}">
                                 <span class="material-icons">dashboard</span>Dashboard
                             </a>
+                            {% endif %}
                             
                             <!-- Violations Submenu -->
+                            {% if user.userprofile.role != 'EDUCATOR' %}
                             <div class="submenu">
                                 <button class="list-group-item submenu-toggle {% if 'violations' in request.path or 'ncap' in request.path or 'adjudication' in request.path %}active{% endif %}" data-bs-toggle="collapse" data-bs-target="#violationsSubmenu">
                                     <span class="material-icons">gavel</span>
@@ -3050,12 +3052,14 @@
                                     <a href="{% url 'ncap_violations_list' %}" class="list-group-item submenu-item {% if 'ncap-violations' in request.path %}active{% endif %}">
                                         <span class="material-icons">photo_camera</span>NCAP Violations
                                     </a>
+                                    {% if user.userprofile.role != 'ENFORCER' and user.userprofile.role != 'SUPERVISOR' and user.userprofile.role != 'TREASURER' %}
                                     <a href="{% url 'adjudication_dashboard' %}" class="list-group-item submenu-item {% if 'adjudication/dashboard' in request.path %}active{% endif %}">
                                         <span class="material-icons">dashboard</span>Adjudication Dashboard
                                     </a>
                                     <a href="{% url 'adjudication_list' %}" class="list-group-item submenu-item {% if 'adjudication' in request.path and not 'dashboard' in request.path %}active{% endif %}">
                                         <span class="material-icons">balance</span>Adjudication
                                     </a>
+                                    {% endif %}
                                 </div>
                             </div>
                             {% endif %}
@@ -3095,7 +3099,7 @@
                     <div class="sidebar-section">
                         <div class="sidebar-section-title">Actions</div>
                         <div class="list-group list-group-flush">
-                            {% if user.userprofile.role != 'EDUCATOR' %}
+                            {% if user.userprofile.role != 'EDUCATOR' and user.userprofile.role != 'TREASURER' %}
                             <div class="submenu">
                                 <button class="list-group-item submenu-toggle {% if 'issue-ticket' in request.path or 'upload-violation' in request.path %}active{% endif %}" data-bs-toggle="collapse" data-bs-target="#ticketingSubmenu">
                                     <span class="material-icons">receipt</span>
@@ -3125,7 +3129,7 @@
                             <a href="{% url 'announcements_list' %}" class="list-group-item {% if 'announcements' in request.path %}active{% endif %}">
                                 <span class="material-icons">campaign</span>Announcements
                             </a>
-                            {% if user.userprofile.role != 'EDUCATOR' %}
+                            {% if user.userprofile.role != 'EDUCATOR' and user.userprofile.role != 'TREASURER' %}
                             <a href="{% url 'qr_scanner' %}" class="list-group-item {% if 'qr-scanner' in request.path %}active{% endif %}">
                                 <span class="material-icons">qr_code_scanner</span>QR Scanner
                             </a>

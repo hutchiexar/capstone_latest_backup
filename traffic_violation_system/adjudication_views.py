@@ -15,6 +15,9 @@ logger = logging.getLogger(__name__)
 
 def is_adjudicator(user):
     """Check if the user is an adjudicator or admin"""
+    # Prevent enforcers from accessing adjudication
+    if hasattr(user, 'userprofile') and user.userprofile.role == 'ENFORCER':
+        return False
     return user.is_staff or user.groups.filter(name='Adjudicator').exists() or user.is_superuser
 
 
