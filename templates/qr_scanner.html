@@ -1305,7 +1305,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
-            // CASE 6: Try to extract an ID from any URL or string
+            // CASE 6: Direct driver ID detection - check for PD format patterns
+            const pd_format_pattern = /^(?:PD[-_]?)?(\d+)$/i;  // Match PD-123, PD123, PD_123, or just 123
+            const pd_match = decodedText.trim().match(pd_format_pattern);
+            if (pd_match) {
+                console.log("Direct driver ID (PD format) detected");
+                window.location.href = `${window.location.origin}/driver/${decodedText.trim()}/verify/`;
+                return;
+            }
+            
+            // CASE 7: Try to extract an ID from any URL or string
             const extractedId = decodedText.trim().replace(/^.*[\/=:]([A-Za-z0-9_-]{6,32})[\/?]?.*$/, '$1');
             if (extractedId !== decodedText.trim() && (enforcer_id_pattern.test(extractedId) || 
                 extractedId.match(/^\d+-[A-Za-z]+$/))) {

@@ -49,6 +49,16 @@
                         <div class="col-md-8">{{ driver.first_name }} {% if driver.middle_initial %}{{ driver.middle_initial }}.{% endif %} {{ driver.last_name }}</div>
                     </div>
                     <div class="row mb-3">
+                        <div class="col-md-4 text-muted">License Number:</div>
+                        <div class="col-md-8">
+                            {% if driver.license_number %}
+                            <span class="badge bg-primary px-3 py-2" style="font-size: 1rem; letter-spacing: 1px;">{{ driver.license_number }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary px-3 py-2">Not provided</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
                         <div class="col-md-4 text-muted">Last Name:</div>
                         <div class="col-md-8">{{ driver.last_name }}</div>
                     </div>
@@ -78,12 +88,6 @@
                         <div class="col-md-4 text-muted">New PD Number:</div>
                         <div class="col-md-8">{{ driver.new_pd_number }}</div>
                     </div>
-                    {% if driver.license_number %}
-                    <div class="row mb-3">
-                        <div class="col-md-4 text-muted">License Number:</div>
-                        <div class="col-md-8">{{ driver.license_number }}</div>
-                    </div>
-                    {% endif %}
                     {% if driver.contact_number %}
                     <div class="row mb-3">
                         <div class="col-md-4 text-muted">Contact Number:</div>
@@ -199,6 +203,13 @@
                                                     {% endif %}
                                                 </div>
                                                 <div class="id-preview-label">POTPOT DRIVER NUMBER</div>
+
+                                                {% if driver.license_number %}
+                                                <div class="mt-2" style="border-top: 1px solid #ccc; padding-top: 10px;">
+                                                    <div class="id-preview-label">DRIVER'S LICENSE</div>
+                                                    <div style="color: #e74c3c; font-weight: bold; font-size: 16px;">{{ driver.license_number }}</div>
+                                                </div>
+                                                {% endif %}
                                             </div>
                                         </div>
                                         
@@ -212,6 +223,13 @@
                                                 <div class="id-preview-info-label">ADDRESS</div>
                                                 <div class="id-preview-address">{{ driver.address|upper }}</div>
                                             </div>
+                                            
+                                            {% if driver.license_number %}
+                                            <div class="id-preview-info-section">
+                                                <div class="id-preview-info-label">LICENSE NUMBER</div>
+                                                <div class="id-preview-address" style="color: var(--primary-color); font-weight: bold;">{{ driver.license_number }}</div>
+                                            </div>
+                                            {% endif %}
                                         </div>
                                         
                                         <!-- Validity Section -->
@@ -271,6 +289,20 @@
                                                             {{ driver.new_pd_number|slice:"-3:" }}
                                                         {% else %}
                                                             {{ driver.new_pd_number }}
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="personal-details-row">
+                                                    <div class="personal-details-label">
+                                                        <span class="info-icon"><i class="material-icons">credit_card</i></span>
+                                                        License No:
+                                                    </div>
+                                                    <div class="personal-details-value">
+                                                        {% if driver.license_number %}
+                                                            {{ driver.license_number }}
+                                                        {% else %}
+                                                            N/A
                                                         {% endif %}
                                                     </div>
                                                 </div>
@@ -505,6 +537,13 @@
                             {% endif %}
                         </div>
                         <div class="print-label">POTPOT DRIVER NUMBER</div>
+                        
+                        {% if driver.license_number %}
+                        <div style="margin-top: 10px; border-top: 1px solid #ccc; padding-top: 10px;">
+                            <div class="print-label">DRIVER'S LICENSE</div>
+                            <div style="color: #e74c3c; font-weight: bold; font-size: 16px;">{{ driver.license_number }}</div>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
                 
@@ -518,6 +557,13 @@
                         <div class="print-info-label">ADDRESS</div>
                         <div class="print-address">{{ driver.address|upper }}</div>
                     </div>
+                    
+                    {% if driver.license_number %}
+                    <div class="print-info-section">
+                        <div class="print-info-label">LICENSE NUMBER</div>
+                        <div class="print-address" style="color: var(--primary-color); font-weight: bold;">{{ driver.license_number }}</div>
+                    </div>
+                    {% endif %}
                 </div>
                 
                 <div class="print-validity">
@@ -571,6 +617,17 @@
                                     {{ driver.new_pd_number|slice:"-3:" }}
                                 {% else %}
                                     {{ driver.new_pd_number }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="print-personal-row">
+                            <div class="print-personal-label">License No:</div>
+                            <div class="print-personal-value">
+                                {% if driver.license_number %}
+                                    {{ driver.license_number }}
+                                {% else %}
+                                    N/A
                                 {% endif %}
                             </div>
                         </div>

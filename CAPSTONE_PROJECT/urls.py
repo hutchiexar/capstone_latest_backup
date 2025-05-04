@@ -15,6 +15,7 @@ urlpatterns = [
         next_page='login',
         extra_context={'no_cache': True}
     ), name='logout'),
+    path('reports/', include('reports.urls')),
     path('', include('traffic_violation_system.urls')),
 ]
 

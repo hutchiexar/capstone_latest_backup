@@ -42,99 +42,159 @@
                 {% csrf_token %}
                 
                 <!-- Personal Information Section -->
-                <div class="row g-3">
-                    <div class="col-12 col-md-4">
-                        <label for="{{ form.last_name.id_for_label }}" class="form-label">Last Name <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                            <span class="input-group-text"><span class="material-icons fs-5">person</span></span>
-                            {{ form.last_name }}
+                <div class="card border mt-3 p-3">
+                    <div class="card-header bg-transparent px-0 pt-0 pb-3 border-bottom">
+                        <div class="d-flex align-items-center">
+                            <span class="material-icons me-2" style="color: var(--primary-color);">person</span>
+                            <h6 class="mb-0 fw-bold">Personal Information</h6>
                         </div>
-                        {% if form.last_name.errors %}
-                        <div class="text-danger mt-1 small">
-                            {% for error in form.last_name.errors %}
-                            {{ error }}
-                            {% endfor %}
-                        </div>
-                        {% endif %}
                     </div>
-                    
-                    <div class="col-12 col-md-4">
-                        <label for="{{ form.first_name.id_for_label }}" class="form-label">First Name <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                            <span class="input-group-text"><span class="material-icons fs-5">badge</span></span>
-                            {{ form.first_name }}
+                    <div class="card-body px-0 pt-3 pb-0">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-4">
+                                <label for="{{ form.last_name.id_for_label }}" class="form-label">Last Name <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><span class="material-icons fs-5">person</span></span>
+                                    {{ form.last_name }}
+                                </div>
+                                {% if form.last_name.errors %}
+                                <div class="text-danger mt-1 small">
+                                    {% for error in form.last_name.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-12 col-md-4">
+                                <label for="{{ form.first_name.id_for_label }}" class="form-label">First Name <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><span class="material-icons fs-5">badge</span></span>
+                                    {{ form.first_name }}
+                                </div>
+                                {% if form.first_name.errors %}
+                                <div class="text-danger mt-1 small">
+                                    {% for error in form.first_name.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-12 col-md-4">
+                                <label for="{{ form.middle_initial.id_for_label }}" class="form-label">Middle Initial</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><span class="material-icons fs-5">short_text</span></span>
+                                    {{ form.middle_initial }}
+                                </div>
+                                {% if form.middle_initial.errors %}
+                                <div class="text-danger mt-1 small">
+                                    {% for error in form.middle_initial.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-12 col-md-6">
+                                <label for="{{ form.birthdate.id_for_label }}" class="form-label">Birthdate <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><span class="material-icons fs-5">cake</span></span>
+                                    {{ form.birthdate }}
+                                </div>
+                                {% if form.birthdate.errors %}
+                                <div class="text-danger mt-1 small">
+                                    {% for error in form.birthdate.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-12 col-md-6">
+                                <label for="{{ form.contact_number.id_for_label }}" class="form-label">Contact Number <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><span class="material-icons fs-5">phone</span></span>
+                                    {{ form.contact_number }}
+                                </div>
+                                {% if form.contact_number.errors %}
+                                <div class="text-danger mt-1 small">
+                                    {% for error in form.contact_number.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-12">
+                                <label for="{{ form.address.id_for_label }}" class="form-label">Address <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><span class="material-icons fs-5">home</span></span>
+                                    {{ form.address }}
+                                </div>
+                                {% if form.address.errors %}
+                                <div class="text-danger mt-1 small">
+                                    {% for error in form.address.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
                         </div>
-                        {% if form.first_name.errors %}
-                        <div class="text-danger mt-1 small">
-                            {% for error in form.first_name.errors %}
-                            {{ error }}
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="col-12 col-md-4">
-                        <label for="{{ form.middle_initial.id_for_label }}" class="form-label">Middle Initial</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><span class="material-icons fs-5">short_text</span></span>
-                            {{ form.middle_initial }}
-                        </div>
-                        {% if form.middle_initial.errors %}
-                        <div class="text-danger mt-1 small">
-                            {% for error in form.middle_initial.errors %}
-                            {{ error }}
-                            {% endfor %}
-                        </div>
-                        {% endif %}
                     </div>
                 </div>
                 
-                <!-- Address -->
-                <div class="mt-3">
-                    <label for="{{ form.address.id_for_label }}" class="form-label">Address <span class="text-danger">*</span></label>
-                    <div class="input-group">
-                        <span class="input-group-text"><span class="material-icons fs-5">home</span></span>
-                        {{ form.address }}
+                <!-- Identification Section -->
+                <div class="card border mt-3 p-3">
+                    <div class="card-header bg-transparent px-0 pt-0 pb-3 border-bottom">
+                        <div class="d-flex align-items-center">
+                            <span class="material-icons me-2" style="color: var(--primary-color);">badge</span>
+                            <h6 class="mb-0 fw-bold">Identification</h6>
+                        </div>
                     </div>
-                    {% if form.address.errors %}
-                    <div class="text-danger mt-1 small">
-                        {% for error in form.address.errors %}
-                        {{ error }}
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-                
-                <!-- Contact Information Section -->
-                <div class="row g-3 mt-3">
-                    <div class="col-12 col-md-6">
-                        <label for="{{ form.birthdate.id_for_label }}" class="form-label">Birthdate <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                            <span class="input-group-text"><span class="material-icons fs-5">cake</span></span>
-                            {{ form.birthdate }}
+                    <div class="card-body px-0 pt-3 pb-0">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label for="{{ form.license_number.id_for_label }}" class="form-label">License Number</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><span class="material-icons fs-5">credit_card</span></span>
+                                    {{ form.license_number }}
+                                </div>
+                                {% if form.license_number.errors %}
+                                <div class="text-danger mt-1 small">
+                                    {% for error in form.license_number.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                <div class="form-text">Driver's license number (formats: A00-00-000000 or A00-000-000000)</div>
+                            </div>
+                            
+                            <div class="col-12 col-md-6">
+                                <label for="{{ form.old_pd_number.id_for_label }}" class="form-label">Old PD Number</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><span class="material-icons fs-5">history</span></span>
+                                    {{ form.old_pd_number }}
+                                </div>
+                                {% if form.old_pd_number.errors %}
+                                <div class="text-danger mt-1 small">
+                                    {% for error in form.old_pd_number.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                <div class="form-text">Previous PD number if available (should start with D prefix)</div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <label for="{{ form.new_pd_number.id_for_label }}" class="form-label">New PD Number</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><span class="material-icons fs-5">numbers</span></span>
+                                    {{ form.new_pd_number }}
+                                </div>
+                                <div class="form-text">This field will be automatically generated (format: XXX)</div>
+                            </div>
                         </div>
-                        {% if form.birthdate.errors %}
-                        <div class="text-danger mt-1 small">
-                            {% for error in form.birthdate.errors %}
-                            {{ error }}
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="col-12 col-md-6">
-                        <label for="{{ form.contact_number.id_for_label }}" class="form-label">Contact Number <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                            <span class="input-group-text"><span class="material-icons fs-5">phone</span></span>
-                            {{ form.contact_number }}
-                        </div>
-                        {% if form.contact_number.errors %}
-                        <div class="text-danger mt-1 small">
-                            {% for error in form.contact_number.errors %}
-                            {{ error }}
-                            {% endfor %}
-                        </div>
-                        {% endif %}
                     </div>
                 </div>
                 
@@ -196,82 +256,61 @@
                     </div>
                 </div>
                 
-                <!-- ID Information Section -->
-                <div class="row g-3 mt-3">
-                    <div class="col-12 col-md-6">
-                        <label for="{{ form.old_pd_number.id_for_label }}" class="form-label">Old PD Number</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><span class="material-icons fs-5">history</span></span>
-                            {{ form.old_pd_number }}
-                        </div>
-                        {% if form.old_pd_number.errors %}
-                        <div class="text-danger mt-1 small">
-                            {% for error in form.old_pd_number.errors %}
-                            {{ error }}
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-                        <div class="form-text">Previous PD number if available (should start with D prefix)</div>
-                    </div>
-                    
-                    <div class="col-12 col-md-6">
-                        <label for="{{ form.new_pd_number.id_for_label }}" class="form-label">New PD Number</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><span class="material-icons fs-5">numbers</span></span>
-                            {{ form.new_pd_number }}
-                        </div>
-                        <div class="form-text">This field will be automatically generated (format: XXX)</div>
-                    </div>
-                </div>
-                
-                <!-- PD Number Auto-generation Note -->
-                <div class="alert alert-info mt-3">
-                    <div class="d-flex">
-                        <span class="material-icons me-2">info</span>
-                        <div>
-                            <strong>Automatic Number Generation</strong>
-                            <p class="mb-0 small">The following information will be automatically generated for this driver:</p>
-                            <ul class="mb-0 mt-1 small">
-                                <li><strong>PD Number:</strong> A unique identifier in XXX format</li>
-                                <li><strong>Validity Period:</strong> 1 year from the creation date</li>
-                            </ul>
+                <!-- System Information Section -->
+                <div class="card border mt-3 p-3">
+                    <div class="card-header bg-transparent px-0 pt-0 pb-3 border-bottom">
+                        <div class="d-flex align-items-center">
+                            <span class="material-icons me-2" style="color: var(--primary-color);">settings</span>
+                            <h6 class="mb-0 fw-bold">System Information</h6>
                         </div>
                     </div>
-                </div>
-                
-                <!-- Validity Section -->
-                <div class="row g-3 mt-3">
-                    <div class="col-12">
-                        <label class="form-label">Validity Period</label>
-                        <div class="alert alert-light border p-3">
-                            <div class="d-flex align-items-center">
-                                <span class="material-icons me-2 text-primary">event</span>
+                    <div class="card-body px-0 pt-3 pb-0">
+                        <!-- PD Number Auto-generation Note -->
+                        <div class="alert alert-info mb-3">
+                            <div class="d-flex">
+                                <span class="material-icons me-2">info</span>
                                 <div>
-                                    <p class="mb-0"><strong>1 Year Validity</strong></p>
-                                    <p class="mb-0 small text-muted">This driver's record will be valid for 1 year from the creation date. The system will automatically calculate the expiration date.</p>
+                                    <strong>Automatic Number Generation</strong>
+                                    <p class="mb-0 small">The following information will be automatically generated for this driver:</p>
+                                    <ul class="mb-0 mt-1 small">
+                                        <li><strong>PD Number:</strong> A unique identifier in XXX format</li>
+                                        <li><strong>Validity Period:</strong> 1 year from the creation date</li>
+                                    </ul>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-                
-                <!-- Active Status checkbox -->
-                <div class="row g-3 mt-3">
-                    <div class="col-12">
-                        <div class="card border p-3">
-                            <div class="d-flex align-items-start">
-                                <span class="material-icons me-2 text-success">toggle_on</span>
-                                <div>
-                                    <h6 class="mb-2">Driver Status</h6>
-                                    <div class="form-check form-switch">
-                                        {{ form.active }}
-                                        <label class="form-check-label" for="{{ form.active.id_for_label }}">
-                                            <strong>Active</strong>
-                                        </label>
+                        
+                        <!-- Validity Section -->
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">Validity Period</label>
+                                <div class="alert alert-light border p-3">
+                                    <div class="d-flex align-items-center">
+                                        <span class="material-icons me-2 text-primary">event</span>
+                                        <div>
+                                            <p class="mb-0"><strong>1 Year Validity</strong></p>
+                                            <p class="mb-0 small text-muted">This driver's record will be valid for 1 year from the creation date. The system will automatically calculate the expiration date.</p>
+                                        </div>
                                     </div>
-                                    <div class="form-text mt-1">
-                                        <strong>Important:</strong> Inactive drivers will not appear in search results and cannot be assigned to vehicles. 
-                                        Only mark a driver as inactive if they are no longer employed.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Active Status checkbox -->
+                        <div class="row g-3 mt-3">
+                            <div class="col-12">
+                                <div class="card border p-3">
+                                    <div class="d-flex align-items-start">
+                                        <span class="material-icons me-2 text-success">toggle_on</span>
+                                        <div>
+                                            <h6 class="mb-2">Driver Status</h6>
+                                            <div class="form-check form-switch">
+                                                {{ form.active }}
+                                                <label class="form-check-label" for="{{ form.active.id_for_label }}">
+                                                    <strong>Active</strong>
+                                                </label>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -396,6 +435,24 @@
         // Auto-focus first field
         $('.form-control:first').focus();
         
+        // License number validation
+        $('#{{ form.license_number.id_for_label }}').on('input', function() {
+            const licenseNumber = $(this).val();
+            const licensePattern = /^[A-Z][0-9]{2}-([0-9]{2}|[0-9]{3})-[0-9]{6}$/;
+            
+            if (licenseNumber && !licensePattern.test(licenseNumber)) {
+                // Invalid format
+                $(this).addClass('is-invalid');
+                if (!$(this).next('.invalid-feedback').length) {
+                    $(this).after('<div class="invalid-feedback">License number format should be: A00-00-000000 or A00-000-000000</div>');
+                }
+            } else {
+                // Valid format or empty
+                $(this).removeClass('is-invalid');
+                $(this).next('.invalid-feedback').remove();
+            }
+        });
+        
         // Submit form on Enter key in the last field
         $('.form-control:last').keypress(function(e) {
             if (e.which == 13) { // Enter key
@@ -413,6 +470,23 @@
                 if (!form.checkValidity()) {
                     event.preventDefault();
                     event.stopPropagation();
+                }
+                
+                // Additional validation for license number
+                const licenseInput = document.getElementById('{{ form.license_number.id_for_label }}');
+                if (licenseInput && licenseInput.value) {
+                    const licensePattern = /^[A-Z][0-9]{2}-([0-9]{2}|[0-9]{3})-[0-9]{6}$/;
+                    if (!licensePattern.test(licenseInput.value)) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        licenseInput.classList.add('is-invalid');
+                        if (!licenseInput.nextElementSibling || !licenseInput.nextElementSibling.classList.contains('invalid-feedback')) {
+                            const feedback = document.createElement('div');
+                            feedback.classList.add('invalid-feedback');
+                            feedback.textContent = 'License number format should be: A00-00-000000 or A00-000-000000';
+                            licenseInput.parentNode.appendChild(feedback);
+                        }
+                    }
                 }
                 
                 form.classList.add('was-validated');

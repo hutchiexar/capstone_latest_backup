@@ -5,8 +5,11 @@ from django.db.models.functions import Concat
 from django.views.decorators.http import require_GET, require_POST
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
-from traffic_violation_system.models import UserProfile, Violator, Violation
+from traffic_violation_system.models import UserProfile, Violator, Violation, Driver
 import logging
+from django.shortcuts import get_object_or_404
+from django.http import Http404
+from django.core.paginator import Paginator
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -329,4 +332,329 @@ def get_violation_images(request, violation_id):
         return JsonResponse({'error': 'Violation not found'}, status=404)
     except Exception as e:
         logger.error(f"Error retrieving violation images: {str(e)}")
-        return JsonResponse({'error': 'An error occurred while retrieving images'}, status=500) 
+        return JsonResponse({'error': 'An error occurred while retrieving images'}, status=500)
+
+@require_GET
+@login_required
+def search_driver_by_pd(request, pd_number):
+    """
+    API endpoint to search for driver by PD number and return their violation history.
+    This function is only accessible to operators.
+    
+    URL parameters:
+    - pd_number: The PD number of the driver to search for
+    
+    Returns:
+    - JSON response with driver information and violations categorized as regular and NCAP
+    """
+    try:
+        # Check if the user has a userprofile
+        if not hasattr(request.user, 'userprofile'):
+            return JsonResponse({
+                'error': 'User profile not found',
+                'message': 'Your user account is missing a profile'
+            }, status=400)
+            
+        # Check if the is_operator attribute exists and if the user is an operator
+        if not getattr(request.user.userprofile, 'is_operator', False):
+            return JsonResponse({
+                'error': 'Permission denied',
+                'message': 'Only operators can search for driver violations'
+            }, status=403)
+        
+        logger.debug(f"Searching for driver with PD number: {pd_number}")
+        
+        # Get driver by PD number
+        try:
+            # Try both new_pd_number and old_pd_number fields
+            driver = None
+            
+            # First, try to find exact matches
+            try:
+                driver = Driver.objects.filter(
+                    Q(new_pd_number__iexact=pd_number) | Q(old_pd_number__iexact=pd_number)
+                ).first()
+            except Exception as e:
+                logger.error(f"Error during exact PD number query: {str(e)}")
+            
+            # If exact match fails, try contains search
+            if not driver:
+                try:
+                    driver = Driver.objects.filter(
+                        Q(new_pd_number__icontains=pd_number) | Q(old_pd_number__icontains=pd_number)
+                    ).first()
+                except Exception as e:
+                    logger.error(f"Error during contains PD number query: {str(e)}")
+            
+            if not driver:
+                return JsonResponse({
+                    'error': 'Driver not found',
+                    'message': f'No driver found with PD number: {pd_number}'
+                }, status=404)
+                
+            logger.debug(f"Found driver: {driver.first_name} {driver.last_name} (ID: {driver.id})")
+            
+        except Exception as e:
+            logger.error(f"Error finding driver by PD number: {str(e)}", exc_info=True)
+            return JsonResponse({
+                'error': 'Error finding driver',
+                'message': str(e)
+            }, status=500)
+        
+        # Get all violations for this driver
+        regular_violations = []
+        ncap_violations = []
+        all_found_violations = []
+        search_debug_info = {}
+        
+        try:
+            # Check if the driver has a valid name
+            driver_id = driver.id
+            driver_first_name = getattr(driver, 'first_name', '')
+            driver_last_name = getattr(driver, 'last_name', '')
+            driver_new_pd = getattr(driver, 'new_pd_number', '') or ''
+            driver_old_pd = getattr(driver, 'old_pd_number', '') or ''
+            driver_license = getattr(driver, 'license_number', '') or ''
+            
+            search_debug_info = {
+                'driver_id': driver_id,
+                'driver_name': f"{driver_first_name} {driver_last_name}",
+                'pd_numbers': [driver_new_pd, driver_old_pd],
+                'license_number': driver_license,
+                'search_strategies_used': []
+            }
+            
+            logger.debug(f"Searching violations for driver ID: {driver_id}, PD numbers: {driver_new_pd}, {driver_old_pd}")
+            
+            # Try multiple search strategies
+            
+            # Strategy 1: Search by violator's PD number (direct field)
+            try:
+                if hasattr(Violator, 'pd_number'):
+                    pd_violations = []
+                    # Try new PD number
+                    if driver_new_pd:
+                        new_pd_violations = list(Violation.objects.filter(
+                            violator__pd_number__iexact=driver_new_pd
+                        ).order_by('-violation_date').select_related('violator'))
+                        pd_violations.extend(new_pd_violations)
+                        search_debug_info['search_strategies_used'].append(f"violator__pd_number={driver_new_pd} (found {len(new_pd_violations)})")
+                    
+                    # Try old PD number
+                    if driver_old_pd:
+                        old_pd_violations = list(Violation.objects.filter(
+                            violator__pd_number__iexact=driver_old_pd
+                        ).order_by('-violation_date').select_related('violator'))
+                        pd_violations.extend(old_pd_violations)
+                        search_debug_info['search_strategies_used'].append(f"violator__pd_number={driver_old_pd} (found {len(old_pd_violations)})")
+                        
+                    if pd_violations:
+                        logger.debug(f"Found {len(pd_violations)} violations by PD number")
+                        all_found_violations.extend(pd_violations)
+            except Exception as e:
+                logger.error(f"Error in strategy 1 (PD number search): {str(e)}")
+                search_debug_info['search_strategies_used'].append(f"violator__pd_number ERROR: {str(e)}")
+            
+            # Strategy 2: Search by license number
+            try:
+                if driver_license and hasattr(Violator, 'license_number'):
+                    license_violations = list(Violation.objects.filter(
+                        violator__license_number__iexact=driver_license
+                    ).order_by('-violation_date').select_related('violator'))
+                    
+                    if license_violations:
+                        logger.debug(f"Found {len(license_violations)} violations by license number")
+                        all_found_violations.extend(license_violations)
+                        search_debug_info['search_strategies_used'].append(f"violator__license_number={driver_license} (found {len(license_violations)})")
+            except Exception as e:
+                logger.error(f"Error in strategy 2 (license number search): {str(e)}")
+                search_debug_info['search_strategies_used'].append(f"violator__license_number ERROR: {str(e)}")
+            
+            # Strategy 3: Search by name (if both first and last name are present)
+            try:
+                if driver_first_name and driver_last_name:
+                    name_violations = list(Violation.objects.filter(
+                        violator__first_name__iexact=driver_first_name,
+                        violator__last_name__iexact=driver_last_name
+                    ).order_by('-violation_date').select_related('violator'))
+                    
+                    if name_violations:
+                        logger.debug(f"Found {len(name_violations)} violations by name")
+                        all_found_violations.extend(name_violations)
+                        search_debug_info['search_strategies_used'].append(f"violator name={driver_first_name} {driver_last_name} (found {len(name_violations)})")
+            except Exception as e:
+                logger.error(f"Error in strategy 3 (name search): {str(e)}")
+                search_debug_info['search_strategies_used'].append(f"violator name ERROR: {str(e)}")
+            
+            # Strategy 4: If driver has a direct relation to violations
+            try:
+                if hasattr(Driver, 'violations'):
+                    driver_direct_violations = list(driver.violations.all().order_by('-violation_date'))
+                    if driver_direct_violations:
+                        logger.debug(f"Found {len(driver_direct_violations)} violations by direct relation")
+                        all_found_violations.extend(driver_direct_violations)
+                        search_debug_info['search_strategies_used'].append(f"driver.violations (found {len(driver_direct_violations)})")
+            except Exception as e:
+                logger.error(f"Error in strategy 4 (direct relation): {str(e)}")
+                search_debug_info['search_strategies_used'].append(f"driver.violations ERROR: {str(e)}")
+            
+            # Strategy 5: Try reverse relation from Violator to Driver
+            try:
+                if hasattr(Violator, 'driver'):
+                    driver_violator_violations = list(Violation.objects.filter(
+                        violator__driver=driver
+                    ).order_by('-violation_date').select_related('violator'))
+                    
+                    if driver_violator_violations:
+                        logger.debug(f"Found {len(driver_violator_violations)} violations by driver-violator relation")
+                        all_found_violations.extend(driver_violator_violations)
+                        search_debug_info['search_strategies_used'].append(f"violator__driver={driver_id} (found {len(driver_violator_violations)})")
+            except Exception as e:
+                logger.error(f"Error in strategy 5 (violator-driver relation): {str(e)}")
+                search_debug_info['search_strategies_used'].append(f"violator__driver ERROR: {str(e)}")
+            
+            # Strategy 6: Try searching by driver directly (if Violation has driver field)
+            try:
+                if hasattr(Violation, 'driver'):
+                    direct_driver_violations = list(Violation.objects.filter(
+                        driver=driver
+                    ).order_by('-violation_date'))
+                    
+                    if direct_driver_violations:
+                        logger.debug(f"Found {len(direct_driver_violations)} violations by direct driver field")
+                        all_found_violations.extend(direct_driver_violations)
+                        search_debug_info['search_strategies_used'].append(f"violation.driver={driver_id} (found {len(direct_driver_violations)})")
+            except Exception as e:
+                logger.error(f"Error in strategy 6 (direct driver field): {str(e)}")
+                search_debug_info['search_strategies_used'].append(f"violation.driver ERROR: {str(e)}")
+            
+            # Debug count of total violations found
+            search_debug_info['total_found'] = len(all_found_violations)
+            
+            # Remove duplicates by creating a dict with violation ID as key
+            unique_violations = {}
+            for violation in all_found_violations:
+                if violation.id not in unique_violations:
+                    unique_violations[violation.id] = violation
+                    
+            all_violations = list(unique_violations.values())
+            logger.debug(f"Total unique violations found: {len(all_violations)}")
+            search_debug_info['unique_violations'] = len(all_violations)
+            
+            # Process violations 
+            for violation in all_violations:
+                try:
+                    # Get violation type using multiple possible field names
+                    violation_type = None
+                    for field_name in ['violation_type', 'violations', 'violation']:
+                        if hasattr(violation, field_name):
+                            field_value = getattr(violation, field_name)
+                            if field_value:
+                                violation_type = field_value
+                                break
+                    
+                    # If we still don't have a violation type, try getting it from related models
+                    if not violation_type and hasattr(violation, 'violation_types'):
+                        related_types = violation.violation_types.all()
+                        if related_types:
+                            violation_type = ", ".join([vt.name for vt in related_types])
+                    
+                    # Fallback
+                    if not violation_type:
+                        violation_type = "Unknown Violation"
+                    
+                    # Build violation data
+                    violation_data = {
+                        'id': violation.id,
+                        'violation_date': violation.violation_date,
+                        'violation_type': violation_type,
+                        'location': getattr(violation, 'location', 'Unknown'),
+                        'status': getattr(violation, 'status', 'Unknown'),
+                        'fine_amount': getattr(violation, 'fine_amount', 0),
+                        'plate_number': getattr(violation, 'plate_number', ''),
+                        'potpot_number': getattr(violation, 'potpot_number', ''),
+                    }
+                    
+                    # Check different ways to identify NCAP violations
+                    is_ncap = False
+                    
+                    # Check direct field
+                    if hasattr(violation, 'is_ncap'):
+                        is_ncap = getattr(violation, 'is_ncap', False)
+                    
+                    # Check violation type for camera-related keywords
+                    if not is_ncap and violation_type:
+                        # Keywords that indicate camera-captured violations
+                        camera_keywords = ['camera', 'ncap', 'photo', 'video', 'cctv']
+                        
+                        # Common camera-captured violations
+                        common_ncap_violations = [
+                            'helmet', 'no helmet', 
+                            'red light', 'traffic light', 
+                            'stop sign', 'stop light',
+                            'speeding', 'speed limit',
+                            'seatbelt', 'no seatbelt',
+                            'lane violation'
+                        ]
+                        
+                        # Check for camera keywords
+                        if any(keyword.lower() in violation_type.lower() for keyword in camera_keywords):
+                            is_ncap = True
+                        
+                        # Check for common NCAP violation types
+                        if any(violation_phrase.lower() in violation_type.lower() for violation_phrase in common_ncap_violations):
+                            is_ncap = True
+                            logger.debug(f"Identified as NCAP violation based on common violation type: {violation_type}")
+                    
+                    # Check violation category if it exists
+                    if not is_ncap and hasattr(violation, 'category'):
+                        category = getattr(violation, 'category', '').lower()
+                        if 'camera' in category or 'ncap' in category:
+                            is_ncap = True
+                    
+                    if is_ncap:
+                        ncap_violations.append(violation_data)
+                    else:
+                        regular_violations.append(violation_data)
+                except Exception as e:
+                    logger.error(f"Error processing violation ID {violation.id}: {str(e)}")
+            
+        except Exception as e:
+            logger.error(f"Error getting violations: {str(e)}", exc_info=True)
+            search_debug_info['error'] = str(e)
+        
+        # Prepare driver information with safer attribute access
+        try:
+            driver_data = {
+                'id': driver.id,
+                'first_name': getattr(driver, 'first_name', ''),
+                'last_name': getattr(driver, 'last_name', ''),
+                'middle_initial': getattr(driver, 'middle_initial', ''),
+                'license_number': getattr(driver, 'license_number', ''),
+                'pd_number': driver_new_pd or driver_old_pd or '',
+                'address': getattr(driver, 'address', ''),
+                'contact_number': getattr(driver, 'contact_number', ''),
+            }
+        except Exception as e:
+            logger.error(f"Error preparing driver data: {str(e)}", exc_info=True)
+            driver_data = {
+                'id': driver.id,
+                'first_name': 'Error retrieving data',
+                'last_name': '',
+            }
+        
+        # Return the response
+        logger.debug(f"Returning response with {len(regular_violations)} regular violations and {len(ncap_violations)} NCAP violations")
+        return JsonResponse({
+            'driver': driver_data,
+            'regular_violations': regular_violations,
+            'ncap_violations': ncap_violations,
+            'debug_info': search_debug_info
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in search_driver_by_pd: {str(e)}", exc_info=True)
+        return JsonResponse({
+            'error': 'An error occurred during the search',
+            'message': str(e)
+        }, status=500) 

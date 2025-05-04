@@ -277,38 +277,54 @@ def qr_profile_view(request, enforcer_id):
             if profile.license_number:
                 violations = Violation.objects.filter(
                     Q(violator__license_number=profile.license_number) | Q(user_account=user)
-                ).order_by('-violation_date')[:5]  # Limit to 5 most recent
+                ).order_by('-violation_date')
             else:
                 # Filter only by user account if no license number available
-                violations = Violation.objects.filter(user_account=user).order_by('-violation_date')[:5]
-                
+                violations = Violation.objects.filter(user_account=user).order_by('-violation_date')
+            
             logger.info(f"Retrieved violations using direct filter: found {violations.count() if violations else 0}")
         except Exception as import_error:
             logger.error(f"Error on direct filter method: {str(import_error)}")
             # Fallback to try the custom manager if available
             try:
                 # Try using the custom manager as fallback
-                violations = Violation.user_violations.get_user_violations(user).order_by('-violation_date')[:5]
+                violations = Violation.user_violations.get_user_violations(user).order_by('-violation_date')
                 logger.info(f"Retrieved violations using UserViolationManager: found {violations.count() if violations else 0}")
             except Exception as manager_error:
                 logger.error(f"Error using UserViolationManager: {str(manager_error)}")
                 violations = []
         
         if violations and violations.exists():
+            # Filter to only include pending and adjudicated violations
+            filtered_violations = [
+                violation for violation in violations 
+                if getattr(violation, 'status', '').lower() in ['pending', 'adjudicated']
+            ]
+            
+            logger.info(f"Filtered to {len(filtered_violations)} pending/adjudicated violations")
+            
+            # Convert violations to a list of dictionaries for the template
             violations_data = []
-            for violation in violations:
-                violations_data.append({
+            
+            for violation in filtered_violations:
+                # Convert to dictionary for template
+                violation_data = {
                     'id': violation.id,
-                    'date': violation.violation_date.strftime('%Y-%m-%d %H:%M'),
+                    'violation_date': violation.violation_date,
                     'location': violation.location,
                     'violation_type': violation.violation_type,
                     'fine_amount': float(violation.fine_amount),
+                    'amount': float(violation.fine_amount), # For template compatibility
                     'status': violation.status,
                     'plate_number': violation.plate_number or 'N/A',
-                    'vehicle_type': violation.vehicle_type or 'N/A'
-                })
+                    'vehicle_type': violation.vehicle_type or 'N/A',
+                }
+                violations_data.append(violation_data)
+            
+            # Add violations to the data dictionary for the template
             data['violations'] = violations_data
-            logger.info(f"Found {len(violations_data)} violations for {user.get_full_name()}")
+            
+            logger.info(f"Processed {len(violations_data)} violations for display")
         else:
             data['violations'] = []
             logger.info(f"No violations found for {user.get_full_name()}")
@@ -640,10 +656,10 @@ def qr_user_data(request, enforcer_id):
                 if profile.license_number:
                     violations = Violation.objects.filter(
                         Q(violator__license_number=profile.license_number) | Q(user_account=user)
-                    ).order_by('-violation_date')[:5]  # Limit to 5 most recent
+                    ).order_by('-violation_date')
                 else:
                     # Filter only by user account if no license number available
-                    violations = Violation.objects.filter(user_account=user).order_by('-violation_date')[:5]
+                    violations = Violation.objects.filter(user_account=user).order_by('-violation_date')
                 
                 logger.info(f"Retrieved violations using direct filter: found {violations.count() if violations else 0}")
             except Exception as import_error:
@@ -651,31 +667,43 @@ def qr_user_data(request, enforcer_id):
                 # Fallback to try the custom manager if available
                 try:
                     # Try using the custom manager as fallback
-                    violations = Violation.user_violations.get_user_violations(user).order_by('-violation_date')[:5]
+                    violations = Violation.user_violations.get_user_violations(user).order_by('-violation_date')
                     logger.info(f"Retrieved violations using UserViolationManager: found {violations.count() if violations else 0}")
                 except Exception as manager_error:
                     logger.error(f"Error using UserViolationManager: {str(manager_error)}")
                     violations = []
             
             if violations and violations.exists():
+                # Filter to only include pending and adjudicated violations
+                filtered_violations = [
+                    violation for violation in violations 
+                    if getattr(violation, 'status', '').lower() in ['pending', 'adjudicated']
+                ]
+                
+                logger.info(f"Filtered to {len(filtered_violations)} pending/adjudicated violations")
+                
+                # Convert violations to a list of dictionaries for the template
                 violations_data = []
-                for violation in violations:
-                    # Check if this is an NCAP violation
-                    is_ncap = hasattr(violation, 'ncap_violation') and violation.ncap_violation is not None
-                    
-                    violations_data.append({
+                
+                for violation in filtered_violations:
+                    # Convert to dictionary for template
+                    violation_data = {
                         'id': violation.id,
-                        'date': violation.violation_date.strftime('%Y-%m-%d %H:%M'),
+                        'violation_date': violation.violation_date,
                         'location': violation.location,
                         'violation_type': violation.violation_type,
                         'fine_amount': float(violation.fine_amount),
+                        'amount': float(violation.fine_amount), # For template compatibility
                         'status': violation.status,
                         'plate_number': violation.plate_number or 'N/A',
                         'vehicle_type': violation.vehicle_type or 'N/A',
-                        'is_ncap': is_ncap  # Add the is_ncap flag
-                    })
+                    }
+                    violations_data.append(violation_data)
+                
+                # Add violations to the data dictionary for the template
                 data['violations'] = violations_data
-                logger.info(f"Found {len(violations_data)} violations for {user.get_full_name()}")
+                
+                logger.info(f"Processed {len(violations_data)} violations for display")
             else:
                 data['violations'] = []
                 logger.info(f"No violations found for {user.get_full_name()}")

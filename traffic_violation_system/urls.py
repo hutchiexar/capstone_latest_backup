@@ -27,6 +27,10 @@ from .views_email_verification import (
     verification_failed,
     verification_expired
 )
+from . import adjudication_analytics
+from . import api_views
+from . import updated_dashboard
+from educational_analytics import educational_analytics, educational_analytics_by_range  # Import educational analytics functions
 
 urlpatterns = [
     # Landing Pages
@@ -133,7 +137,7 @@ urlpatterns = [
     ), name='password_reset_complete'),
 
     # Dashboard URL
-    path('dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    path('admin-dashboard/', updated_dashboard.admin_dashboard, name='admin_dashboard'),
     
     # Add this line in the urlpatterns list
     path('user/', include('traffic_violation_system.user_portal.urls', namespace='user_portal')),
@@ -251,6 +255,7 @@ urlpatterns = [
 
     # Driver verification - public endpoint for QR scan verification
     path('driver/<str:driver_id>/verify/', views_driver_verify.driver_verify, name='driver_verify'),
+    path('drivers/search/', views_driver_verify.search_drivers, name='search_drivers'),
     
     # Ticket preparation from QR scans
     path('driver/<str:driver_id>/ticket/', prepare_driver_ticket, name='prepare_driver_ticket'),
@@ -268,4 +273,11 @@ urlpatterns = [
     path('verification/failed/', verification_failed, name='verification_failed'),
     path('verification/expired/', verification_expired, name='verification_expired'),
     path('verification/resend/', resend_verification, name='resend_verification'),
+
+    # New adjudication analytics API endpoint
+    path('api/adjudication-statistics/<str:timeframe>/', api_views.adjudication_statistics_api, name='adjudication_statistics_api'),
+    
+    # Educational analytics API endpoints
+    path('api/educational-analytics/', educational_analytics, name='educational_analytics'),
+    path('api/educational-analytics/<str:time_range>/', educational_analytics_by_range, name='educational_analytics_by_range'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

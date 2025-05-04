@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Schedule Report: {{ report.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'reports:dashboard' %}">Reports Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Schedule Report</li>
+                </ol>
+            </nav>
+            
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="card-title mb-0">
+                        <i class="material-icons align-middle me-2">schedule</i>
+                        Schedule: {{ report.name }}
+                    </h4>
+                    <a href="{% url 'reports:dashboard' %}" class="btn btn-light btn-sm">
+                        <i class="material-icons align-middle">arrow_back</i>
+                        Back to Reports
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="material-icons align-middle me-2">info</i>
+                        Set up automatic generation of <strong>{{ report.name }}</strong>. The report will be generated according to your schedule and delivered to the specified email addresses.
+                    </div>
+                    
+                    <form method="post" action="{% url 'reports:schedule' report_id=report.id %}">
+                        {% csrf_token %}
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <h5 class="card-title mb-0">
+                                            <i class="material-icons align-middle me-2">access_time</i>
+                                            Schedule Frequency
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="radio" name="frequency" id="frequencyDaily" value="daily" {% if frequency == 'daily' %}checked{% endif %}>
+                                            <label class="form-check-label" for="frequencyDaily">
+                                                <i class="material-icons align-middle me-2">today</i>
+                                                Daily
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="radio" name="frequency" id="frequencyWeekly" value="weekly" {% if frequency == 'weekly' %}checked{% endif %}>
+                                            <label class="form-check-label" for="frequencyWeekly">
+                                                <i class="material-icons align-middle me-2">view_week</i>
+                                                Weekly
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="radio" name="frequency" id="frequencyMonthly" value="monthly" {% if frequency == 'monthly' %}checked{% endif %}>
+                                            <label class="form-check-label" for="frequencyMonthly">
+                                                <i class="material-icons align-middle me-2">calendar_today</i>
+                                                Monthly
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <h5 class="card-title mb-0">
+                                            <i class="material-icons align-middle me-2">email</i>
+                                            Email Recipients
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label for="email_recipients" class="form-label">Email Addresses (comma-separated)</label>
+                                            <textarea class="form-control" id="email_recipients" name="email_recipients" rows="3" placeholder="email1@example.com, email2@example.com">{{ email_recipients }}</textarea>
+                                            <div class="form-text">Leave empty to only save the report without sending emails.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <h5 class="card-title mb-0">
+                                            <i class="material-icons align-middle me-2">date_range</i>
+                                            Report Date Range
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="start_date" class="form-label">Start Date</label>
+                                                <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date }}" required>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="end_date" class="form-label">End Date</label>
+                                                <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date }}" required>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="alert alert-warning">
+                                            <i class="material-icons align-middle me-2">info</i>
+                                            <strong>Note:</strong> For recurring reports, the date range will be automatically adjusted relative to the generation date. For example, if you select "Last 30 days", each report will cover the 30 days prior to when it's generated.
+                                        </div>
+                                        
+                                        <div class="date-shortcuts mt-2">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary me-2" onclick="setDateRange(7)">Last 7 Days</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary me-2" onclick="setDateRange(30)">Last 30 Days</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary me-2" onclick="setDateRange(90)">Last 90 Days</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="setCurrentMonth()">This Month</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'reports:dashboard' %}" class="btn btn-outline-secondary me-md-2">
+                                <i class="material-icons align-middle">cancel</i>
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="material-icons align-middle me-2">schedule</i>
+                                Schedule Report
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function setDateRange(days) {
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - days);
+        
+        document.getElementById('start_date').value = formatDate(startDate);
+        document.getElementById('end_date').value = formatDate(endDate);
+    }
+    
+    function setCurrentMonth() {
+        const today = new Date();
+        const startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        
+        document.getElementById('start_date').value = formatDate(startDate);
+        document.getElementById('end_date').value = formatDate(today);
+    }
+    
+    function formatDate(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+</script>
+{% endblock %} 

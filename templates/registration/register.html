@@ -176,10 +176,10 @@
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text"><i class="material-icons small">credit_card</i></span>
                                         <input type="text" class="form-control" id="license_number" name="license_number" 
-                                                pattern="[A-Z0-9-]+" value="{{ form_data.license_number|default:'' }}">
-                                        <div class="invalid-feedback">Enter valid license number (if provided)</div>
+                                               placeholder="N01-23-456789" value="{{ form_data.license_number|default:'' }}">
+                                        <div class="invalid-feedback">Enter valid license number</div>
                                     </div>
-                                    <small class="text-muted mt-1 d-block" style="font-size: 0.7rem;">Optional field</small>
+                                    <small class="text-muted mt-1 d-block" style="font-size: 0.7rem;">Optional field - Format: N01-23-456789</small>
                                 </div>
                             </div>
                         </div>
@@ -651,13 +651,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Check license number format
         const licenseNumber = document.getElementById('license_number');
-        if (licenseNumber.value !== '') {
-            if (!/^[A-Z0-9-]+$/.test(licenseNumber.value)) {
-                licenseNumber.setCustomValidity('License number should contain only uppercase letters, numbers, and hyphens');
+        if (licenseNumber && licenseNumber.value !== '') {
+            // Simple regex test - license should have uppercase letters, numbers, and hyphens
+            if (!/^[A-Z0-9\-]+$/.test(licenseNumber.value)) {
+                licenseNumber.setCustomValidity('License number format is invalid');
                 event.preventDefault();
                 event.stopPropagation();
-                form.classList.add('was-validated');
-                return;
             } else {
                 licenseNumber.setCustomValidity('');
             }

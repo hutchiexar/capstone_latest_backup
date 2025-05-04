@@ -1,4 +1,5 @@
 from django.urls import path
+from django.views.generic.base import RedirectView
 from . import views
 
 app_name = 'educational'
@@ -6,6 +7,7 @@ app_name = 'educational'
 urlpatterns = [
     # User portal views
     path('', views.landing_page, name='landing_page'),
+    path('home/', RedirectView.as_view(pattern_name='educational:landing_page'), name='home'),
     path('topics/', views.topic_list, name='topic_list'),
     path('topics/<int:topic_id>/', views.topic_detail, name='topic_detail'),
     path('toggle-bookmark/<int:topic_id>/', views.toggle_bookmark, name='toggle_bookmark'),

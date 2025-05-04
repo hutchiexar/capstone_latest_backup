@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "traffic_violation_system",
     "traffic_violation_system.educational.apps.EducationalConfig",
+    "reports",
     "sslserver",
     "django_extensions",
     "rest_framework",

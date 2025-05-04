@@ -101,9 +101,9 @@
                     </div>
                     
                     <!-- Assigned Vehicles -->
-                    {% if vehicles %}
-                    <div>
+                    <div class="mb-4">
                         <h6 class="fw-bold mb-3 border-bottom pb-2">Assigned Vehicles</h6>
+                        {% if vehicles %}
                         <div class="row row-cols-1 row-cols-md-2 g-3">
                             {% for vehicle in vehicles %}
                             <div class="col">
@@ -119,19 +119,24 @@
                                             <div>{{ vehicle.year|default:"N/A" }}</div>
                                             <small class="text-muted mt-2">Operator:</small>
                                             <div>{{ vehicle.operator|default:"N/A" }}</div>
+                                            {% if vehicle.color %}
+                                            <small class="text-muted mt-2">Color:</small>
+                                            <div>{{ vehicle.color }}</div>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             {% endfor %}
                         </div>
+                        {% else %}
+                        <div class="text-center py-4 bg-light rounded">
+                            <span class="material-icons text-muted" style="font-size: 48px;">directions_car_off</span>
+                            <h6 class="mt-3 mb-0">No Vehicles Assigned</h6>
+                            <p class="text-muted mb-0">This driver currently has no vehicles assigned to them.</p>
                     </div>
-                    {% else %}
-                    <div class="alert alert-info">
-                        <span class="material-icons me-2">info</span>
-                        <span>No vehicles currently assigned to this driver.</span>
+                        {% endif %}
                     </div>
-                    {% endif %}
                 </div>
                 <div class="card-footer bg-transparent py-3">
                     <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
@@ -155,46 +160,61 @@
             <div class="card shadow-sm border-0 rounded-3 mb-4">
                 <div class="card-header bg-transparent d-flex align-items-center py-3">
                     <span class="material-icons me-2" style="color: var(--primary-color)">gavel</span>
-                    <h5 class="mb-0">Violation History</h5>
+                    <h5 class="mb-0">Pending Violations</h5>
                 </div>
                 <div class="card-body p-4">
                     {% if violations %}
-                    <div class="row">
-                        {% for violation in violations %}
-                        <div class="col-md-6 mb-3">
-                            <div class="card h-100 shadow-sm">
-                                <div class="card-header bg-light py-2 px-3">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span class="badge {% if violation.status == 'PAID' or violation.status == 'SETTLED' %}bg-success{% elif violation.status == 'PENDING' %}bg-warning{% elif violation.status == 'CONTESTED' %}bg-info{% elif violation.status == 'EXPIRED' %}bg-danger{% else %}bg-secondary{% endif %} text-white">
-                                            {{ violation.get_status_display }}
-                                        </span>
-                                        <small class="text-muted">{{ violation.violation_date|date:"M d, Y" }}</small>
-                                    </div>
-                                </div>
-                                <div class="card-body py-2 px-3">
-                                    <h6 class="card-title mb-2">{{ violation.violation_type }}</h6>
-                                    <div class="small text-muted mb-2">
-                                        <span class="material-icons" style="font-size: 16px; vertical-align: text-bottom;">location_on</span>
-                                        {{ violation.location }}
-                                    </div>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <strong class="d-block">Fine Amount:</strong>
-                                            <span class="text-danger fw-bold">₱{{ violation.fine_amount }}</span>
+                    <!-- Violations Section -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3 border-bottom pb-2">
+                            <span class="material-icons me-2 align-middle" style="font-size: 20px; color: var(--warning-color);">warning</span>
+                            Violations
+                            <span class="badge bg-primary rounded-pill ms-2">{{ violations|length }}</span>
+                        </h6>
+                        {% if violations %}
+                        <div class="row" id="violationsContainer">
+                            {% for violation in violations %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100 shadow-sm">
+                                    <div class="card-header {% if 'helmet' in violation.violation_type|lower or 'camera' in violation.violation_type|lower or 'ncap' in violation.violation_type|lower or 'speed' in violation.violation_type|lower %}bg-primary{% else %}bg-info{% endif %} text-white py-2 px-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="badge bg-light {% if 'helmet' in violation.violation_type|lower or 'camera' in violation.violation_type|lower or 'ncap' in violation.violation_type|lower or 'speed' in violation.violation_type|lower %}text-primary{% else %}text-info{% endif %}">
+                                                {{ violation.get_status_display }}
+                                            </span>
+                                            <small>{{ violation.violation_date|date:"M d, Y" }}</small>
                                         </div>
-                                        {% if violation.vehicle_type or violation.plate_number %}
-                                        <div class="text-end">
-                                            <small class="text-muted d-block">Vehicle: {{ violation.vehicle_type }}</small>
-                                            {% if violation.plate_number %}
-                                            <small class="text-muted">Plate: {{ violation.plate_number }}</small>
+                                    </div>
+                                    <div class="card-body py-2 px-3">
+                                        <h6 class="card-title mb-2">{{ violation.violation_type }}</h6>
+                                        <div class="small text-muted mb-2">
+                                            <span class="material-icons" style="font-size: 16px; vertical-align: text-bottom;">location_on</span>
+                                            {{ violation.location }}
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong class="d-block">Fine Amount:</strong>
+                                                <span class="text-danger fw-bold">₱{{ violation.fine_amount }}</span>
+                                            </div>
+                                            {% if violation.vehicle_type or violation.plate_number %}
+                                            <div class="text-end">
+                                                <small class="text-muted d-block">Vehicle: {{ violation.vehicle_type }}</small>
+                                                {% if violation.plate_number %}
+                                                <small class="text-muted">Plate: {{ violation.plate_number }}</small>
+                                                {% endif %}
+                                            </div>
                                             {% endif %}
                                         </div>
-                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
+                            {% endfor %}
                         </div>
-                        {% endfor %}
+                        {% else %}
+                        <div class="text-center py-3">
+                            <span class="material-icons" style="font-size: 48px; color: #e0e0e0;">fact_check</span>
+                            <p class="mb-0 mt-2">No pending violations found</p>
+                        </div>
+                        {% endif %}
                     </div>
                     {% else %}
                     <div class="text-center py-5">
@@ -206,24 +226,99 @@
                 </div>
             </div>
             {% else %}
-            <!-- Invalid Driver ID -->
-            <div class="card shadow-sm border-0 rounded-3">
-                <div class="card-header bg-transparent d-flex align-items-center py-3">
-                    <span class="material-icons me-2 text-danger">error</span>
-                    <h5 class="mb-0">Invalid Driver ID</h5>
+            <!-- Error state - driver not found -->
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="card shadow mb-4 border-danger">
+                        <div class="card-header bg-danger text-white d-flex align-items-center">
+                            <span class="material-icons me-2">error</span>
+                            <h4 class="mb-0">Driver Not Found</h4>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="text-center mb-4">
+                                <span class="material-icons text-danger" style="font-size: 64px;">person_search</span>
+                                <h5 class="mt-3">The driver ID "{{ driver_id }}" could not be verified</h5>
+                                <p class="text-muted">{{ error }}</p>
+                            </div>
+                            
+                            <!-- Search by name or license form -->
+                            <div class="card border-0 bg-light rounded-3 mb-4">
+                                <div class="card-body p-4">
+                                    <h5 class="mb-3">Try searching for the driver:</h5>
+                                    <form action="{% url 'search_drivers' %}" method="GET">
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <div class="form-floating mb-3">
+                                                    <input type="text" class="form-control" id="driver_name" name="driver_name" placeholder="John Doe">
+                                                    <label for="driver_name">Driver Name</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-floating mb-3">
+                                                    <input type="text" class="form-control" id="license_number" name="license_number" placeholder="License Number">
+                                                    <label for="license_number">License Number</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="d-grid">
+                                            <button type="submit" class="btn btn-primary">
+                                                <span class="material-icons me-2">search</span>
+                                                Search for Driver
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            
+                            {% if similar_drivers %}
+                            <!-- Similar drivers suggestions -->
+                            <div class="card border-0 bg-light rounded-3 mb-4">
+                                <div class="card-body p-4">
+                                    <h5 class="mb-3">Similar drivers you might be looking for:</h5>
+                                    <div class="list-group">
+                                        {% for driver in similar_drivers %}
+                                        <a href="{% url 'driver_verify' driver_id=driver.new_pd_number|default:driver.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <div class="fw-bold">{{ driver.first_name }} {{ driver.last_name }}</div>
+                                                <div class="small">
+                                                    {% if driver.license_number %}License: {{ driver.license_number }}{% endif %}
+                                                    {% if driver.old_pd_number %}<span class="text-muted ms-2">Legacy ID: {{ driver.old_pd_number }}</span>{% endif %}
+                                                </div>
+                                            </div>
+                                            <span class="material-icons">chevron_right</span>
+                                        </a>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Action buttons -->
+                            <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+                                <a href="{% url 'qr_scanner' %}" class="btn btn-outline-primary">
+                                    <span class="material-icons me-2">qr_code_scanner</span>
+                                    Scan Another QR Code
+                                </a>
+                                <a href="{% url 'driver_list' %}" class="btn btn-secondary">
+                                    <span class="material-icons me-2">list</span>
+                                    Browse Driver List
+                                </a>
+                            </div>
+                        </div>
+                        
+                        {% if legacy_format %}
+                        <div class="card-footer bg-light">
+                            <div class="alert alert-info mb-0">
+                                <div class="d-flex align-items-center">
+                                    <span class="material-icons me-2">info</span>
+                                    <div>
+                                        <strong>Legacy ID Format Detected</strong>
+                                        <p class="mb-0 small">The system attempted to convert the legacy format "{{ driver_id }}" but no matching driver was found. This may happen with very old IDs or if there was a migration issue.</p>
+                                    </div>
+                                </div>
+                            </div>
                 </div>
-                <div class="card-body p-4 text-center">
-                    <div class="mb-4">
-                        <span class="material-icons text-danger" style="font-size: 3rem;">person_off</span>
-                        <h4 class="mt-3">Driver Verification Failed</h4>
-                        <p class="text-muted">The driver ID "{{ driver_id }}" could not be verified in our system.</p>
-                        {% if error %}
-                        <p class="text-danger">{{ error }}</p>
                         {% endif %}
-                    </div>
-                    <div class="alert alert-warning">
-                        <span class="material-icons me-2">warning</span>
-                        <span>This may indicate an invalid or expired driver ID. Please contact the City Transportation and Traffic Management Office for assistance.</span>
                     </div>
                 </div>
             </div>
@@ -239,4 +334,122 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // If we have violations data, process and categorize them
+        if (typeof window.violationsData !== 'undefined') {
+            return; // Skip if already processed
+        }
+        
+        // Get the violations data
+        const violations = [];
+        
+        // Extract violations from the DOM elements
+        document.querySelectorAll('#violationsContainer .card').forEach(card => {
+            // Skip if this is not a violation card
+            if (!card.querySelector('.card-title')) {
+                return;
+            }
+            
+            const violationType = card.querySelector('.card-title').textContent.trim();
+            const status = card.querySelector('.badge').textContent.trim().toLowerCase();
+            
+            // Only include violations with pending or adjudicated status
+            if (status !== 'pending' && status !== 'adjudicated') {
+                return; // Skip this violation if not pending or adjudicated
+            }
+            
+            const dateElement = card.querySelector('.card-header .d-flex small');
+            const date = dateElement ? dateElement.textContent.trim() : '';
+            const locationText = card.querySelector('.small.text-muted')?.textContent || '';
+            const location = locationText.replace(/location_on/, '').trim();
+            const fineAmount = card.querySelector('.text-danger')?.textContent.trim() || '';
+            
+            // Get vehicle info if available
+            let vehicleType = '';
+            let plateNumber = '';
+            const vehicleInfo = card.querySelector('.text-end');
+            if (vehicleInfo) {
+                const vehicleTypeElement = vehicleInfo.querySelector('small:first-child');
+                if (vehicleTypeElement) {
+                    vehicleType = vehicleTypeElement.textContent.replace('Vehicle:', '').trim();
+                }
+                const plateElement = vehicleInfo.querySelector('small:nth-child(2)');
+                if (plateElement) {
+                    plateNumber = plateElement.textContent.replace('Plate:', '').trim();
+                }
+            }
+            
+            // Add to violations array
+            violations.push({
+                violation_type: violationType,
+                status: status,
+                date: date,
+                location: location,
+                fine_amount: fineAmount,
+                vehicle_type: vehicleType,
+                plate_number: plateNumber
+            });
+        });
+        
+        // Store the processed data
+        window.violationsData = {
+            violations: violations
+        };
+        
+        // Update the UI count if needed
+        const countBadge = document.querySelector('.fw-bold:contains("Violations") .badge');
+        if (countBadge) {
+            countBadge.textContent = violations.length;
+        }
+    });
+    
+    function createViolationCard(violation) {
+        const card = document.createElement('div');
+        card.className = 'col-md-6 mb-3';
+        
+        // Check if this is an NCAP-like violation based on keywords
+        const isNCAP = ['helmet', 'camera', 'ncap', 'speed', 'red light', 'traffic signal', 'stoplight']
+            .some(keyword => violation.violation_type.toLowerCase().includes(keyword));
+        
+        card.innerHTML = `
+            <div class="card h-100 shadow-sm">
+                <div class="card-header py-2 px-3 ${isNCAP ? 'bg-primary' : 'bg-info'} text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-light ${isNCAP ? 'text-primary' : 'text-info'}">
+                            ${violation.status}
+                        </span>
+                        <small>${violation.date}</small>
+                    </div>
+                </div>
+                <div class="card-body py-2 px-3">
+                    <h6 class="card-title mb-2">${violation.violation_type}</h6>
+                    <div class="small text-muted mb-2">
+                        <span class="material-icons" style="font-size: 16px; vertical-align: text-bottom;">location_on</span>
+                        ${violation.location}
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong class="d-block">Fine Amount:</strong>
+                            <span class="text-danger fw-bold">${violation.fine_amount}</span>
+                        </div>
+                        ${violation.vehicle_type || violation.plate_number ? `
+                        <div class="text-end">
+                            <small class="text-muted d-block">Vehicle: ${violation.vehicle_type || 'N/A'}</small>
+                            ${violation.plate_number ? `
+                            <small class="text-muted">Plate: ${violation.plate_number}</small>
+                            ` : ''}
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        return card;
+    }
+</script>
 {% endblock %} 

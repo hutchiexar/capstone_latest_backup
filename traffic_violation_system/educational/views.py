@@ -1731,7 +1731,6 @@ def take_quiz(request, attempt_id):
     return render(request, 'user_portal/educational/quiz/take_quiz.html', context)
 
 @login_required
-@educator_required
 @require_POST
 def complete_quiz(request, attempt_id):
     """View for users to complete a quiz attempt."""

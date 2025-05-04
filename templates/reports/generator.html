@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Generate Report: {{ report.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'reports:dashboard' %}">Reports Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Generate Report</li>
+                </ol>
+            </nav>
+            
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="card-title mb-0">
+                        <i class="material-icons align-middle me-2">description</i>
+                        Generate: {{ report.name }}
+                    </h4>
+                    <a href="{% url 'reports:dashboard' %}" class="btn btn-light btn-sm">
+                        <i class="material-icons align-middle">arrow_back</i>
+                        Back to Reports
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="material-icons align-middle me-2">info</i>
+                        {{ report.description }}
+                    </div>
+                    
+                    <form method="post" action="{% url 'reports:generator' report_id=report.id %}" target="_blank">
+                        {% csrf_token %}
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <h5 class="card-title mb-0">
+                                            <i class="material-icons align-middle me-2">date_range</i>
+                                            Date Range
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="start_date" class="form-label">Start Date</label>
+                                                <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date }}" required>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="end_date" class="form-label">End Date</label>
+                                                <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date }}" required>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="date-shortcuts mt-2">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary me-2" onclick="setDateRange(7)">Last 7 Days</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary me-2" onclick="setDateRange(30)">Last 30 Days</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary me-2" onclick="setDateRange(90)">Last 90 Days</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="setCurrentMonth()">This Month</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <h5 class="card-title mb-0">
+                                            <i class="material-icons align-middle me-2">file_download</i>
+                                            Export Options
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="radio" name="format" id="formatPdf" value="pdf" checked>
+                                            <label class="form-check-label" for="formatPdf">
+                                                <i class="material-icons align-middle me-2 text-danger">picture_as_pdf</i>
+                                                PDF Document
+                                            </label>
+                                            {% if not pdf_available %}
+                                                <div class="text-danger small mt-1">
+                                                    <i class="material-icons align-middle" style="font-size: 14px;">warning</i>
+                                                    PDF generation requires additional libraries. Please contact your administrator.
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="mt-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="include_charts" id="includeCharts" value="1" checked>
+                                                <label class="form-check-label" for="includeCharts">
+                                                    Include charts and visualizations
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Filter Options -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <h5 class="card-title mb-0">
+                                            <i class="material-icons align-middle me-2">filter_list</i>
+                                            Filter Options
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        {% if report.type == 'violation' %}
+                                            <!-- Violation Report Filters -->
+                                            <div class="row">
+                                                <div class="col-md-4 mb-3">
+                                                    <label for="violation_type" class="form-label">Violation Type</label>
+                                                    <select class="form-select" id="violation_type" name="violation_type">
+                                                        <option value="">All Violation Types</option>
+                                                        {% for value, name in filter_choices.violation_types %}
+                                                            <option value="{{ value }}">{{ name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-4 mb-3">
+                                                    <label for="status" class="form-label">Status</label>
+                                                    <select class="form-select" id="status" name="status">
+                                                        <option value="">All Statuses</option>
+                                                        {% for value, name in filter_choices.statuses %}
+                                                            <option value="{{ value }}">{{ name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-4 mb-3">
+                                                    <label for="location" class="form-label">Location</label>
+                                                    <input type="text" class="form-control" id="location" name="location" placeholder="Filter by location">
+                                                </div>
+                                            </div>
+                                        {% elif report.type == 'revenue' %}
+                                            <!-- Revenue Report Filters -->
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="payment_method" class="form-label">Payment Method</label>
+                                                    <select class="form-select" id="payment_method" name="payment_method">
+                                                        <option value="">All Payment Methods</option>
+                                                        {% for value, name in filter_choices.payment_methods %}
+                                                            <option value="{{ value }}">{{ name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        {% elif report.type == 'activity' %}
+                                            <!-- Activity Report Filters -->
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="user_id" class="form-label">User</label>
+                                                    <select class="form-select" id="user_id" name="user_id">
+                                                        <option value="">All Users</option>
+                                                        {% for id, username in filter_choices.users %}
+                                                            <option value="{{ id }}">{{ username }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                {% if filter_choices.categories %}
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="category" class="form-label">Activity Category</label>
+                                                    <select class="form-select" id="category" name="category">
+                                                        <option value="">All Categories</option>
+                                                        {% for value, name in filter_choices.categories %}
+                                                            <option value="{{ value }}">{{ name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        {% elif report.type == 'education' %}
+                                            <!-- Education Report Filters -->
+                                            <div class="row">
+                                                {% if filter_choices.categories %}
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="category_id" class="form-label">Course Category</label>
+                                                    <select class="form-select" id="category_id" name="category_id">
+                                                        <option value="">All Categories</option>
+                                                        {% for id, name in filter_choices.categories %}
+                                                            <option value="{{ id }}">{{ name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        {% else %}
+                                            <div class="alert alert-info">
+                                                No additional filters available for this report type.
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'reports:dashboard' %}" class="btn btn-outline-secondary me-md-2">
+                                <i class="material-icons align-middle">cancel</i>
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary" {% if not pdf_available %}disabled{% endif %}>
+                                <i class="material-icons align-middle me-2">file_download</i>
+                                Generate Report
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function setDateRange(days) {
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - days);
+        
+        document.getElementById('start_date').value = formatDate(startDate);
+        document.getElementById('end_date').value = formatDate(endDate);
+    }
+    
+    function setCurrentMonth() {
+        const today = new Date();
+        const startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        
+        document.getElementById('start_date').value = formatDate(startDate);
+        document.getElementById('end_date').value = formatDate(today);
+    }
+    
+    function formatDate(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+</script>
+{% endblock %} 

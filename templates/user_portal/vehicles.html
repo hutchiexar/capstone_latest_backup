@@ -40,8 +40,8 @@
     .modal__container {
         background-color: #fff;
         padding: 0;
-        width: 95%;
-        max-width: 900px;
+        width: 98% !important;
+        max-width: 1000px !important;
         max-height: 90vh;
         border-radius: 0.75rem;
         overflow-y: auto;
@@ -79,7 +79,7 @@
     .modal__content {
         margin-top: 0;
         margin-bottom: 0;
-        padding: 1.5rem;
+        padding: 1.75rem 2rem;
         color: rgba(0, 0, 0, 0.8);
         line-height: 1.5;
     }
@@ -775,7 +775,7 @@
 <!-- Vehicle Details Modal -->
 <div class="modal micromodal-slide" id="vehicle-detail-modal" aria-hidden="true">
     <div class="modal__overlay" tabindex="-1" data-micromodal-close>
-        <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="vehicle-detail-modal-title">
+        <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="vehicle-detail-modal-title" style="width: 95% !important; max-width: 1000px !important;">
             <header class="modal__header">
                 <h2 class="modal__title d-flex align-items-center" id="vehicle-detail-modal-title">
                     <span class="material-icons me-2" style="color: var(--primary-color)">directions_car</span>
@@ -793,13 +793,13 @@
                 <div class="vehicle-detail-content" id="vehicle-detail-content" style="display: none;">
                     <div class="row g-4">
                         <div class="col-md-6">
-                            <div class="mb-3">
+                            <div class="h-100">
                                 <h6 class="modal-section-title">
                                     <span class="material-icons">photo</span>
                                     OR/CR Document
                                 </h6>
-                                <div id="orCrImageContainer" class="border rounded-lg p-3 text-center bg-light">
-                                    <img id="orCrImage" src="" alt="OR/CR Image" class="img-fluid rounded" style="max-height: 250px;">
+                                <div id="orCrImageContainer" class="border rounded-lg p-3 text-center bg-light" style="height: calc(100% - 40px);">
+                                    <img id="orCrImage" src="" alt="OR/CR Image" class="img-fluid rounded" style="max-height: 400px; object-fit: contain;">
                                     <div id="noImageMsg" class="py-4 text-muted" style="display: none;">
                                         <span class="material-icons d-block mb-2" style="font-size: 2.5rem; color: var(--neutral-gray);">image_not_supported</span>
                                         <p class="mb-0">No document image available</p>
@@ -815,7 +815,7 @@
                             <div class="row g-3">
                                 <div class="col-6">
                                     <div class="vehicle-info-label">Plate Number</div>
-                                    <div id="plateNumber" class="vehicle-info-value"></div>
+                                    <div id="plateNumber" class="vehicle-info-value fs-5 fw-bold"></div>
                                 </div>
                                 <div class="col-6">
                                     <div class="vehicle-info-label">Vehicle Type</div>
@@ -846,7 +846,7 @@
                             <div class="row g-3">
                                 <div class="col-6">
                                     <div class="vehicle-info-label">OR Number</div>
-                                    <div id="orNumber" class="vehicle-info-value"></div>
+                                    <div id="orNumber" class="vehicle-info-value fw-bold"></div>
                                 </div>
                                 <div class="col-6">
                                     <div class="vehicle-info-label">CR Number</div>

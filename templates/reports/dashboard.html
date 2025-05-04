@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Reports Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="card-title mb-0">
+                        <i class="material-icons align-middle me-2">assessment</i>
+                        Reports Dashboard
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-0">Access and generate reports based on your role.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Report Categories -->
+    <div class="row">
+        {% for type_key, type_data in reports_by_type.items %}
+            {% if type_data.reports %}
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-light">
+                            <h5 class="card-title mb-0">
+                                {% if type_key == 'violation' %}
+                                    <i class="material-icons align-middle me-2 text-danger">gavel</i>
+                                {% elif type_key == 'revenue' %}
+                                    <i class="material-icons align-middle me-2 text-success">payments</i>
+                                {% elif type_key == 'activity' %}
+                                    <i class="material-icons align-middle me-2 text-info">people</i>
+                                {% elif type_key == 'education' %}
+                                    <i class="material-icons align-middle me-2 text-primary">school</i>
+                                {% endif %}
+                                {{ type_data.display }}
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="list-group">
+                                {% for report in type_data.reports %}
+                                    <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1" style="color: #000;">{{ report.name }}</h6>
+                                            <p class="mb-1 text-muted small">{{ report.description|truncatechars:100 }}</p>
+                                        </div>
+                                        <div class="btn-group">
+                                            <a href="{% url 'reports:generator' report_id=report.id %}" class="btn btn-sm btn-primary">
+                                                <i class="material-icons">play_arrow</i> Generate
+                                            </a>
+                                            <a href="{% url 'reports:schedule' report_id=report.id %}" class="btn btn-sm btn-outline-secondary">
+                                                <i class="material-icons">schedule</i> Schedule
+                                            </a>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <i class="material-icons align-middle me-2">info</i>
+                    No reports are available for your role. Please contact an administrator for assistance.
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Scheduled Reports -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="material-icons align-middle me-2">schedule</i>
+                        Your Scheduled Reports
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if scheduled_reports %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Report Name</th>
+                                        <th>Frequency</th>
+                                        <th>Next Run</th>
+                                        <th>Recipients</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for schedule in scheduled_reports %}
+                                        <tr>
+                                            <td>{{ schedule.report.name }}</td>
+                                            <td>
+                                                <span class="badge bg-info">
+                                                    {{ schedule.get_frequency_display }}
+                                                </span>
+                                            </td>
+                                            <td>{{ schedule.next_run|date:"M d, Y H:i" }}</td>
+                                            <td>
+                                                {% if schedule.email_recipients %}
+                                                    {{ schedule.email_recipients }}
+                                                {% else %}
+                                                    <span class="text-muted">None</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <form action="{% url 'reports:cancel_schedule' schedule_id=schedule.id %}" method="post" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to cancel this scheduled report?');">
+                                                        <i class="material-icons">cancel</i> Cancel
+                                                    </button>
+                                                </form>
+                                                <a href="{% url 'reports:schedule' report_id=schedule.report.id %}" class="btn btn-sm btn-secondary">
+                                                    <i class="material-icons">edit</i> Edit
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-light">
+                            <i class="material-icons align-middle me-2">info</i>
+                            You don't have any scheduled reports. 
+                            <span class="text-muted">Use the Schedule button next to a report to create one.</span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Reports -->
+    {% if recent_reports %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="card-title mb-0">
+                            <i class="material-icons align-middle me-2">history</i>
+                            Recently Generated Reports
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Report Name</th>
+                                        <th>Generated On</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for report in recent_reports %}
+                                        <tr>
+                                            <td>{{ report.report.name }}</td>
+                                            <td>{{ report.generated_at|date:"M d, Y H:i" }}</td>
+                                            <td>
+                                                <a href="{% url 'reports:view_report' report_id=report.id %}" class="btn btn-sm btn-primary" target="_blank">
+                                                    <i class="material-icons">visibility</i> View PDF
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 
