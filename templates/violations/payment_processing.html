@@ -263,9 +263,15 @@
                         <label for="paymentRemarks" class="form-label">Remarks</label>
                         <textarea class="form-control" id="paymentRemarks" rows="2"></textarea>
                     </div>
-                    <div class="d-flex justify-content-end gap-2">
-                        <button type="button" class="btn btn-light" data-micromodal-close>Cancel</button>
-                        <button type="submit" class="btn btn-primary">Submit Payment</button>
+                    <div class="d-flex justify-content-between gap-2">
+                        <button type="button" class="btn btn-outline-success" onclick="printCurrentViolation()">
+                            <span class="material-icons">print</span>
+                            Print Receipt
+                        </button>
+                        <div>
+                            <button type="button" class="btn btn-light" data-micromodal-close>Cancel</button>
+                            <button type="submit" class="btn btn-primary">Submit Payment</button>
+                        </div>
                     </div>
                 </form>
             </main>
@@ -292,7 +298,16 @@
                 </div>
             </main>
             <footer class="modal__footer">
-                <!-- Footer intentionally left empty -->
+                <div class="d-flex justify-content-between">
+                    <button class="btn btn-outline-secondary" data-micromodal-close>
+                        <span class="material-icons me-1 align-middle" style="font-size: 18px;">close</span>
+                        Close
+                    </button>
+                    <button class="btn btn-success" id="printBatchSummaryBtn" onclick="printBatchSummary()">
+                        <span class="material-icons me-1 align-middle" style="font-size: 18px;">print</span>
+                        Print Summary
+                    </button>
+                </div>
             </footer>
         </div>
     </div>
@@ -1716,14 +1731,8 @@ function processSinglePayment(data) {
             // Close modals
             MicroModal.close('modal-payment-form');
             
-            // Open receipt in new window for printing
-            if (data.receipt_url) {
-                // Use the provided receipt URL if available
-                window.open(data.receipt_url, '_blank');
-            } else {
-                // Use the batch summary view for printing
-                window.open(`/violation/${currentViolationId}/receipt-summary/`, '_blank');
-            }
+            // Use our print function instead of the provided receipt URL
+            printBatchSummaryFromList([currentViolationId]);
             
             // Show success message after opening print window
             Swal.fire({
@@ -1791,8 +1800,8 @@ function processBatchPayment(data) {
             MicroModal.close('modal-payment-form');
             
             if (errorCount === 0) {
-                // Open a single batch receipt instead of individual receipts
-                window.open(`/violation/batch-receipt-summary/${currentBatchIds.join(',')}`, '_blank');
+                // Use our printBatchSummaryFromList function instead of opening a default receipt
+                printBatchSummaryFromList(currentBatchIds);
                 
                 Swal.fire({
                     icon: 'success',
@@ -2043,6 +2052,532 @@ function getCookie(name) {
         }
     }
     return cookieValue;
+}
+
+// After line ~1750 (near the end of the script, before the MicroModal closing bracket)
+// Add these functions for batch printing
+
+/**
+ * Print batch summary directly from the list without showing modal first
+ */
+function printBatchSummaryFromList(batchIds) {
+    // Convert string of IDs to array if needed
+    if (typeof batchIds === 'string') {
+        batchIds = batchIds.split(',');
+    }
+    
+    // Load batch data silently
+    // Fetch first payment to get receipt info
+    fetch(`/violation/${batchIds[0]}/payment-info/`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Error fetching payment details`);
+            }
+            return response.json();
+        })
+        .then(detailData => {
+            // Fetch all payments in the batch
+            const fetchPromises = batchIds.map(id => 
+                fetch(`/violation/${id}/payment-info/`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Error fetching violation #${id}`);
+                        }
+                        return response.json();
+                    })
+                    .catch(error => {
+                        console.error(error);
+                        return { id: id, error: true, message: error.message };
+                    })
+            );
+            
+            return Promise.all([Promise.resolve(detailData), Promise.all(fetchPromises)]);
+        })
+        .then(([firstViolation, violations]) => {
+            // Calculate batch summary information
+            const totalFineAmount = violations
+                .filter(v => !v.error && v.fine_amount)
+                .reduce((sum, v) => sum + parseFloat(v.fine_amount || 0), 0);
+                
+            const uniqueViolationTypes = new Set();
+            violations.forEach(v => {
+                if (!v.error && v.violation_types) {
+                    v.violation_types.forEach(type => uniqueViolationTypes.add(type));
+                } else if (!v.error && v.violation_type) {
+                    uniqueViolationTypes.add(v.violation_type);
+                }
+            });
+            
+            // Get violator name from the first violation
+            const violatorName = firstViolation.violator_name || 'Unknown';
+            
+            // Get receipt information
+            const receiptNumber = document.getElementById('receiptNumber')?.value || 'N/A';
+            const receiptDate = document.getElementById('receiptDate')?.value || new Date().toISOString().split('T')[0];
+            
+            // Format receipt date
+            const formattedDate = new Date(receiptDate).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            // Create print window
+            printBatchDetail(receiptNumber, formattedDate, violatorName, totalFineAmount, uniqueViolationTypes, violations);
+        })
+        .catch(error => {
+            console.error('Error processing batch details:', error);
+            alert('Error loading batch details: ' + error.message);
+        });
+}
+
+/**
+ * Print current batch details from modal
+ */
+function printBatchSummary() {
+    // Get current batch IDs
+    if (!currentBatchIds || !currentBatchIds.length) {
+        alert('No batch data available for printing');
+        return;
+    }
+    
+    printBatchSummaryFromList(currentBatchIds);
+}
+
+/**
+ * Create and display print window with batch details
+ */
+function printBatchDetail(receiptNumber, receiptDate, violatorName, totalAmount, violationTypes, violations) {
+    // Create a new tab for printing
+    const printWindow = window.open('', '_blank');
+    
+    // Format the amount
+    const formattedAmount = typeof totalAmount === 'number' ? 
+        `₱${totalAmount.toFixed(2)}` : totalAmount;
+    
+    // Create print-friendly HTML with enhanced design and logos
+    const printContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Official Receipt #${receiptNumber}</title>
+            <style>
+                @page {
+                    size: A4;
+                    margin: 0;
+                }
+                
+                body {
+                    font-family: 'Arial', sans-serif;
+                    margin: 0;
+                    padding: 0;
+                    background-color: #f8f8f8;
+                    color: #333;
+                }
+                
+                .receipt-container {
+                    position: relative;
+                    width: 21cm;
+                    margin: 0 auto;
+                    background-color: white;
+                    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                    padding: 1.5cm;
+                    box-sizing: border-box;
+                }
+                
+                .watermark {
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%) rotate(-45deg);
+                    font-size: 120px;
+                    color: rgba(0,0,0,0.03);
+                    z-index: 0;
+                    pointer-events: none;
+                    font-weight: bold;
+                    white-space: nowrap;
+                }
+                
+                .header {
+                    text-align: center;
+                    border-bottom: 2px solid #000;
+                    padding-bottom: 15px;
+                    margin-bottom: 20px;
+                    position: relative;
+                    z-index: 1;
+                }
+                
+                .logo-container {
+                    display: flex;
+                    width: 100%;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+                
+                .logo {
+                    width: 80px;
+                    height: 80px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                
+                .logo img {
+                    max-width: 100%;
+                    max-height: 100%;
+                    object-fit: contain;
+                }
+                
+                .header-text {
+                    text-align: center;
+                    flex-grow: 1;
+                    padding: 0 15px;
+                }
+                
+                .header-text h1 {
+                    margin: 0;
+                    font-size: 16px;
+                    font-weight: bold;
+                    text-transform: uppercase;
+                }
+                
+                .header-text h2 {
+                    margin: 5px 0;
+                    font-size: 20px;
+                    font-weight: bold;
+                    color: #000;
+                    text-transform: uppercase;
+                }
+                
+                .header-text p {
+                    margin: 2px 0;
+                    font-size: 14px;
+                }
+                
+                .receipt-title {
+                    text-align: center;
+                    margin: 20px 0;
+                    position: relative;
+                    z-index: 1;
+                }
+                
+                .receipt-title h3 {
+                    display: inline-block;
+                    padding: 5px 20px;
+                    border: 2px solid #000;
+                    font-size: 16px;
+                    text-transform: uppercase;
+                    letter-spacing: 2px;
+                    background-color: white;
+                }
+                
+                .content {
+                    position: relative;
+                    z-index: 1;
+                }
+                
+                .receipt-info-container {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 15px;
+                    margin-bottom: 20px;
+                    border: 1px solid #ddd;
+                    padding: 15px;
+                }
+                
+                .receipt-info-item {
+                    line-height: 1.8;
+                }
+                
+                .receipt-info-item p {
+                    margin: 5px 0;
+                }
+                
+                .receipt-info-item strong {
+                    display: inline-block;
+                    min-width: 130px;
+                }
+                
+                .violation-types-section {
+                    margin-top: 20px;
+                    margin-bottom: 20px;
+                    border: 1px solid #ddd;
+                    padding: 15px;
+                }
+                
+                .violation-types-section h4 {
+                    margin-top: 0;
+                    margin-bottom: 10px;
+                    font-size: 16px;
+                    border-bottom: 1px solid #eee;
+                    padding-bottom: 8px;
+                }
+                
+                .violation-types {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                }
+                
+                .violation-type {
+                    background-color: #f1f1f1;
+                    padding: 6px 12px;
+                    border-radius: 4px;
+                    font-size: 13px;
+                }
+                
+                .details-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-bottom: 25px;
+                }
+                
+                .details-table th, .details-table td {
+                    border: 1px solid #ddd;
+                    padding: 10px;
+                    text-align: left;
+                }
+                
+                .details-table th {
+                    background-color: #2563eb;
+                    color: white;
+                    font-weight: bold;
+                    text-transform: uppercase;
+                    font-size: 12px;
+                }
+                
+                .details-table tr:nth-child(even) {
+                    background-color: #f9f9f9;
+                }
+                
+                .amount-row td {
+                    font-weight: bold;
+                    background-color: #f2f2f2;
+                }
+                
+                .signatures {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-top: 40px;
+                    margin-bottom: 20px;
+                }
+                
+                .signature-block {
+                    text-align: center;
+                    width: 45%;
+                }
+                
+                .signature-line {
+                    border-top: 1px solid #000;
+                    padding-top: 5px;
+                    margin-top: 40px;
+                    font-weight: bold;
+                    font-size: 14px;
+                }
+                
+                .signature-title {
+                    font-size: 12px;
+                    margin-top: 5px;
+                }
+                
+                .footer {
+                    text-align: center;
+                    margin-top: 20px;
+                    font-size: 12px;
+                    border-top: 1px solid #000;
+                    padding-top: 10px;
+                    position: relative;
+                    z-index: 1;
+                }
+                
+                .document-number {
+                    position: absolute;
+                    top: 1.5cm;
+                    right: 1.5cm;
+                    font-size: 14px;
+                    font-weight: bold;
+                    border: 1px solid #000;
+                    padding: 5px 10px;
+                    background-color: #f2f2f2;
+                }
+                
+                .paid-status {
+                    color: #16a34a; 
+                    font-weight: bold;
+                }
+                
+                .print-buttons {
+                    margin-top: 20px;
+                    display: flex;
+                    justify-content: center;
+                    gap: 10px;
+                }
+                
+                .print-button, .close-button {
+                    padding: 10px 25px;
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    color: white;
+                    font-size: 14px;
+                }
+                
+                .print-button {
+                    background-color: #2563eb;
+                }
+                
+                .close-button {
+                    background-color: #dc2626;
+                }
+                
+                @media print {
+                    body {
+                        background-color: white;
+                    }
+                    
+                    .receipt-container {
+                        box-shadow: none;
+                        padding: 0.5cm;
+                        width: 100%;
+                    }
+                    
+                    .print-buttons {
+                        display: none;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="receipt-container">
+                <div class="watermark">OFFICIAL RECEIPT</div>
+                
+                <div class="document-number">No. ${receiptNumber}</div>
+                
+                <div class="header">
+                    <div class="logo-container">
+                        <div class="logo">
+                            <img src="/static/images/logo.png" alt="City of Bayawan Seal">
+                        </div>
+                        <div class="header-text">
+                            <div class="republic-title">REPUBLIC OF THE PHILIPPINES</div>
+                            <div class="office-title">CITY TRANSPORT AND TRAFFIC MANAGEMENT OFFICE</div>
+                            <p>Traffic Violation Management System</p>
+                            <p>City Government of Bayawan City</p>
+                        </div>
+                        <div class="logo">
+                            <img src="/static/images/logo_ibayaw.png" alt="iBayaw TriGrp Logo">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="receipt-title">
+                    <h3>Official Receipt - Batch Payment</h3>
+                </div>
+                
+                <div class="content">
+                    <div class="receipt-info-container">
+                        <div class="receipt-info-item">
+                            <p><strong>Receipt Number:</strong> ${receiptNumber}</p>
+                            <p><strong>Receipt Date:</strong> ${receiptDate}</p>
+                            <p><strong>Total Violations:</strong> ${violations.length}</p>
+                        </div>
+                        <div class="receipt-info-item">
+                            <p><strong>Violator:</strong> ${violatorName}</p>
+                            <p><strong>Total Amount:</strong> ${formattedAmount}</p>
+                            <p><strong>Payment Status:</strong> <span class="paid-status">PAID</span></p>
+                        </div>
+                    </div>
+                    
+                    <div class="violation-types-section">
+                        <h4>Violation Types</h4>
+                        <div class="violation-types">
+                            ${Array.from(violationTypes).map(type => `<div class="violation-type">${type}</div>`).join('')}
+                        </div>
+                    </div>
+                    
+                    <table class="details-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 15%;">CASE ID</th>
+                                <th style="width: 55%;">VIOLATION TYPE</th>
+                                <th style="width: 30%;">AMOUNT</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${violations.map(v => {
+                                const violationType = v.violation_types ? 
+                                    v.violation_types.join(', ') : 
+                                    v.violation_type || 'N/A';
+                                    
+                                const amount = parseFloat(v.fine_amount || 0).toFixed(2);
+                                    
+                                return `
+                                <tr>
+                                    <td>${v.id}</td>
+                                    <td>${violationType}</td>
+                                    <td>₱${amount}</td>
+                                </tr>
+                                `;
+                            }).join('')}
+                            <tr class="amount-row">
+                                <td colspan="2" style="text-align: right;"><strong>TOTAL AMOUNT PAID:</strong></td>
+                                <td><strong>${formattedAmount}</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div class="signatures">
+                        <div class="signature-block">
+                            <div class="signature-line">Authorized Officer</div>
+                            <div class="signature-title">Cashier/Authorized Officer</div>
+                        </div>
+                        <div class="signature-block">
+                            <div class="signature-line">${violatorName}</div>
+                            <div class="signature-title">Received by</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="footer">
+                    <p>This is an official document of the City Transport and Traffic Management Office.</p>
+                    <p>Any alteration or erasure on this receipt renders it void.</p>
+                    <p>Receipt generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</p>
+                </div>
+            </div>
+            
+            <div class="print-buttons">
+                <button class="print-button" onclick="window.print();">
+                    Print Receipt
+                </button>
+                <button class="close-button" onclick="window.close();">
+                    Close
+                </button>
+            </div>
+        </body>
+        </html>
+    `;
+    
+    // Write to the new tab and print
+    printWindow.document.open();
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    
+    // Wait for content to load before printing
+    printWindow.onload = function() {
+        setTimeout(function() {
+            printWindow.print();
+        }, 300);
+    };
+}
+
+function printCurrentViolation() {
+    if (!currentViolationId) {
+        alert('No violation selected');
+        return;
+    }
+    
+    printBatchSummaryFromList([currentViolationId]);
 }
 </script>
 
