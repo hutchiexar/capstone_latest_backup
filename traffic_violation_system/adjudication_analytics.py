@@ -150,32 +150,23 @@ def get_adjudication_performance():
     Get performance metrics for adjudication process
     """
     # Calculate average time to adjudicate (in days)
-    avg_time_query = Violation.objects.filter(
+    violations_with_dates = Violation.objects.filter(
         adjudicated_by__isnull=False,
         adjudication_date__isnull=False,
         violation_date__isnull=False
-    ).annotate(
-        days_to_adjudicate=Case(
-            When(
-                adjudication_date__isnull=False,
-                then=(F('adjudication_date') - F('violation_date'))
-            ),
-            default=None,
-            output_field=FloatField()
-        )
-    ).aggregate(
-        avg_days=Avg('days_to_adjudicate')
     )
     
-    avg_time = avg_time_query['avg_days'] or 0
+    # Calculate average manually instead of using database aggregation
+    total_days = 0
+    count = 0
     
-    # Check if avg_time is a timedelta object before calling total_seconds()
-    if avg_time:
-        import datetime
-        if isinstance(avg_time, datetime.timedelta):
-            # Convert to days (Django returns timedelta)
-            avg_time = avg_time.total_seconds() / (60 * 60 * 24)
-        # If it's already a float, we don't need to convert it
+    for violation in violations_with_dates:
+        if violation.adjudication_date and violation.violation_date:
+            delta = violation.adjudication_date - violation.violation_date
+            total_days += delta.total_seconds() / (60 * 60 * 24)  # Convert to days
+            count += 1
+    
+    avg_time = total_days / count if count > 0 else 0
     
     # Get monthly adjudication counts for the past year
     today = timezone.now()
