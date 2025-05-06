@@ -15,16 +15,40 @@ export PYTHONPATH=$PYTHONPATH:$(pwd)
 
 # Create logs and media directories if they don't exist
 mkdir -p logs
-mkdir -p media
-mkdir -p media/avatars
-mkdir -p media/qr_codes
-mkdir -p media/vehicle_documents
-mkdir -p media/violation_evidence
-mkdir -p media/driver_documents
-mkdir -p media/signatures
 
-# Ensure proper permissions for media directories
-chmod -R 755 media
+# Ensure render permanent media directory exists and has proper permissions
+if [ "$RENDER" = "True" ]; then
+    echo "Setting up Render persistent media directory..."
+    
+    # Ensure the base media directory exists
+    mkdir -p /opt/render/project/src/media
+    chmod -R 755 /opt/render/project/src/media
+    
+    # Create required subdirectories if they don't exist
+    mkdir -p /opt/render/project/src/media/avatars
+    mkdir -p /opt/render/project/src/media/qr_codes
+    mkdir -p /opt/render/project/src/media/vehicle_documents
+    mkdir -p /opt/render/project/src/media/violation_evidence
+    mkdir -p /opt/render/project/src/media/driver_documents
+    mkdir -p /opt/render/project/src/media/signatures
+    
+    # Create symbolic link if needed
+    if [ ! -L "media" ] && [ ! -d "media" ]; then
+        echo "Creating symbolic link for media directory..."
+        ln -sf /opt/render/project/src/media media
+    fi
+else
+    # For local development, create the directories locally
+    echo "Setting up local media directories..."
+    mkdir -p media
+    mkdir -p media/avatars
+    mkdir -p media/qr_codes
+    mkdir -p media/vehicle_documents
+    mkdir -p media/violation_evidence
+    mkdir -p media/driver_documents
+    mkdir -p media/signatures
+    chmod -R 755 media
+fi
 
 # Ensure handler files are in the source directory
 echo "Copying handler files..."
@@ -115,24 +139,5 @@ python manage.py migrate
 # Collect static files
 echo "Collecting static files..."
 python manage.py collectstatic --no-input
-
-# Ensure render permanent media directory exists and has proper permissions
-if [ "$RENDER" = "True" ]; then
-    echo "Setting up Render persistent media directory..."
-    mkdir -p /opt/render/project/src/media
-    mkdir -p /opt/render/project/src/media/avatars
-    mkdir -p /opt/render/project/src/media/qr_codes
-    mkdir -p /opt/render/project/src/media/vehicle_documents
-    mkdir -p /opt/render/project/src/media/violation_evidence
-    mkdir -p /opt/render/project/src/media/driver_documents
-    mkdir -p /opt/render/project/src/media/signatures
-    chmod -R 755 /opt/render/project/src/media
-    
-    # Copy existing media files if necessary
-    if [ "$(ls -A media 2>/dev/null)" ]; then
-        echo "Copying existing media files to persistent storage..."
-        cp -R media/* /opt/render/project/src/media/
-    fi
-fi
 
 echo "Build process completed successfully!" 
