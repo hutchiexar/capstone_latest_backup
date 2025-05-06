@@ -24,8 +24,9 @@ We've addressed multiple dependency conflicts:
 3. **pyHanko/pyhanko-certvalidator conflicts**: Corrected versions to ensure compatibility (pyhanko-certvalidator==0.20.0 must be installed before pyHanko==0.17.0)
 4. **Missing django-sslserver**: Added django-sslserver to all fallback mechanisms to prevent import errors
 5. **idanalyzer import errors**: Created handler to provide graceful degradation for ID analysis functionality
-6. **Fallback mechanism**: Created `requirements-minimal.txt` with essential packages
-7. **Enhanced build.sh**: Updated with proper installation order and more robust fallback options
+6. **reportlab/xhtml2pdf conflicts**: Downgraded reportlab from 4.0.4 to 3.6.13 to satisfy xhtml2pdf's requirement of reportlab<4
+7. **Fallback mechanism**: Created `requirements-minimal.txt` with essential packages
+8. **Enhanced build.sh**: Updated with proper installation order and more robust fallback options
 
 ### Graceful Degradation Implemented
 1. **handle_pyhanko.py**: Utility that provides fallback for PDF signing functionality

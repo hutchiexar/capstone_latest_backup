@@ -338,6 +338,19 @@ If static files don't load properly:
 - Verify `whitenoise` middleware is configured
 - Ensure `collectstatic` ran successfully during build
 
+#### 4. Dependency Conflicts
+
+The application has several known dependency constraints:
+- `reportlab` must be version 3.6.x to be compatible with `xhtml2pdf` (which requires reportlab<4)
+- `pyparsing==3.0.9` is required to resolve conflicts with other packages
+- `pyhanko-certvalidator==0.20.0` must be installed before `pyHanko==0.17.0`
+
+If you encounter new dependency conflicts:
+1. Identify the conflicting packages and version constraints
+2. Update the appropriate requirements file
+3. Update the `build.sh` script to handle the conflict during fallback installation
+4. Test installation locally before deploying
+
 ## Local Development Setup
 
 For local development:

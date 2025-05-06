@@ -60,6 +60,7 @@ if [ -f "requirements-fixed.txt" ]; then
         # Ensure these specific packages are at compatible versions
         echo "Setting specific versions for known problematic packages..."
         pip install pyparsing==3.0.9
+        pip install reportlab==3.6.13  # downgraded to satisfy xhtml2pdf requirements
         
         # Install packages that might be missing from requirements
         echo "Installing potentially missing packages..."
@@ -71,6 +72,7 @@ else
     
     # Install specific versions of problematic packages
     pip install pyparsing==3.0.9
+    pip install reportlab==3.6.13  # downgraded to satisfy xhtml2pdf requirements
     pip install idanalyzer==1.2.2 django-sslserver
 fi
 
