@@ -21,9 +21,16 @@ We've addressed multiple dependency conflicts:
 
 1. **contourpy/matplotlib compatibility**: Updated Python version to 3.10.0
 2. **pyparsing conflicts**: Created a simplified `requirements-fixed.txt` with compatible versions
-3. **pyHanko/pyhanko-certvalidator conflicts**: After multiple attempts, updated to much older versions (pyHanko==0.17.0 and pyhanko-certvalidator==0.19.5)
-4. **Fallback mechanism**: Created `requirements-minimal.txt` without problematic packages as a fallback
-5. **Enhanced build.sh**: Updated to include multiple fallback options for dependency issues
+3. **pyHanko/pyhanko-certvalidator conflicts**: Corrected versions to ensure compatibility (pyhanko-certvalidator==0.20.0 must be installed before pyHanko==0.17.0)
+4. **Missing django-sslserver**: Added django-sslserver to all fallback mechanisms to prevent import errors
+5. **Fallback mechanism**: Created `requirements-minimal.txt` with essential packages
+6. **Enhanced build.sh**: Updated with proper installation order and more robust fallback options
+
+### Graceful Degradation Implemented
+Added `handle_pyhanko.py` utility that provides fallback mechanisms when pyHanko has issues:
+- Automatically detects if pyHanko is properly installed
+- Provides dummy implementation when unavailable
+- Logs warnings instead of causing application crashes
 
 These robust changes should ensure successful deployment even if some package conflicts persist.
 
@@ -42,6 +49,7 @@ For detailed instructions, see:
 - `CAPSTONE_PROJECT/postgresql_settings.py` - PostgreSQL-specific settings
 - `requirements-fixed.txt` - Fixed dependencies file to resolve conflicts
 - `requirements-minimal.txt` - Minimal dependencies for fallback
+- `handle_pyhanko.py` - Utility for graceful degradation of PDF signing functionality
 
 ## Post-Deployment
 

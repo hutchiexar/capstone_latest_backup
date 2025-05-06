@@ -22,13 +22,23 @@ This document summarizes all the dependency issues we've encountered and resolve
 - **Solution**: Multiple attempts to find compatible versions
   - First attempt: `pyHanko==0.20.1` and `pyhanko-certvalidator==0.23.0` (conflicted)
   - Second attempt: `pyHanko==0.19.0` and `pyhanko-certvalidator==0.22.0` (conflicted)
-  - Final attempt: `pyHanko==0.17.0` and `pyhanko-certvalidator==0.19.5`
+  - Third attempt: `pyHanko==0.17.0` and `pyhanko-certvalidator==0.19.5` (version mismatch)
+  - Final solution: Corrected versions and installation order:
+    1. Install `pyhanko-certvalidator==0.20.0` first
+    2. Then install `pyHanko==0.17.0`
 - **Additional Measures**:
-  - Created `requirements-minimal.txt` without these packages as a fallback
-  - Updated build script to try installing without these packages if conflicts persist
-- **Files Modified**: `requirements-fixed.txt`, `build.sh`, created `requirements-minimal.txt`
+  - Created `handle_pyhanko.py` utility for graceful degradation
+  - Updated build script to install dependencies in correct order
+- **Files Modified**: `requirements-fixed.txt`, `build.sh`, created `handle_pyhanko.py`
 
-### 4. Build Script Resilience
+### 4. Missing Django SSL Server Module
+- **Issue**: `ModuleNotFoundError: No module named 'sslserver'` during deployment
+- **Solution**:
+  - Added django-sslserver==0.22 to requirements-minimal.txt
+  - Ensured it was included in all fallback mechanisms
+- **Files Modified**: `requirements-minimal.txt`, `build.sh`
+
+### 5. Build Script Resilience
 - **Enhancement**: Made the build script highly resilient to dependency issues
 - **Key Changes**:
   - Implemented a multi-stage fallback system:
@@ -38,6 +48,7 @@ This document summarizes all the dependency issues we've encountered and resolve
     4. Finally, fall back to core dependencies as a last resort
   - Added individual package installation for problematic packages
   - Improved error handling and reporting
+  - Updated installation order for interdependent packages
 - **Files Modified**: `build.sh`
 
 ## Multi-layered Approach to Dependency Management
@@ -48,6 +59,7 @@ Our final solution uses a multi-layered approach:
 2. **Secondary**: Dynamic filtering of requirements during build to skip problematic packages
 3. **Tertiary**: `requirements-minimal.txt` with only essential packages
 4. **Fallback**: Direct installation of core packages in the build script
+5. **Graceful Degradation**: Runtime handling of missing packages
 
 This approach ensures that even if dependency conflicts persist, the application can still be deployed with at least its core functionality.
 
@@ -73,8 +85,14 @@ This approach ensures that even if dependency conflicts persist, the application
 - Include fallback mechanisms in your build script
 - Add verbose error reporting
 - Consider automated retry mechanisms for intermittent issues
+- Pay attention to installation order for interdependent packages
 
-### 5. Continuous Monitoring
+### 5. Runtime Resilience
+- Implement graceful degradation for optional functionality
+- Use try-except blocks when importing potentially problematic packages
+- Provide dummy implementations for non-critical features
+
+### 6. Continuous Monitoring
 - Regularly review Render build logs
 - Set up notifications for build failures
 - Implement CI/CD tests for dependency compatibility

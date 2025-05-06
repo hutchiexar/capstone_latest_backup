@@ -30,19 +30,43 @@ matplotlib==3.7.2  # Instead of 3.10.1
 
 ## Resolving Package Dependency Conflicts
 
-### Ongoing Issues with pyHanko and pyhanko-certvalidator
+### Latest Fix for pyHanko and pyhanko-certvalidator
 
-We've encountered persistent conflicts with pyHanko and pyhanko-certvalidator. After multiple attempts, we've found that these packages are particularly sensitive to version compatibility.
+We discovered that the order and exact versions of pyHanko and pyhanko-certvalidator are crucial:
 
-We tried:
+1. pyHanko 0.17.0 specifically requires pyhanko-certvalidator 0.20.*
+2. The certvalidator must be installed BEFORE pyHanko
+
+Our solution:
+```
+# Install in this specific order
+pip install pyhanko-certvalidator==0.20.0
+pip install pyHanko==0.17.0
+```
+
+Additionally, we've created a graceful degradation mechanism in `handle_pyhanko.py` that:
+- Attempts to import pyHanko safely
+- Provides a dummy implementation if imports fail
+- Logs warnings instead of crashing the application
+
+### Missing Django SSL Server Module
+
+We encountered a `ModuleNotFoundError: No module named 'sslserver'` issue, which happens when Django can't find the django-sslserver package. 
+
+The solution:
+1. Ensure django-sslserver is in all requirement files
+2. Add it explicitly to fallback installation mechanisms in build.sh:
+```
+pip install django-sslserver==0.22
+```
+
+### Previous Conflicts with pyHanko
+
+We tried multiple combinations to resolve persistent conflicts:
 1. First attempt: `pyHanko==0.20.1` and `pyhanko-certvalidator==0.23.0` (conflicted)
 2. Second attempt: `pyHanko==0.19.0` and `pyhanko-certvalidator==0.22.0` (conflicted)
-3. Current attempt: `pyHanko==0.17.0` and `pyhanko-certvalidator==0.19.5`
-
-These packages have a complex dependency tree and often require exact version matches. If the current combination doesn't work, we may need to:
-- Further downgrade to even older versions
-- Consider removing these packages if they're not critical to your application
-- Fork and modify the packages to resolve internal dependency issues
+3. Third attempt: `pyHanko==0.17.0` and `pyhanko-certvalidator==0.19.5` (version mismatch)
+4. Final solution: `pyhanko-certvalidator==0.20.0` and `pyHanko==0.17.0` (working)
 
 ### Previous Conflict with pyparsing
 
@@ -58,39 +82,27 @@ To resolve this, we created a simplified `requirements-fixed.txt` file with comp
 2. Adjusted related package versions (matplotlib, fonttools, etc.)
 3. Removed unnecessary packages or those causing conflicts
 
-### How to Use the Fixed Requirements File
+## Multi-layered Solution Architecture
 
-Replace your current requirements.txt with the simplified version:
+Our final approach implements multiple layers of protection:
 
-```bash
-# Backup your current requirements file
-cp requirements.txt requirements.txt.backup
+### 1. Fixed Requirements File
+- Primary installation mechanism with carefully curated compatible versions
+- Proper ordering of interdependent packages
 
-# Replace with the simplified version
-cp requirements-fixed.txt requirements.txt
+### 2. Filtering Mechanism
+- If conflicts occur, automatically filter out problematic packages
+- Try installation without the conflicting packages
 
-# Or update render.yaml to use the fixed file
-# Change buildCommand to:
-# buildCommand: chmod +x build.sh && REQUIREMENTS_FILE=requirements-fixed.txt ./build.sh
-```
+### 3. Minimal Requirements Fallback
+- If filtering doesn't work, fall back to minimal core requirements
 
-### Last Resort: Minimal Dependencies
+### 4. Individual Package Installation
+- Attempt to install problematic packages individually with error suppression
 
-If you continue to encounter dependency issues, consider:
-
-1. **Creating a minimal requirements file** with only the absolutely essential packages
-2. **Installing problematic packages separately** after the main installation
-3. **Using our resilient build script** which falls back to core dependencies if all else fails
-
-### General Strategy for Resolving Dependencies
-
-When facing dependency conflicts:
-
-1. **Identify the conflicting packages** - Look for packages that depend on the same library but require different versions
-2. **Find compatible versions** - Use tools like `pip-tools` to find versions that work together
-3. **Simplify requirements** - Remove unnecessary packages or find alternatives
-4. **Test locally first** - Always test your changes locally before deploying
-5. **Check package documentation** - Look for compatibility matrices for related packages (like pyHanko and its validator)
+### 5. Graceful Degradation
+- Utility code that handles missing or conflicting packages at runtime
+- Dummy implementations for non-critical functionality
 
 ## Common Render Deployment Issues
 

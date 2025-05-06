@@ -27,14 +27,16 @@ if [ -f requirements-fixed.txt ]; then
                     gunicorn==22.0.0 \
                     psycopg2-binary==2.9.9 \
                     whitenoise==6.7.0 \
-                    python-dotenv==1.0.1
+                    python-dotenv==1.0.1 \
+                    django-sslserver==0.22 \
+                    django-extensions==3.2.3
             fi
         }
         rm -f requirements-temp.txt
         echo "Will attempt to install problematic packages individually..."
         # Try to install problematic packages one by one with error suppression
+        pip install pyhanko-certvalidator==0.20.0 || echo "Failed to install pyhanko-certvalidator, skipping..."
         pip install pyHanko==0.17.0 || echo "Failed to install pyHanko, skipping..."
-        pip install pyhanko-certvalidator==0.19.5 || echo "Failed to install pyhanko-certvalidator, skipping..."
     }
 else
     echo "requirements-fixed.txt not found, attempting to use requirements.txt..."
@@ -53,7 +55,9 @@ else
                 gunicorn==22.0.0 \
                 psycopg2-binary==2.9.9 \
                 whitenoise==6.7.0 \
-                python-dotenv==1.0.1
+                python-dotenv==1.0.1 \
+                django-sslserver==0.22 \
+                django-extensions==3.2.3
         fi
     }
 fi
