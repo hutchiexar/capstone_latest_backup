@@ -51,6 +51,25 @@ except ImportError:
         def enableAuthentication(self, enable=True): pass
         def enableImageOutput(self, enable=True): pass
 '''
+    ),
+    
+    # xlsxwriter patch
+    PatchRule(
+        file_path='traffic_violation_system/adjudication_history_views.py',
+        import_pattern=r'import\s+xlsxwriter',
+        replacement='''# Graceful degradation for xlsxwriter import
+try:
+    import xlsxwriter
+except ImportError:
+    # Use our fallback implementation
+    from handle_xlsxwriter import get_workbook_class
+    # This is used later in the code when Workbook is accessed
+    class xlsxwriter:
+        @staticmethod
+        def Workbook(*args, **kwargs):
+            Workbook = get_workbook_class()
+            return Workbook(*args, **kwargs)
+'''
     )
 ]
 

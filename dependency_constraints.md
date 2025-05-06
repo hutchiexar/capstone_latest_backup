@@ -11,12 +11,14 @@ This document tracks known dependency constraints and conflicts encountered duri
 | pyhanko-certvalidator | Must use v0.20.0 | Required by pyHanko==0.17.0 and must be installed first | Fixed in requirements order |
 | idanalyzer | Must use v1.2.2 | Latest version that's compatible with our codebase | Implemented graceful degradation |
 | Python | Must use v3.10.0 | Needed for contourpy and other dependencies | Updated in render.yaml |
+| xlsxwriter | Must be installed | Required for Excel export functionality | Added to all requirements files (3.1.9) |
 
 ## Active Import Patching
 
 The system currently implements import patching for:
 
 - **idanalyzer**: Provides fallback implementation in `views.py` when the module is not available
+- **xlsxwriter**: Provides CSV export fallback when the module is not available
   
 Future modules may be added to the patching mechanism as needed. A potential candidate for future patching is:
 

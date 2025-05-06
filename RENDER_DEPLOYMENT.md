@@ -25,8 +25,9 @@ We've addressed multiple dependency conflicts:
 4. **Missing django-sslserver**: Added django-sslserver to all fallback mechanisms to prevent import errors
 5. **idanalyzer import errors**: Created handler to provide graceful degradation for ID analysis functionality
 6. **reportlab/xhtml2pdf conflicts**: Downgraded reportlab from 4.0.4 to 3.6.13 to satisfy xhtml2pdf's requirement of reportlab<4
-7. **Fallback mechanism**: Created `requirements-minimal.txt` with essential packages
-8. **Enhanced build.sh**: Updated with proper installation order and more robust fallback options
+7. **xlsxwriter missing dependency**: Added xlsxwriter to requirements and created fallback implementation for Excel export
+8. **Fallback mechanism**: Created `requirements-minimal.txt` with essential packages
+9. **Enhanced build.sh**: Updated with proper installation order and more robust fallback options
 
 ### Graceful Degradation Implemented
 1. **handle_pyhanko.py**: Utility that provides fallback for PDF signing functionality
@@ -39,7 +40,14 @@ We've addressed multiple dependency conflicts:
    - Returns dummy data for API calls
    - Prevents app crashes from missing dependency
 
-3. **Patching mechanism**: During build, critical imports in views.py are patched to use our handlers
+3. **handle_xlsxwriter.py**: Utility that provides fallback for Excel export functionality
+   - Creates CSV files instead of Excel when xlsxwriter is not available
+   - Implements compatible API to minimize code changes
+   - Logs warnings and provides helpful user feedback
+
+4. **Patching mechanism**: During build, critical imports are patched to use our handlers:
+   - `views.py`: Patched for idanalyzer import
+   - `adjudication_history_views.py`: Patched for xlsxwriter import
 
 These robust changes ensure successful deployment even with dependency issues, allowing the application to run with limited functionality rather than crashing completely.
 
@@ -60,6 +68,7 @@ For detailed instructions, see:
 - `requirements-minimal.txt` - Minimal dependencies for fallback
 - `handle_pyhanko.py` - Utility for graceful degradation of PDF signing functionality
 - `handle_idanalyzer.py` - Utility for graceful degradation of ID analysis functionality
+- `handle_xlsxwriter.py` - Utility for graceful degradation of Excel export functionality
 - `patch_views_idanalyzer.py` - Script to patch problematic imports in views.py
 
 ## Post-Deployment

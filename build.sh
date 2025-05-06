@@ -16,6 +16,10 @@ export PYTHONPATH=$PYTHONPATH:$(pwd)
 # Create logs directory if it doesn't exist
 mkdir -p logs
 
+# Ensure handler files are in the source directory
+echo "Copying handler files..."
+cp -f handle_*.py /opt/render/project/src/ 2>/dev/null || echo "No handler files to copy (this is normal on first build)"
+
 # Function to check if a package is installed
 check_package() {
     python -c "import $1" 2>/dev/null
@@ -64,7 +68,7 @@ if [ -f "requirements-fixed.txt" ]; then
         
         # Install packages that might be missing from requirements
         echo "Installing potentially missing packages..."
-        pip install idanalyzer==1.2.2 django-sslserver
+        pip install idanalyzer==1.2.2 django-sslserver xlsxwriter==3.1.9
     fi
 else
     echo "requirements-fixed.txt not found, falling back to original requirements.txt"
@@ -73,12 +77,12 @@ else
     # Install specific versions of problematic packages
     pip install pyparsing==3.0.9
     pip install reportlab==3.6.13  # downgraded to satisfy xhtml2pdf requirements
-    pip install idanalyzer==1.2.2 django-sslserver
+    pip install idanalyzer==1.2.2 django-sslserver xlsxwriter==3.1.9
 fi
 
 # Ensure critical packages are installed
 echo "Verifying critical packages..."
-for package in django django_crispy_forms crispy_bootstrap5 idanalyzer django_sslserver
+for package in django django_crispy_forms crispy_bootstrap5 idanalyzer django_sslserver xlsxwriter
 do
     if ! check_package "$package"; then
         echo "$package not installed, attempting to install individually..."
