@@ -21,7 +21,8 @@ We've addressed multiple dependency conflicts:
 
 1. **contourpy/matplotlib compatibility**: Updated Python version to 3.10.0
 2. **pyparsing conflicts**: Created a simplified `requirements-fixed.txt` with compatible versions
-3. **Modified build.sh**: Updated to use the fixed requirements file
+3. **pyHanko/pyhanko-certvalidator conflicts**: Updated both to compatible versions (pyHanko==0.19.0 and pyhanko-certvalidator==0.22.0)
+4. **Modified build.sh**: Updated to use the fixed requirements file
 
 These changes should resolve the build errors you've encountered.
 

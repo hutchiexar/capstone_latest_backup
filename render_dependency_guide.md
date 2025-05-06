@@ -30,15 +30,27 @@ matplotlib==3.7.2  # Instead of 3.10.1
 
 ## Resolving Package Dependency Conflicts
 
-### Recent Conflict with pyparsing
+### Conflict with pyHanko and pyhanko-certvalidator
 
-We've encountered a conflict with pyparsing and related packages. The error was:
+The latest conflict we encountered was between pyHanko and pyhanko-certvalidator:
+
+```
+ERROR: Cannot install -r requirements-fixed.txt (line 32) and pyhanko-certvalidator==0.23.0 because these package versions have conflicting dependencies.
+```
+
+These packages need to be in sync with each other. We've updated them to compatible versions:
+- Changed from `pyHanko==0.20.1` to `pyHanko==0.19.0`
+- Changed from `pyhanko-certvalidator==0.23.0` to `pyhanko-certvalidator==0.22.0`
+
+### Previous Conflict with pyparsing
+
+We also encountered a conflict with pyparsing and related packages:
 
 ```
 ERROR: Cannot install -r requirements.txt (line 49), -r requirements.txt (line 59) and pyparsing==3.2.1 because these package versions have conflicting dependencies.
 ```
 
-To resolve this, we've created a simplified `requirements-fixed.txt` file with compatible versions:
+To resolve this, we created a simplified `requirements-fixed.txt` file with compatible versions:
 
 1. Downgraded pyparsing to version 3.0.9
 2. Adjusted related package versions (matplotlib, fonttools, etc.)
@@ -68,6 +80,7 @@ When facing dependency conflicts:
 2. **Find compatible versions** - Use tools like `pip-tools` to find versions that work together
 3. **Simplify requirements** - Remove unnecessary packages or find alternatives
 4. **Test locally first** - Always test your changes locally before deploying
+5. **Check package documentation** - Look for compatibility matrices for related packages (like pyHanko and its validator)
 
 ## Common Render Deployment Issues
 
@@ -113,7 +126,7 @@ python -m venv venv --python=python3.10
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
-pip install -r requirements.txt
+pip install -r requirements-fixed.txt
 ```
 
 ## Updating Requirements
