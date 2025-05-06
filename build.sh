@@ -6,7 +6,8 @@ echo "Upgrading pip..."
 pip install --upgrade pip
 
 echo "Installing dependencies..."
-pip install -r requirements.txt
+# Use the fixed requirements file instead of the original one
+pip install -r requirements-fixed.txt
 
 echo "Ensuring media directories exist..."
 # Create all necessary directories with proper permissions

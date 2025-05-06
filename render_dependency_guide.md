@@ -28,6 +28,47 @@ contourpy==1.0.7  # Instead of 1.3.1
 matplotlib==3.7.2  # Instead of 3.10.1
 ```
 
+## Resolving Package Dependency Conflicts
+
+### Recent Conflict with pyparsing
+
+We've encountered a conflict with pyparsing and related packages. The error was:
+
+```
+ERROR: Cannot install -r requirements.txt (line 49), -r requirements.txt (line 59) and pyparsing==3.2.1 because these package versions have conflicting dependencies.
+```
+
+To resolve this, we've created a simplified `requirements-fixed.txt` file with compatible versions:
+
+1. Downgraded pyparsing to version 3.0.9
+2. Adjusted related package versions (matplotlib, fonttools, etc.)
+3. Removed unnecessary packages or those causing conflicts
+
+### How to Use the Fixed Requirements File
+
+Replace your current requirements.txt with the simplified version:
+
+```bash
+# Backup your current requirements file
+cp requirements.txt requirements.txt.backup
+
+# Replace with the simplified version
+cp requirements-fixed.txt requirements.txt
+
+# Or update render.yaml to use the fixed file
+# Change buildCommand to:
+# buildCommand: chmod +x build.sh && REQUIREMENTS_FILE=requirements-fixed.txt ./build.sh
+```
+
+### General Strategy for Resolving Dependencies
+
+When facing dependency conflicts:
+
+1. **Identify the conflicting packages** - Look for packages that depend on the same library but require different versions
+2. **Find compatible versions** - Use tools like `pip-tools` to find versions that work together
+3. **Simplify requirements** - Remove unnecessary packages or find alternatives
+4. **Test locally first** - Always test your changes locally before deploying
+
 ## Common Render Deployment Issues
 
 ### 1. Package Installation Errors

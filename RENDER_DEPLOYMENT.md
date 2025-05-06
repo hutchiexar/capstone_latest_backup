@@ -11,9 +11,19 @@ This project is configured for easy deployment to Render using Blueprint deploym
 5. Render will automatically set up your web service and PostgreSQL database
 6. Add your environment variables in the web service settings
 
-## Important Update: Python Version
+## Important Updates
 
-We've updated the Python version in `render.yaml` from 3.9.0 to 3.10.0 to ensure compatibility with packages like `contourpy` and other dependencies. This should resolve the build errors related to package compatibility.
+### Python Version
+We've updated the Python version in `render.yaml` from 3.9.0 to 3.10.0 to ensure compatibility with packages like `contourpy` and other dependencies.
+
+### Dependency Conflicts Fixed
+We've addressed multiple dependency conflicts:
+
+1. **contourpy/matplotlib compatibility**: Updated Python version to 3.10.0
+2. **pyparsing conflicts**: Created a simplified `requirements-fixed.txt` with compatible versions
+3. **Modified build.sh**: Updated to use the fixed requirements file
+
+These changes should resolve the build errors you've encountered.
 
 ## Reference Documentation
 
@@ -27,6 +37,7 @@ For detailed instructions, see:
 - `render.yaml` - Defines services and their configurations
 - `build.sh` - Build script for the deployment process
 - `CAPSTONE_PROJECT/postgresql_settings.py` - PostgreSQL-specific settings
+- `requirements-fixed.txt` - Fixed dependencies file to resolve conflicts
 
 ## Post-Deployment
 
