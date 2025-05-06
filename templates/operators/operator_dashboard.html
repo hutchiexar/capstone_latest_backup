@@ -1294,16 +1294,38 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Hide loading indicator
                     document.getElementById('searchLoading').style.display = 'none';
                     
+                    // Add debugging for status values
+                    if (data.regular_violations && data.regular_violations.length > 0) {
+                        console.log('Regular Violations Statuses:', data.regular_violations.map(v => v.status));
+                    }
+                    
+                    // Process all violations to ensure consistent status values
+                    const processedRegularViolations = (data.regular_violations || []).map(violation => {
+                        return {
+                            ...violation,
+                            // Ensure status is a string and standardize case
+                            status: violation.status ? String(violation.status) : 'UNKNOWN'
+                        };
+                    });
+                    
+                    const processedNcapViolations = (data.ncap_violations || []).map(violation => {
+                        return {
+                            ...violation,
+                            // Ensure status is a string and standardize case
+                            status: violation.status ? String(violation.status) : 'UNKNOWN'
+                        };
+                    });
+                    
                     // Check for helmet violations and move them to NCAP
-                    const regularViolations = (data.regular_violations || []).filter(violation => {
+                    const regularViolations = processedRegularViolations.filter(violation => {
                         // Don't include helmet violations in regular violations
                         return !(violation.violation_type && 
                                  violation.violation_type.toLowerCase().includes('helmet'));
                     });
                     
-                    const ncapViolations = (data.ncap_violations || []).concat(
+                    const ncapViolations = processedNcapViolations.concat(
                         // Add any helmet violations to NCAP
-                        (data.regular_violations || []).filter(violation => 
+                        processedRegularViolations.filter(violation => 
                             violation.violation_type && 
                             violation.violation_type.toLowerCase().includes('helmet')
                         )
@@ -1339,13 +1361,16 @@ document.addEventListener('DOMContentLoaded', function() {
                             
                             for (let i = start; i < end; i++) {
                                 const violation = regularViolations[i];
+                                // Format the status for display - ensure proper capitalization
+                                const formattedStatus = formatStatusForDisplay(violation.status);
+                                
                                 const row = document.createElement('tr');
                                 row.innerHTML = `
                                     <td>${new Date(violation.violation_date).toLocaleDateString()}</td>
                                     <td>${violation.violation_type}</td>
                                     <td>${violation.location}</td>
                                     <td>
-                                        <span class="badge bg-${getStatusBadgeClass(violation.status)}">${violation.status}</span>
+                                        <span class="badge bg-${getStatusBadgeClass(violation.status)}">${formattedStatus}</span>
                                     </td>
                                     <td>₱${parseFloat(violation.fine_amount).toFixed(2)}</td>
                                 `;
@@ -1435,13 +1460,16 @@ document.addEventListener('DOMContentLoaded', function() {
                             
                             for (let i = start; i < end; i++) {
                                 const violation = ncapViolations[i];
+                                // Format the status for display - ensure proper capitalization
+                                const formattedStatus = formatStatusForDisplay(violation.status);
+                                
                                 const row = document.createElement('tr');
                                 row.innerHTML = `
                                     <td>${new Date(violation.violation_date).toLocaleDateString()}</td>
                                     <td>${violation.violation_type}</td>
                                     <td>${violation.location}</td>
                                     <td>
-                                        <span class="badge bg-${getStatusBadgeClass(violation.status)}">${violation.status}</span>
+                                        <span class="badge bg-${getStatusBadgeClass(violation.status)}">${formattedStatus}</span>
                                     </td>
                                     <td>₱${parseFloat(violation.fine_amount).toFixed(2)}</td>
                                 `;
@@ -1532,9 +1560,24 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // Helper function to format status for display (properly capitalized)
+    function formatStatusForDisplay(status) {
+        if (!status) return 'Unknown';
+        
+        // Convert to lowercase first, then capitalize first letter
+        const formattedStatus = status.toLowerCase()
+            .replace(/_/g, ' ') // Replace underscores with spaces
+            .replace(/\b\w/g, l => l.toUpperCase()); // Capitalize first letter of each word
+        
+        return formattedStatus;
+    }
+
     // Helper function to get badge class based on status
     function getStatusBadgeClass(status) {
-        switch(status.toUpperCase()) {
+        // Make status comparison case insensitive
+        const statusUpper = status ? status.toUpperCase() : '';
+        
+        switch(statusUpper) {
             case 'PENDING':
                 return 'warning';
             case 'PAID':
