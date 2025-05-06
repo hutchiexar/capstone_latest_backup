@@ -11,9 +11,16 @@ This project is configured for easy deployment to Render using Blueprint deploym
 5. Render will automatically set up your web service and PostgreSQL database
 6. Add your environment variables in the web service settings
 
+## Important Update: Python Version
+
+We've updated the Python version in `render.yaml` from 3.9.0 to 3.10.0 to ensure compatibility with packages like `contourpy` and other dependencies. This should resolve the build errors related to package compatibility.
+
+## Reference Documentation
+
 For detailed instructions, see:
 - `render_deployment_guide.md` - Complete step-by-step deployment guide
 - `render_env_variables.md` - List of required environment variables
+- `render_dependency_guide.md` - Guidance for handling dependency issues
 
 ## Files for Render Deployment
 
@@ -27,6 +34,17 @@ After deployment:
 1. Test your application on the provided Render URL
 2. Monitor logs for any errors
 3. Set up continuous deployment as needed
+
+## Troubleshooting Common Issues
+
+If you encounter build failures, check the following:
+
+1. **Python version compatibility**: Ensure your packages are compatible with Python 3.10.0
+2. **Database connection**: Verify PostgreSQL connection settings
+3. **Environment variables**: Make sure all required variables are set
+4. **Build logs**: Review build logs for specific error messages
+
+For more detailed troubleshooting, refer to `render_dependency_guide.md`.
 
 ## Support
 
