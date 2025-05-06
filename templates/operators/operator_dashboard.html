@@ -1279,7 +1279,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('searchError').style.display = 'none';
             
             // Make AJAX request to search for driver
-            fetch(`/api/search_driver/${pdNumber}/`)
+            fetch(`/api/search_driver/${pdNumber}/?include_all=true`)
                 .then(response => {
                     if (!response.ok) {
                         return response.json().then(data => {
@@ -1294,28 +1294,136 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Hide loading indicator
                     document.getElementById('searchLoading').style.display = 'none';
                     
-                    // Add debugging for status values
-                    if (data.regular_violations && data.regular_violations.length > 0) {
-                        console.log('Regular Violations Statuses:', data.regular_violations.map(v => v.status));
+                    // Error handling improvement for APIs that return error codes within 200 response
+                    if (data.error) {
+                        console.error('API returned error:', data.error);
+                        
+                        // Show error message with more details
+                        const errorDiv = document.getElementById('searchError');
+                        errorDiv.style.display = 'flex';
+                        
+                        const errorMessage = document.querySelector('#searchError p');
+                        errorMessage.textContent = data.error || 'An error occurred with the driver search.';
+                        
+                        document.getElementById('searchResults').style.display = 'none';
+                        return;
+                    }
+
+                    // Add complete response debugging to see the full structure
+                    console.log('Full API Response Structure:', JSON.stringify(data, null, 2));
+
+                    // Check if violations arrays exist
+                    if (!data.regular_violations) {
+                        console.warn('WARNING: regular_violations array is missing from API response');
+                        data.regular_violations = [];
+                    }
+
+                    if (!data.ncap_violations) {
+                        console.warn('WARNING: ncap_violations array is missing from API response');
+                        data.ncap_violations = [];
+                    }
+
+                    // Check if driver object is valid
+                    if (!data.driver) {
+                        console.error('ERROR: driver object is missing from API response');
+                        
+                        // Show error message
+                        const errorDiv = document.getElementById('searchError');
+                        errorDiv.style.display = 'flex';
+                        
+                        const errorMessage = document.querySelector('#searchError p');
+                        errorMessage.textContent = 'The API returned an incomplete response. Driver information is missing.';
+                        
+                        document.getElementById('searchResults').style.display = 'none';
+                        return;
                     }
                     
-                    // Process all violations to ensure consistent status values
+                    // Add more comprehensive debugging for pending violations
+                    if (data.regular_violations && data.regular_violations.length > 0) {
+                        console.log('All regular violations (raw):', data.regular_violations);
+                        
+                        // Debug logging for statuses of all violations
+                        const statusCounts = {};
+                        data.regular_violations.forEach(v => {
+                            const status = (v.status || 'UNKNOWN').toUpperCase();
+                            statusCounts[status] = (statusCounts[status] || 0) + 1;
+                        });
+                        console.log('Regular violations status counts:', statusCounts);
+                        
+                        // Specifically examine pending violations
+                        const pendingViolations = data.regular_violations.filter(v => {
+                            const status = (v.status || '').toUpperCase();
+                            const isPending = status === 'PENDING';
+                            console.log(`Violation ID ${v.id} status "${v.status}" -> isPending: ${isPending}`);
+                            return isPending;
+                        });
+                        console.log(`Found ${pendingViolations.length} PENDING regular violations:`, pendingViolations);
+                    }
+
+                    if (data.ncap_violations && data.ncap_violations.length > 0) {
+                        console.log('All NCAP violations (raw):', data.ncap_violations);
+                        
+                        // Debug logging for statuses of all violations
+                        const statusCounts = {};
+                        data.ncap_violations.forEach(v => {
+                            const status = (v.status || 'UNKNOWN').toUpperCase();
+                            statusCounts[status] = (statusCounts[status] || 0) + 1;
+                        });
+                        console.log('NCAP violations status counts:', statusCounts);
+                        
+                        // Specifically examine pending violations
+                        const pendingViolations = data.ncap_violations.filter(v => {
+                            const status = (v.status || '').toUpperCase();
+                            const isPending = status === 'PENDING';
+                            console.log(`Violation ID ${v.id} status "${v.status}" -> isPending: ${isPending}`);
+                            return isPending;
+                        });
+                        console.log(`Found ${pendingViolations.length} PENDING NCAP violations:`, pendingViolations);
+                    }
+
+                    // Check if the driver has a user account
+                    const hasUserAccount = data.driver.user_account || false;
+                    console.log('Driver has user account:', hasUserAccount ? 'Yes' : 'No');
+                    console.log('Debug info from API:', data.debug_info);
+
+                    // Make sure we're standardizing all statuses when processing violations
                     const processedRegularViolations = (data.regular_violations || []).map(violation => {
+                        // Capitalize the status for consistent comparison
+                        const status = violation.status ? String(violation.status).toUpperCase() : 'UNKNOWN';
+                        console.log(`Processing regular violation ID ${violation.id} with status: ${violation.status} -> ${status}`);
+                        
                         return {
                             ...violation,
-                            // Ensure status is a string and standardize case
-                            status: violation.status ? String(violation.status) : 'UNKNOWN'
+                            // Always standardize status to uppercase for consistent filtering
+                            status: status,
+                            // Ensure we have required data
+                            violation_date: violation.violation_date || new Date().toISOString(),
+                            violation_type: violation.violation_type || 'Unspecified Violation',
+                            location: violation.location || 'Location not specified',
+                            fine_amount: violation.fine_amount || 0
                         };
                     });
                     
                     const processedNcapViolations = (data.ncap_violations || []).map(violation => {
+                        // Capitalize the status for consistent comparison
+                        const status = violation.status ? String(violation.status).toUpperCase() : 'UNKNOWN';
+                        console.log(`Processing NCAP violation ID ${violation.id} with status: ${violation.status} -> ${status}`);
+                        
                         return {
                             ...violation,
-                            // Ensure status is a string and standardize case
-                            status: violation.status ? String(violation.status) : 'UNKNOWN'
+                            // Always standardize status to uppercase for consistent filtering
+                            status: status,
+                            // Ensure we have required data
+                            violation_date: violation.violation_date || new Date().toISOString(),
+                            violation_type: violation.violation_type || 'Unspecified NCAP Violation',
+                            location: violation.location || 'Location not specified',
+                            fine_amount: violation.fine_amount || 0
                         };
                     });
-                    
+
+                    // Before filtering/moving helmet violations, check the counts
+                    console.log(`Before helmet filtering: ${processedRegularViolations.length} regular, ${processedNcapViolations.length} NCAP`);
+
                     // Check for helmet violations and move them to NCAP
                     const regularViolations = processedRegularViolations.filter(violation => {
                         // Don't include helmet violations in regular violations
@@ -1331,9 +1439,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         )
                     );
                     
+                    // After filtering/moving helmet violations, check the counts again
+                    console.log(`After helmet filtering: ${regularViolations.length} regular, ${ncapViolations.length} NCAP`);
+                    
                     // Update driver information
-                    document.getElementById('driverName').textContent = `${data.driver.first_name || ''} ${data.driver.last_name || ''}`.trim();
-                    document.getElementById('driverPdNumber').textContent = data.driver.pd_number || 'Not specified';
+                    document.getElementById('driverName').textContent = data.driver.first_name && data.driver.last_name ? 
+                        `${data.driver.first_name} ${data.driver.last_name}`.trim() : 
+                        (data.driver.driver_name || 'Name not specified');
+
+                    document.getElementById('driverPdNumber').textContent = data.driver.pd_number || 
+                        (data.driver.new_pd_number || 'Not specified');
+
                     document.getElementById('driverLicenseNumber').textContent = data.driver.license_number || 'Not specified';
                     
                     // Update violation counts
@@ -1359,20 +1475,29 @@ document.addEventListener('DOMContentLoaded', function() {
                             const start = (page - 1) * regularPageSize;
                             const end = Math.min(start + regularPageSize, regularViolations.length);
                             
+                            console.log(`Showing regular violations page ${page}, violations ${start}-${end} of ${regularViolations.length}`);
+                            
                             for (let i = start; i < end; i++) {
                                 const violation = regularViolations[i];
+                                
+                                // Log each violation we're about to render
+                                console.log(`Rendering regular violation [${i}]:`, violation);
+                                
                                 // Format the status for display - ensure proper capitalization
                                 const formattedStatus = formatStatusForDisplay(violation.status);
+                                const badgeClass = getStatusBadgeClass(violation.status);
+                                
+                                console.log(`Violation status: "${violation.status}" -> "${formattedStatus}" (badge: ${badgeClass})`);
                                 
                                 const row = document.createElement('tr');
                                 row.innerHTML = `
-                                    <td>${new Date(violation.violation_date).toLocaleDateString()}</td>
-                                    <td>${violation.violation_type}</td>
-                                    <td>${violation.location}</td>
+                                    <td>${formatDateSafely(violation.violation_date)}</td>
+                                    <td>${violation.violation_type || 'Unspecified'}</td>
+                                    <td>${violation.location || 'Location not specified'}</td>
                                     <td>
-                                        <span class="badge bg-${getStatusBadgeClass(violation.status)}">${formattedStatus}</span>
+                                        <span class="badge bg-${badgeClass}">${formattedStatus}</span>
                                     </td>
-                                    <td>₱${parseFloat(violation.fine_amount).toFixed(2)}</td>
+                                    <td>${formatCurrencySafely(violation.fine_amount)}</td>
                                 `;
                                 regularViolationsBody.appendChild(row);
                             }
@@ -1458,20 +1583,29 @@ document.addEventListener('DOMContentLoaded', function() {
                             const start = (page - 1) * ncapPageSize;
                             const end = Math.min(start + ncapPageSize, ncapViolations.length);
                             
+                            console.log(`Showing NCAP violations page ${page}, violations ${start}-${end} of ${ncapViolations.length}`);
+                            
                             for (let i = start; i < end; i++) {
                                 const violation = ncapViolations[i];
+                                
+                                // Log each violation we're about to render
+                                console.log(`Rendering NCAP violation [${i}]:`, violation);
+                                
                                 // Format the status for display - ensure proper capitalization
                                 const formattedStatus = formatStatusForDisplay(violation.status);
+                                const badgeClass = getStatusBadgeClass(violation.status);
+                                
+                                console.log(`Violation status: "${violation.status}" -> "${formattedStatus}" (badge: ${badgeClass})`);
                                 
                                 const row = document.createElement('tr');
                                 row.innerHTML = `
-                                    <td>${new Date(violation.violation_date).toLocaleDateString()}</td>
-                                    <td>${violation.violation_type}</td>
-                                    <td>${violation.location}</td>
+                                    <td>${formatDateSafely(violation.violation_date)}</td>
+                                    <td>${violation.violation_type || 'Unspecified'}</td>
+                                    <td>${violation.location || 'Location not specified'}</td>
                                     <td>
-                                        <span class="badge bg-${getStatusBadgeClass(violation.status)}">${formattedStatus}</span>
+                                        <span class="badge bg-${badgeClass}">${formattedStatus}</span>
                                     </td>
-                                    <td>₱${parseFloat(violation.fine_amount).toFixed(2)}</td>
+                                    <td>${formatCurrencySafely(violation.fine_amount)}</td>
                                 `;
                                 ncapViolationsBody.appendChild(row);
                             }
@@ -1564,18 +1698,24 @@ document.addEventListener('DOMContentLoaded', function() {
     function formatStatusForDisplay(status) {
         if (!status) return 'Unknown';
         
-        // Convert to lowercase first, then capitalize first letter
-        const formattedStatus = status.toLowerCase()
+        // Status should already be standardized to uppercase in the API/processing
+        // But just in case, ensure it's a string
+        const statusStr = String(status);
+        
+        // Convert to lowercase first, then capitalize first letter of each word
+        const formattedStatus = statusStr.toLowerCase()
             .replace(/_/g, ' ') // Replace underscores with spaces
             .replace(/\b\w/g, l => l.toUpperCase()); // Capitalize first letter of each word
         
+        console.log(`Formatting status: "${status}" -> "${formattedStatus}"`);
         return formattedStatus;
     }
 
     // Helper function to get badge class based on status
     function getStatusBadgeClass(status) {
-        // Make status comparison case insensitive
-        const statusUpper = status ? status.toUpperCase() : '';
+        // Make status comparison case insensitive by always converting to uppercase
+        const statusUpper = status ? String(status).toUpperCase() : '';
+        console.log(`Badge class for status: "${status}" -> "${statusUpper}"`);
         
         switch(statusUpper) {
             case 'PENDING':
@@ -1591,6 +1731,42 @@ document.addEventListener('DOMContentLoaded', function() {
                 return 'danger';
             default:
                 return 'secondary';
+        }
+    }
+
+    // Function to safely format dates
+    function formatDateSafely(dateString) {
+        try {
+            // Check if dateString exists and is valid
+            if (!dateString) return 'Date not specified';
+            
+            // Try to parse as ISO date first
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) {
+                // If invalid date, return the original string or default message
+                return dateString || 'Date not specified';
+            }
+            
+            // Format the date nicely
+            return date.toLocaleDateString();
+        } catch (e) {
+            console.warn("Date formatting error:", e);
+            return 'Date not specified';
+        }
+    }
+
+    // Function to safely format currency amounts
+    function formatCurrencySafely(amount) {
+        try {
+            // Convert to float and handle NaN cases
+            const value = parseFloat(amount);
+            if (isNaN(value)) return '₱0.00';
+            
+            // Format with 2 decimal places
+            return `₱${value.toFixed(2)}`;
+        } catch (e) {
+            console.warn("Currency formatting error:", e);
+            return '₱0.00';
         }
     }
 });

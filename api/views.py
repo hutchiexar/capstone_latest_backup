@@ -344,6 +344,9 @@ def search_driver_by_pd(request, pd_number):
     URL parameters:
     - pd_number: The PD number of the driver to search for
     
+    Query parameters:
+    - include_all: If 'true', include violations from drivers who don't have user accounts
+    
     Returns:
     - JSON response with driver information and violations categorized as regular and NCAP
     """
@@ -362,7 +365,9 @@ def search_driver_by_pd(request, pd_number):
                 'message': 'Only operators can search for driver violations'
             }, status=403)
         
-        logger.debug(f"Searching for driver with PD number: {pd_number}")
+        # Get the include_all parameter
+        include_all = request.GET.get('include_all', 'false').lower() == 'true'
+        logger.debug(f"Searching for driver with PD number: {pd_number}, include_all: {include_all}")
         
         # Get driver by PD number
         try:
@@ -421,7 +426,8 @@ def search_driver_by_pd(request, pd_number):
                 'driver_name': f"{driver_first_name} {driver_last_name}",
                 'pd_numbers': [driver_new_pd, driver_old_pd],
                 'license_number': driver_license,
-                'search_strategies_used': []
+                'search_strategies_used': [],
+                'include_all': include_all
             }
             
             logger.debug(f"Searching violations for driver ID: {driver_id}, PD numbers: {driver_new_pd}, {driver_old_pd}")
@@ -527,6 +533,34 @@ def search_driver_by_pd(request, pd_number):
             except Exception as e:
                 logger.error(f"Error in strategy 6 (direct driver field): {str(e)}")
                 search_debug_info['search_strategies_used'].append(f"violation.driver ERROR: {str(e)}")
+                
+            # Strategy 7: Search by PD number directly on the Violation model
+            try:
+                pd_field_violations = []
+                # Try pd_number field
+                if hasattr(Violation, 'pd_number'):
+                    # Try with new PD number
+                    if driver_new_pd:
+                        new_pd_direct_violations = list(Violation.objects.filter(
+                            pd_number__iexact=driver_new_pd
+                        ).order_by('-violation_date'))
+                        pd_field_violations.extend(new_pd_direct_violations)
+                        search_debug_info['search_strategies_used'].append(f"pd_number={driver_new_pd} (found {len(new_pd_direct_violations)})")
+                    
+                    # Try with old PD number
+                    if driver_old_pd:
+                        old_pd_direct_violations = list(Violation.objects.filter(
+                            pd_number__iexact=driver_old_pd
+                        ).order_by('-violation_date'))
+                        pd_field_violations.extend(old_pd_direct_violations)
+                        search_debug_info['search_strategies_used'].append(f"pd_number={driver_old_pd} (found {len(old_pd_direct_violations)})")
+                
+                if pd_field_violations:
+                    logger.debug(f"Found {len(pd_field_violations)} violations by direct PD number field")
+                    all_found_violations.extend(pd_field_violations)
+            except Exception as e:
+                logger.error(f"Error in strategy 7 (direct PD number field): {str(e)}")
+                search_debug_info['search_strategies_used'].append(f"direct pd_number ERROR: {str(e)}")
             
             # Debug count of total violations found
             search_debug_info['total_found'] = len(all_found_violations)
@@ -544,6 +578,12 @@ def search_driver_by_pd(request, pd_number):
             # Process violations 
             for violation in all_violations:
                 try:
+                    # Skip violations without user_account if include_all is False
+                    user_account = getattr(violation, 'user_account', None)
+                    if not include_all and user_account is None:
+                        logger.debug(f"Skipping violation {violation.id} because it has no user account and include_all is False")
+                        continue
+                    
                     # Get violation type using multiple possible field names
                     violation_type = None
                     for field_name in ['violation_type', 'violations', 'violation']:
@@ -634,7 +674,17 @@ def search_driver_by_pd(request, pd_number):
                 'pd_number': driver_new_pd or driver_old_pd or '',
                 'address': getattr(driver, 'address', ''),
                 'contact_number': getattr(driver, 'contact_number', ''),
+                'user_account': False,  # Default to false since we're looking at drivers without accounts
             }
+            
+            # Check if this driver has a user account (via lookup by license number)
+            try:
+                if driver.license_number and User.objects.filter(userprofile__license_number=driver.license_number).exists():
+                    driver_data['user_account'] = True
+                    logger.debug(f"Driver has a User account linked via license number")
+            except Exception as e:
+                logger.error(f"Error checking for user account: {str(e)}")
+            
         except Exception as e:
             logger.error(f"Error preparing driver data: {str(e)}", exc_info=True)
             driver_data = {
