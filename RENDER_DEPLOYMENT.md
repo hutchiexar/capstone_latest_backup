@@ -21,10 +21,11 @@ We've addressed multiple dependency conflicts:
 
 1. **contourpy/matplotlib compatibility**: Updated Python version to 3.10.0
 2. **pyparsing conflicts**: Created a simplified `requirements-fixed.txt` with compatible versions
-3. **pyHanko/pyhanko-certvalidator conflicts**: Updated both to compatible versions (pyHanko==0.19.0 and pyhanko-certvalidator==0.22.0)
-4. **Modified build.sh**: Updated to use the fixed requirements file
+3. **pyHanko/pyhanko-certvalidator conflicts**: After multiple attempts, updated to much older versions (pyHanko==0.17.0 and pyhanko-certvalidator==0.19.5)
+4. **Fallback mechanism**: Created `requirements-minimal.txt` without problematic packages as a fallback
+5. **Enhanced build.sh**: Updated to include multiple fallback options for dependency issues
 
-These changes should resolve the build errors you've encountered.
+These robust changes should ensure successful deployment even if some package conflicts persist.
 
 ## Reference Documentation
 
@@ -32,13 +33,15 @@ For detailed instructions, see:
 - `render_deployment_guide.md` - Complete step-by-step deployment guide
 - `render_env_variables.md` - List of required environment variables
 - `render_dependency_guide.md` - Guidance for handling dependency issues
+- `render_dependency_summary.md` - Summary of all dependency issues and solutions
 
 ## Files for Render Deployment
 
 - `render.yaml` - Defines services and their configurations
-- `build.sh` - Build script for the deployment process
+- `build.sh` - Enhanced build script with fallback mechanisms
 - `CAPSTONE_PROJECT/postgresql_settings.py` - PostgreSQL-specific settings
 - `requirements-fixed.txt` - Fixed dependencies file to resolve conflicts
+- `requirements-minimal.txt` - Minimal dependencies for fallback
 
 ## Post-Deployment
 

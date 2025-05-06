@@ -18,19 +18,38 @@ This document summarizes all the dependency issues we've encountered and resolve
 - **Files Created/Modified**: `requirements-fixed.txt`, `build.sh`
 
 ### 3. pyHanko and pyhanko-certvalidator Compatibility
-- **Issue**: Version conflict between pyHanko and its certvalidator
-- **Solution**: Updated both to known compatible versions
-- **Key Changes**:
-  - Changed from `pyHanko==0.20.1` to `pyHanko==0.19.0`
-  - Changed from `pyhanko-certvalidator==0.23.0` to `pyhanko-certvalidator==0.22.0`
-- **Files Modified**: `requirements-fixed.txt`
+- **Issue**: Persistent version conflicts between pyHanko and its certvalidator
+- **Solution**: Multiple attempts to find compatible versions
+  - First attempt: `pyHanko==0.20.1` and `pyhanko-certvalidator==0.23.0` (conflicted)
+  - Second attempt: `pyHanko==0.19.0` and `pyhanko-certvalidator==0.22.0` (conflicted)
+  - Final attempt: `pyHanko==0.17.0` and `pyhanko-certvalidator==0.19.5`
+- **Additional Measures**:
+  - Created `requirements-minimal.txt` without these packages as a fallback
+  - Updated build script to try installing without these packages if conflicts persist
+- **Files Modified**: `requirements-fixed.txt`, `build.sh`, created `requirements-minimal.txt`
 
 ### 4. Build Script Resilience
-- **Enhancement**: Made the build script more resilient to dependency issues
+- **Enhancement**: Made the build script highly resilient to dependency issues
 - **Key Changes**:
-  - Added fallback options if the primary requirements file fails
-  - Included a minimal set of core dependencies as a last resort
+  - Implemented a multi-stage fallback system:
+    1. Try `requirements-fixed.txt` first
+    2. If that fails, try a filtered version without problematic packages
+    3. Then try `requirements-minimal.txt` if available
+    4. Finally, fall back to core dependencies as a last resort
+  - Added individual package installation for problematic packages
+  - Improved error handling and reporting
 - **Files Modified**: `build.sh`
+
+## Multi-layered Approach to Dependency Management
+
+Our final solution uses a multi-layered approach:
+
+1. **Primary**: `requirements-fixed.txt` with carefully selected compatible versions
+2. **Secondary**: Dynamic filtering of requirements during build to skip problematic packages
+3. **Tertiary**: `requirements-minimal.txt` with only essential packages
+4. **Fallback**: Direct installation of core packages in the build script
+
+This approach ensures that even if dependency conflicts persist, the application can still be deployed with at least its core functionality.
 
 ## Recommendations for Handling Future Dependency Issues
 

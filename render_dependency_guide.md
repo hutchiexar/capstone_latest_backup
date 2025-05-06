@@ -30,17 +30,19 @@ matplotlib==3.7.2  # Instead of 3.10.1
 
 ## Resolving Package Dependency Conflicts
 
-### Conflict with pyHanko and pyhanko-certvalidator
+### Ongoing Issues with pyHanko and pyhanko-certvalidator
 
-The latest conflict we encountered was between pyHanko and pyhanko-certvalidator:
+We've encountered persistent conflicts with pyHanko and pyhanko-certvalidator. After multiple attempts, we've found that these packages are particularly sensitive to version compatibility.
 
-```
-ERROR: Cannot install -r requirements-fixed.txt (line 32) and pyhanko-certvalidator==0.23.0 because these package versions have conflicting dependencies.
-```
+We tried:
+1. First attempt: `pyHanko==0.20.1` and `pyhanko-certvalidator==0.23.0` (conflicted)
+2. Second attempt: `pyHanko==0.19.0` and `pyhanko-certvalidator==0.22.0` (conflicted)
+3. Current attempt: `pyHanko==0.17.0` and `pyhanko-certvalidator==0.19.5`
 
-These packages need to be in sync with each other. We've updated them to compatible versions:
-- Changed from `pyHanko==0.20.1` to `pyHanko==0.19.0`
-- Changed from `pyhanko-certvalidator==0.23.0` to `pyhanko-certvalidator==0.22.0`
+These packages have a complex dependency tree and often require exact version matches. If the current combination doesn't work, we may need to:
+- Further downgrade to even older versions
+- Consider removing these packages if they're not critical to your application
+- Fork and modify the packages to resolve internal dependency issues
 
 ### Previous Conflict with pyparsing
 
@@ -71,6 +73,14 @@ cp requirements-fixed.txt requirements.txt
 # Change buildCommand to:
 # buildCommand: chmod +x build.sh && REQUIREMENTS_FILE=requirements-fixed.txt ./build.sh
 ```
+
+### Last Resort: Minimal Dependencies
+
+If you continue to encounter dependency issues, consider:
+
+1. **Creating a minimal requirements file** with only the absolutely essential packages
+2. **Installing problematic packages separately** after the main installation
+3. **Using our resilient build script** which falls back to core dependencies if all else fails
 
 ### General Strategy for Resolving Dependencies
 
