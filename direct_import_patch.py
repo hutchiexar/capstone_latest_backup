@@ -51,19 +51,6 @@ except ImportError:
         def enableAuthentication(self, enable=True): pass
         def enableImageOutput(self, enable=True): pass
 '''
-    ),
-    
-    # pyHanko patch (if needed)
-    PatchRule(
-        file_path='traffic_violation_system/pdf_utils.py',
-        import_pattern=r'from\s+pyhanko\s+import',
-        replacement='''# Graceful degradation for pyHanko import
-try:
-    from pyhanko import
-except ImportError:
-    print("WARNING: pyHanko not available. PDF signing disabled.")
-    # Define dummy classes here if needed
-'''
     )
 ]
 

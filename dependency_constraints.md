@@ -12,6 +12,16 @@ This document tracks known dependency constraints and conflicts encountered duri
 | idanalyzer | Must use v1.2.2 | Latest version that's compatible with our codebase | Implemented graceful degradation |
 | Python | Must use v3.10.0 | Needed for contourpy and other dependencies | Updated in render.yaml |
 
+## Active Import Patching
+
+The system currently implements import patching for:
+
+- **idanalyzer**: Provides fallback implementation in `views.py` when the module is not available
+  
+Future modules may be added to the patching mechanism as needed. A potential candidate for future patching is:
+
+- **pyHanko**: For PDF signing functionality (currently not patched as the target file was not found)
+
 ## Handling Strategy
 
 The project uses a multi-tier approach to handle dependency conflicts:
