@@ -68,8 +68,7 @@
                                             <label for="first_name" class="form-label small fw-semibold">First Name</label>
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text"><i class="material-icons small">badge</i></span>
-                                                <input type="text" class="form-control" id="first_name" name="first_name" 
-                                                      value="{{ form_data.first_name|default:'' }}" required>
+                                                <input type="text" class="form-control" id="first_name" name="first_name" required>
                                                 <div class="invalid-feedback">Required</div>
                                             </div>
                                         </div>
@@ -79,8 +78,7 @@
                                             <label for="last_name" class="form-label small fw-semibold">Last Name</label>
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text"><i class="material-icons small">badge</i></span>
-                                                <input type="text" class="form-control" id="last_name" name="last_name"
-                                                      value="{{ form_data.last_name|default:'' }}" required>
+                                                <input type="text" class="form-control" id="last_name" name="last_name" required>
                                                 <div class="invalid-feedback">Required</div>
                                             </div>
                                         </div>
@@ -91,8 +89,7 @@
                                     <label for="email" class="form-label small fw-semibold">Email Address</label>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text"><i class="material-icons small">email</i></span>
-                                        <input type="email" class="form-control" id="email" name="email"
-                                              value="{{ form_data.email|default:'' }}" required>
+                                        <input type="email" class="form-control" id="email" name="email" required>
                                         <div class="invalid-feedback">Enter valid email</div>
                                     </div>
                                 </div>
@@ -102,8 +99,7 @@
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text"><i class="material-icons small">phone</i></span>
                                         <input type="tel" class="form-control" id="phone_number" name="phone_number" 
-                                               pattern="[0-9]{11}" placeholder="09XXXXXXXXX"
-                                               value="{{ form_data.phone_number|default:'' }}" required>
+                                               pattern="[0-9]{11}" placeholder="09XXXXXXXXX" required>
                                         <div class="invalid-feedback">Enter 11-digit number</div>
                                     </div>
                                 </div>
@@ -112,7 +108,7 @@
                                     <label for="address" class="form-label small fw-semibold">Complete Address</label>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text"><i class="material-icons small">home</i></span>
-                                        <textarea class="form-control" id="address" name="address" rows="2" required>{{ form_data.address|default:'' }}</textarea>
+                                        <textarea class="form-control" id="address" name="address" rows="2" required></textarea>
                                         <div class="invalid-feedback">Enter your address</div>
                                     </div>
                                 </div>
@@ -136,8 +132,7 @@
                                     <label for="username" class="form-label small fw-semibold">Username</label>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text"><i class="material-icons small">account_circle</i></span>
-                                        <input type="text" class="form-control" id="username" name="username" 
-                                               value="{{ form_data.username|default:'' }}" required>
+                                        <input type="text" class="form-control" id="username" name="username" required>
                                         <div class="invalid-feedback">Choose a username</div>
                                     </div>
                                 </div>
@@ -176,7 +171,7 @@
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text"><i class="material-icons small">credit_card</i></span>
                                         <input type="text" class="form-control" id="license_number" name="license_number" 
-                                               placeholder="N01-23-456789" value="{{ form_data.license_number|default:'' }}">
+                                               placeholder="N01-23-456789">
                                         <div class="invalid-feedback">Enter valid license number</div>
                                     </div>
                                     <small class="text-muted mt-1 d-block" style="font-size: 0.7rem;">Optional field - Format: N01-23-456789</small>
@@ -614,6 +609,12 @@ document.addEventListener('DOMContentLoaded', function() {
     if (hasServerErrors) {
         // If there were validation errors from the server, make sure to highlight the form appropriately
         form.classList.add('was-validated');
+        
+        // Clear all form fields when there are server errors
+        const formInputs = form.querySelectorAll('input:not([type="hidden"]), textarea');
+        formInputs.forEach(function(input) {
+            input.value = '';
+        });
     }
     
     form.addEventListener('submit', function(event) {
@@ -742,11 +743,11 @@ document.addEventListener('DOMContentLoaded', function() {
         let filledSections = 0;
         let totalSections = accordionItems.length;
         
-        accordionItems.forEach((item, index) => {
+        accordionItems.forEach(function(item, index) {
             const inputs = item.querySelectorAll('input, textarea');
             let sectionFilled = true;
             
-            inputs.forEach(input => {
+            inputs.forEach(function(input) {
                 if (input.required && !input.value) {
                     sectionFilled = false;
                 }
@@ -763,7 +764,7 @@ document.addEventListener('DOMContentLoaded', function() {
     form.addEventListener('input', updateProgress);
     
     // Set up accordion navigation for progressive disclosure
-    accordionButtons.forEach((button, index) => {
+    accordionButtons.forEach(function(button, index) {
         button.addEventListener('click', function() {
             // This handles accordion toggle behavior provided by Bootstrap
         });
@@ -771,15 +772,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Add animation to accordion items as they open
     const accordionCollapses = document.querySelectorAll('.accordion-collapse');
-    accordionCollapses.forEach(collapse => {
+    accordionCollapses.forEach(function(collapse) {
         collapse.addEventListener('shown.bs.collapse', function() {
             const formGroups = this.querySelectorAll('.mb-2');
-            formGroups.forEach((group, index) => {
+            formGroups.forEach(function(group, index) {
                 group.style.opacity = '0';
                 group.style.transform = 'translateY(10px)';
                 group.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
                 
-                setTimeout(() => {
+                setTimeout(function() {
                     group.style.opacity = '1';
                     group.style.transform = 'translateY(0)';
                 }, 50 * (index + 1));
