@@ -3067,12 +3067,12 @@
                             <!-- Processing Submenu -->
                             {% if user.userprofile.role == 'SUPERVISOR' or user.userprofile.role == 'TREASURER' or user.userprofile.role == 'ADMIN' %}
                             <div class="submenu">
-                                <button class="list-group-item submenu-toggle {% if 'pending-approvals' in request.path or 'payment-processing' in request.path %}active{% endif %}" data-bs-toggle="collapse" data-bs-target="#processingSubmenu">
+                                <button class="list-group-item submenu-toggle {% if 'pending-approvals' in request.path or 'payment-processing' in request.path or 'adjudication-history' in request.path %}active{% endif %}" data-bs-toggle="collapse" data-bs-target="#processingSubmenu">
                                     <span class="material-icons">pending_actions</span>
                                     <span class="flex-grow-1">Processing</span>
                                     <span class="material-icons submenu-icon">expand_more</span>
                                 </button>
-                                <div class="collapse {% if 'pending-approvals' in request.path or 'payment-processing' in request.path %}show{% endif %}" id="processingSubmenu">
+                                <div class="collapse {% if 'pending-approvals' in request.path or 'payment-processing' in request.path or 'adjudication-history' in request.path %}show{% endif %}" id="processingSubmenu">
                                     {% if user.userprofile.role == 'SUPERVISOR' or user.userprofile.role == 'ADMIN' %}
                                     <a href="{% url 'pending_approvals' %}" class="list-group-item submenu-item {% if 'pending-approvals' in request.path %}active{% endif %}">
                                         <span class="material-icons">pending_actions</span>Pending Approvals
@@ -3081,6 +3081,11 @@
                                     {% if user.userprofile.role == 'TREASURER' or user.userprofile.role == 'ADMIN' %}
                                     <a href="{% url 'payment_processing' %}" class="list-group-item submenu-item {% if 'payment-processing' in request.path %}active{% endif %}">
                                         <span class="material-icons">payments</span>Payment Processing
+                                    </a>
+                                    {% endif %}
+                                    {% if user.userprofile.role == 'SUPERVISOR' or user.userprofile.role == 'ADMIN' %}
+                                    <a href="{% url 'adjudication_history' %}" class="list-group-item submenu-item {% if 'adjudication-history' in request.path %}active{% endif %}">
+                                        <span class="material-icons">history</span>Adjudication History
                                     </a>
                                     {% endif %}
                                 </div>

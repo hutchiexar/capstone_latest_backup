@@ -303,8 +303,9 @@ window.violationTypeAmounts = {};
     }
     
     .violation-type-item:not(.checked) {
-        opacity: 0.75;
+        opacity: 0.85;
         background-color: #f8f9fa;
+        border-color: #dee2e6;
     }
     
     .violation-type-item:not(.checked) .text-muted {
@@ -357,6 +358,24 @@ window.violationTypeAmounts = {};
     
     #penaltyAmount:focus {
         box-shadow: 0 0 0 0.2rem rgba(var(--primary-color-rgb, 37, 99, 235), 0.25);
+    }
+
+    /* Add CSS for removal reason indicator */
+    .removal-reason-indicator {
+        border-left: 3px solid #dc3545;
+        padding: 6px 10px;
+        margin-top: 8px !important;
+        background-color: rgba(220, 53, 69, 0.05);
+        border-radius: 4px;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+    }
+
+    .removal-reason-indicator .material-icons {
+        margin-right: 5px;
+        font-size: 14px !important;
+        color: #dc3545;
     }
 </style>
 
@@ -628,33 +647,132 @@ document.addEventListener('DOMContentLoaded', function() {
                         // Don't trigger if the click was on the checkbox itself
                         if (event.target.type !== 'checkbox') {
                             const checkbox = this.querySelector('input[type="checkbox"]');
-                            checkbox.checked = !checkbox.checked;
+                            const violationType = checkbox.value;
                             
+                            // If we're unchecking a checkbox (removing violation), prompt for reason
                             if (checkbox.checked) {
-                                this.classList.add('checked');
+                                // When unchecking (removing a violation), prompt for a reason using SweetAlert
+                                Swal.fire({
+                                    title: 'Enter Reason for Removal',
+                                    html: `<div class="mb-3 text-start">
+                                             <p class="mb-2 fw-bold">Why are you removing "${violationType}"?</p>
+                                             <textarea id="removalReason" class="form-control" rows="3" placeholder="Please provide a reason for removing this violation..."></textarea>
+                                           </div>`,
+                                    icon: 'question',
+                                    showCancelButton: true,
+                                    confirmButtonColor: 'var(--primary-color)',
+                                    cancelButtonColor: '#6c757d',
+                                    confirmButtonText: 'Save Reason',
+                                    cancelButtonText: 'Cancel',
+                                    focusConfirm: false,
+                                    preConfirm: () => {
+                                        const reason = document.getElementById('removalReason').value;
+                                        if (!reason.trim()) {
+                                            Swal.showValidationMessage('Please provide a reason for removal');
+                                            return false;
+                                        }
+                                        return reason;
+                                    }
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        // If user confirmed and provided a reason, proceed with removal
+                                        const reason = result.value;
+                                        
+                                        // Store the reason as a data attribute on the checkbox
+                                        checkbox.setAttribute('data-removal-reason', reason);
+                                        
+                                        // Uncheck the checkbox
+                                        checkbox.checked = false;
+                                        
+                                        // Update the UI
+                                        this.classList.remove('checked');
+                                        
+                                        // Add a visual indicator that a reason was provided
+                                        const reasonIndicator = document.createElement('div');
+                                        reasonIndicator.className = 'removal-reason-indicator small text-danger mt-1';
+                                        reasonIndicator.innerHTML = `<span class="material-icons" style="font-size: 14px;">info</span> Removed: ${reason.substring(0, 25)}${reason.length > 25 ? '...' : ''}`;
+                                        
+                                        // Remove any existing indicator first
+                                        const existingIndicator = this.querySelector('.removal-reason-indicator');
+                                        if (existingIndicator) {
+                                            existingIndicator.remove();
+                                        }
+                                        
+                                        // Add the new indicator
+                                        this.appendChild(reasonIndicator);
+                                        
+                                        // Update total amount
+                                        updateTotalAmount();
+                                        
+                                        // Show a small toast confirmation
+                                        Swal.fire({
+                                            icon: 'success',
+                                            title: 'Reason Saved',
+                                            text: 'The removal reason has been saved.',
+                                            toast: true,
+                                            position: 'top-end',
+                                            showConfirmButton: false,
+                                            timer: 3000,
+                                            timerProgressBar: true
+                                        });
+                                    }
+                                });
                             } else {
-                                this.classList.remove('checked');
+                                // Re-checking the box (adding back violation)
+                                checkbox.checked = true;
+                                this.classList.add('checked');
+                                
+                                // Remove any reason indicator
+                                const reasonIndicator = this.querySelector('.removal-reason-indicator');
+                                if (reasonIndicator) {
+                                    reasonIndicator.remove();
+                                }
+                                
+                                // Remove the stored reason
+                                checkbox.removeAttribute('data-removal-reason');
+                                
+                                // Update total amount
+                                updateTotalAmount();
                             }
-                            
-                            // Update total amount based on checked violations
-                            updateTotalAmount();
                         }
                     });
                 });
                 
                 // Add change event directly to checkboxes for updates on direct checkbox clicks
                 document.querySelectorAll('.violation-type-checkbox').forEach(checkbox => {
-                    checkbox.addEventListener('change', function() {
+                    checkbox.addEventListener('change', function(event) {
+                        // This will only trigger when the checkbox is directly clicked
                         // Update parent container class
                         const container = this.closest('.violation-type-item');
-                        if (this.checked) {
-                            container.classList.add('checked');
-                        } else {
-                            container.classList.remove('checked');
-                        }
+                        const violationType = this.value;
                         
-                        // Update total amount
-                        updateTotalAmount();
+                        if (this.checked) {
+                            // When checking the box, just update the UI
+                            container.classList.add('checked');
+                            
+                            // Remove any reason indicator
+                            const reasonIndicator = container.querySelector('.removal-reason-indicator');
+                            if (reasonIndicator) {
+                                reasonIndicator.remove();
+                            }
+                            
+                            // Remove the stored reason
+                            this.removeAttribute('data-removal-reason');
+                            
+                            // Update total amount
+                            updateTotalAmount();
+                        } else {
+                            // When unchecking directly, we need to make sure the prompt is shown
+                            // We'll handle this by showing the prompt and preventing the default behavior
+                            event.preventDefault();
+                            event.stopPropagation();
+                            
+                            // Reset the checkbox state
+                            this.checked = true;
+                            
+                            // Simulate a click on the parent container instead to trigger our prompt logic
+                            container.click();
+                        }
                     });
                 });
                 
@@ -735,6 +853,19 @@ document.addEventListener('DOMContentLoaded', function() {
             selectedTypes.push(checkbox.value);
         });
         
+        // Get removal reasons for removed violations
+        const removedViolations = {};
+        document.querySelectorAll('.violation-type-checkbox:not(:checked)').forEach(checkbox => {
+            const violationType = checkbox.value;
+            const reason = checkbox.getAttribute('data-removal-reason') || 'No reason provided';
+            const amount = checkbox.getAttribute('data-amount') || '0.00';
+            
+            removedViolations[violationType] = {
+                reason: reason,
+                amount: amount
+            };
+        });
+        
         // Validate form
         if (!ticketId) {
             Swal.fire({
@@ -787,7 +918,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         ticket_id: ticketId,
                         violation_types: selectedTypes,
                         penalty_amount: penaltyAmount,
-                        notes: notes
+                        notes: notes,
+                        removed_violations: removedViolations // Add the removed violations with reasons
                     })
                 })
                 .then(response => {

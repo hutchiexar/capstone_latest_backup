@@ -259,7 +259,7 @@
         <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="modal-adjudicator-notes-title">
             <header class="modal__header">
                 <h2 class="modal__title" id="modal-adjudicator-notes-title">
-                    Adjudicator Notes
+                    Adjudication Details
                 </h2>
                 <button class="modal__close" aria-label="Close modal" data-micromodal-close></button>
             </header>
@@ -277,6 +277,202 @@
         </div>
     </div>
 </div>
+
+<!-- Enhanced Adjudication Details Modal -->
+<div class="modal fade" id="enhancedAdjudicationModal" tabindex="-1" aria-labelledby="enhancedAdjudicationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-white text-dark border-bottom">
+                <h5 class="modal-title" id="enhancedAdjudicationModalLabel">
+                    <i class="material-icons align-middle me-2 text-primary">gavel</i>
+                    Adjudication Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <!-- Summary section -->
+                <div class="bg-light p-3 border-bottom">
+                    <div class="d-flex justify-content-between flex-wrap">
+                        <div class="d-flex align-items-center mb-2 mb-md-0">
+                            <span class="material-icons text-primary me-2">person</span>
+                            <div>
+                                <span class="text-muted small">Adjudicated by</span>
+                                <div id="adjudicatorName" class="fw-bold">Loading...</div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="material-icons text-primary me-2">calendar_today</span>
+                            <div>
+                                <span class="text-muted small">Date</span>
+                                <div id="adjudicationDate" class="fw-bold">Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Amount comparison section -->
+                <div class="p-4">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="card border-0 bg-light h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title text-muted mb-3">Original Amount</h6>
+                                    <div class="d-flex align-items-baseline">
+                                        <span class="currency-symbol">₱</span>
+                                        <span id="originalAmount" class="display-6 fw-bold">250.00</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-0 bg-light h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title text-muted mb-3">Current Amount</h6>
+                                    <div class="d-flex align-items-baseline">
+                                        <span class="currency-symbol">₱</span>
+                                        <span id="currentAmount" class="display-6 fw-bold">0.00</span>
+                                    </div>
+                                    <div id="amountChangeIndicator" class="mt-2">
+                                        <span class="badge bg-success">Reduced by: ₱<span id="reducedAmount">250.00</span></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tab navigation -->
+                <ul class="nav nav-tabs" id="adjudicationTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="removed-tab" data-bs-toggle="tab" data-bs-target="#removed-violations" type="button" role="tab" aria-controls="removed-violations" aria-selected="true">
+                            <span class="material-icons align-middle me-1 small">disabled_by_default</span>
+                            Removed Violations
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes" type="button" role="tab" aria-controls="notes" aria-selected="false">
+                            <span class="material-icons align-middle me-1 small">note</span>
+                            Notes
+                        </button>
+                    </li>
+                </ul>
+                
+                <!-- Tab content -->
+                <div class="tab-content p-4" id="adjudicationTabContent">
+                    <!-- Removed Violations Tab -->
+                    <div class="tab-pane fade show active" id="removed-violations" role="tabpanel" aria-labelledby="removed-tab">
+                        <h6 class="mb-3">Removed Violations</h6>
+                        <div id="removedViolationsTable">
+                            <div class="table-responsive">
+                                <table id="removedViolationsTable" class="table table-bordered removed-violations-table">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="violation-type-col">VIOLATION TYPE</th>
+                                            <th class="amount-col">AMOUNT</th>
+                                            <th class="reason-col">REASON FOR REMOVAL</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="removedViolationsTableBody">
+                                        <!-- Table content will be populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div id="noRemovedViolations" class="alert alert-info d-none">
+                            <div class="d-flex align-items-center">
+                                <span class="material-icons me-2">info</span>
+                                <div>
+                                    <p class="mb-0">No violations were removed during adjudication.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Notes Tab -->
+                    <div class="tab-pane fade" id="notes" role="tabpanel" aria-labelledby="notes-tab">
+                        <h6 class="mb-3">Adjudication Notes</h6>
+                        <div id="adjudicationNotes" class="border p-3 rounded bg-light">
+                            <p class="mb-0">Loading notes...</p>
+                        </div>
+                        <div id="noAdjudicationNotes" class="alert alert-info d-none">
+                            <div class="d-flex align-items-center">
+                                <span class="material-icons me-2">info</span>
+                                <div>
+                                    <p class="mb-0">No additional notes were provided by the adjudicator for this violation.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Additional styles for the enhanced adjudication modal -->
+<style>
+    #enhancedAdjudicationModal .currency-symbol {
+        font-size: 1.25rem;
+        font-weight: 500;
+        margin-right: 5px;
+        color: #6c757d;
+    }
+    
+    #enhancedAdjudicationModal .nav-tabs .nav-link {
+        color: #6c757d;
+        border: none;
+        border-bottom: 2px solid transparent;
+        padding: 0.75rem 1rem;
+    }
+    
+    #enhancedAdjudicationModal .nav-tabs .nav-link.active {
+        color: var(--primary-color);
+        border-bottom: 2px solid var(--primary-color);
+        font-weight: 500;
+    }
+    
+    #enhancedAdjudicationModal .nav-tabs .nav-link:hover:not(.active) {
+        border-bottom: 2px solid #dee2e6;
+    }
+    
+    #enhancedAdjudicationModal .tab-content {
+        background-color: #fff;
+    }
+    
+    #enhancedAdjudicationModal .modal-header {
+        border-radius: 0;
+    }
+    
+    #enhancedAdjudicationModal .modal-content {
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+    
+    #enhancedAdjudicationModal .table th {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    #enhancedAdjudicationModal .badge {
+        font-weight: 500;
+        padding: 0.35rem 0.65rem;
+    }
+
+    #enhancedAdjudicationModal #removedViolationsTableBody td:nth-child(3) {
+        white-space: normal;
+        word-break: break-word;
+        min-width: 200px;
+    }
+
+    #enhancedAdjudicationModal #removedViolationsTableBody td {
+        vertical-align: middle;
+        padding: 0.75rem;
+    }
+</style>
 
 <!-- Add a new Micromodal template for batch details -->
 <div class="modal micromodal-slide" id="modal-batch-details" aria-hidden="true">
@@ -341,8 +537,10 @@
                                     </div>
                                     <div class="flex-grow-1 ms-3">
                                         <h6 class="mb-1">Adjudicated By</h6>
-                                        <p class="mb-0" id="batchAdjudicatorName">Loading...</p>
-                                        <small class="text-muted" id="batchAdjudicationDate">Loading...</small>
+                                        <p class="mb-0 fw-medium" id="batchAdjudicatorName">Loading...</p>
+                                        <div class="mt-1">
+                                            <small class="text-muted fst-italic" id="batchAdjudicationDate">Loading...</small>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -425,26 +623,7 @@
                     </div>
                 </div>
                 
-                <!-- Notes & Remarks -->
-                <div class="card border-0 rounded-0 mb-0">
-                    <div class="card-header bg-light py-3 border-top">
-                        <h6 class="mb-0">Adjudication Remarks</h6>
-                    </div>
-                    <div class="card-body" id="batchRemarksContainer">
-                        <div class="bg-light p-3 rounded">
-                            <p class="mb-0" id="batchRemarks">Loading...</p>
-                        </div>
-                        <div class="alert alert-info mt-3 mb-0">
-                            <div class="d-flex align-items-center">
-                                <span class="material-icons me-2">info</span>
-                                <p class="mb-0">
-                                    Individual violations may have specific adjudicator notes. 
-                                    Click the <span class="material-icons align-middle text-info" style="font-size: 14px;">description</span> button next to each violation to view its specific notes.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <!-- Notes & Remarks section removed -->
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -1037,6 +1216,44 @@
         padding: 1rem;
     }
 }
+
+/* Styles for the removed violations table */
+.removed-violations-table th {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #495057;
+    padding: 10px;
+    text-transform: uppercase;
+}
+
+.removed-violations-table td {
+    padding: 10px;
+    vertical-align: middle;
+}
+
+/* Column widths for removed violations table */
+.removed-violations-table .violation-type-col {
+    width: 35%;
+}
+
+.removed-violations-table .amount-col {
+    width: 20%;
+    text-align: center;
+    min-width: 120px; /* Add minimum width to ensure content fits */
+    padding: 10px 15px; /* Add more horizontal padding */
+}
+
+.removed-violations-table .reason-col {
+    width: 45%;
+    min-width: 200px;
+    word-wrap: break-word;
+}
+
+/* Badge styles */
+.badge.bg-success {
+    font-weight: 500;
+    padding: 0.35em 0.65em;
+}
 </style>
 
 <script>
@@ -1311,7 +1528,7 @@ function showBatchDetails(batchIds) {
     document.getElementById('batchViolationCount').textContent = '0';
     document.getElementById('batchViolationTypes').textContent = 'Loading...';
     document.getElementById('batchOriginalTotal').textContent = '₱0.00';
-    document.getElementById('batchRemarks').textContent = 'Loading...';
+    // Removed reference to batchRemarks
     
     // Hide the adjusted penalty section by default
     document.getElementById('adjustedPenaltyContainer').style.display = 'none';
@@ -1337,6 +1554,31 @@ function showBatchDetails(batchIds) {
             return response.json();
         })
         .then(firstViolation => {
+            // Now get the adjudication details for the first violation to get adjudicator info
+            return fetch(`/violation/${batchIds[0]}/adjudication-details/`)
+                .then(response => {
+                    if (!response.ok) {
+                        // If we can't get adjudication details, continue with just the payment info
+                        console.warn("Could not fetch adjudication details, will use limited info");
+                        return Promise.all([Promise.resolve(firstViolation), Promise.all(fetchPromises = batchIds.map(id => 
+                            fetch(`/violation/${id}/payment-info/`)
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error(`Error fetching violation #${id}`);
+                                    }
+                                    return response.json();
+                                })
+                                .catch(error => {
+                                    console.error(error);
+                                    return { id: id, error: true, message: error.message };
+                                })
+                        ))]);
+                    }
+                    return response.json().then(adjudicationDetails => {
+                        // Merge adjudication details with the payment info
+                        firstViolation.adjudicator_name = adjudicationDetails.adjudicator_name;
+                        firstViolation.adjudication_date = adjudicationDetails.adjudication_date;
+                        
             // Now fetch all violations in the batch
             const fetchPromises = batchIds.map(id => 
                 fetch(`/violation/${id}/payment-info/`)
@@ -1353,14 +1595,36 @@ function showBatchDetails(batchIds) {
             );
             
             return Promise.all([Promise.resolve(firstViolation), Promise.all(fetchPromises)]);
+                    });
+                })
+                .catch(error => {
+                    console.error("Error fetching adjudication details:", error);
+                    // Continue with just the payment info
+                    // Now fetch all violations in the batch
+                    const fetchPromises = batchIds.map(id => 
+                        fetch(`/violation/${id}/payment-info/`)
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error(`Error fetching violation #${id}`);
+                                }
+                                return response.json();
+                            })
+                            .catch(error => {
+                                console.error(error);
+                                return { id: id, error: true, message: error.message };
+                            })
+                    );
+                    
+                    return Promise.all([Promise.resolve(firstViolation), Promise.all(fetchPromises)]);
+                });
         })
         .then(([firstViolation, violations]) => {
             // Update violator information
             document.getElementById('batchViolatorName').textContent = firstViolation.violator_name || 'N/A';
             
             // Update adjudicator information
-            document.getElementById('batchAdjudicatorName').textContent = firstViolation.adjudicator_name || 'N/A';
-            document.getElementById('batchAdjudicationDate').textContent = firstViolation.adjudication_date || 'N/A';
+            document.getElementById('batchAdjudicatorName').textContent = firstViolation.adjudicator_name || 'Not Available';
+            document.getElementById('batchAdjudicationDate').textContent = firstViolation.adjudication_date || 'Date not available';
             
             // Count violations
             document.getElementById('batchViolationCount').textContent = violations.length;
@@ -1405,8 +1669,7 @@ function showBatchDetails(batchIds) {
                 adjustedTotal = parseFloat(firstViolation.batch_total);
             }
             
-            // Get adjudication remarks
-            document.getElementById('batchRemarks').textContent = firstViolation.adjudication_remarks || 'No remarks provided';
+            // Removed code for getting adjudication remarks
             
             // If we have an adjusted total that's different from the original, show it
             if (adjustedTotal !== null && Math.abs(adjustedTotal - originalTotal) > 0.01) {
@@ -1951,22 +2214,81 @@ function rejectAdjudication(violationId) {
 }
 
 function showAdjudicatorNotes(violationId) {
+    try {
+        // Keep the original modal content loading state for backward compatibility
     const modalContent = document.getElementById('modal-adjudicator-notes-content');
+        if (modalContent) {
     modalContent.innerHTML = `
         <div class="d-flex justify-content-center align-items-center p-5">
             <div class="spinner-border text-primary" role="status"></div>
             <span class="ms-3">Loading notes...</span>
         </div>
     `;
-    
-    // Update modal title
-    document.getElementById('modal-adjudicator-notes-title').textContent = 'Adjudicator Notes';
-    
-    // Show modal with loading state
-    MicroModal.show('modal-adjudicator-notes');
-    
-    // Fetch adjudicator notes
-    fetch(`/violation/${violationId}/adjudicator-notes/`)
+        }
+        
+        // Create a helper function to safely update element content
+        function safelyUpdateElement(id, updateFn) {
+            const element = document.getElementById(id);
+            if (element) {
+                updateFn(element);
+            } else {
+                console.warn(`Element with ID "${id}" not found in DOM: ${id}`);
+            }
+        }
+        
+        // Reset the new enhanced modal content to loading state
+        safelyUpdateElement('adjudicatorName', el => el.textContent = 'Loading...');
+        safelyUpdateElement('adjudicationDate', el => el.textContent = 'Loading...');
+        safelyUpdateElement('originalAmount', el => el.textContent = '0.00');
+        safelyUpdateElement('currentAmount', el => el.textContent = '0.00');
+        safelyUpdateElement('reducedAmount', el => el.textContent = '0.00');
+        
+        safelyUpdateElement('removedViolationsTableBody', el => {
+            el.innerHTML = `
+                <tr>
+                    <td colspan="3" class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-2">Loading...</p>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        safelyUpdateElement('adjudicationNotes', el => {
+            el.innerHTML = `
+                <div class="text-center py-3">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2">Loading notes...</p>
+                </div>
+            `;
+        });
+        
+        // Hide all alert messages initially
+        safelyUpdateElement('noRemovedViolations', el => el.classList.add('d-none'));
+        safelyUpdateElement('noAdjudicationNotes', el => el.classList.add('d-none'));
+        
+        // Make sure amountChangeIndicator is visible by default
+        safelyUpdateElement('amountChangeIndicator', el => el.style.display = 'block');
+        
+        // Show the enhanced modal
+        const enhancedModalElement = document.getElementById('enhancedAdjudicationModal');
+        if (!enhancedModalElement) {
+            console.error('Enhanced adjudication modal not found in the DOM');
+            return;
+        }
+        
+        const adjudicationModal = new bootstrap.Modal(enhancedModalElement);
+        adjudicationModal.show();
+        
+        // Try to fetch from the new detailed endpoint first, fall back to the old one if it fails
+        fetch(`/violation/${violationId}/adjudication-details/`)
+            .then(response => {
+                if (!response.ok) {
+                    // If new endpoint fails, try the old one
+                    return fetch(`/violation/${violationId}/adjudicator-notes/`);
+                }
+                return response;
+            })
         .then(response => {
             if (!response.ok) {
                 throw new Error(`Server returned ${response.status} ${response.statusText}`);
@@ -1974,54 +2296,358 @@ function showAdjudicatorNotes(violationId) {
             return response.json();
         })
         .then(data => {
-            if (data && data.notes && data.notes.trim()) {
-                // Display adjudicator's name and when notes were added
-                const adjudicatorName = data.adjudicator_name || 'Unknown';
-                const timestamp = data.timestamp ? new Date(data.timestamp).toLocaleString() : 'Unknown time';
+                // Common calculations for amounts used throughout the function
+                // Calculate amounts once and make them available for all parts of the UI
+                let originalAmount = 0;
+                let currentAmount = 0;
+                let totalRemoved = 0;
+                let distributedAmount = 0;
                 
-                modalContent.innerHTML = `
-                    <div class="card shadow-sm">
+                // Calculate amounts if data is available
+                if (data.original_fine_amount && data.current_fine_amount) {
+                    originalAmount = parseFloat(data.original_fine_amount);
+                    currentAmount = parseFloat(data.current_fine_amount);
+                    totalRemoved = Math.max(0, originalAmount - currentAmount);
+                    
+                    // If there are removed violations, calculate distributed amount
+                    if (data.removed_violations && Object.keys(data.removed_violations).length > 0) {
+                        distributedAmount = (totalRemoved / Object.keys(data.removed_violations).length).toFixed(2);
+                    }
+                }
+                
+                // Update adjudicator information
+                safelyUpdateElement('adjudicatorName', el => el.textContent = data.adjudicator_name || 'Unknown');
+                safelyUpdateElement('adjudicationDate', el => el.textContent = data.adjudication_date || 'Unknown date');
+                
+                // Handle amount changes
+                if (data.original_fine_amount && data.current_fine_amount) {
+                    const originalAmountDisplay = originalAmount.toFixed(2);
+                    const currentAmountDisplay = currentAmount.toFixed(2);
+                    
+                    safelyUpdateElement('originalAmount', el => el.textContent = originalAmountDisplay);
+                    safelyUpdateElement('currentAmount', el => el.textContent = currentAmountDisplay);
+                    
+                    // Calculate the difference
+                    const isReduction = originalAmount > currentAmount;
+                    const changeAmount = Math.abs(originalAmount - currentAmount).toFixed(2);
+                    
+                    if (parseFloat(changeAmount) > 0) {
+                        const changeType = isReduction ? 'Reduced' : 'Increased';
+                        const badgeClass = isReduction ? 'bg-success' : 'bg-danger';
+                        
+                        safelyUpdateElement('reducedAmount', el => el.textContent = changeAmount);
+                        safelyUpdateElement('amountChangeIndicator', el => {
+                            el.innerHTML = `
+                                <span class="badge ${badgeClass}">${changeType} by: ₱${changeAmount}</span>
+                            `;
+                        });
+                    } else {
+                        // No change in amount
+                        safelyUpdateElement('amountChangeIndicator', el => el.style.display = 'none');
+                    }
+                } else {
+                    // No amount data available
+                    safelyUpdateElement('originalAmount', el => el.textContent = 'N/A');
+                    safelyUpdateElement('currentAmount', el => el.textContent = 'N/A');
+                    safelyUpdateElement('amountChangeIndicator', el => el.style.display = 'none');
+                }
+                
+                // Handle removed violations
+                if (data.removed_violations && Object.keys(data.removed_violations).length > 0) {
+                    let tableRows = '';
+                    
+                    // Get all violation type names
+                    const violationTypes = Object.keys(data.removed_violations);
+                    
+                    // Log what we received for debugging
+                    console.log('Removed violations data:', data.removed_violations);
+                    
+                    // Look for any type-specific amounts in the data
+                    const hasTypeSpecificAmounts = violationTypes.some(type => {
+                        const vData = data.removed_violations[type];
+                        return typeof vData === 'object' && vData.hasOwnProperty('amount');
+                    });
+                    
+                    // We already calculated these values at the beginning of the function
+                    // No need to recalculate here
+                    
+                    for (const [violationType, violationData] of Object.entries(data.removed_violations)) {
+                        // Handle both formats of removed_violations data
+                        let reason, amount;
+                        
+                        if (typeof violationData === 'object') {
+                            // New format with reason and amount
+                            reason = violationData.reason || 'No reason provided';
+                            
+                            // Try to get the amount from the data, fall back to distributed amount
+                            if (violationData.amount) {
+                                amount = `₱${parseFloat(violationData.amount).toFixed(2)}`;
+                            } else if (distributedAmount > 0) {
+                                amount = `₱${distributedAmount}`;
+                            } else {
+                                amount = 'N/A';
+                            }
+                        } else if (typeof violationData === 'string') {
+                            // Old format with just the reason string
+                            reason = violationData || 'No reason provided';
+                            
+                            // Try to use the distributed amount
+                            if (distributedAmount > 0) {
+                                amount = `₱${distributedAmount}`;
+                            } else {
+                                amount = 'N/A';
+                            }
+                        } else {
+                            // Fallback
+                            reason = 'No reason provided';
+                            amount = 'N/A';
+                        }
+                        
+                        tableRows += `
+                            <tr>
+                                <td class="violation-type-col">${violationType}</td>
+                                <td class="amount-col text-center">${amount}</td>
+                                <td class="reason-col">${reason}</td>
+                            </tr>
+                        `;
+                    }
+                    
+                    safelyUpdateElement('removedViolationsTableBody', el => el.innerHTML = tableRows);
+                    safelyUpdateElement('removedViolationsTable', el => el.classList.remove('d-none'));
+                    safelyUpdateElement('noRemovedViolations', el => el.classList.add('d-none'));
+                } else {
+                    // No removed violations
+                    safelyUpdateElement('removedViolationsTable', el => el.classList.add('d-none'));
+                    safelyUpdateElement('noRemovedViolations', el => el.classList.remove('d-none'));
+                }
+                
+                // Handle adjudication notes
+                if (data.notes && data.notes.trim()) {
+                    safelyUpdateElement('adjudicationNotes', el => {
+                        el.innerHTML = `<p class="mb-0">${data.notes}</p>`;
+                        el.classList.remove('d-none');
+                    });
+                    safelyUpdateElement('noAdjudicationNotes', el => el.classList.add('d-none'));
+                } else {
+                    safelyUpdateElement('adjudicationNotes', el => el.classList.add('d-none'));
+                    safelyUpdateElement('noAdjudicationNotes', el => el.classList.remove('d-none'));
+                }
+                
+                // For backward compatibility, also update the old modal content
+                if (modalContent) {
+                    // Create content for the old modal (now will be unused but kept for backward compatibility)
+                    let oldModalHTML = `<div class="card shadow-sm">`;
+                    
+                    // Adjudicator header section
+                    oldModalHTML += `
                         <div class="card-header bg-light">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div class="d-flex align-items-center">
                                     <span class="material-icons text-primary me-2">person</span>
-                                    <strong>${adjudicatorName}</strong>
+                                    <strong>${data.adjudicator_name || 'Unknown'}</strong>
                                 </div>
                                 <div class="d-flex align-items-center">
                                     <span class="material-icons text-muted me-1" style="font-size: 16px;">schedule</span>
-                                    <small class="text-muted">${timestamp}</small>
+                                    <small class="text-muted">${data.adjudication_date || 'Unknown time'}</small>
                                 </div>
                             </div>
                         </div>
-                        <div class="card-body notes-content">
+                    `;
+                    
+                    // Card body with adjudication details
+                    oldModalHTML += `<div class="card-body notes-content">`;
+                    
+                    // Violation Changes Section (if there are changes)
+                    const hasChanges = data.removed_violations || 
+                                    (data.original_fine_amount && data.current_fine_amount && 
+                                        data.original_fine_amount !== data.current_fine_amount);
+                    
+                    if (hasChanges) {
+                        oldModalHTML += `
+                            <div class="adjudication-changes mb-4">
+                                <h6 class="card-subtitle mb-3 fw-bold text-primary">Adjudication Changes</h6>
+                                <div class="changes-summary bg-light p-3 rounded">
+                        `;
+                        
+                        // Show fine amount changes if available
+                        if (data.original_fine_amount && data.current_fine_amount && 
+                            data.original_fine_amount !== data.current_fine_amount) {
+                            const originalAmount = parseFloat(data.original_fine_amount).toFixed(2);
+                            const currentAmount = parseFloat(data.current_fine_amount).toFixed(2);
+                            const isReduction = parseFloat(data.original_fine_amount) > parseFloat(data.current_fine_amount);
+                            const changeAmount = Math.abs(parseFloat(data.original_fine_amount) - parseFloat(data.current_fine_amount)).toFixed(2);
+                            const changeType = isReduction ? 'Reduced' : 'Increased';
+                            const changeClass = isReduction ? 'text-success' : 'text-danger';
+                            
+                            oldModalHTML += `
+                                <div class="mb-3">
+                                    <h6 class="mb-2 text-secondary">Fine Amount Adjustment</h6>
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span>Original Amount:</span>
+                                        <span class="fw-bold">₱${originalAmount}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span>Current Amount:</span>
+                                        <span class="fw-bold">₱${currentAmount}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span>${changeType} by:</span>
+                                        <span class="fw-bold ${changeClass}">₱${changeAmount}</span>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        
+                        // Show removed violations if available
+                        if (data.removed_violations && Object.keys(data.removed_violations).length > 0) {
+                            oldModalHTML += `
+                                <div class="mb-3">
+                                    <h6 class="mb-2 text-secondary">Removed Violations</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-bordered">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Violation Type</th>
+                                                    <th>Amount</th>
+                                                    <th>Reason for Removal</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                            `;
+                            
+                            // Add each removed violation to the table
+                            for (const [violationType, violationData] of Object.entries(data.removed_violations)) {
+                                // Handle both formats using the same logic as before
+                                let reason, amount;
+                                
+                                if (typeof violationData === 'object') {
+                                    reason = violationData.reason || 'No reason provided';
+                                    
+                                    // Try to get the amount from the data, fall back to distributed amount
+                                    if (violationData.amount) {
+                                        amount = `₱${parseFloat(violationData.amount).toFixed(2)}`;
+                                    } else if (distributedAmount > 0) {
+                                        amount = `₱${distributedAmount}`;
+                                    } else {
+                                        amount = 'N/A';
+                                    }
+                                } else if (typeof violationData === 'string') {
+                                    reason = violationData || 'No reason provided';
+                                    
+                                    // Try to use the distributed amount
+                                    if (distributedAmount > 0) {
+                                        amount = `₱${distributedAmount}`;
+                                    } else {
+                                        amount = 'N/A';
+                                    }
+                                } else {
+                                    reason = 'No reason provided';
+                                    amount = 'N/A';
+                                }
+                                
+                                oldModalHTML += `
+                                    <tr>
+                                        <td class="violation-type-col">${violationType}</td>
+                                        <td class="amount-col text-center">${amount}</td>
+                                        <td class="reason-col">${reason}</td>
+                                    </tr>
+                                `;
+                            }
+                            
+                            oldModalHTML += `
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        
+                        oldModalHTML += `</div></div>`;
+                    }
+                    
+                    // Adjudication notes section
+                    if (data && data.notes && data.notes.trim()) {
+                        oldModalHTML += `
+                            <div class="adjudicator-notes">
+                                <h6 class="card-subtitle mb-3 fw-bold text-primary">Adjudication Notes</h6>
+                                <div class="bg-light p-3 rounded">
                         <p class="mb-0">${data.notes}</p>
                     </div>
                     </div>
                 `;
             } else {
-                modalContent.innerHTML = `
+                        oldModalHTML += `
                     <div class="alert alert-info d-flex align-items-center">
                         <span class="material-icons me-3">info</span>
                         <div>
-                            <p class="mb-0">No notes were provided by the adjudicator for this violation.</p>
+                                    <p class="mb-0">No additional notes were provided by the adjudicator for this violation.</p>
                         </div>
                     </div>
                 `;
+                    }
+                    
+                    oldModalHTML += `</div></div>`;
+                    
+                    // Update the old modal content
+                    modalContent.innerHTML = oldModalHTML;
             }
         })
         .catch(error => {
             console.error('Error fetching adjudicator notes:', error);
+                
+                // Initialize amount variables to avoid undefined errors
+                let originalAmount = 0;
+                let currentAmount = 0;
+                let totalRemoved = 0;
+                let distributedAmount = 0;
+                
+                // Update the enhanced modal with error information
+                safelyUpdateElement('adjudicatorName', el => el.textContent = 'Error');
+                safelyUpdateElement('adjudicationDate', el => el.textContent = 'Unable to load');
+                safelyUpdateElement('originalAmount', el => el.textContent = 'Error');
+                safelyUpdateElement('currentAmount', el => el.textContent = 'Error');
+                safelyUpdateElement('amountChangeIndicator', el => el.style.display = 'none');
+                
+                // Error message for removed violations tab
+                safelyUpdateElement('removedViolationsTableBody', el => {
+                    el.innerHTML = `
+                        <tr>
+                            <td colspan="3" class="text-center py-4 text-danger">
+                                <span class="material-icons mb-2">error</span>
+                                <p>Error loading details: ${error.message}</p>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                // Error message for notes tab
+                safelyUpdateElement('adjudicationNotes', el => {
+                    el.innerHTML = `
+                        <div class="text-center py-3 text-danger">
+                            <span class="material-icons mb-2">error</span>
+                            <p>Error loading details: ${error.message}</p>
+                        </div>
+                    `;
+                });
+                
+                // For backward compatibility, also update the old modal
+                if (modalContent) {
             modalContent.innerHTML = `
                 <div class="alert alert-danger d-flex align-items-center">
                     <span class="material-icons me-3">error</span>
                     <div>
-                        <p class="mb-1 fw-bold">Unable to load adjudicator notes</p>
+                                <p class="mb-1 fw-bold">Unable to load adjudicator details</p>
                         <p class="mb-0 small">Error: ${error.message}</p>
                         <p class="mb-0 small">Please try again later or contact support if the problem persists.</p>
                     </div>
                 </div>
             `;
+                }
         });
+    } catch (error) {
+        console.error('Critical error in showAdjudicatorNotes:', error);
+        alert('An unexpected error occurred while loading adjudication details. Please try again later.');
+    }
 }
 
 // Helper function to get CSRF token

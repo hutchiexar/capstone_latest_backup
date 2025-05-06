@@ -25,7 +25,15 @@
                 <p class="hero-text">Your partner in creating an organized, efficient, and safe traffic system for our growing city.</p>
                 <div class="hero-buttons">
                     <a href="#services" class="btn btn-primary btn-lg me-3">Our Services</a>
-                    <a href="{% url 'login' %}" class="btn btn-outline-light btn-lg">Join Us</a>
+                    {% if user.is_authenticated %}
+                        {% if user.is_staff or user.is_superuser or user.userprofile.role == 'ADMIN' or user.userprofile.role == 'ADJUDICATOR' or user.userprofile.role == 'SUPERVISOR' or user.userprofile.role == 'TREASURER' or user.userprofile.role == 'EDUCATOR' %}
+                            <a href="/admin-dashboard/" class="btn btn-outline-light btn-lg">Back to My Page</a>
+                        {% else %}
+                            <a href="/user/dashboard/" class="btn btn-outline-light btn-lg">Back to Portal</a>
+                        {% endif %}
+                    {% else %}
+                        <a href="{% url 'login' %}" class="btn btn-outline-light btn-lg">Join Us</a>
+                    {% endif %}
                 </div>
             </div>
         </div>

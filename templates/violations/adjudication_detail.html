@@ -1,0 +1,429 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-3">
+    <!-- Header Section - Improved spacing and sizing -->
+    <div class="card shadow-sm border-0 rounded-3 mb-3">
+        <div class="card-body p-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <span class="material-icons me-2" style="color: var(--primary-color); font-size: 1.25rem;">gavel</span>
+                    <h5 class="mb-0 fw-bold">Adjudication Details</h5>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'adjudication_history' %}" class="btn btn-sm btn-outline-secondary">
+                        <span class="material-icons align-middle me-1" style="font-size: 1rem;">arrow_back</span>
+                        Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Adjudication Info - Improved typography and spacing -->
+    <div class="row g-3 mb-3">
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100 border-0 rounded-3">
+                <div class="card-header bg-light py-2">
+                    <h6 class="mb-0 fw-bold">Adjudication Summary</h6>
+                </div>
+                <div class="card-body p-3">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small mb-1">Violation ID</label>
+                            <div class="fs-6">{{ violation.id }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small mb-1">Status</label>
+                            <div>
+                                <span class="badge bg-{{ violation.status|lower }}">{{ violation.status }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small mb-1">Original Amount</label>
+                            <div class="fs-6">₱{{ violation.original_fine_amount|floatformat:2 }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small mb-1">Final Amount</label>
+                            <div class="fs-6">
+                                ₱{{ violation.fine_amount|floatformat:2 }}
+                                {% if violation.original_fine_amount and violation.fine_amount < violation.original_fine_amount %}
+                                <span class="badge bg-warning text-dark ms-2" style="font-size: 0.75rem;">Reduced</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small mb-1">Adjudicator</label>
+                            <div class="fs-6">{{ violation.adjudicated_by.get_full_name }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small mb-1">Adjudication Date</label>
+                            <div class="fs-6">{{ violation.adjudication_date|date:"F d, Y H:i" }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100 border-0 rounded-3">
+                <div class="card-header bg-light py-2">
+                    <h6 class="mb-0 fw-bold">Violator Information</h6>
+                </div>
+                <div class="card-body p-3">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small mb-1">Full Name</label>
+                            <div class="fs-6">{{ violation.violator.first_name }} {{ violation.violator.last_name }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small mb-1">License Number</label>
+                            <div class="fs-6">{{ violation.violator.license_number|default:"Not Provided" }}</div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label text-muted small mb-1">Address</label>
+                            <div class="fs-6">{{ violation.violator.address|default:"Not Provided" }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small mb-1">Violation Date</label>
+                            <div class="fs-6">{{ violation.violation_date|date:"F d, Y" }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small mb-1">Location</label>
+                            <div class="fs-6">{{ violation.location|default:"Not Provided" }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Violations Comparison - Improved contrast and readability -->
+    <div class="card shadow-sm border-0 rounded-3 mb-3" id="violations-comparison-section">
+        <div class="card-header bg-light py-2">
+            <h6 class="mb-0 fw-bold">Violations Comparison</h6>
+        </div>
+        <div class="card-body p-3">
+            <div class="row">
+                <div class="col-md-6 mb-3 mb-md-0">
+                    <h6 class="border-bottom pb-2 mb-2 text-muted small fw-bold">ORIGINAL VIOLATIONS</h6>
+                    {% if original_violation_types %}
+                        <ul class="list-group original-violations-list">
+                        {% for violation_type in original_violation_types %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3 small">
+                                <span class="violation-text">{{ violation_type }}</span>
+                                {% if violation_type in actually_removed_types %}
+                                    <span class="badge bg-danger rounded-pill ms-2" style="font-size: 0.7rem;">Removed</span>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="alert alert-info small py-2 px-3">No original violation data available</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <h6 class="border-bottom pb-2 mb-2 text-muted small fw-bold">FINAL VIOLATIONS</h6>
+                    {% if current_violation_types and current_violation_types|length > 0 %}
+                        <ul class="list-group">
+                        {% for violation_type in current_violation_types %}
+                            <li class="list-group-item py-2 px-3 small">
+                                <span class="violation-text">{{ violation_type }}</span>
+                            </li>
+                        {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="alert alert-warning small py-2 px-3">
+                            <div class="d-flex align-items-center">
+                                <i class="material-icons me-2" style="font-size: 1rem;">info</i>
+                                <span>All violations were removed during adjudication</span>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Removed Violations Details - Improved table design and readability -->
+    {% if removed_violations %}
+    <div class="card shadow-sm border-0 rounded-3 mb-3">
+        <div class="card-header bg-light py-2">
+            <h6 class="mb-0 fw-bold">Removed Violations</h6>
+        </div>
+        <div class="card-body p-3">
+            <div class="table-responsive">
+                <table class="table removed-violations-table table-striped">
+                    <thead>
+                        <tr>
+                            <th style="width: 35%" class="small">VIOLATION TYPE</th>
+                            <th style="width: 50%" class="small">REASON FOR REMOVAL</th>
+                            <th style="width: 15%" class="small">ORIGINAL AMOUNT</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for violation_type, details in removed_violations.items %}
+                        <tr>
+                            <td class="small fw-medium">{{ violation_type }}</td>
+                            <td class="reason-cell small">
+                                {% if details.reason %}
+                                    {{ details.reason }}
+                                {% else %}
+                                    No specific reason provided
+                                {% endif %}
+                            </td>
+                            <td class="small">
+                                {% if details.amount %}
+                                    ₱{{ details.amount|floatformat:2 }}
+                                {% else %}
+                                    Not specified
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Adjudicator Notes - Improved contrast and readability -->
+    <div class="card shadow-sm border-0 rounded-3 mb-3">
+        <div class="card-header bg-light py-2">
+            <h6 class="mb-0 fw-bold">Adjudicator Notes</h6>
+        </div>
+        <div class="card-body p-3">
+            {% if violation.adjudication_remarks %}
+                <div class="bg-light p-3 rounded small">
+                    <p class="mb-0" style="line-height: 1.5;">{{ violation.adjudication_remarks }}</p>
+                </div>
+            {% else %}
+                <div class="alert alert-info small py-2">
+                    <p class="mb-0">No adjudicator notes provided.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Evidence Images - More compact layout -->
+    {% if violation.image or violation.driver_photo or violation.vehicle_photo or violation.secondary_photo %}
+    <div class="card shadow-sm border-0 rounded-3 mb-3">
+        <div class="card-header bg-light py-2">
+            <h6 class="mb-0 fw-bold">Evidence</h6>
+        </div>
+        <div class="card-body p-3">
+            <div class="row g-2">
+                {% if violation.image %}
+                <div class="col-6 col-md-3">
+                    <div class="card h-100">
+                        <img src="{{ violation.image.url }}" class="card-img-top" alt="Violation image">
+                        <div class="card-body p-2">
+                            <p class="card-title small mb-0 text-center">Violation Photo</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if violation.driver_photo %}
+                <div class="col-6 col-md-3">
+                    <div class="card h-100">
+                        <img src="{{ violation.driver_photo.url }}" class="card-img-top" alt="Driver photo">
+                        <div class="card-body p-2">
+                            <p class="card-title small mb-0 text-center">Driver Photo</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if violation.vehicle_photo %}
+                <div class="col-6 col-md-3">
+                    <div class="card h-100">
+                        <img src="{{ violation.vehicle_photo.url }}" class="card-img-top" alt="Vehicle photo">
+                        <div class="card-body p-2">
+                            <p class="card-title small mb-0 text-center">Vehicle Photo</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if violation.secondary_photo %}
+                <div class="col-6 col-md-3">
+                    <div class="card h-100">
+                        <img src="{{ violation.secondary_photo.url }}" class="card-img-top" alt="Secondary photo">
+                        <div class="card-body p-2">
+                            <p class="card-title small mb-0 text-center">Additional Photo</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    /* Enhanced Typography */
+    .card-header h6 {
+        font-size: 0.95rem;
+        letter-spacing: 0.5px;
+    }
+    
+    .form-label.text-muted.small {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #6c757d !important;
+    }
+    
+    /* Enhanced card styling */
+    .card {
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05) !important;
+    }
+    
+    .card-header {
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    /* Better styling for the removal reasons */
+    .reason-cell {
+        max-width: 300px;
+        word-wrap: break-word;
+        padding: 0.75rem !important;
+        line-height: 1.5;
+        border-left: 3px solid #dc3545;
+        background-color: rgba(220, 53, 69, 0.03);
+    }
+    
+    /* Table styling */
+    .table {
+        font-size: 0.85rem;
+    }
+    
+    .table thead th {
+        font-weight: 600;
+        color: #495057;
+        border-bottom: 2px solid #e9ecef;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 0.5rem 0.75rem;
+        background-color: #f8f9fa;
+    }
+    
+    .table tbody td {
+        padding: 0.5rem 0.75rem;
+        vertical-align: middle;
+    }
+    
+    /* Alert styling */
+    .alert-info {
+        background-color: #f0f7fc;
+        border-color: #d0e3f0;
+        color: #3a87ad;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .container-fluid {
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+        
+        .card-body {
+            padding: 0.75rem;
+        }
+        
+        .fs-6 {
+            font-size: 0.85rem !important;
+        }
+    }
+
+    /* Scope styles specifically to the violations comparison section */
+    #violations-comparison-section .violation-text {
+        color: #212529; 
+        display: block;
+        flex: 1;
+    }
+
+    #violations-comparison-section .list-group-item {
+        background-color: #fff;
+        border: 1px solid rgba(0,0,0,.125);
+        margin-bottom: 2px;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+    }
+    
+    #violations-comparison-section .removed-violation {
+        border-left: 3px solid #dc3545 !important;
+        background-color: rgba(220, 53, 69, 0.08) !important;
+    }
+    
+    #violations-comparison-section .removed-badge {
+        background-color: #dc3545;
+        color: white;
+        font-weight: 500;
+        font-size: 0.7rem !important;
+    }
+    
+    #violations-comparison-section .removed-violation .violation-text {
+        color: #212529 !important;
+        opacity: 1;
+    }
+
+    /* Add styling for the no violations alert */
+    #violations-comparison-section .alert-warning {
+        background-color: rgba(255, 193, 7, 0.1);
+        border-left: 3px solid #ffc107;
+        border-color: rgba(255, 193, 7, 0.2);
+        color: #856404;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Highlight removed violations in the original violations list within the comparison section
+        const comparisonSection = document.getElementById('violations-comparison-section');
+        if (comparisonSection) {
+            const originalViolations = comparisonSection.querySelectorAll('.original-violations-list .list-group-item');
+            originalViolations.forEach(item => {
+                if (item.querySelector('.badge.bg-danger')) {
+                    item.classList.add('removed-violation');
+                    
+                    // Ensure text visibility in removed items
+                    const violationText = item.querySelector('.violation-text');
+                    if (violationText) {
+                        violationText.style.textDecoration = 'line-through';
+                        violationText.style.opacity = '0.9';
+                    }
+                }
+            });
+            
+            // Check if all violations were removed
+            const finalViolations = comparisonSection.querySelector('.col-md-6:nth-child(2) ul.list-group');
+            const noViolationsAlert = comparisonSection.querySelector('.col-md-6:nth-child(2) .alert-warning');
+            
+            // Add an empty check to ensure we're showing the correct alert state
+            if (finalViolations && finalViolations.children.length === 0 && !noViolationsAlert) {
+                // If the list exists but is empty, replace it with our alert
+                finalViolations.remove();
+                
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-warning small py-2 px-3';
+                alertDiv.innerHTML = '<div class="d-flex align-items-center"><i class="material-icons me-2" style="font-size: 1rem;">info</i><span>All violations were removed during adjudication</span></div>';
+                
+                const finalViolationsContainer = comparisonSection.querySelector('.col-md-6:nth-child(2)');
+                const headerElement = finalViolationsContainer.querySelector('h6');
+                finalViolationsContainer.insertBefore(alertDiv, headerElement.nextSibling);
+            }
+        }
+        
+        // Improve formatting for the removed violations table
+        const reasonCells = document.querySelectorAll('.removed-violations-table td:nth-child(2)');
+        reasonCells.forEach(cell => {
+            cell.classList.add('reason-cell');
+        });
+    });
+</script>
+{% endblock %} 

@@ -163,6 +163,7 @@ def adjudicate_ticket(request):
         violation_types = data.get('violation_types', [])
         penalty_amount = data.get('penalty_amount', 0)
         notes = data.get('notes', '')
+        removed_violations = data.get('removed_violations', {})
         
         # Input validation
         if not ticket_id:
@@ -182,7 +183,7 @@ def adjudicate_ticket(request):
         original_types = violation.get_violation_types()
         
         # Determine removed violations
-        removed_violations = [v for v in original_types if v not in violation_types]
+        removed_violation_types = [v for v in original_types if v not in violation_types]
         
         # Save the original violation types if this is the first adjudication (not a re-adjudication)
         if not violation.original_violation_types:
@@ -202,27 +203,47 @@ def adjudicate_ticket(request):
         violation.adjudicated_by = request.user
         violation.adjudication_date = timezone.now()
         
+        # Store the removed violations with their reasons
+        removed_violations_with_reasons = {}
+        for vtype in removed_violation_types:
+            if vtype in removed_violations:
+                removed_violations_with_reasons[vtype] = removed_violations[vtype]
+            else:
+                removed_violations_with_reasons[vtype] = "No reason provided"
+        
+        # Store the removed violations JSON in the violation object
+        if removed_violations_with_reasons:
+            violation.removed_violations = json.dumps(removed_violations_with_reasons)
+        
         # Clear rejection reason if this was previously rejected
         if hasattr(violation, 'rejection_reason') and previous_status == 'REJECTED':
             violation.rejection_reason = None
         
         # Update violation types if any were removed
-        if removed_violations:
+        if removed_violation_types:
             violation.set_violation_types(violation_types)
             
         # Save the updated violation
         violation.save()
         
-        # Log the adjudication
-        log_details = f"Adjudicated violation #{violation.id} - Amount: ₱{penalty_amount}, "
+        # Log the adjudication with detailed changes
+        log_details = f"Adjudicated violation #{violation.id} - Original: ₱{violation.original_fine_amount}, Adjudicated: ₱{penalty_amount}, "
         if previous_status == 'REJECTED':
             log_details += f"Re-adjudicated from REJECTED status, "
             
         # Special handling for empty violation types
         if not violation_types:
             log_details += "NO VIOLATIONS SELECTED, "
+        
+        # Add removed violations to the log
+        if removed_violation_types:
+            log_details += f"Removed: {', '.join(removed_violation_types)}"
             
-        log_details += f"Removed: {', '.join(removed_violations) if removed_violations else 'None'}"
+            # Add removal reasons to the log if available
+            for vtype, reason in removed_violations_with_reasons.items():
+                log_details += f"\n- {vtype}: {reason}"
+        else:
+            log_details += "No violations removed"
         
         ActivityLog.objects.create(
             user=request.user,
@@ -237,6 +258,7 @@ def adjudicate_ticket(request):
             'ticket_id': ticket_id,
             'adjudication_date': violation.adjudication_date.isoformat(),
             'adjudicated_by': request.user.get_full_name(),
+            'original_amount': str(violation.original_fine_amount),
             'was_rejected': previous_status == 'REJECTED'
         })
         
@@ -418,4 +440,78 @@ def redirect_to_adjudication_page(request, violation_id):
     violator_id = violation.violator.id
     
     # Redirect to the new adjudication page
-    return redirect('adjudication_page', violator_id=violator_id) 
+    return redirect('adjudication_page', violator_id=violator_id)
+
+
+@login_required
+@user_passes_test(is_adjudicator)
+def get_adjudication_details(request, violation_id):
+    """
+    API endpoint to fetch detailed adjudication information including removed violations 
+    and their reasons for a specific violation.
+    
+    Args:
+        request: HTTP request object
+        violation_id: ID of the violation to get details for
+        
+    Returns:
+        JsonResponse with detailed adjudication information
+    """
+    try:
+        violation = get_object_or_404(Violation, id=violation_id)
+        
+        # Check if the violation has been adjudicated
+        if not violation.adjudicated_by or not violation.adjudication_date:
+            return JsonResponse({
+                'success': False,
+                'message': 'This violation has not been adjudicated yet.'
+            }, status=400)
+        
+        # Format adjudication date
+        adjudication_date = violation.adjudication_date.strftime('%B %d, %Y %I:%M %p')
+        
+        # Get adjudicator name
+        adjudicator_name = violation.adjudicated_by.get_full_name() or violation.adjudicated_by.username
+        
+        # Get information about removed violations if available
+        removed_violations_data = None
+        if hasattr(violation, 'removed_violations') and violation.removed_violations:
+            try:
+                removed_violations_data = json.loads(violation.removed_violations)
+            except (json.JSONDecodeError, TypeError):
+                # If there's an error parsing the JSON, we'll leave it as None
+                logger.error(f"Error parsing removed_violations JSON for violation {violation_id}")
+        
+        # Get original violation types if available
+        original_violation_types = None
+        if hasattr(violation, 'original_violation_types') and violation.original_violation_types:
+            try:
+                original_violation_types = json.loads(violation.original_violation_types)
+            except (json.JSONDecodeError, TypeError):
+                # If there's an error parsing the JSON, we'll leave it as None
+                logger.error(f"Error parsing original_violation_types JSON for violation {violation_id}")
+                
+        # Get original fine amount if available
+        original_fine_amount = None
+        if hasattr(violation, 'original_fine_amount') and violation.original_fine_amount is not None:
+            original_fine_amount = str(violation.original_fine_amount)
+        
+        # Return adjudication details with all available information
+        return JsonResponse({
+            'success': True,
+            'notes': violation.adjudication_remarks,
+            'adjudicator_name': adjudicator_name,
+            'adjudication_date': adjudication_date,
+            'removed_violations': removed_violations_data,
+            'original_violation_types': original_violation_types,
+            'original_fine_amount': original_fine_amount,
+            'current_fine_amount': str(violation.fine_amount) if violation.fine_amount else '0.00',
+            'current_violation_types': violation.get_violation_types()
+        })
+    except Exception as e:
+        # Return error
+        logger.error(f"Error getting adjudication details for violation {violation_id}: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'message': str(e)
+        }, status=500) 

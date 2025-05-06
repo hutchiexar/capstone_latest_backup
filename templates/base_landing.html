@@ -443,12 +443,24 @@
                             <span class="material-icons align-middle me-1 track-icon">search</span>Track Violation
                         </a>
                     </li>
-                    <li class="nav-item ms-lg-2">
-                        <a class="nav-link btn-auth register-btn" href="{% url 'register' %}">Register</a>
-                    </li>
-                    <li class="nav-item ms-lg-2">
-                        <a class="nav-link btn-auth login-btn" href="{% url 'login' %}">Login</a>
-                    </li>
+                    {% if user.is_authenticated %}
+                        {% if user.is_staff or user.is_superuser or user.userprofile.role == 'ADMIN' or user.userprofile.role == 'ADJUDICATOR' or user.userprofile.role == 'SUPERVISOR' or user.userprofile.role == 'TREASURER' or user.userprofile.role == 'EDUCATOR' %}
+                            <li class="nav-item ms-lg-2">
+                                <a class="nav-link btn-auth login-btn" href="/admin-dashboard/">My Page</a>
+                            </li>
+                        {% else %}
+                            <li class="nav-item ms-lg-2">
+                                <a class="nav-link btn-auth login-btn" href="/user/dashboard/">My Portal</a>
+                            </li>
+                        {% endif %}
+                    {% else %}
+                        <li class="nav-item ms-lg-2">
+                            <a class="nav-link btn-auth register-btn" href="{% url 'register' %}">Register</a>
+                        </li>
+                        <li class="nav-item ms-lg-2">
+                            <a class="nav-link btn-auth login-btn" href="{% url 'login' %}">Login</a>
+                        </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>

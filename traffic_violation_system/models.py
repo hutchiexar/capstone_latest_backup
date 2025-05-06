@@ -245,6 +245,7 @@ class Violation(models.Model):
     violation_types = models.TextField(default='[]')  # Store JSON as text
     original_violation_types = models.TextField(blank=True, null=True, help_text="Original violation types before adjudication (stored as JSON)")
     original_fine_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Original fine amount before adjudication")
+    removed_violations = models.TextField(blank=True, null=True, help_text="Violations removed during adjudication with reasons (stored as JSON)")
     receipt_number = models.CharField(max_length=50, blank=True, null=True)
     receipt_date = models.DateField(blank=True, null=True)
     payment_remarks = models.TextField(blank=True, null=True)
