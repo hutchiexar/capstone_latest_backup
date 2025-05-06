@@ -243,3 +243,129 @@ If PDFs aren't displaying properly:
 2. Check browser console for any JavaScript errors
 3. Verify that PDF.js libraries are loading properly
 4. For large PDFs, consider optimizing the file size for faster loading
+
+# Traffic Violation System - Deployment Guide
+
+## Project Overview
+
+This is a Django-based Traffic Violation System designed to manage traffic violations, driver information, and adjudication processes. The system includes features for ID verification, PDF generation, and analytics.
+
+## Deployment Process
+
+### Deployment Architecture
+
+The application is configured for deployment on Render.com using:
+- Python 3.10.0
+- PostgreSQL database
+- Gunicorn web server
+- Whitenoise for static files
+
+### Deployment Files
+
+Key deployment files:
+- `render.yaml` - Configuration for Render.com services
+- `build.sh` - Build script for dependency installation and setup
+- `direct_import_patch.py` - Script to handle problematic imports
+- `requirements-fixed.txt` - Optimized dependencies list
+- `requirements-minimal.txt` - Fallback minimal dependencies
+
+## Dependency Management
+
+The system uses a multi-tier approach to dependency management:
+
+1. **Primary Dependencies**: Listed in `requirements-fixed.txt` with specific version constraints
+2. **Fallback Dependencies**: If primary installation fails, falls back to `requirements.txt` and then `requirements-minimal.txt`
+3. **Individual Package Installation**: Critical packages are installed individually if all else fails
+
+## Import Error Handling
+
+The deployment process includes robust handling of import errors:
+
+### The Direct Import Patching Approach
+
+The `direct_import_patch.py` script:
+- Scans for problematic import statements using regex
+- Creates backups of affected files
+- Replaces imports with try-except blocks that include fallback implementations
+- Provides graceful degradation for problematic modules
+
+Currently handled modules:
+- **idanalyzer**: ID verification functionality
+- **pyHanko**: PDF signing functionality
+
+## Deployment Steps
+
+1. **Update Dependencies**
+   - Ensure `requirements-fixed.txt` is up-to-date
+   - Verify Python version in `render.yaml` is set to 3.10.0
+
+2. **Configure Build Process**
+   - Verify `build.sh` permissions (`chmod +x build.sh`)
+   - Ensure `direct_import_patch.py` is included in the repository
+
+3. **Deploy to Render.com**
+   - Connect your GitHub repository
+   - Render will use the `render.yaml` configuration
+   - Environment variables will be set automatically from `render.yaml`
+
+4. **Post-Deployment Verification**
+   - Check logs for successful dependency installation
+   - Verify database migrations completed successfully
+   - Test functionality that uses potentially problematic dependencies
+
+## Troubleshooting
+
+### Common Issues
+
+#### 1. Module Import Errors
+
+If the application reports "Module not found" errors:
+- Check the build logs to ensure all dependencies were installed
+- Verify the module is included in the patching script
+- Add new fallback implementations as needed
+
+#### 2. Database Connection Issues
+
+If database connections fail:
+- Verify the `DATABASE_URL` environment variable in Render dashboard
+- Check PostgreSQL version compatibility
+- Ensure the database specified in `render.yaml` was created
+
+#### 3. Static Files
+
+If static files don't load properly:
+- Check `STATIC_ROOT` and `STATIC_URL` in settings
+- Verify `whitenoise` middleware is configured
+- Ensure `collectstatic` ran successfully during build
+
+## Local Development Setup
+
+For local development:
+
+1. Clone the repository
+2. Create a virtual environment: `python -m venv venv`
+3. Activate the environment: 
+   - Windows: `venv\Scripts\activate`
+   - Unix/MacOS: `source venv/bin/activate`
+4. Install dependencies: `pip install -r requirements-fixed.txt`
+5. Create a `.env` file with required variables (see `.env.example`)
+6. Run migrations: `python manage.py migrate`
+7. Create a superuser: `python manage.py createsuperuser`
+8. Run the development server: `python manage.py runserver`
+
+## Environment Variables
+
+Required environment variables:
+- `SECRET_KEY` - Django secret key
+- `DEBUG` - Set to "False" for production
+- `DJANGO_ALLOWED_HOSTS` - Comma-separated list of allowed hosts
+- `DATABASE_URL` - PostgreSQL connection string
+- `RENDER` - Set to "True" when deploying to Render
+
+## Maintenance and Updates
+
+When updating the application:
+1. Test all changes locally first
+2. Update dependencies as needed in `requirements-fixed.txt`
+3. If adding new dependencies that may cause conflicts, update the patching script
+4. Commit and push changes to trigger a new deployment on Render

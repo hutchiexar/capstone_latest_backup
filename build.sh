@@ -1,93 +1,103 @@
-#!/usr/bin/env bash
-# Exit on error
-set -o errexit
+#!/bin/bash
 
-echo "Upgrading pip..."
-pip install --upgrade pip
+# Enhanced build script for Traffic Violation System
+# This script handles dependency installation with robust fallback mechanisms
+# and applies patches for problematic imports
 
-echo "Installing dependencies..."
-# First try: Use requirements-fixed.txt
-if [ -f requirements-fixed.txt ]; then
-    echo "Using requirements-fixed.txt for dependencies..."
-    pip install -r requirements-fixed.txt || {
-        echo "Error installing from requirements-fixed.txt. Trying without problematic packages..."
-        # Create a temporary requirements file without the problematic packages
-        grep -v "pyHanko\|pyhanko-certvalidator" requirements-fixed.txt > requirements-temp.txt
-        pip install -r requirements-temp.txt || {
-            echo "Still having issues. Trying minimal requirements file..."
-            # Try the minimal requirements file if available
-            if [ -f requirements-minimal.txt ]; then
-                pip install -r requirements-minimal.txt
-            else
-                # Last resort: install core packages directly
-                echo "Using core dependencies only..."
-                pip install Django==5.1.6 \
-                    djangorestframework==3.15.2 \
-                    dj-database-url==2.1.0 \
-                    gunicorn==22.0.0 \
-                    psycopg2-binary==2.9.9 \
-                    whitenoise==6.7.0 \
-                    python-dotenv==1.0.1 \
-                    django-sslserver==0.22 \
-                    django-extensions==3.2.3
-            fi
-        }
-        rm -f requirements-temp.txt
-        echo "Will attempt to install problematic packages individually..."
-        # Try to install problematic packages one by one with error suppression
-        pip install pyhanko-certvalidator==0.20.0 || echo "Failed to install pyhanko-certvalidator, skipping..."
-        pip install pyHanko==0.17.0 || echo "Failed to install pyHanko, skipping..."
-    }
-else
-    echo "requirements-fixed.txt not found, attempting to use requirements.txt..."
-    # Fall back to the original requirements if the fixed version isn't available
-    pip install -r requirements.txt || {
-        echo "Error installing from requirements.txt. Trying minimal requirements..."
-        # Try the minimal requirements file if available
-        if [ -f requirements-minimal.txt ]; then
+set -e
+echo "Starting build process..."
+
+# Ensure Python 3.10 is being used
+python --version
+
+# Make script directory available
+export PYTHONPATH=$PYTHONPATH:$(pwd)
+
+# Create logs directory if it doesn't exist
+mkdir -p logs
+
+# Function to check if a package is installed
+check_package() {
+    python -c "import $1" 2>/dev/null
+    return $?
+}
+
+# Function to install a specific package
+install_package() {
+    echo "Installing $1..."
+    pip install $1
+    if [ $? -ne 0 ]; then
+        echo "Failed to install $1"
+        return 1
+    fi
+    return 0
+}
+
+# Attempt to use the fixed requirements file first
+echo "Attempting to install from requirements-fixed.txt..."
+if [ -f "requirements-fixed.txt" ]; then
+    pip install -r requirements-fixed.txt
+    if [ $? -eq 0 ]; then
+        echo "Successfully installed dependencies from requirements-fixed.txt"
+    else
+        echo "Error installing from requirements-fixed.txt, trying fallback methods..."
+        
+        # Fallback 1: Try using the original requirements
+        echo "Attempting to install from original requirements.txt..."
+        pip install -r requirements.txt
+        
+        # Fallback 2: Try the minimal requirements
+        if [ $? -ne 0 ] && [ -f "requirements-minimal.txt" ]; then
+            echo "Attempting to install from requirements-minimal.txt..."
             pip install -r requirements-minimal.txt
-        else
-            # Last resort: install core packages directly
-            echo "Using core dependencies only..."
-            pip install Django==5.1.6 \
-                djangorestframework==3.15.2 \
-                dj-database-url==2.1.0 \
-                gunicorn==22.0.0 \
-                psycopg2-binary==2.9.9 \
-                whitenoise==6.7.0 \
-                python-dotenv==1.0.1 \
-                django-sslserver==0.22 \
-                django-extensions==3.2.3
         fi
-    }
+        
+        # Manually install critical packages
+        echo "Installing critical packages individually..."
+        pip install Django==4.2 django-crispy-forms crispy-bootstrap5
+        pip install django-cors-headers django-phonenumber-field phonenumbers
+        
+        # Ensure these specific packages are at compatible versions
+        echo "Setting specific versions for known problematic packages..."
+        pip install pyparsing==3.0.9
+        
+        # Install packages that might be missing from requirements
+        echo "Installing potentially missing packages..."
+        pip install idanalyzer==1.2.2 django-sslserver
+    fi
+else
+    echo "requirements-fixed.txt not found, falling back to original requirements.txt"
+    pip install -r requirements.txt
+    
+    # Install specific versions of problematic packages
+    pip install pyparsing==3.0.9
+    pip install idanalyzer==1.2.2 django-sslserver
 fi
 
-echo "Ensuring media directories exist..."
-# Create all necessary directories with proper permissions
-mkdir -p /opt/render/project/src/media
-mkdir -p /opt/render/project/src/media/avatars
-mkdir -p /opt/render/project/src/media/signatures
-mkdir -p /opt/render/project/src/media/driver_photos
-mkdir -p /opt/render/project/src/media/vehicle_photos
-mkdir -p /opt/render/project/src/media/secondary_photos
-mkdir -p /opt/render/project/src/media/qr_codes
-chmod -R 775 /opt/render/project/src/media
+# Ensure critical packages are installed
+echo "Verifying critical packages..."
+for package in django django_crispy_forms crispy_bootstrap5 idanalyzer django_sslserver
+do
+    if ! check_package "$package"; then
+        echo "$package not installed, attempting to install individually..."
+        install_package "$package"
+    fi
+done
 
-echo "Creating log directory..."
-mkdir -p /opt/render/project/src/logs
-touch /opt/render/project/src/app.log
-chmod 664 /opt/render/project/src/app.log
+# Apply patches for problematic imports
+echo "Applying patches for problematic imports..."
+python direct_import_patch.py
+if [ $? -ne 0 ]; then
+    echo "Warning: Some patches could not be applied. Check logs for details."
+fi
 
-echo "Running migrations..."
-python manage.py migrate --noinput
+# Run database migrations
+echo "Running database migrations..."
+python manage.py makemigrations
+python manage.py migrate
 
+# Collect static files
 echo "Collecting static files..."
-python manage.py collectstatic --noinput
+python manage.py collectstatic --no-input
 
-echo "Creating superuser if needed..."
-python manage.py create_admin
-
-echo "Setting up media and static files..."
-python manage.py check --deploy
-
-echo "Build process completed successfully" 
+echo "Build process completed successfully!" 
