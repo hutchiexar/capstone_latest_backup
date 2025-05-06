@@ -6,7 +6,7 @@ services:
     startCommand: gunicorn CAPSTONE_PROJECT.wsgi:application
     envVars:
       - key: DJANGO_SETTINGS_MODULE
-        value: CAPSTONE_PROJECT.render_settings
+        value: CAPSTONE_PROJECT.postgresql_settings
       - key: SECRET_KEY
         generateValue: true
       - key: DEBUG
@@ -15,6 +15,12 @@ services:
         value: ".onrender.com"
       - key: PYTHON_VERSION
         value: "3.9.0"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: traffic_violation_db
+          property: connectionString
+      - key: RENDER
+        value: "True"
     disk:
       name: media
       mountPath: /opt/render/project/src/media
@@ -23,4 +29,5 @@ services:
 databases:
   - name: traffic_violation_db
     databaseName: traffic_violation_db
+    plan: free
     ipAllowList: [] 

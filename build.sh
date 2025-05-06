@@ -19,6 +19,11 @@ mkdir -p /opt/render/project/src/media/secondary_photos
 mkdir -p /opt/render/project/src/media/qr_codes
 chmod -R 775 /opt/render/project/src/media
 
+echo "Creating log directory..."
+mkdir -p /opt/render/project/src/logs
+touch /opt/render/project/src/app.log
+chmod 664 /opt/render/project/src/app.log
+
 echo "Running migrations..."
 python manage.py migrate --noinput
 
@@ -28,7 +33,7 @@ python manage.py collectstatic --noinput
 echo "Creating superuser if needed..."
 python manage.py create_admin
 
-echo "Validating and fixing media paths..."
-python manage.py fix_media_paths
+echo "Setting up media and static files..."
+python manage.py check --deploy
 
 echo "Build process completed successfully" 
