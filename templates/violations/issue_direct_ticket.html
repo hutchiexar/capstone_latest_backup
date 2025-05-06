@@ -2312,6 +2312,7 @@ function addViolationToMinimalList(name, amount, category, autoAdded = false) {
     deleteButton.title = 'Remove violation';
     deleteButton.setAttribute('aria-label', 'Remove ' + name);
     deleteButton.addEventListener('click', function(e) {
+        e.preventDefault(); // Prevent default button action
         e.stopPropagation(); // Prevent event bubbling
         
         // Mark the item as being removed
@@ -2364,7 +2365,7 @@ function addViolationToMinimalList(name, amount, category, autoAdded = false) {
     updateViolationTotal();
 }
 
-// Add CSS for toast messages and animations
+// Add CSS for toast messages and animations via JavaScript
 const styleElement = document.createElement('style');
 styleElement.textContent = `
     .toast-message {
@@ -3375,6 +3376,23 @@ document.addEventListener('DOMContentLoaded', function() {
 document.getElementById('ticketForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
+    // Validate all steps before proceeding with submission
+    let isValid = true;
+    for (let i = 0; i < steps.length; i++) {
+        if (!validateStep(i)) {
+            isValid = false;
+            // Set current step to the first invalid step
+            currentStep = i;
+            updateStep(currentStep);
+            return; // Stop submission process
+        }
+    }
+    
+    // Only proceed if all steps are valid
+    if (!isValid) {
+        return;
+    }
+    
     try {
         // Create a new FormData object
         const formData = new FormData(this);
@@ -3394,6 +3412,9 @@ document.getElementById('ticketForm').addEventListener('submit', async function(
         if (selectedViolations.length === 0) {
             console.error('No violations selected!');
             alert('Please select at least one violation type');
+            // Go back to the violations step
+            currentStep = 1;
+            updateStep(currentStep);
             return; // Stop form submission
         }
         
@@ -5032,7 +5053,10 @@ document.addEventListener('DOMContentLoaded', function() {
         removeBtn.className = 'remove-btn';
         removeBtn.innerHTML = '<i class="fas fa-times"></i>';
         removeBtn.title = 'Remove violation';
-        removeBtn.addEventListener('click', function() {
+        removeBtn.addEventListener('click', function(e) {
+            e.preventDefault(); // Prevent default button action
+            e.stopPropagation(); // Prevent event bubbling
+            
             // Mark the item as being removed
             listItem.setAttribute('data-being-removed', 'true');
             
@@ -5185,25 +5209,22 @@ document.addEventListener('DOMContentLoaded', function() {
         removeBtn.className = 'remove-btn';
         removeBtn.innerHTML = '<i class="fas fa-times"></i>';
         removeBtn.title = 'Remove violation';
-        removeBtn.addEventListener('click', function() {
-            // Add a subtle fade-out animation before removing
+        removeBtn.addEventListener('click', function(e) {
+            e.preventDefault(); // Prevent default button action
+            e.stopPropagation(); // Prevent event bubbling
+            
+            // Mark the item as being removed
+            listItem.setAttribute('data-being-removed', 'true');
+            
+            // Add animation
             listItem.style.opacity = '0';
             listItem.style.transform = 'translateX(10px)';
             
             setTimeout(() => {
                 listItem.remove();
-                
-                // If this was an auto-added unlicensed driver violation, uncheck the no license box
-                if (autoAdded && name === "Unlicensed Driver") {
-                    const noLicenseCheckbox = document.getElementById('noLicense');
-                    if (noLicenseCheckbox && noLicenseCheckbox.checked) {
-                        noLicenseCheckbox.checked = false;
-                    }
-                }
-                
                 updateNoViolationsMessage();
                 updateViolationTotal();
-            }, 200); // Match this with the CSS transition duration
+            }, 300);
         });
         listItem.appendChild(removeBtn);
         
@@ -5280,7 +5301,10 @@ function addViolationToMinimalList(name, amount, category, autoAdded = false) {
     deleteButton.className = 'delete-btn';
     deleteButton.innerHTML = '<i class="fas fa-times"></i>';
     deleteButton.title = 'Remove violation';
-    deleteButton.addEventListener('click', function() {
+    deleteButton.addEventListener('click', function(e) {
+        e.preventDefault(); // Prevent default button action
+        e.stopPropagation(); // Prevent event bubbling
+        
         item.style.opacity = '0';
         
         // Mark the item as being removed by adding a data attribute
@@ -5535,6 +5559,7 @@ function addViolationToMinimalList(name, amount, category, autoAdded = false) {
     deleteButton.title = 'Remove violation';
     deleteButton.setAttribute('aria-label', 'Remove ' + name);
     deleteButton.addEventListener('click', function(e) {
+        e.preventDefault(); // Prevent default button action
         e.stopPropagation(); // Prevent event bubbling
         
         // Add animated deletion
@@ -5597,132 +5622,6 @@ function addViolationToMinimalList(name, amount, category, autoAdded = false) {
     
     // Update total
     updateViolationTotal();
-}
-
-// Add toast message styles programmatically
-document.addEventListener('DOMContentLoaded', function() {
-    // Create styles for toast messages and animations if they don't exist yet
-    if (!document.getElementById('toast-message-styles')) {
-        const styleElement = document.createElement('style');
-        styleElement.id = 'toast-message-styles';
-        styleElement.textContent = `
-            .toast-message {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background-color: #f87171;
-                color: white;
-                padding: 0.75rem 1.25rem;
-                border-radius: 0.5rem;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                z-index: 1050;
-                opacity: 0;
-                transform: translateY(-10px);
-                transition: opacity 0.3s, transform 0.3s;
-            }
-            
-            .toast-message.show {
-                opacity: 1;
-                transform: translateY(0);
-            }
-            
-            @keyframes empty-shake {
-                0%, 100% { transform: translateX(0); }
-                25% { transform: translateX(-5px); }
-                75% { transform: translateX(5px); }
-            }
-            
-            .empty-shake {
-                animation: empty-shake 0.5s ease-in-out;
-            }
-        `;
-        document.head.appendChild(styleElement);
-    }
-});
-
-// Update the updateViolationTotal function to use the new structure
-function updateViolationTotal() {
-    // Get the fine amount element
-    const fineAmountEl = document.getElementById('fine_amount');
-    if (!fineAmountEl) {
-        console.error('Fine amount element not found!');
-        return;
-    }
-    
-    // Default fine amount for unlisted violations
-    const DEFAULT_FINE = 300;
-    
-    // Get all selected violations - FIXED: Now check BOTH old and new UI formats
-    let totalAmount = 0;
-    let selectedViolations = [];
-    
-    // Try new format first (minimal-violations-list with violation-item)
-    const newFormatViolations = document.querySelectorAll('#minimal_violations_list .violation-item');
-    if (newFormatViolations && newFormatViolations.length > 0) {
-        console.log('Using new format UI, found violations:', newFormatViolations.length);
-        selectedViolations = newFormatViolations;
-    } else {
-        // Fall back to old format (selected_violations with li)
-        const oldFormatViolations = document.querySelectorAll('#selected_violations li');
-        console.log('Using old format UI, found violations:', oldFormatViolations.length);
-        selectedViolations = oldFormatViolations;
-    }
-    
-    console.log('Total selected violations count:', selectedViolations.length);
-    
-    // Check if TDZ checkbox is checked
-    const isTdzChecked = document.getElementById('is_tdz_violation') && document.getElementById('is_tdz_violation').checked;
-    console.log('TDZ checkbox state:', isTdzChecked);
-    
-    // Calculate total from selected violations
-    selectedViolations.forEach(violation => {
-        let amount = DEFAULT_FINE;
-        
-        // Try to get amount from data attribute (new format)
-        const amountAttr = violation.getAttribute('data-amount');
-        if (amountAttr) {
-            amount = parseFloat(amountAttr);
-            console.log('Using data-amount attribute:', amount);
-        } else {
-            // Try to extract from text content (old format)
-            const violationText = violation.textContent.trim();
-            
-            // Only search in cached types if needed
-            if (window.violationTypesCache) {
-                // Look up the amount for this violation
-                for (const vt of window.violationTypesCache) {
-                    if (violationText.includes(vt.name)) {
-                        amount = parseFloat(vt.amount);
-                        console.log('Found amount from cache:', amount, 'for', vt.name);
-                        break;
-                    }
-                }
-            }
-        }
-        
-        console.log('Adding violation amount:', amount);
-        totalAmount += amount;
-    });
-    
-    console.log('Total before TDZ multiplier:', totalAmount);
-    
-    // Apply TDZ multiplier if checked
-    if (isTdzChecked) {
-        console.log('TDZ is checked - DOUBLING total from', totalAmount, 'to', totalAmount * 2);
-        totalAmount *= 2.0;
-    }
-    
-    // Update the fine amount display
-    console.log('Setting final amount:', totalAmount.toFixed(2));
-    fineAmountEl.value = totalAmount.toFixed(2);
-    
-    // Also update any total display elements
-    const totalDisplay = document.getElementById('total_fine_display');
-    if (totalDisplay) {
-        totalDisplay.textContent = '₱' + totalAmount.toFixed(2);
-    }
-    
-    return totalAmount; // Return value for testing
 }
 
 // Make sure TDZ checkbox has a reliable event listener
