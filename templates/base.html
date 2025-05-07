@@ -3174,9 +3174,21 @@
                                     </a>
                                 </div>
                             </div>
-                            <a href="{% url 'admin_report_list' %}" class="list-group-item {% if 'management/reports' in request.path %}active{% endif %}">
-                                <span class="material-icons">report_problem</span>User Reports
-                            </a>
+                            <div class="submenu">
+                                <button class="list-group-item submenu-toggle {% if 'management/reports' in request.path or 'management/violation-reports' in request.path %}active{% endif %}" data-bs-toggle="collapse" data-bs-target="#reportsSubmenu">
+                                    <span class="material-icons">summarize</span>
+                                    <span class="flex-grow-1">Reports</span>
+                                    <span class="material-icons submenu-icon">expand_more</span>
+                                </button>
+                                <div class="collapse {% if 'management/reports' in request.path or 'management/violation-reports' in request.path %}show{% endif %}" id="reportsSubmenu">
+                                    <a href="{% url 'admin_report_list' %}" class="list-group-item submenu-item {% if 'management/reports' in request.path %}active{% endif %}">
+                                        <span class="material-icons">report_problem</span>User Reports
+                                    </a>
+                                    <a href="{% url 'admin_violation_report' %}" class="list-group-item submenu-item {% if 'management/violation-reports' in request.path %}active{% endif %}">
+                                        <span class="material-icons">description</span>Violation Records
+                                    </a>
+                                </div>
+                            </div>
                             <a href="{% url 'reports:dashboard' %}" class="list-group-item {% if '/reports/' in request.path %}active{% endif %}">
                                 <span class="material-icons">assessment</span>Data Reports
                             </a>
@@ -3184,25 +3196,6 @@
                                 <span class="material-icons">paid</span>Violation Types
                             </a>
                             <!-- Educational Materials submenu - REPLACED -->
-                        </div>
-                    </div>
-                    
-                    <!-- Education Section - NEW -->
-                    <div class="sidebar-section">
-                        <div class="sidebar-section-title">Education</div>
-                        <div class="list-group list-group-flush">
-                            <a href="{% url 'educational:admin_dashboard' %}" class="list-group-item {% if request.path == '/educational/admin/dashboard/' or request.path == '/educational/admin/' %}active{% endif %}">
-                                <span class="material-icons">dashboard</span>Dashboard
-                            </a>
-                            <a href="{% url 'educational:admin_category_list' %}" class="list-group-item {% if '/educational/admin/categories/' in request.path %}active{% endif %}">
-                                <span class="material-icons">category</span>Categories
-                            </a>
-                            <a href="{% url 'educational:admin_topic_list' %}" class="list-group-item {% if '/educational/admin/topics/' in request.path %}active{% endif %}">
-                                <span class="material-icons">article</span>Topics
-                            </a>
-                            <a href="{% url 'educational:admin_quiz_list' %}" class="list-group-item {% if '/educational/admin/quizzes/' in request.path %}active{% endif %}">
-                                <span class="material-icons">quiz</span>Quizzes
-                            </a>
                         </div>
                     </div>
                     {% endif %}

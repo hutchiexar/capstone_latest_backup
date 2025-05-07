@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>User Statistics Report</title>
+    <style>
+        @page {
+            size: letter landscape;
+            margin: 1.5cm;
+            @frame header_frame {
+                -pdf-frame-content: header_content;
+                top: 0.5cm;
+                margin-left: 1.5cm;
+                margin-right: 1.5cm;
+                height: 3.5cm;
+            }
+            @frame footer_frame {
+                -pdf-frame-content: footer_content;
+                bottom: 0.5cm;
+                margin-left: 1.5cm;
+                margin-right: 1.5cm;
+                height: 1cm;
+            }
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            color: #333;
+            line-height: 1.4;
+            margin: 0;
+            padding: 0;
+            font-size: 10pt;
+        }
+        h1 {
+            color: #1a3c6e;
+            font-size: 22pt;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-align: center;
+            padding-bottom: 10px;
+            letter-spacing: -0.5px;
+        }
+        h2 {
+            color: #1a3c6e;
+            font-size: 14pt;
+            font-weight: 600;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            border-left: 4px solid #1a3c6e;
+            padding-left: 10px;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Enhanced header styling */
+        .header-container {
+            position: relative;
+            border-bottom: 2px solid #1a3c6e;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .logo-container {
+            display: flex;
+            width: 100%;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            width: 60px;
+            height: 60px;
+        }
+        
+        .header-text {
+            text-align: center;
+            flex-grow: 1;
+            padding: 0 15px;
+        }
+        
+        .republic-title {
+            font-size: 14pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            color: #1a3c6e;
+        }
+        
+        .office-title {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #1a3c6e;
+            text-transform: uppercase;
+            margin: 5px 0;
+        }
+        
+        .office-subtitle {
+            font-size: 12pt;
+            margin: 2px 0;
+        }
+        
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 100px;
+            color: rgba(0,0,0,0.03);
+            z-index: 0;
+            pointer-events: none;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        
+        .document-number {
+            position: absolute;
+            top: 0.5cm;
+            right: 0.5cm;
+            font-size: 12pt;
+            font-weight: bold;
+            border: 1px solid #1a3c6e;
+            padding: 5px 10px;
+            background-color: #f2f2f2;
+            color: #1a3c6e;
+        }
+        
+        .header-logo {
+            max-width: 60px;
+            float: left;
+            margin-right: 15px;
+        }
+        .timestamp {
+            font-size: 8pt;
+            color: #666;
+            margin-top: 5px;
+            text-align: center;
+            font-style: italic;
+        }
+        .report-meta {
+            text-align: center;
+            font-size: 9pt;
+            color: #555;
+            margin-top: 5px;
+        }
+        .summary {
+            margin-bottom: 25px;
+            background-color: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+        .summary-header {
+            margin-bottom: 10px;
+            color: #1a3c6e;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 5px;
+        }
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 5px;
+            table-layout: fixed;
+        }
+        .summary-table td, .summary-table th {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: center;
+        }
+        .summary-table th {
+            background-color: #1a3c6e;
+            color: white;
+            font-weight: bold;
+            font-size: 9pt;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #0f2a54;
+        }
+        .summary-table td {
+            font-weight: 500;
+        }
+        .summary-table tr:nth-child(even) {
+            background-color: #ffffff;
+        }
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+            margin-top: 10px;
+            table-layout: fixed;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .users-table td, .users-table th {
+            border: 1px solid #dee2e6;
+            padding: 9px 8px;
+            text-align: left;
+            vertical-align: middle;
+        }
+        .users-table th {
+            background-color: #1a3c6e;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            font-size: 10pt;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            border-bottom: 3px solid #0f2a54;
+        }
+        .users-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        .users-table tr:hover {
+            background-color: #f0f0f0;
+        }
+        .footer {
+            text-align: center;
+            font-size: 8pt;
+            color: #666;
+            border-top: 1px solid #dee2e6;
+            padding-top: 5px;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .page-break {
+            page-break-after: always;
+        }
+        .no-data {
+            color: #777;
+            font-style: italic;
+            font-size: 8pt;
+        }
+        .stat-header {
+            font-size: 8pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #666;
+        }
+        .stat-value {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #1a3c6e;
+        }
+        .report-section {
+            margin-bottom: 30px;
+            border-radius: 5px;
+            overflow: hidden;
+            background-color: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .report-section h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eaeaea;
+            font-weight: 700;
+        }
+        .id-column {
+            font-weight: bold;
+            text-align: center;
+            padding-left: 2px;
+            padding-right: 2px;
+        }
+        .currency {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 8pt;
+            color: white;
+            text-align: center;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-right: 4px;
+        }
+        .badge-success {
+            background-color: #28a745;
+        }
+        .badge-warning {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        .badge-light {
+            background-color: #f8f9fa;
+            color: #212529;
+        }
+        .report-title-section {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .page-number {
+            font-style: italic;
+        }
+        
+        /* Download button - only shown in web preview */
+        @media screen {
+            .download-container {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 1000;
+            }
+            .download-button {
+                display: inline-block;
+                background-color: #28a745;
+                color: white;
+                font-weight: bold;
+                padding: 8px 16px;
+                border-radius: 4px;
+                text-decoration: none;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                font-family: Arial, sans-serif;
+                font-size: 14px;
+                border: none;
+                cursor: pointer;
+                text-align: center;
+            }
+            .download-button:hover {
+                background-color: #218838;
+            }
+        }
+        /* Hide download button in print/PDF output */
+        @media print {
+            .download-container {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Download button - only visible in browser preview -->
+    <div class="download-container">
+        <a href="{% url 'user_statistics_export' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="download-button">
+            Download PDF
+        </a>
+    </div>
+    
+    <div id="header_content">
+        <div class="watermark">OFFICIAL REPORT</div>
+        
+        <div class="header-container">
+            <div class="document-number">Report #{{ current_datetime|date:"Ymd" }}</div>
+            
+            <div class="logo-container">
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5QQCCzshC2SOHwAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAAGzSURBVHja7drLacQwFIVhWwNIF+k03aUZB1JFCgg4EIhz5iGN5Pt9a+MfG1sXzfOU6/RxBQgQBAgCBAGCAEGAIEAQIAgQBAgCBAGCAEGAIEAQIAgQBAgCBAGCAEGAIEAQIAgQBAgCBAGCAEGAIEAQIAgQBAgCBAGCAEGAIED+vV7X6+l0iqJojuM4ym/L9Xq1AFnX9eVfd0+z27bJg3yrvp5OpyzL9n2XBGmaJk3TKIrCMHQcZ5omSZDX6/Ve1Pt+LMtCEuT9dRzHURRJgjxlCIIg+/vz4fV86r7v4zhOkuTHdW+t67ppmhRFkSTJ+Xx++AMupxZlWZZlWd/34zhOpxZlWZZlWd/34zj+3JZSSoRhaJr/2u9Xdm49z1vXNY5jx3EKxfV931pb17UkyDRNaZr+MfN1XS/LQhLk6Uyz7H6/FUWxruttSUqppmm+Lg1RkKqq+r4vy7Ku63mej7ZlnueaplmWNQwD1TtZWZZ1XRepTdPsuu6o68uy7Ha7BUFAFeTIwjAMfN/XdZ3qLzZe3RAECAIEA YIAQYAgQBAgCBAECAIEAYIAQYAgQBAgCBAECAIEAYIAQYAgQBAgCBAECAIEAYIAQYAgQBAgCBAECAIEAYIAQYAgQBAgCBAECAIEAYIAQYAgf9YnVdAGRw5yk2cAAAAASUVORK5CYII=" class="logo" alt="City Logo" style="float: left;">
+                
+                <div class="header-text">
+                    <div class="republic-title">REPUBLIC OF THE PHILIPPINES</div>
+                    <div class="office-title">CITY TRANSPORT AND TRAFFIC MANAGEMENT OFFICE</div>
+                    <p class="office-subtitle">Traffic Violation Management System</p>
+                    <p class="office-subtitle">City Government of Bayawan City</p>
+                </div>
+                
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5QQCCzshC2SOHwAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAAGzSURBVHja7drLacQwFIVhWwNIF+k03aUZB1JFCgg4EIhz5iGN5Pt9a+MfG1sXzfOU6/RxBQgQBAgCBAGCAEGAIEAQIAgQBAgCBAGCAEGAIEAQIAgQBAgCBAGCAEGAIEAQIAgQBAgCBAGCAEGAIEAQIAgQBAgCBAGCAEGAIED+vV7X6+l0iqJojuM4ym/L9Xq1AFnX9eVfd0+z27bJg3yrvp5OpyzL9n2XBGmaJk3TKIrCMHQcZ5omSZDX6/Ve1Pt+LMtCEuT9dRzHURRJgjxlCIIg+/vz4fV86r7v4zhOkuTHdW+t67ppmhRFkSTJ+Xx++AMupxZlWZZlWd/34zhOpxZlWZZlWd/34zj+3JZSSoRhaJr/2u9Xdm49z1vXNY5jx3EKxfV931pb17UkyDRNaZr+MfN1XS/LQhLk6Uyz7H6/FUWxruttSUqppmm+Lg1RkKqq+r4vy7Ku63mej7ZlnueaplmWNQwD1TtZWZZ1XRepTdPsuu6o68uy7Ha7BUFAFeTIwjAMfN/XdZ3qLzZe3RAECAIEA YIAQYAgQBAgCBAECAIEAYIAQYAgQBAgCBAECAIEAYIAQYAgQBAgCBAECAIEAYIAQYAgQBAgCBAECAIEAYIAQYAgf9YnVdAGRw5yk2cAAAAASUVORK5CYII=" class="logo" alt="iBayaw Logo" style="float: right;">
+            </div>
+        </div>
+        
+        <div class="report-title-section">
+            <h1>User Statistics Report</h1>
+            <p class="report-meta">
+                <strong>Generated:</strong> {{ current_datetime|date:"F d, Y" }} at {{ current_datetime|time:"H:i:s" }} |
+                <strong>Total Users:</strong> {{ total_users }} |
+                <strong>Time Period:</strong> {{ period_label }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Summary Statistics Section -->
+    <div class="report-section">
+        <h2>Summary Statistics</h2>
+        <table class="summary-table">
+            <tr>
+                <th width="20%">Total Users</th>
+                <th width="20%">Users with Vehicles</th>
+                <th width="20%">Users without Vehicles</th>
+                <th width="20%">Driver Users</th>
+                <th width="20%">Operator Users</th>
+            </tr>
+            <tr>
+                <td>{{ total_users }}</td>
+                <td>{{ users_with_vehicles }} ({% if total_users > 0 %}{% widthratio users_with_vehicles total_users 100 as pct %}{{ pct|floatformat:1 }}{% else %}0.0{% endif %}%)</td>
+                <td>{{ users_without_vehicles }} ({% if total_users > 0 %}{% widthratio users_without_vehicles total_users 100 as pct %}{{ pct|floatformat:1 }}{% else %}0.0{% endif %}%)</td>
+                <td>{{ driver_users }} ({% if total_users > 0 %}{% widthratio driver_users total_users 100 as pct %}{{ pct|floatformat:1 }}{% else %}0.0{% endif %}%)</td>
+                <td>{{ operator_users }} ({% if total_users > 0 %}{% widthratio operator_users total_users 100 as pct %}{{ pct|floatformat:1 }}{% else %}0.0{% endif %}%)</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Top Users Section -->
+    {% if top_users %}
+    <div class="report-section">
+        <h2>Top 5 Most Active Users (By Reports Made)</h2>
+        <table class="users-table">
+            <thead>
+                <tr>
+                    <th width="40%">User</th>
+                    <th width="15%" class="text-center">Vehicles</th>
+                    <th width="15%" class="text-center">Reports Made</th>
+                    <th width="15%" class="text-center">User Type</th>
+                    <th width="15%" class="text-center">Registration Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in top_users %}
+                <tr>
+                    <td>
+                        <strong>{{ user.first_name }} {{ user.last_name }}</strong>
+                        <br><span style="color: #666; font-size: 8pt;">{{ user.username }}</span>
+                        <br><span style="color: #666; font-size: 8pt;">{{ user.email }}</span>
+                    </td>
+                    <td class="text-center">{{ user.vehicle_count }}</td>
+                    <td class="text-center">{{ user.report_count }}</td>
+                    <td class="text-center">
+                        {% if user.is_driver %}
+                        <span class="badge badge-success">Driver</span>
+                        {% endif %}
+                        {% if user.is_operator %}
+                        <span class="badge badge-warning">Operator</span>
+                        {% endif %}
+                        {% if not user.is_driver and not user.is_operator %}
+                        <span class="badge badge-light">Regular User</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">{{ user.date_joined|date:"M d, Y" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Users Section -->
+    <div class="report-section">
+        <h2>All Users</h2>
+        <table class="users-table">
+            <thead>
+                <tr>
+                    <th width="40%">User</th>
+                    <th width="15%" class="text-center">Vehicles</th>
+                    <th width="15%" class="text-center">Reports Made</th>
+                    <th width="15%" class="text-center">User Type</th>
+                    <th width="15%" class="text-center">Registration Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>
+                        <strong>{{ user.first_name }} {{ user.last_name }}</strong>
+                        <br><span style="color: #666; font-size: 8pt;">{{ user.username }}</span>
+                        <br><span style="color: #666; font-size: 8pt;">{{ user.email }}</span>
+                    </td>
+                    <td class="text-center">{{ user.vehicle_count }}</td>
+                    <td class="text-center">{{ user.report_count }}</td>
+                    <td class="text-center">
+                        {% if user.is_driver %}
+                        <span class="badge badge-success">Driver</span>
+                        {% endif %}
+                        {% if user.is_operator %}
+                        <span class="badge badge-warning">Operator</span>
+                        {% endif %}
+                        {% if not user.is_driver and not user.is_operator %}
+                        <span class="badge badge-light">Regular User</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">{{ user.date_joined|date:"M d, Y" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center">
+                        <span class="no-data">No user data found for the selected period.</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div id="footer_content" class="footer">
+        <p>
+            Traffic Violation System - Confidential Report | 
+            <span class="page-number">Page <pdf:pagenumber> of <pdf:pagecount></span>
+        </p>
+        <p>This document is an official report of the City Transport and Traffic Management Office.</p>
+    </div>
+</body>
+</html> 

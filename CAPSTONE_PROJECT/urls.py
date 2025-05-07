@@ -17,6 +17,8 @@ urlpatterns = [
         extra_context={'no_cache': True}
     ), name='logout'),
     path('reports/', include('reports.urls')),
+    path('', include('traffic_violation_system.adjudication_history_urls')),
+    path('', include('traffic_violation_system.reports.urls')),
     path('', include('traffic_violation_system.urls')),
 ]
 

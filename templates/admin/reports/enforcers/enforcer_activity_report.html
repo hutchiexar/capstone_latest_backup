@@ -1,0 +1,757 @@
+{% extends 'admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}Enforcer Activity Report{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<!-- Ensure Bootstrap CSS is properly loaded -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+    /* Card Styling */
+    .card {
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+    }
+    
+    /* Enhanced Table Styling */
+    .table th {
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.7px;
+        background-color: #dc3545;
+        color: white;
+        border-top: none;
+        padding: 14px 10px;
+        vertical-align: middle;
+        border-bottom: 3px solid #b02a37;
+    }
+    
+    .table th:hover {
+        background-color: #bb2d3b;
+    }
+    
+    .table td {
+        vertical-align: middle;
+        padding: 12px 10px;
+        border-color: rgba(0,0,0,0.05);
+    }
+    
+    .table tbody tr {
+        transition: all 0.2s ease;
+    }
+    
+    .table tbody tr:hover {
+        background-color: rgba(26, 60, 110, 0.03);
+    }
+    
+    /* Table striping for better readability */
+    .table tbody tr:nth-of-type(odd) {
+        background-color: rgba(0, 0, 0, 0.02);
+    }
+    
+    /* Badge Styling */
+    .status-badge {
+        padding: 5px 10px;
+        border-radius: 30px;
+        font-weight: 500;
+        font-size: 0.7rem;
+    }
+    
+    /* Search Input Styling */
+    .search-input {
+        position: relative;
+    }
+    
+    .search-input input {
+        padding-left: 40px;
+        border-radius: 50px;
+        height: 48px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+        transition: all 0.3s ease;
+    }
+    
+    .search-input:focus-within input {
+        box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.15);
+    }
+    
+    .search-input .material-icons {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #adb5bd;
+    }
+    
+    /* Icon Circle */
+    .icon-circle {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* Period Selection Styling */
+    .period-selector .btn {
+        border-radius: 50px;
+        padding: 8px 16px;
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+    
+    .period-selector .btn.active {
+        background-color: var(--bs-primary);
+        color: white;
+    }
+    
+    /* Filter Section */
+    .filter-toggle {
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background-color: #f8f9fa;
+    }
+    
+    .filter-toggle:hover {
+        background-color: #f0f0f0;
+    }
+    
+    /* Summary Cards */
+    .summary-card {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 16px;
+        height: 100%;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(0,0,0,0.03);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    
+    .summary-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+    }
+    
+    .summary-card .text-muted {
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+    
+    .summary-card h4 {
+        font-weight: 700;
+        color: var(--bs-primary);
+    }
+    
+    /* Animation */
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    .fade-in {
+        animation: fadeIn 0.5s ease-in-out;
+    }
+    
+    /* Export Button */
+    .export-btn {
+        border-radius: 50px;
+        padding: 10px 20px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: all 0.3s ease;
+    }
+    
+    .export-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(40, 167, 69, 0.2);
+    }
+    
+    /* Pagination Styling */
+    .pagination .page-link {
+        border-radius: 3px;
+        margin: 0 3px;
+    }
+    
+    .pagination .active .page-link {
+        background-color: var(--bs-primary);
+        border-color: var(--bs-primary);
+    }
+    
+    /* Stat icon styling */
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* Consistent table layout */
+    .table-system th,
+    .table-system td {
+        white-space: nowrap;
+    }
+    
+    /* Column width management */
+    .table-fixed {
+        table-layout: fixed;
+    }
+    
+    /* Percentage bar */
+    .percentage-bar {
+        height: 10px;
+        background-color: #e9ecef;
+        border-radius: 5px;
+        overflow: hidden;
+        margin-top: 4px;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+    }
+    
+    .percentage-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #1a3c6e, #3968b1);
+        border-radius: 5px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    /* Badge styles for performance indicators */
+    .badge-performance {
+        font-size: 0.7rem;
+        padding: 4px 8px;
+        border-radius: 4px;
+    }
+    
+    .badge-high {
+        background-color: rgba(25, 135, 84, 0.1);
+        color: #198754;
+    }
+    
+    .badge-medium {
+        background-color: rgba(255, 193, 7, 0.1);
+        color: #ffc107;
+    }
+    
+    .badge-low {
+        background-color: rgba(220, 53, 69, 0.1);
+        color: #dc3545;
+    }
+    
+    /* Mobile optimizations */
+    @media (max-width: 768px) {
+        input, select, textarea {
+            font-size: 16px !important;
+        }
+        
+        .card-body {
+            padding: 1rem !important;
+        }
+        
+        .card-header, .card-footer {
+            padding: 0.75rem 1rem !important;
+        }
+        
+        .container-fluid {
+            padding-left: 0.75rem !important;
+            padding-right: 0.75rem !important;
+        }
+    }
+    
+    /* Enhancing filters section */
+    .filter-section {
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Ensure Bootstrap JS is properly loaded -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<div class="container-fluid py-4 px-3 fade-in">
+    <!-- Header Section -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-body p-3 p-md-4">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div class="d-flex align-items-center">
+                    <div class="icon-circle bg-info text-white me-3">
+                        <span class="material-icons">people</span>
+                    </div>
+                    <div>
+                        <h4 class="mb-0 fs-5 fs-md-4 fw-bold">Enforcer Activity Report</h4>
+                        <p class="text-muted mb-0 small">
+                            <span class="badge bg-light text-dark me-2">
+                                <i class="material-icons align-middle" style="font-size: 14px;">badge</i> 
+                                Enforcers: {{ enforcers.paginator.count }}
+                            </span>
+                            <span class="badge bg-light text-dark">
+                                <i class="material-icons align-middle" style="font-size: 14px;">fact_check</i> 
+                                Total Violations: {{ total_violations }}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+                <div>
+                    <div class="d-flex flex-column flex-sm-row gap-2">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-info dropdown-toggle" type="button" id="exportOptionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span class="material-icons align-middle me-1" style="font-size: 18px;">tune</span>
+                                Export Options
+                            </button>
+                            <div class="dropdown-menu p-3 shadow-sm" style="min-width: 250px;" aria-labelledby="exportOptionsDropdown">
+                                <form id="exportOptionsForm" method="get" action="{% url 'enforcer_activity_export' %}" target="_blank">
+                                    <!-- Preserve current filters -->
+                                    {% for key, value in request.GET.items %}
+                                    {% if key != 'export_period' and key != 'export_date_from' and key != 'export_date_to' %}
+                                    <input type="hidden" name="{{ key }}" value="{{ value }}">
+                                    {% endif %}
+                                    {% endfor %}
+                                    
+                                    <div class="mb-3">
+                                        <label for="exportPeriod" class="form-label small text-muted fw-bold">Time Period</label>
+                                        <select class="form-select form-select-sm" id="exportPeriod" name="export_period">
+                                            <option value="current">Current Period</option>
+                                            <option value="week">Weekly</option>
+                                            <option value="month">Monthly</option>
+                                            <option value="quarter">Quarterly</option>
+                                            <option value="year">Annual</option>
+                                            <option value="custom">Custom Date Range</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div id="customDateContainer" class="mb-3" style="display: none;">
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <label for="exportDateFrom" class="form-label small text-muted">From</label>
+                                                <input type="date" id="exportDateFrom" name="export_date_from" class="form-control form-control-sm">
+                                            </div>
+                                            <div class="col-6">
+                                                <label for="exportDateTo" class="form-label small text-muted">To</label>
+                                                <input type="date" id="exportDateTo" name="export_date_to" class="form-control form-control-sm">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-success btn-sm d-flex align-items-center justify-content-center">
+                                            <span class="material-icons me-1" style="font-size: 16px;">picture_as_pdf</span>
+                                            Generate PDF
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <a href="{% url 'enforcer_activity_export' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" 
+                           class="btn btn-success export-btn"
+                           target="_blank">
+                            <span class="material-icons" style="font-size: 18px;">picture_as_pdf</span>
+                            <span>Quick Export</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Period Selection -->
+            <div class="period-selector mt-4">
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <span class="text-muted small me-2">Time Period:</span>
+                    <div class="btn-group" role="group">
+                        <a href="?period=month" class="btn btn-sm {% if current_filters.period == 'month' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            Monthly
+                        </a>
+                        <a href="?period=quarter" class="btn btn-sm {% if current_filters.period == 'quarter' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            Quarterly
+                        </a>
+                        <a href="?period=year" class="btn btn-sm {% if current_filters.period == 'year' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            Yearly
+                        </a>
+                    </div>
+                    <span class="ms-3 badge bg-info text-white">{{ period_label }}</span>
+                </div>
+            </div>
+
+            <!-- Search Form -->
+            <form method="get" class="mt-4">
+                <input type="hidden" name="period" value="{{ current_filters.period }}">
+                <div class="row g-3">
+                    <div class="col-12 col-md-9">
+                        <div class="search-input">
+                            <span class="material-icons">search</span>
+                            <input type="text" 
+                                   name="q" 
+                                   class="form-control py-2 search-box" 
+                                   placeholder="Search by enforcer name or badge number..."
+                                   value="{{ current_filters.q|default:'' }}">
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <button type="submit" class="btn btn-primary w-100 py-2 d-flex align-items-center justify-content-center">
+                            <span class="material-icons me-2">search</span>
+                            Search
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4 filter-section" id="filterSection">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center filter-toggle" onclick="toggleFilters()">
+            <div class="d-flex align-items-center">
+                <span class="material-icons text-primary me-2">filter_list</span>
+                <h6 class="m-0 fw-bold">Advanced Filters</h6>
+            </div>
+            <span class="material-icons" id="filterIcon">expand_more</span>
+        </div>
+        <div class="card-body filter-body p-3 p-md-4">
+            <form id="filter-form" method="get">
+                <input type="hidden" name="q" value="{{ current_filters.q|default:'' }}">
+                <input type="hidden" name="period" value="{{ current_filters.period }}">
+                <div class="row g-3">
+                    <div class="col-12 col-md-4 col-sm-6">
+                        <label for="status-filter" class="form-label small text-muted fw-bold">Violation Status</label>
+                        <select class="form-select py-2" name="status" id="status-filter">
+                            <option value="">All Statuses</option>
+                            {% for status_code, status_name in status_choices %}
+                            <option value="{{ status_code }}" {% if current_filters.status == status_code %}selected{% endif %}>
+                                {{ status_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-4 col-sm-6">
+                        <label for="violation-type-filter" class="form-label small text-muted fw-bold">Violation Type</label>
+                        <select class="form-select py-2" name="violation_type" id="violation-type-filter">
+                            <option value="">All Violation Types</option>
+                            {% for type in violation_types %}
+                            <option value="{{ type.id }}" {% if current_filters.violation_type == type.id|stringformat:"i" %}selected{% endif %}>
+                                {{ type.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label for="date-from" class="form-label small text-muted fw-bold">Custom Date Range</label>
+                        <div class="input-group flex-nowrap date-range-group">
+                            <span class="input-group-text bg-light border-end-0">From</span>
+                            <input type="date" class="form-control py-2 border-start-0 border-end-0" id="date-from" name="date_from" 
+                                   value="{{ current_filters.date_from|date:'Y-m-d' }}">
+                            <span class="input-group-text bg-light border-start-0 border-end-0">To</span>
+                            <input type="date" class="form-control py-2 border-start-0" id="date-to" name="date_to"
+                                   value="{{ current_filters.date_to|date:'Y-m-d' }}">
+                        </div>
+                    </div>
+                    <div class="col-12 d-flex flex-wrap gap-2 mt-3">
+                        <button type="submit" class="btn btn-primary d-inline-flex align-items-center px-3 py-2">
+                            <span class="material-icons me-1">filter_alt</span> Apply Filters
+                        </button>
+                        <a href="{% url 'enforcer_activity_report' %}" class="btn btn-outline-secondary d-inline-flex align-items-center px-3 py-2">
+                            <span class="material-icons me-1">clear</span> Clear Filters
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card bg-light shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1 small">Total Enforcers</h6>
+                            <h4 class="mb-0 fs-4">{{ enforcers.paginator.count }}</h4>
+                        </div>
+                        <div class="stat-icon text-info" style="background-color: rgba(13, 202, 240, 0.1);">
+                            <span class="material-icons">badge</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card bg-light shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1 small">Total Violations</h6>
+                            <h4 class="mb-0 fs-4">{{ total_violations }}</h4>
+                        </div>
+                        <div class="stat-icon text-primary" style="background-color: rgba(13, 110, 253, 0.1);">
+                            <span class="material-icons">fact_check</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card bg-light shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1 small">Total Fine Amount</h6>
+                            <h4 class="mb-0 fs-4">₱{{ total_fine_amount|floatformat:2 }}</h4>
+                        </div>
+                        <div class="stat-icon text-success" style="background-color: rgba(25, 135, 84, 0.1);">
+                            <span class="material-icons">payments</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card bg-light shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1 small">Time Period</h6>
+                            <h4 class="mb-0 fs-5">{{ period_label }}</h4>
+                        </div>
+                        <div class="stat-icon text-warning" style="background-color: rgba(255, 193, 7, 0.1);">
+                            <span class="material-icons">date_range</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enforcers Table -->
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-body p-0">
+            <!-- Desktop Table View -->
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="enforcersTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="border-0">Enforcer</th>
+                            <th class="border-0 text-center">Violations Issued</th>
+                            <th class="border-0 text-center">% of Total</th>
+                            <th class="border-0 text-center">Total Fine Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for data in enforcers %}
+                        <tr>
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <span class="fw-medium">{{ data.enforcer.first_name }} {{ data.enforcer.last_name }}</span>
+                                    {% if data.enforcer.badge_number %}
+                                    <small class="text-muted">Badge: {{ data.enforcer.badge_number }}</small>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="text-center fw-bold">{{ data.violations_count }}</td>
+                            <td class="text-center">
+                                <div>{{ data.percentage|floatformat:1 }}%</div>
+                                <div class="percentage-bar">
+                                    <div class="percentage-bar-fill" style="width: {{ data.percentage }}%;"></div>
+                                </div>
+                            </td>
+                            <td class="text-center">₱{{ data.total_fine_amount|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-5">
+                                <div class="d-flex flex-column align-items-center justify-content-center">
+                                    <span class="material-icons text-muted mb-3" style="font-size: 48px;">find_in_page</span>
+                                    <h5 class="text-muted mb-1">No Enforcer Activity Found</h5>
+                                    <p class="text-muted small">Try adjusting your search or filter criteria</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if enforcers.paginator.num_pages > 1 %}
+            <div class="d-flex justify-content-between align-items-center p-3 border-top">
+                <div class="d-flex align-items-center">
+                    <span class="text-muted small me-2">Page {{ enforcers.number }} of {{ enforcers.paginator.num_pages }}</span>
+                    <select class="form-select form-select-sm" style="width: auto;" id="pageSizeSelector" onchange="changePageSize(this.value)">
+                        <option value="10" {% if page_size == 10 %}selected{% endif %}>10 per page</option>
+                        <option value="25" {% if page_size == 25 %}selected{% endif %}>25 per page</option>
+                        <option value="50" {% if page_size == 50 %}selected{% endif %}>50 per page</option>
+                        <option value="100" {% if page_size == 100 %}selected{% endif %}>100 per page</option>
+                    </select>
+                </div>
+                
+                <nav aria-label="Enforcer pagination">
+                    <ul class="pagination mb-0">
+                        {% if enforcers.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode|cut:'page='|cut:'&amp;page='|cut:'&page=' }}&{% endif %}page=1" aria-label="First">
+                                <span class="material-icons" style="font-size: 16px;">first_page</span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode|cut:'page='|cut:'&amp;page='|cut:'&page=' }}&{% endif %}page={{ enforcers.previous_page_number }}" aria-label="Previous">
+                                <span class="material-icons" style="font-size: 16px;">chevron_left</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" aria-label="First">
+                                <span class="material-icons" style="font-size: 16px;">first_page</span>
+                            </a>
+                        </li>
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" aria-label="Previous">
+                                <span class="material-icons" style="font-size: 16px;">chevron_left</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for num in enforcers.paginator.page_range %}
+                            {% if enforcers.number == num %}
+                                <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                            {% elif num > enforcers.number|add:'-3' and num < enforcers.number|add:'3' %}
+                                <li class="page-item"><a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode|cut:'page='|cut:'&amp;page='|cut:'&page=' }}&{% endif %}page={{ num }}">{{ num }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if enforcers.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode|cut:'page='|cut:'&amp;page='|cut:'&page=' }}&{% endif %}page={{ enforcers.next_page_number }}" aria-label="Next">
+                                <span class="material-icons" style="font-size: 16px;">chevron_right</span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode|cut:'page='|cut:'&amp;page='|cut:'&page=' }}&{% endif %}page={{ enforcers.paginator.num_pages }}" aria-label="Last">
+                                <span class="material-icons" style="font-size: 16px;">last_page</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" aria-label="Next">
+                                <span class="material-icons" style="font-size: 16px;">chevron_right</span>
+                            </a>
+                        </li>
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" aria-label="Last">
+                                <span class="material-icons" style="font-size: 16px;">last_page</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    // Toggle filter section
+    function toggleFilters() {
+        const filterBody = document.querySelector('.filter-body');
+        const filterIcon = document.getElementById('filterIcon');
+        
+        if (filterBody.style.display === 'none') {
+            filterBody.style.display = 'block';
+            filterIcon.textContent = 'expand_less';
+        } else {
+            filterBody.style.display = 'none';
+            filterIcon.textContent = 'expand_more';
+        }
+    }
+    
+    // Change page size
+    function changePageSize(size) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('page_size', size);
+        url.searchParams.delete('page'); // Reset to first page
+        window.location.href = url.toString();
+    }
+    
+    // Initialize the filter section visibility
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if there are any active filters
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasFilters = urlParams.has('status') || urlParams.has('violation_type') || urlParams.has('date_from') || urlParams.has('date_to');
+        
+        // Show or hide the filter section based on whether there are active filters
+        const filterBody = document.querySelector('.filter-body');
+        const filterIcon = document.getElementById('filterIcon');
+        
+        if (hasFilters) {
+            filterBody.style.display = 'block';
+            filterIcon.textContent = 'expand_less';
+        } else {
+            filterBody.style.display = 'none';
+            filterIcon.textContent = 'expand_more';
+        }
+        
+        // Handle export period dropdown
+        const exportPeriod = document.getElementById('exportPeriod');
+        const customDateContainer = document.getElementById('customDateContainer');
+        
+        if (exportPeriod && customDateContainer) {
+            // Set initial state based on URL params
+            const exportPeriodValue = urlParams.get('export_period');
+            if (exportPeriodValue) {
+                exportPeriod.value = exportPeriodValue;
+                if (exportPeriodValue === 'custom') {
+                    customDateContainer.style.display = 'block';
+                    
+                    // Set date values if they exist in URL
+                    const exportDateFrom = urlParams.get('export_date_from');
+                    const exportDateTo = urlParams.get('export_date_to');
+                    
+                    if (exportDateFrom) {
+                        document.getElementById('exportDateFrom').value = exportDateFrom;
+                    }
+                    
+                    if (exportDateTo) {
+                        document.getElementById('exportDateTo').value = exportDateTo;
+                    }
+                }
+            }
+            
+            // Handle changes to export period
+            exportPeriod.addEventListener('change', function() {
+                if (this.value === 'custom') {
+                    customDateContainer.style.display = 'block';
+                } else {
+                    customDateContainer.style.display = 'none';
+                }
+            });
+        }
+        
+        // Try to initialize Bootstrap dropdowns
+        if (typeof bootstrap !== 'undefined') {
+            // Initialize Bootstrap dropdowns
+            const dropdownElementList = document.querySelectorAll('.dropdown-toggle');
+            dropdownElementList.forEach(dropdownToggleEl => {
+                new bootstrap.Dropdown(dropdownToggleEl);
+            });
+        } else {
+            console.warn('Bootstrap is not loaded properly. Some interactive elements may not work.');
+        }
+    });
+</script>
+{% endblock %} 

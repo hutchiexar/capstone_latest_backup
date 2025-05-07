@@ -1,0 +1,771 @@
+{% extends 'admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}Violation Records Report{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<!-- Ensure Bootstrap CSS is properly loaded -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+    /* Card Styling (from user_management.html) */
+    .card {
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    }
+    
+    /* Enhanced Table Styling */
+    .table th {
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        background-color: #f8f9fa;
+        border-top: none;
+        padding: 12px 8px;
+        vertical-align: middle;
+    }
+    
+    .table td {
+        vertical-align: middle;
+        padding: 12px 8px;
+        border-color: rgba(0,0,0,0.05);
+    }
+    
+    .table tbody tr {
+        transition: all 0.2s ease;
+    }
+    
+    .table tbody tr:hover {
+        background-color: rgba(var(--bs-primary-rgb), 0.03);
+    }
+    
+    /* Badge Styling */
+    .status-badge {
+        padding: 5px 10px;
+        border-radius: 30px;
+        font-weight: 500;
+        font-size: 0.7rem;
+    }
+    
+    /* Search Input Styling */
+    .search-input {
+        position: relative;
+    }
+    
+    .search-input input {
+        padding-left: 40px;
+        border-radius: 50px;
+        height: 48px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+        transition: all 0.3s ease;
+    }
+    
+    .search-input:focus-within input {
+        box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.15);
+    }
+    
+    .search-input .material-icons {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #adb5bd;
+    }
+    
+    /* Icon Circle */
+    .icon-circle {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* Filter Section */
+    .filter-toggle {
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .filter-toggle:hover {
+        background-color: rgba(var(--bs-primary-rgb), 0.03);
+    }
+    
+    /* Summary Cards */
+    .summary-card {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 16px;
+        height: 100%;
+        transition: all 0.3s ease;
+    }
+    
+    .summary-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 15px rgba(0,0,0,0.05);
+    }
+    
+    .summary-card .text-muted {
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+    
+    .summary-card h4 {
+        font-weight: 700;
+        color: var(--bs-primary);
+    }
+    
+    /* Animation */
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    .fade-in {
+        animation: fadeIn 0.5s ease-in-out;
+    }
+    
+    /* Export Button */
+    .export-btn {
+        border-radius: 50px;
+        padding: 10px 20px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: all 0.3s ease;
+    }
+    
+    .export-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(40, 167, 69, 0.2);
+    }
+    
+    /* Pagination Styling */
+    .pagination .page-link {
+        border-radius: 3px;
+        margin: 0 3px;
+    }
+    
+    .pagination .active .page-link {
+        background-color: var(--bs-primary);
+        border-color: var(--bs-primary);
+    }
+    
+    /* Reduced badge */
+    .reduced-badge {
+        font-size: 0.65rem;
+        padding: 3px 6px;
+        border-radius: 3px;
+        margin-left: 5px;
+        vertical-align: middle;
+        background-color: rgba(255, 193, 7, 0.15);
+        color: #856404;
+        font-weight: 600;
+    }
+    
+    /* Stat icon styling (from user_management.html) */
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* Consistent table layout */
+    .table-system th,
+    .table-system td {
+        white-space: nowrap;
+    }
+    
+    /* Column width management */
+    .table-fixed {
+        table-layout: fixed;
+    }
+    
+    .w-id {
+        width: 8%;
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+    }
+    
+    .w-name {
+        width: 18%;
+    }
+    
+    .w-license {
+        width: 12%;
+    }
+    
+    .w-violations {
+        width: 27%;
+    }
+    
+    .w-amount {
+        width: 12%;
+    }
+    
+    .w-adjusted {
+        width: 13%;
+    }
+    
+    .w-status {
+        width: 10%;
+    }
+    
+    /* Compact ID column */
+    .id-column {
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+    }
+    
+    /* Mobile optimizations */
+    @media (max-width: 768px) {
+        input, select, textarea {
+            font-size: 16px !important;
+        }
+        
+        .card-body {
+            padding: 1rem !important;
+        }
+        
+        .card-header, .card-footer {
+            padding: 0.75rem 1rem !important;
+        }
+        
+        .container-fluid {
+            padding-left: 0.75rem !important;
+            padding-right: 0.75rem !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Ensure Bootstrap JS is properly loaded -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<div class="container-fluid py-4 px-3 fade-in">
+    <!-- Header Section -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-body p-3 p-md-4">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div class="d-flex align-items-center">
+                    <div class="icon-circle bg-primary text-white me-3">
+                        <span class="material-icons">analytics</span>
+                    </div>
+                    <div>
+                        <h4 class="mb-0 fs-5 fs-md-4 fw-bold">Violation Records Report</h4>
+                        <p class="text-muted mb-0 small">
+                            <span class="badge bg-light text-dark me-2">
+                                <i class="material-icons align-middle" style="font-size: 14px;">tag</i> 
+                                Total: {{ violations.paginator.count }}
+                            </span>
+                            <span class="badge bg-light text-dark">
+                                <i class="material-icons align-middle" style="font-size: 14px;">payments</i> 
+                                ₱{{ total_fine_amount|floatformat:2 }}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+                <div>
+                    <div class="d-flex flex-column flex-sm-row gap-2">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-primary dropdown-toggle" type="button" id="exportOptionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span class="material-icons align-middle me-1" style="font-size: 18px;">tune</span>
+                                Export Options
+                            </button>
+                            <div class="dropdown-menu p-3 shadow-sm" style="min-width: 250px;" aria-labelledby="exportOptionsDropdown">
+                                <form id="exportOptionsForm" method="get" action="{% url 'admin_violation_export' %}" target="_blank">
+                                    <!-- Preserve current filters -->
+                                    {% for key, value in request.GET.items %}
+                                    {% if key != 'export_status' %}
+                                    <input type="hidden" name="{{ key }}" value="{{ value }}">
+                                    {% endif %}
+                                    {% endfor %}
+                                    
+                                    <div class="mb-3">
+                                        <label for="exportStatus" class="form-label small text-muted fw-bold">Status to Export</label>
+                                        <select class="form-select form-select-sm" id="exportStatus" name="export_status">
+                                            <option value="">All Statuses</option>
+                                            {% for status_code, status_name in status_choices %}
+                                            <option value="{{ status_code }}">{{ status_name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-success btn-sm d-flex align-items-center justify-content-center">
+                                            <span class="material-icons me-1" style="font-size: 16px;">picture_as_pdf</span>
+                                            Generate PDF
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <a href="{% url 'admin_violation_export' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" 
+                           class="btn btn-success export-btn"
+                           target="_blank">
+                            <span class="material-icons" style="font-size: 18px;">picture_as_pdf</span>
+                            <span>Quick Export</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Form -->
+            <form method="get" class="mt-4">
+                <div class="row g-3">
+                    <div class="col-12 col-md-9">
+                        <div class="search-input">
+                            <span class="material-icons">search</span>
+                            <input type="text" 
+                                   name="q" 
+                                   class="form-control py-2 search-box" 
+                                   placeholder="Search by violator name, ID, or enforcer..."
+                                   value="{{ current_filters.q|default:'' }}">
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <button type="submit" class="btn btn-primary w-100 py-2 d-flex align-items-center justify-content-center">
+                            <span class="material-icons me-2">search</span>
+                            Search
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4 filter-section" id="filterSection">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center filter-toggle" onclick="toggleFilters()">
+            <div class="d-flex align-items-center">
+                <span class="material-icons text-primary me-2">filter_list</span>
+                <h6 class="m-0 fw-bold">Advanced Filters</h6>
+            </div>
+            <span class="material-icons" id="filterIcon">expand_more</span>
+        </div>
+        <div class="card-body filter-body p-3 p-md-4">
+            <form id="filter-form" method="get">
+                <input type="hidden" name="q" value="{{ current_filters.q|default:'' }}">
+                <div class="row g-3">
+                    <div class="col-12 col-md-4 col-sm-6">
+                        <label for="status-filter" class="form-label small text-muted fw-bold">Status</label>
+                        <select class="form-select py-2" name="status" id="status-filter">
+                            <option value="">All Statuses</option>
+                            {% for status_code, status_name in status_choices %}
+                            <option value="{{ status_code }}" {% if current_filters.status == status_code %}selected{% endif %}>
+                                {{ status_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-4 col-sm-6">
+                        <label for="violation-type-filter" class="form-label small text-muted fw-bold">Violation Type</label>
+                        <select class="form-select py-2" name="violation_type" id="violation-type-filter">
+                            <option value="">All Violation Types</option>
+                            {% for type in violation_types %}
+                            <option value="{{ type.id }}" {% if current_filters.violation_type == type.id|stringformat:"i" %}selected{% endif %}>
+                                {{ type.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label for="date-from" class="form-label small text-muted fw-bold">Date Range</label>
+                        <div class="input-group flex-nowrap date-range-group">
+                            <span class="input-group-text bg-light border-end-0">From</span>
+                            <input type="date" class="form-control py-2 border-start-0 border-end-0" id="date-from" name="date_from" 
+                                   value="{{ current_filters.date_from|date:'Y-m-d' }}">
+                            <span class="input-group-text bg-light border-start-0 border-end-0">To</span>
+                            <input type="date" class="form-control py-2 border-start-0" id="date-to" name="date_to"
+                                   value="{{ current_filters.date_to|date:'Y-m-d' }}">
+                        </div>
+                    </div>
+                    <div class="col-12 d-flex flex-wrap gap-2 mt-3">
+                        <button type="submit" class="btn btn-primary d-inline-flex align-items-center px-3 py-2">
+                            <span class="material-icons me-1">filter_alt</span> Apply Filters
+                        </button>
+                        <a href="{% url 'admin_violation_report' %}" class="btn btn-outline-secondary d-inline-flex align-items-center px-3 py-2">
+                            <span class="material-icons me-1">clear</span> Clear Filters
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card bg-light shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1 small">Total Violations</h6>
+                            <h4 class="mb-0 fs-4">{{ violations.paginator.count }}</h4>
+                        </div>
+                        <div class="stat-icon text-primary" style="background-color: rgba(13, 110, 253, 0.1);">
+                            <span class="material-icons">summarize</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card bg-light shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1 small">Total Fine Amount</h6>
+                            <h4 class="mb-0 fs-4">₱{{ total_fine_amount|floatformat:2 }}</h4>
+                        </div>
+                        <div class="stat-icon text-success" style="background-color: rgba(25, 135, 84, 0.1);">
+                            <span class="material-icons">payments</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card bg-light shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1 small">Paid Violations</h6>
+                            <h4 class="mb-0 fs-4">{{ paid_count }}</h4>
+                            <small class="text-success">(₱{{ paid_amount|floatformat:2 }})</small>
+                        </div>
+                        <div class="stat-icon text-info" style="background-color: rgba(13, 202, 240, 0.1);">
+                            <span class="material-icons">check_circle</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card bg-light shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1 small">Pending Violations</h6>
+                            <h4 class="mb-0 fs-4">{{ pending_count }}</h4>
+                        </div>
+                        <div class="stat-icon text-warning" style="background-color: rgba(255, 193, 7, 0.1);">
+                            <span class="material-icons">pending</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Violations Table -->
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-body p-0">
+            <!-- Desktop Table View -->
+            <div class="table-responsive">
+                <table class="table table-system table-fixed table-hover align-middle mb-0" id="violationsTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="border-0 w-id text-center id-column">
+                                <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}sort=id{% if current_sort == 'id' %}-desc{% endif %}" class="text-decoration-none text-dark">
+                                    ID
+                                    {% if 'id' in current_sort %}
+                                    <span class="material-icons align-middle" style="font-size: 16px;">
+                                        {% if current_sort == 'id-desc' %}arrow_downward{% else %}arrow_upward{% endif %}
+                                    </span>
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th class="border-0 w-name">
+                                <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}sort=violator__last_name{% if current_sort == 'violator__last_name' %}-desc{% endif %}" class="text-decoration-none text-dark">
+                                    Violator Name
+                                    {% if 'violator__last_name' in current_sort %}
+                                    <span class="material-icons align-middle" style="font-size: 16px;">
+                                        {% if current_sort == 'violator__last_name-desc' %}arrow_downward{% else %}arrow_upward{% endif %}
+                                    </span>
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th class="border-0 w-license text-center">License Number</th>
+                            <th class="border-0 w-violations">Violation Types</th>
+                            <th class="border-0 w-amount text-center">
+                                <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}sort=original_fine_amount{% if current_sort == 'original_fine_amount' %}-desc{% endif %}" class="text-decoration-none text-dark">
+                                    Original Amount
+                                    {% if 'original_fine_amount' in current_sort %}
+                                    <span class="material-icons align-middle" style="font-size: 16px;">
+                                        {% if current_sort == 'original_fine_amount-desc' %}arrow_downward{% else %}arrow_upward{% endif %}
+                                    </span>
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th class="border-0 w-adjusted text-center">
+                                <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}sort=fine_amount{% if current_sort == 'fine_amount' %}-desc{% endif %}" class="text-decoration-none text-dark">
+                                    Adjudicated Amount
+                                    {% if 'fine_amount' in current_sort %}
+                                    <span class="material-icons align-middle" style="font-size: 16px;">
+                                        {% if current_sort == 'fine_amount-desc' %}arrow_downward{% else %}arrow_upward{% endif %}
+                                    </span>
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th class="border-0 w-status text-center pe-4">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for violation in violations %}
+                        <tr>
+                            <td class="id-column text-center fw-bold">{{ violation.id }}</td>
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <span class="fw-medium">{{ violation.violator.first_name }} {{ violation.violator.last_name }}</span>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                {% if violation.violator.license_number %}
+                                <span class="badge bg-light text-dark">{{ violation.violator.license_number }}</span>
+                                {% else %}
+                                <span class="badge bg-secondary">No License</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <ul class="list-unstyled mb-0">
+                                    {% for vtype in violation.get_violation_types %}
+                                    <li class="mb-1 d-flex align-items-center">
+                                        <span class="material-icons me-1 text-primary" style="font-size: 14px;">circle</span>
+                                        {{ vtype }}
+                                    </li>
+                                    {% empty %}
+                                    <li class="text-muted">No violations specified</li>
+                                    {% endfor %}
+                                </ul>
+                            </td>
+                            <td class="text-center">
+                                {% if violation.original_fine_amount %}
+                                <span class="fw-semibold">₱{{ violation.original_fine_amount|floatformat:2 }}</span>
+                                {% else %}
+                                <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <span class="fw-semibold">₱{{ violation.fine_amount|floatformat:2 }}</span>
+                                {% if violation.original_fine_amount and violation.fine_amount < violation.original_fine_amount %}
+                                <span class="reduced-badge">Reduced</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center pe-4">
+                                <span class="status-badge {% if violation.status == 'PENDING' %}bg-warning
+                                       {% elif violation.status == 'PAID' %}bg-success
+                                       {% elif violation.status == 'APPROVED' %}bg-primary
+                                       {% elif violation.status == 'REJECTED' %}bg-danger
+                                       {% else %}bg-secondary{% endif %}">
+                                    {{ violation.get_status_display }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5">
+                                <div class="d-flex flex-column align-items-center justify-content-center">
+                                    <span class="material-icons text-muted mb-3" style="font-size: 48px;">find_in_page</span>
+                                    <h5 class="text-muted mb-1">No Violations Found</h5>
+                                    <p class="text-muted small">Try adjusting your search or filter criteria</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if violations.paginator.num_pages > 1 %}
+            <div class="d-flex justify-content-between align-items-center p-3 border-top">
+                <div class="d-flex align-items-center">
+                    <span class="text-muted small me-2">Page {{ violations.number }} of {{ violations.paginator.num_pages }}</span>
+                    <select class="form-select form-select-sm" style="width: auto;" id="pageSizeSelector" onchange="changePageSize(this.value)">
+                        <option value="10" {% if page_size == 10 %}selected{% endif %}>10 per page</option>
+                        <option value="25" {% if page_size == 25 %}selected{% endif %}>25 per page</option>
+                        <option value="50" {% if page_size == 50 %}selected{% endif %}>50 per page</option>
+                        <option value="100" {% if page_size == 100 %}selected{% endif %}>100 per page</option>
+                    </select>
+                </div>
+                
+                <nav aria-label="Violation pagination">
+                    <ul class="pagination mb-0">
+                        {% if violations.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode|cut:'page='|cut:'&amp;page='|cut:'&page=' }}&{% endif %}page=1" aria-label="First">
+                                <span class="material-icons" style="font-size: 16px;">first_page</span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode|cut:'page='|cut:'&amp;page='|cut:'&page=' }}&{% endif %}page={{ violations.previous_page_number }}" aria-label="Previous">
+                                <span class="material-icons" style="font-size: 16px;">chevron_left</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" aria-label="First">
+                                <span class="material-icons" style="font-size: 16px;">first_page</span>
+                            </a>
+                        </li>
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" aria-label="Previous">
+                                <span class="material-icons" style="font-size: 16px;">chevron_left</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for num in violations.paginator.page_range %}
+                            {% if violations.number == num %}
+                                <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                            {% elif num > violations.number|add:'-3' and num < violations.number|add:'3' %}
+                                <li class="page-item"><a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode|cut:'page='|cut:'&amp;page='|cut:'&page=' }}&{% endif %}page={{ num }}">{{ num }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if violations.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode|cut:'page='|cut:'&amp;page='|cut:'&page=' }}&{% endif %}page={{ violations.next_page_number }}" aria-label="Next">
+                                <span class="material-icons" style="font-size: 16px;">chevron_right</span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode|cut:'page='|cut:'&amp;page='|cut:'&page=' }}&{% endif %}page={{ violations.paginator.num_pages }}" aria-label="Last">
+                                <span class="material-icons" style="font-size: 16px;">last_page</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" aria-label="Next">
+                                <span class="material-icons" style="font-size: 16px;">chevron_right</span>
+                            </a>
+                        </li>
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" aria-label="Last">
+                                <span class="material-icons" style="font-size: 16px;">last_page</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    // Toggle filter section
+    function toggleFilters() {
+        const filterBody = document.querySelector('.filter-body');
+        const filterIcon = document.getElementById('filterIcon');
+        
+        if (filterBody.style.display === 'none') {
+            filterBody.style.display = 'block';
+            filterIcon.textContent = 'expand_less';
+        } else {
+            filterBody.style.display = 'none';
+            filterIcon.textContent = 'expand_more';
+        }
+    }
+    
+    // Change page size
+    function changePageSize(size) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('page_size', size);
+        url.searchParams.delete('page'); // Reset to first page
+        window.location.href = url.toString();
+    }
+    
+    // Manually initialize dropdown (fallback if bootstrap JS isn't properly loaded)
+    function initDropdown() {
+        const exportOptionsButton = document.getElementById('exportOptionsDropdown');
+        const exportOptionsMenu = exportOptionsButton.nextElementSibling;
+        
+        if (exportOptionsButton && exportOptionsMenu) {
+            exportOptionsButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const isOpen = exportOptionsMenu.classList.contains('show');
+                
+                // Close all open dropdowns
+                document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+                    menu.classList.remove('show');
+                });
+                
+                // Toggle current dropdown
+                if (!isOpen) {
+                    exportOptionsMenu.classList.add('show');
+                    exportOptionsMenu.setAttribute('aria-expanded', 'true');
+                } else {
+                    exportOptionsMenu.classList.remove('show');
+                    exportOptionsMenu.setAttribute('aria-expanded', 'false');
+                }
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!exportOptionsMenu.contains(e.target) && !exportOptionsButton.contains(e.target)) {
+                    exportOptionsMenu.classList.remove('show');
+                    exportOptionsMenu.setAttribute('aria-expanded', 'false');
+                }
+            });
+        }
+    }
+    
+    // Initialize the filter section visibility
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if there are any active filters
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasFilters = urlParams.has('status') || urlParams.has('violation_type') || urlParams.has('date_from') || urlParams.has('date_to');
+        
+        // Show or hide the filter section based on whether there are active filters
+        const filterBody = document.querySelector('.filter-body');
+        const filterIcon = document.getElementById('filterIcon');
+        
+        if (hasFilters) {
+            filterBody.style.display = 'block';
+            filterIcon.textContent = 'expand_less';
+        } else {
+            filterBody.style.display = 'none';
+            filterIcon.textContent = 'expand_more';
+        }
+        
+        // Try to initialize Bootstrap dropdowns
+        if (typeof bootstrap !== 'undefined') {
+            // Initialize Bootstrap dropdowns - fixed initialization
+            const dropdownElementList = document.querySelectorAll('.dropdown-toggle');
+            dropdownElementList.forEach(dropdownToggleEl => {
+                const dropdown = new bootstrap.Dropdown(dropdownToggleEl);
+            });
+        } else {
+            console.warn('Bootstrap is not loaded properly. Using fallback dropdown initialization.');
+            initDropdown(); // Use fallback manual initialization
+        }
+        
+        // Set export status from URL if present
+        const exportStatus = urlParams.get('export_status');
+        if (exportStatus) {
+            document.getElementById('exportStatus').value = exportStatus;
+        }
+    });
+</script>
+{% endblock %}

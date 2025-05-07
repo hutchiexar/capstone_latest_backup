@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+{% load custom_filters %}
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Financial Report</title>
+    <style>
+        @page {
+            size: letter landscape;
+            margin: 1.5cm;
+            @frame header_frame {
+                -pdf-frame-content: header_content;
+                top: 0.5cm;
+                margin-left: 1.5cm;
+                margin-right: 1.5cm;
+                height: 3.5cm;
+            }
+            @frame footer_frame {
+                -pdf-frame-content: footer_content;
+                bottom: 0.5cm;
+                margin-left: 1.5cm;
+                margin-right: 1.5cm;
+                height: 1cm;
+            }
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            color: #333;
+            line-height: 1.4;
+            margin: 0;
+            padding: 0;
+            font-size: 10pt;
+        }
+        h1 {
+            color: #1a3c6e;
+            font-size: 22pt;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-align: center;
+            padding-bottom: 10px;
+            letter-spacing: -0.5px;
+        }
+        h2 {
+            color: #1a3c6e;
+            font-size: 14pt;
+            font-weight: 600;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            border-left: 4px solid #1a3c6e;
+            padding-left: 10px;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Enhanced header styling */
+        .header-container {
+            position: relative;
+            border-bottom: 2px solid #1a3c6e;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .logo-container {
+            display: flex;
+            width: 100%;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            width: 60px;
+            height: 60px;
+        }
+        
+        .header-text {
+            text-align: center;
+            flex-grow: 1;
+            padding: 0 15px;
+        }
+        
+        .republic-title {
+            font-size: 14pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            color: #1a3c6e;
+        }
+        
+        .office-title {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #1a3c6e;
+            text-transform: uppercase;
+            margin: 5px 0;
+        }
+        
+        .office-subtitle {
+            font-size: 12pt;
+            margin: 2px 0;
+        }
+        
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 100px;
+            color: rgba(0,0,0,0.03);
+            z-index: 0;
+            pointer-events: none;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        
+        .document-number {
+            position: absolute;
+            top: 0.5cm;
+            right: 0.5cm;
+            font-size: 12pt;
+            font-weight: bold;
+            border: 1px solid #1a3c6e;
+            padding: 5px 10px;
+            background-color: #f2f2f2;
+            color: #1a3c6e;
+        }
+        
+        .timestamp {
+            font-size: 8pt;
+            color: #666;
+            margin-top: 5px;
+            text-align: center;
+            font-style: italic;
+        }
+        .report-meta {
+            text-align: center;
+            font-size: 9pt;
+            color: #555;
+            margin-top: 5px;
+        }
+        .summary {
+            margin-bottom: 25px;
+            background-color: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+        .summary-header {
+            margin-bottom: 10px;
+            color: #1a3c6e;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 5px;
+        }
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 5px;
+            table-layout: fixed;
+        }
+        .summary-table td, .summary-table th {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: center;
+        }
+        .summary-table th {
+            background-color: #1a3c6e;
+            color: white;
+            font-weight: bold;
+            font-size: 9pt;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .summary-table td {
+            font-weight: 500;
+        }
+        .summary-table tr:nth-child(even) {
+            background-color: #ffffff;
+        }
+        .receipts-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+            margin-top: 10px;
+            table-layout: fixed;
+        }
+        .receipts-table td, .receipts-table th {
+            border: 1px solid #dee2e6;
+            padding: 7px 6px;
+            text-align: left;
+            vertical-align: top;
+        }
+        .receipts-table th {
+            background-color: #1a3c6e;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            font-size: 8.5pt;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .receipts-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .receipts-table tr:hover {
+            background-color: #f0f0f0;
+        }
+        .footer {
+            text-align: center;
+            font-size: 8pt;
+            color: #666;
+            border-top: 1px solid #dee2e6;
+            padding-top: 5px;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .page-break {
+            page-break-after: always;
+        }
+        .no-data {
+            color: #777;
+            font-style: italic;
+            font-size: 8pt;
+        }
+        .stat-header {
+            font-size: 8pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #666;
+        }
+        .stat-value {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #1a3c6e;
+        }
+        .report-section {
+            margin-bottom: 20px;
+        }
+        .currency {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+        }
+        .violation-item {
+            margin-bottom: 4px;
+            position: relative;
+            padding-left: 10px;
+        }
+        .violation-item:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #1a3c6e;
+        }
+        .report-title-section {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .page-number {
+            font-style: italic;
+        }
+        
+        /* Revenue by violation type */
+        .breakdown-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        .breakdown-table th, .breakdown-table td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        .breakdown-table th {
+            background-color: #1a3c6e;
+            color: white;
+            font-weight: bold;
+            font-size: 9pt;
+        }
+        
+        .breakdown-table td.amount {
+            text-align: right;
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+        }
+        
+        .breakdown-table td.percent {
+            text-align: right;
+        }
+        
+        /* Download button - only shown in web preview */
+        @media screen {
+            .download-container {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 1000;
+            }
+            .download-button {
+                display: inline-block;
+                background-color: #28a745;
+                color: white;
+                font-weight: bold;
+                padding: 8px 16px;
+                border-radius: 4px;
+                text-decoration: none;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                font-family: Arial, sans-serif;
+                font-size: 14px;
+                border: none;
+                cursor: pointer;
+                text-align: center;
+            }
+            .download-button:hover {
+                background-color: #218838;
+            }
+        }
+        /* Hide download button in print/PDF output */
+        @media print {
+            .download-container {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="header_content">
+        <div class="watermark">FINANCIAL REPORT</div>
+        
+        <div class="header-container">
+            <div class="document-number">Report #{{ current_datetime|date:"Ymd" }}</div>
+            
+            <div class="logo-container">
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5QQCCzshC2SOHwAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAAGzSURBVHja7drLacQwFIVhWwNIF+k03aUZB1JFCgg4EIhz5iGN5Pt9a+MfG1sXzfOU6/RxBQgQBAgCBAGCAEGAIEAQIAgQBAgCBAGCAEGAIEAQIAgQBAgCBAGCAEGAIEAQIAgQBAgCBAGCAEGAIEAQIAgQBAgCBAGCAEGAIED+vV7X6+l0iqJojuM4ym/L9Xq1AFnX9eVfd0+z27bJg3yrvp5OpyzL9n2XBGmaJk3TKIrCMHQcZ5omSZDX6/Ve1Pt+LMtCEuT9dRzHURRJgjxlCIIg+/vz4fV86r7v4zhOkuTHdW+t67ppmhRFkSTJ+Xx++AMupxZlWZZlWd/34zhOpxZlWZZlWd/34zj+3JZSSoRhaJr/2u9Xdm49z1vXNY5jx3EKxfV931pb17UkyDRNaZr+MfN1XS/LQhLk6Uyz7H6/FUWxruttSUqppmm+Lg1RkKqq+r4vy7Ku63mej7ZlnueaplmWNQwD1TtZWZZ1XRepTdPsuu6o68uy7Ha7BUFAFeTIwjAMfN/XdZ3qLzZe3RAECAIEA YIAQYAgQBAgCBAECAIEAYIAQYAgQBAgCBAECAIEAYIAQYAgQBAgCBAECAIEAYIAQYAgQBAgCBAECAIEAYIAQYAgf9YnVdAGRw5yk2cAAAAASUVORK5CYII=" class="logo" alt="City Logo" style="float: left;">
+                
+                <div class="header-text">
+                    <div class="republic-title">REPUBLIC OF THE PHILIPPINES</div>
+                    <div class="office-title">CITY TRANSPORT AND TRAFFIC MANAGEMENT OFFICE</div>
+                    <p class="office-subtitle">Traffic Violation Management System</p>
+                    <p class="office-subtitle">City Government of Bayawan City</p>
+                </div>
+                
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5QQCCzshC2SOHwAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAAGzSURBVHja7drLacQwFIVhWwNIF+k03aUZB1JFCgg4EIhz5iGN5Pt9a+MfG1sXzfOU6/RxBQgQBAgCBAGCAEGAIEAQIAgQBAgCBAGCAEGAIEAQIAgQBAgCBAGCAEGAIEAQIAgQBAgCBAGCAEGAIEAQIAgQBAgCBAGCAEGAIED+vV7X6+l0iqJojuM4ym/L9Xq1AFnX9eVfd0+z27bJg3yrvp5OpyzL9n2XBGmaJk3TKIrCMHQcZ5omSZDX6/Ve1Pt+LMtCEuT9dRzHURRJgjxlCIIg+/vz4fV86r7v4zhOkuTHdW+t67ppmhRFkSTJ+Xx++AMupxZlWZZlWd/34zhOpxZlWZZlWd/34zj+3JZSSoRhaJr/2u9Xdm49z1vXNY5jx3EKxfV931pb17UkyDRNaZr+MfN1XS/LQhLk6Uyz7H6/FUWxruttSUqppmm+Lg1RkKqq+r4vy7Ku63mej7ZlnueaplmWNQwD1TtZWZZ1XRepTdPsuu6o68uy7Ha7BUFAFeTIwjAMfN/XdZ3qLzZe3RAECAIEA YIAQYAgQBAgCBAECAIEAYIAQYAgQBAgCBAECAIEAYIAQYAgQBAgCBAECAIEAYIAQYAgQBAgCBAECAIEAYIAQYAgf9YnVdAGRw5yk2cAAAAASUVORK5CYII=" class="logo" alt="iBayaw Logo" style="float: right;">
+            </div>
+        </div>
+        
+        <div class="report-title-section">
+            <h1>Financial Report</h1>
+            <p class="report-meta">
+                <strong>Time Period:</strong> {{ period_label }} | 
+                <strong>Generated:</strong> {{ current_datetime|date:"F d, Y" }} at {{ current_datetime|time:"H:i:s" }}
+            </p>
+        </div>
+    </div>
+
+    <div class="summary report-section">
+        <h2 class="summary-header">Summary Statistics</h2>
+        <table class="summary-table">
+            <tr>
+                <th width="25%">Total Receipts</th>
+                <th width="25%">Total Revenue</th>
+                <th width="25%">Average Payment</th>
+                <th width="25%">Period</th>
+            </tr>
+            <tr>
+                <td>{{ total_receipts }}</td>
+                <td class="currency">₱{{ total_revenue|floatformat:2 }}</td>
+                <td class="currency">₱{{ avg_payment|floatformat:2 }}</td>
+                <td>{{ period_label }}</td>
+            </tr>
+        </table>
+    </div>
+    
+    {% if violation_type_breakdown %}
+    <div class="report-section">
+        <h2>Revenue by Violation Type</h2>
+        <table class="breakdown-table">
+            <thead>
+                <tr>
+                    <th width="60%">Violation Type</th>
+                    <th width="20%" class="text-right">Revenue Amount</th>
+                    <th width="20%" class="text-right">% of Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in violation_type_breakdown %}
+                <tr>
+                    <td>{{ item.name }}</td>
+                    <td class="amount">₱{{ item.amount|floatformat:2 }}</td>
+                    <td class="percent">{{ item.percentage|floatformat:1 }}%</td>
+                </tr>
+                {% endfor %}
+                <tr style="font-weight: bold; background-color: #f2f2f2;">
+                    <td>Total</td>
+                    <td class="amount">₱{{ total_revenue|floatformat:2 }}</td>
+                    <td class="percent">100%</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <div class="report-section">
+        <h2>Receipt Records</h2>
+        <table class="receipts-table">
+            <thead>
+                <tr>
+                    <th width="12%" class="text-center">Receipt #</th>
+                    <th width="12%" class="text-center">Date</th>
+                    <th width="18%">Violator</th>
+                    <th width="28%">Violation Types</th>
+                    <th width="15%" class="text-center">Amount</th>
+                    <th width="15%">Processed By</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for receipt in receipts %}
+                <tr>
+                    <td class="text-center">{{ receipt.receipt_number }}</td>
+                    <td class="text-center">{{ receipt.receipt_date|date:"M d, Y" }}</td>
+                    <td><strong>{{ receipt.violator.first_name }} {{ receipt.violator.last_name }}</strong></td>
+                    <td>
+                        {% for vtype in receipt.get_violation_types %}
+                        <div class="violation-item">{{ vtype }}</div>
+                        {% empty %}
+                        <span class="no-data">No violations specified</span>
+                        {% endfor %}
+                    </td>
+                    <td class="text-center currency">₱{{ receipt.fine_amount|floatformat:2 }}</td>
+                    <td>
+                        {% if receipt.processed_by %}
+                        {{ receipt.processed_by.first_name }} {{ receipt.processed_by.last_name }}
+                        {% else %}
+                        <span class="no-data">Not recorded</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center">No receipts found matching the criteria.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div id="footer_content" class="footer">
+        <p>
+            Financial Report - Traffic Violation System | 
+            <span class="page-number">Page <pdf:pagenumber> of <pdf:pagecount></span>
+        </p>
+        <p>This document is an official report of the City Transport and Traffic Management Office.</p>
+    </div>
+</body>
+</html> 

@@ -1,0 +1,338 @@
+{% extends 'admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    /* Card Styling */
+    .dashboard-card {
+        border: none;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+    }
+    
+    .dashboard-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    }
+    
+    /* Stats Card */
+    .stats-card {
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .stats-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .stats-card h5 {
+        margin-bottom: 0;
+        font-weight: 600;
+    }
+    
+    .stats-card .small {
+        color: #6c757d;
+        font-size: 0.8rem;
+    }
+    
+    /* Recent Activity */
+    .activity-item {
+        padding: 10px 0;
+        border-bottom: 1px solid #f1f1f1;
+    }
+    
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+    
+    .activity-badge {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+    
+    /* Animation */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .animate-fade-in {
+        animation: fadeIn 0.5s ease forwards;
+    }
+    
+    /* Time period selector */
+    .period-selector .btn {
+        border-radius: 20px;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.85rem;
+    }
+    
+    .period-selector .btn.active {
+        background-color: var(--bs-primary);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0 fw-bold">Dashboard</h4>
+        <div class="period-selector">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-sm btn-outline-primary active">Today</button>
+                <button type="button" class="btn btn-sm btn-outline-primary">Week</button>
+                <button type="button" class="btn btn-sm btn-outline-primary">Month</button>
+                <button type="button" class="btn btn-sm btn-outline-primary">Year</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stats Overview -->
+    <div class="row mb-4">
+        <div class="col-md-3 animate-fade-in" style="animation-delay: 0.1s">
+            <div class="card dashboard-card h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stats-icon bg-primary-subtle text-primary me-3">
+                        <span class="material-icons">fact_check</span>
+                    </div>
+                    <div>
+                        <div class="small text-muted">Total Violations</div>
+                        <h5 class="mb-0">{{ total_violations|default:"0" }}</h5>
+                        <div class="small">
+                            <span class="text-success">
+                                <span class="material-icons align-middle" style="font-size: 14px;">trending_up</span> 
+                                {{ violation_change|floatformat:1|default:"0" }}%
+                            </span>
+                            vs previous period
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 animate-fade-in" style="animation-delay: 0.2s">
+            <div class="card dashboard-card h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stats-icon bg-success-subtle text-success me-3">
+                        <span class="material-icons">payments</span>
+                    </div>
+                    <div>
+                        <div class="small text-muted">Revenue</div>
+                        <h5 class="mb-0">₱{{ total_revenue|floatformat:2|default:"0.00" }}</h5>
+                        <div class="small">
+                            <span class="text-success">
+                                <span class="material-icons align-middle" style="font-size: 14px;">trending_up</span> 
+                                {{ revenue_change|floatformat:1|default:"0" }}%
+                            </span>
+                            vs previous period
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 animate-fade-in" style="animation-delay: 0.3s">
+            <div class="card dashboard-card h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stats-icon bg-warning-subtle text-warning me-3">
+                        <span class="material-icons">pending_actions</span>
+                    </div>
+                    <div>
+                        <div class="small text-muted">Pending Violations</div>
+                        <h5 class="mb-0">{{ pending_violations|default:"0" }}</h5>
+                        <div class="small">
+                            <span class="text-danger">
+                                <span class="material-icons align-middle" style="font-size: 14px;">trending_down</span> 
+                                {{ pending_change|floatformat:1|default:"0" }}%
+                            </span>
+                            vs previous period
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 animate-fade-in" style="animation-delay: 0.4s">
+            <div class="card dashboard-card h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stats-icon bg-info-subtle text-info me-3">
+                        <span class="material-icons">people</span>
+                    </div>
+                    <div>
+                        <div class="small text-muted">Active Enforcers</div>
+                        <h5 class="mb-0">{{ active_enforcers|default:"0" }}</h5>
+                        <div class="small">
+                            <span class="text-success">
+                                <span class="material-icons align-middle" style="font-size: 14px;">trending_flat</span> 
+                                {{ enforcer_change|floatformat:1|default:"0" }}%
+                            </span>
+                            vs previous period
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Access Reports -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 fw-bold">Quick Access Reports</h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="row g-0">
+                <div class="col-md-4 border-end">
+                    <div class="p-3 h-100 d-flex flex-column">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="material-icons text-primary me-2">receipt_long</span>
+                            <h6 class="fw-semibold mb-0">Financial Reports</h6>
+                        </div>
+                        <p class="text-muted small mb-3">Track receipt records and revenue statistics.</p>
+                        <a href="{% url 'financial_report' %}" class="btn btn-sm btn-outline-primary mt-auto">
+                            <span class="material-icons-outlined me-1" style="font-size: 16px;">analytics</span>
+                            View Reports
+                        </a>
+                    </div>
+                </div>
+                <div class="col-md-4 border-end">
+                    <div class="p-3 h-100 d-flex flex-column">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="material-icons text-warning me-2">gavel</span>
+                            <h6 class="fw-semibold mb-0">Violation Records</h6>
+                        </div>
+                        <p class="text-muted small mb-3">Review violation history and statistics.</p>
+                        <a href="{% url 'violation_report' %}" class="btn btn-sm btn-outline-warning mt-auto">
+                            <span class="material-icons-outlined me-1" style="font-size: 16px;">description</span>
+                            View Reports
+                        </a>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 h-100 d-flex flex-column">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="material-icons text-info me-2">badge</span>
+                            <h6 class="fw-semibold mb-0">Enforcer Activity</h6>
+                        </div>
+                        <p class="text-muted small mb-3">Track enforcers' performance and ticket issuance.</p>
+                        <a href="{% url 'enforcer_activity_report' %}" class="btn btn-sm btn-outline-info mt-auto">
+                            <span class="material-icons-outlined me-1" style="font-size: 16px;">leaderboard</span>
+                            View Reports
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Activity & Violation Types -->
+    <div class="row">
+        <!-- Recent Activity -->
+        <div class="col-lg-8 animate-fade-in" style="animation-delay: 0.5s">
+            <div class="card dashboard-card mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 fw-bold">Recent Activities</h6>
+                    <a href="#" class="text-muted small">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for activity in recent_activities|slice:":5" %}
+                        <div class="list-group-item activity-item">
+                            <div class="d-flex">
+                                <div class="activity-badge bg-light text-primary me-3">
+                                    <span class="material-icons">{{ activity.icon|default:"info" }}</span>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between">
+                                        <h6 class="mb-1 fw-semibold">{{ activity.title }}</h6>
+                                        <small class="text-muted">{{ activity.timestamp }}</small>
+                                    </div>
+                                    <p class="mb-1 small">{{ activity.description }}</p>
+                                    <div>
+                                        {% if activity.link %}
+                                        <a href="{{ activity.link }}" class="btn btn-sm btn-link p-0">View Details</a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="list-group-item py-4">
+                            <div class="text-center text-muted">
+                                <span class="material-icons d-block mb-2" style="font-size: 2rem;">notifications_none</span>
+                                <p class="mb-0">No recent activities to display</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Top Violation Types -->
+        <div class="col-lg-4 animate-fade-in" style="animation-delay: 0.6s">
+            <div class="card dashboard-card mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 fw-bold">Top Violation Types</h6>
+                    <a href="#" class="text-muted small">View All</a>
+                </div>
+                <div class="card-body">
+                    {% for type in top_violation_types %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="small">{{ type.name }}</span>
+                            <span class="small text-muted">{{ type.percentage }}%</span>
+                        </div>
+                        <div class="progress" style="height: 6px">
+                            <div class="progress-bar" role="progressbar" style="width: {{ type.percentage }}%" 
+                                 aria-valuenow="{{ type.percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-4">
+                        <span class="material-icons d-block mb-2" style="font-size: 2rem;">bar_chart</span>
+                        <p class="mb-0">No violation data available</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Period selector functionality
+        const periodButtons = document.querySelectorAll('.period-selector .btn');
+        periodButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                // Remove active class from all buttons
+                periodButtons.forEach(btn => btn.classList.remove('active'));
+                // Add active class to clicked button
+                this.classList.add('active');
+                
+                // Here you would typically make an AJAX call to refresh the dashboard data
+                // based on the selected period
+                console.log('Selected period:', this.textContent.trim());
+            });
+        });
+    });
+</script>
+{% endblock %} 

@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Violation Records Report</title>
+    <style>
+        @page {
+            size: letter landscape;
+            margin: 1.5cm;
+            @frame header_frame {
+                -pdf-frame-content: header_content;
+                top: 0.5cm;
+                margin-left: 1.5cm;
+                margin-right: 1.5cm;
+                height: 3.5cm;
+            }
+            @frame footer_frame {
+                -pdf-frame-content: footer_content;
+                bottom: 0.5cm;
+                margin-left: 1.5cm;
+                margin-right: 1.5cm;
+                height: 1cm;
+            }
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            color: #333;
+            line-height: 1.4;
+            margin: 0;
+            padding: 0;
+            font-size: 10pt;
+        }
+        h1 {
+            color: #1a3c6e;
+            font-size: 22pt;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-align: center;
+            padding-bottom: 10px;
+            letter-spacing: -0.5px;
+        }
+        h2 {
+            color: #1a3c6e;
+            font-size: 14pt;
+            font-weight: 600;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            border-left: 4px solid #1a3c6e;
+            padding-left: 10px;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Enhanced header styling */
+        .header-container {
+            position: relative;
+            border-bottom: 2px solid #1a3c6e;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .logo-container {
+            display: flex;
+            width: 100%;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            width: 60px;
+            height: 60px;
+        }
+        
+        .header-text {
+            text-align: center;
+            flex-grow: 1;
+            padding: 0 15px;
+        }
+        
+        .republic-title {
+            font-size: 14pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            color: #1a3c6e;
+        }
+        
+        .office-title {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #1a3c6e;
+            text-transform: uppercase;
+            margin: 5px 0;
+        }
+        
+        .office-subtitle {
+            font-size: 12pt;
+            margin: 2px 0;
+        }
+        
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 100px;
+            color: rgba(0,0,0,0.03);
+            z-index: 0;
+            pointer-events: none;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        
+        .document-number {
+            position: absolute;
+            top: 0.5cm;
+            right: 0.5cm;
+            font-size: 12pt;
+            font-weight: bold;
+            border: 1px solid #1a3c6e;
+            padding: 5px 10px;
+            background-color: #f2f2f2;
+            color: #1a3c6e;
+        }
+        
+        .header-logo {
+            max-width: 60px;
+            float: left;
+            margin-right: 15px;
+        }
+        .timestamp {
+            font-size: 8pt;
+            color: #666;
+            margin-top: 5px;
+            text-align: center;
+            font-style: italic;
+        }
+        .report-meta {
+            text-align: center;
+            font-size: 9pt;
+            color: #555;
+            margin-top: 5px;
+        }
+        .summary {
+            margin-bottom: 25px;
+            background-color: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+        .summary-header {
+            margin-bottom: 10px;
+            color: #1a3c6e;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 5px;
+        }
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 5px;
+            table-layout: fixed;
+        }
+        .summary-table td, .summary-table th {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: center;
+        }
+        .summary-table th {
+            background-color: #1a3c6e;
+            color: white;
+            font-weight: bold;
+            font-size: 9pt;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .summary-table td {
+            font-weight: 500;
+        }
+        .summary-table tr:nth-child(even) {
+            background-color: #ffffff;
+        }
+        .violation-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+            margin-top: 10px;
+            table-layout: fixed;
+        }
+        .violation-table td, .violation-table th {
+            border: 1px solid #dee2e6;
+            padding: 7px 6px;
+            text-align: left;
+            vertical-align: top;
+        }
+        .violation-table th {
+            background-color: #1a3c6e;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            font-size: 8.5pt;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .violation-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .violation-table tr:hover {
+            background-color: #f0f0f0;
+        }
+        .footer {
+            text-align: center;
+            font-size: 8pt;
+            color: #666;
+            border-top: 1px solid #dee2e6;
+            padding-top: 5px;
+        }
+        .bullet-list {
+            list-style-type: disc;
+            margin: 0;
+            padding-left: 15px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 8pt;
+            color: white;
+            text-align: center;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .status-pending {
+            background-color: #f0ad4e;
+        }
+        .status-paid {
+            background-color: #5cb85c;
+        }
+        .status-approved {
+            background-color: #0275d8;
+        }
+        .status-rejected {
+            background-color: #d9534f;
+        }
+        .status-other {
+            background-color: #777;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .page-break {
+            page-break-after: always;
+        }
+        .amount-badge {
+            background-color: #f0ad4e;
+            color: #000;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 7pt;
+            display: inline-block;
+            margin-left: 3px;
+            font-weight: bold;
+        }
+        .no-data {
+            color: #777;
+            font-style: italic;
+            font-size: 8pt;
+        }
+        .stat-header {
+            font-size: 8pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #666;
+        }
+        .stat-value {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #1a3c6e;
+        }
+        .report-section {
+            margin-bottom: 20px;
+        }
+        .id-column {
+            font-weight: bold;
+            text-align: center;
+            padding-left: 2px;
+            padding-right: 2px;
+        }
+        .currency {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+        }
+        .violation-item {
+            margin-bottom: 4px;
+            position: relative;
+            padding-left: 10px;
+        }
+        .violation-item:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #1a3c6e;
+        }
+        .report-title-section {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .page-number {
+            font-style: italic;
+        }
+        
+        /* Download button - only shown in web preview */
+        @media screen {
+            .download-container {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 1000;
+            }
+            .download-button {
+                display: inline-block;
+                background-color: #28a745;
+                color: white;
+                font-weight: bold;
+                padding: 8px 16px;
+                border-radius: 4px;
+                text-decoration: none;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                font-family: Arial, sans-serif;
+                font-size: 14px;
+                border: none;
+                cursor: pointer;
+                text-align: center;
+            }
+            .download-button:hover {
+                background-color: #218838;
+            }
+        }
+        /* Hide download button in print/PDF output */
+        @media print {
+            .download-container {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Download button - only visible in browser preview -->
+    <div class="download-container">
+        <a href="{% url 'admin_violation_download' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="download-button">
+            Download PDF
+        </a>
+    </div>
+    
+    <div id="header_content">
+        <div class="watermark">OFFICIAL REPORT</div>
+        
+        <div class="header-container">
+            <div class="document-number">Report #{{ current_datetime|date:"Ymd" }}</div>
+            
+            <div class="logo-container">
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5QQCCzshC2SOHwAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAAGzSURBVHja7drLacQwFIVhWwNIF+k03aUZB1JFCgg4EIhz5iGN5Pt9a+MfG1sXzfOU6/RxBQgQBAgCBAGCAEGAIEAQIAgQBAgCBAGCAEGAIEAQIAgQBAgCBAGCAEGAIEAQIAgQBAgCBAGCAEGAIEAQIAgQBAgCBAGCAEGAIED+vV7X6+l0iqJojuM4ym/L9Xq1AFnX9eVfd0+z27bJg3yrvp5OpyzL9n2XBGmaJk3TKIrCMHQcZ5omSZDX6/Ve1Pt+LMtCEuT9dRzHURRJgjxlCIIg+/vz4fV86r7v4zhOkuTHdW+t67ppmhRFkSTJ+Xx++AMupxZlWZZlWd/34zj+3JZSSoRhaJr/2u9Xdm49z1vXNY5jx3EKxfV931pb17UkyDRNaZr+MfN1XS/LQhLk6Uyz7H6/FUWxruttSUqppmm+Lg1RkKqq+r4vy7Ku63mej7ZlnueaplmWNQwD1TtZWZZ1XRepTdPsuu6o68uy7Ha7BUFAFeTIwjAMfN/XdZ3qLzZe3RAECAIEA YIAQYAgQBAgCBAECAIEAYIAQYAgQBAgCBAECAIEAYIAQYAgQBAgCBAECAIEAYIAQYAgQBAgCBAECAIEAYIAQYAgQBAgCBAECAIEAYIAQYAgf9YnVdAGRw5yk2cAAAAASUVORK5CYII=" class="logo" alt="City Logo" style="float: left;">
+                
+                <div class="header-text">
+                    <div class="republic-title">REPUBLIC OF THE PHILIPPINES</div>
+                    <div class="office-title">CITY TRANSPORT AND TRAFFIC MANAGEMENT OFFICE</div>
+                    <p class="office-subtitle">Traffic Violation Management System</p>
+                    <p class="office-subtitle">City Government of Bayawan City</p>
+                </div>
+                
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5QQCCzshC2SOHwAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAAGzSURBVHja7drLacQwFIVhWwNIF+k03aUZB1JFCgg4EIhz5iGN5Pt9a+MfG1sXzfOU6/RxBQgQBAgCBAGCAEGAIEAQIAgQBAgCBAGCAEGAIEAQIAgQBAgCBAGCAEGAIEAQIAgQBAgCBAGCAEGAIEAQIAgQBAgCBAGCAEGAIED+vV7X6+l0iqJojuM4ym/L9Xq1AFnX9eVfd0+z27bJg3yrvp5OpyzL9n2XBGmaJk3TKIrCMHQcZ5omSZDX6/Ve1Pt+LMtCEuT9dRzHURRJgjxlCIIg+/vz4fV86r7v4zhOkuTHdW+t67ppmhRFkSTJ+Xx++AMupxZlWZZlWd/34zhOpxZlWZZlWd/34zj+3JZSSoRhaJr/2u9Xdm49z1vXNY5jx3EKxfV931pb17UkyDRNaZr+MfN1XS/LQhLk6Uyz7H6/FUWxruttSUqppmm+Lg1RkKqq+r4vy7Ku63mej7ZlnueaplmWNQwD1TtZWZZ1XRepTdPsuu6o68uy7Ha7BUFAFeTIwjAMfN/XdZ3qLzZe3RAECAIEA YIAQYAgQBAgCBAECAIEAYIAQYAgQBAgCBAECAIEAYIAQYAgQBAgCBAECAIEAYIAQYAgQBAgCBAECAIEAYIAQYAgf9YnVdAGRw5yk2cAAAAASUVORK5CYII=" class="logo" alt="iBayaw Logo" style="float: right;">
+            </div>
+        </div>
+        
+        <div class="report-title-section">
+            <h1>Violation Records Report</h1>
+            <p class="report-meta">
+                <strong>Generated:</strong> {{ current_datetime|date:"F d, Y" }} at {{ current_datetime|time:"H:i:s" }} |
+                <strong>Total Records:</strong> {{ violations.count }}
+                {% if export_status %}
+                | <strong>Status Filter:</strong> 
+                {% if export_status == 'PENDING' %}Pending
+                {% elif export_status == 'PAID' %}Paid
+                {% elif export_status == 'APPROVED' %}Approved
+                {% elif export_status == 'REJECTED' %}Rejected
+                {% else %}{{ export_status }}{% endif %}
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <div class="summary report-section">
+        <h2 class="summary-header">Summary Statistics</h2>
+        <table class="summary-table">
+            <tr>
+                <th width="25%">Total Violations</th>
+                <th width="25%">Total Fine Amount</th>
+                <th width="25%">Paid Violations</th>
+                <th width="25%">Pending Violations</th>
+            </tr>
+            <tr>
+                <td>{{ violations.count }}</td>
+                <td class="currency">₱{{ total_fine_amount|floatformat:2 }}</td>
+                <td>{{ paid_count }} <span style="color: #5cb85c;">(₱{{ paid_amount|floatformat:2 }})</span></td>
+                <td>{{ pending_count }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Violation Type Frequency Statistics -->
+    <div class="report-section">
+        <h2>Violation Type Frequency</h2>
+        <table class="violation-table">
+            <thead>
+                <tr>
+                    <th width="50%" class="text-left">Violation Type</th>
+                    <th width="25%" class="text-center">Count</th>
+                    <th width="25%" class="text-center">Percentage</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stat in violation_type_stats %}
+                <tr>
+                    <td><strong>{{ stat.name }}</strong></td>
+                    <td class="text-center">{{ stat.count }}</td>
+                    <td class="text-center">{{ stat.percentage|floatformat:1 }}%</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="text-center">No violation type statistics available.</td>
+                </tr>
+                {% endfor %}
+                {% if violation_type_stats %}
+                <tr style="background-color: #f2f2f2; font-weight: bold;">
+                    <td>Total</td>
+                    <td class="text-center">{{ total_violations_count }}</td>
+                    <td class="text-center">100%</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="report-section">
+        <h2>Violation Records</h2>
+        <table class="violation-table">
+            <thead>
+                <tr>
+                    <th width="8%" class="text-center" style="padding-left:2px; padding-right:2px;">ID</th>
+                    <th width="18%">Violator Name</th>
+                    <th width="12%" class="text-center">License Number</th>
+                    <th width="27%">Violation Types</th>
+                    <th width="12%" class="text-center">Original Amount</th>
+                    <th width="13%" class="text-center">Adjudicated Amount</th>
+                    <th width="10%" class="text-center">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for violation in violations %}
+                <tr>
+                    <td class="id-column">{{ violation.id }}</td>
+                    <td><strong>{{ violation.violator.first_name }} {{ violation.violator.last_name }}</strong></td>
+                    <td class="text-center">
+                        {% if violation.violator.license_number %}
+                        {{ violation.violator.license_number }}
+                        {% else %}
+                        <span class="no-data">No license</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% for vtype in violation.get_violation_types %}
+                        <div class="violation-item">{{ vtype }}</div>
+                        {% empty %}
+                        <span class="no-data">No violations specified</span>
+                        {% endfor %}
+                    </td>
+                    <td class="text-center">
+                        {% if violation.original_fine_amount %}
+                        <span class="currency">₱{{ violation.original_fine_amount|floatformat:2 }}</span>
+                        {% else %}
+                        <span class="no-data">N/A</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <span class="currency">₱{{ violation.fine_amount|floatformat:2 }}</span>
+                        {% if violation.original_fine_amount and violation.fine_amount < violation.original_fine_amount %}
+                        <span class="amount-badge">Reduced</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <span class="status-badge 
+                            {% if violation.status == 'PENDING' %}status-pending
+                            {% elif violation.status == 'PAID' %}status-paid
+                            {% elif violation.status == 'APPROVED' %}status-approved
+                            {% elif violation.status == 'REJECTED' %}status-rejected
+                            {% else %}status-other{% endif %}">
+                            {{ violation.get_status_display }}
+                        </span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center">No violations found matching the criteria.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div id="footer_content" class="footer">
+        <p>
+            Traffic Violation System - Confidential Report | 
+            <span class="page-number">Page <pdf:pagenumber> of <pdf:pagecount></span>
+        </p>
+        <p>This document is an official report of the City Transport and Traffic Management Office.</p>
+    </div>
+</body>
+</html> 

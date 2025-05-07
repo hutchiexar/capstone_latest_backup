@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+{% load custom_filters %}
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Adjudication Report</title>
+    <style>
+        @page {
+            size: letter landscape;
+            margin: 1.5cm;
+            @frame header_frame {
+                -pdf-frame-content: header_content;
+                top: 0.5cm;
+                margin-left: 1.5cm;
+                margin-right: 1.5cm;
+                height: 3.5cm;
+            }
+            @frame footer_frame {
+                -pdf-frame-content: footer_content;
+                bottom: 0.5cm;
+                margin-left: 1.5cm;
+                margin-right: 1.5cm;
+                height: 1cm;
+            }
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            color: #333;
+            line-height: 1.4;
+            margin: 0;
+            padding: 0;
+            font-size: 10pt;
+        }
+        h1 {
+            color: #1a3c6e;
+            font-size: 22pt;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-align: center;
+            padding-bottom: 10px;
+            letter-spacing: -0.5px;
+        }
+        h2 {
+            color: #1a3c6e;
+            font-size: 14pt;
+            font-weight: 600;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            border-left: 4px solid #1a3c6e;
+            padding-left: 10px;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Enhanced header styling */
+        .header-container {
+            position: relative;
+            border-bottom: 2px solid #1a3c6e;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .logo-container {
+            display: flex;
+            width: 100%;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            width: 60px;
+            height: 60px;
+        }
+        
+        .header-text {
+            text-align: center;
+            flex-grow: 1;
+            padding: 0 15px;
+        }
+        
+        .republic-title {
+            font-size: 14pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            color: #1a3c6e;
+        }
+        
+        .office-title {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #1a3c6e;
+            text-transform: uppercase;
+            margin: 5px 0;
+        }
+        
+        .office-subtitle {
+            font-size: 12pt;
+            margin: 2px 0;
+        }
+        
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 100px;
+            color: rgba(0,0,0,0.03);
+            z-index: 0;
+            pointer-events: none;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        
+        .document-number {
+            position: absolute;
+            top: 0.5cm;
+            right: 0.5cm;
+            font-size: 12pt;
+            font-weight: bold;
+            border: 1px solid #1a3c6e;
+            padding: 5px 10px;
+            background-color: #f2f2f2;
+            color: #1a3c6e;
+        }
+        
+        .header-logo {
+            max-width: 60px;
+            float: left;
+            margin-right: 15px;
+        }
+        .timestamp {
+            font-size: 8pt;
+            color: #666;
+            margin-top: 5px;
+            text-align: center;
+            font-style: italic;
+        }
+        .report-meta {
+            text-align: center;
+            font-size: 9pt;
+            color: #555;
+            margin-top: 5px;
+        }
+        .summary {
+            margin-bottom: 25px;
+            background-color: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+        .summary-header {
+            margin-bottom: 10px;
+            color: #1a3c6e;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 5px;
+        }
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 5px;
+            table-layout: fixed;
+        }
+        .summary-table td, .summary-table th {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: center;
+        }
+        .summary-table th {
+            background-color: #1a3c6e;
+            color: white;
+            font-weight: bold;
+            font-size: 9pt;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #0f2a54;
+        }
+        .summary-table td {
+            font-weight: 500;
+        }
+        .summary-table tr:nth-child(even) {
+            background-color: #ffffff;
+        }
+        .adj-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+            margin-top: 10px;
+            table-layout: fixed;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .adj-table td, .adj-table th {
+            border: 1px solid #dee2e6;
+            padding: 7px 6px;
+            text-align: left;
+            vertical-align: middle;
+        }
+        .adj-table th {
+            background-color: #1a3c6e;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            font-size: 9pt;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            border-bottom: 3px solid #0f2a54;
+        }
+        .adj-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        .adj-table tr:hover {
+            background-color: #f0f0f0;
+        }
+        .violations-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8pt;
+            margin-top: 15px;
+            table-layout: fixed;
+        }
+        .violations-table td, .violations-table th {
+            border: 1px solid #dee2e6;
+            padding: 5px;
+            text-align: left;
+            vertical-align: middle;
+        }
+        .violations-table th {
+            background-color: #1a3c6e;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            font-size: 8pt;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #0f2a54;
+        }
+        .violations-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        .footer {
+            text-align: center;
+            font-size: 8pt;
+            color: #666;
+            border-top: 1px solid #dee2e6;
+            padding-top: 5px;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-small {
+            font-size: 8pt;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 7pt;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+        }
+        .badge-primary {
+            background-color: #0d6efd;
+        }
+        .badge-success {
+            background-color: #198754;
+        }
+        .badge-info {
+            background-color: #0dcaf0;
+        }
+        .badge-warning {
+            background-color: #ffc107;
+            color: #333;
+        }
+        .badge-secondary {
+            background-color: #6c757d;
+        }
+        .page-break {
+            page-break-after: always;
+        }
+        .no-data {
+            color: #777;
+            font-style: italic;
+            font-size: 8pt;
+        }
+        .stat-card {
+            width: 23%;
+            display: inline-block;
+            margin: 0 1% 15px 0;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+        }
+        .stat-label {
+            font-size: 8pt;
+            text-transform: uppercase;
+            color: #666;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        .stat-value {
+            font-size: 16pt;
+            font-weight: bold;
+            color: #1a3c6e;
+            margin: 0;
+        }
+        .stat-subvalue {
+            font-size: 7pt;
+            color: #666;
+            margin-top: 3px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div id="header_content">
+        <div class="header-container">
+            <div class="logo-container">
+                <img src="path_to_logo.png" class="logo" alt="Logo">
+                <div class="header-text">
+                    <div class="office-title">Adjudication Report</div>
+                    <div class="office-subtitle">Traffic Violation System</div>
+                </div>
+                <img src="path_to_second_logo.png" class="logo" alt="Logo">
+            </div>
+        </div>
+        <div class="watermark">ADJUDICATION REPORT</div>
+    </div>
+    
+    <!-- Summary Statistics -->
+    <div class="summary">
+        <h2>Summary Statistics</h2>
+        <table class="summary-table">
+            <thead>
+                <tr>
+                    <th width="25%">Total Adjudicated Violations</th>
+                    <th width="25%">Original Fine Amount</th>
+                    <th width="25%">Adjudicated Fine Amount</th>
+                    <th width="25%">Average Reduction</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="font-size: 14pt; font-weight: bold; color: #1a3c6e;">{{ total_violations }}</td>
+                    <td style="font-size: 14pt; font-weight: bold; color: #1a3c6e;">{{ total_original_amount|floatformat:2 }}</td>
+                    <td style="font-size: 14pt; font-weight: bold; color: #1a3c6e;">{{ total_adjudicated_amount|floatformat:2 }}</td>
+                    <td style="font-size: 14pt; font-weight: bold; color: #1a3c6e;">{{ reduction_percentage|floatformat:1 }}%</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Adjudicator Performance -->
+    <h2>Adjudicator Performance</h2>
+    <table class="adj-table">
+        <thead>
+            <tr>
+                <th width="25%">Adjudicator</th>
+                <th width="12%">Violations</th>
+                <th width="18%">Original Amount</th>
+                <th width="18%">Adjudicated Amount</th>
+                <th width="15%">Reduction</th>
+                <th width="12%">Avg. Reduction %</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for adjudicator in adjudicator_stats %}
+            <tr>
+                <td>{{ adjudicator.adjudicator_name }}</td>
+                <td class="text-center">{{ adjudicator.violations_count }}</td>
+                <td class="text-right">{{ adjudicator.original_amount|floatformat:2 }}</td>
+                <td class="text-right">{{ adjudicator.adjudicated_amount|floatformat:2 }}</td>
+                <td class="text-right">{{ adjudicator.reduction_amount|floatformat:2 }}</td>
+                <td class="text-center">{{ adjudicator.avg_reduction_pct|floatformat:1 }}%</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center text-muted">No adjudicator data available for this period.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <!-- Top 5 Most Active Adjudicators -->
+    {% if top_adjudicators %}
+    <h2>Top Adjudicators</h2>
+    <table class="adj-table">
+        <thead>
+            <tr>
+                <th width="30%">Adjudicator</th>
+                <th width="15%">Violations</th>
+                <th width="20%">Total Amount Reduced</th>
+                <th width="20%">Avg. Reduction %</th>
+                <th width="15%">Percentage of Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for adjudicator in top_adjudicators %}
+            <tr>
+                <td>{{ adjudicator.adjudicator_name }}</td>
+                <td class="text-center">{{ adjudicator.violations_count }}</td>
+                <td class="text-right">{{ adjudicator.reduction_amount|floatformat:2 }}</td>
+                <td class="text-center">{{ adjudicator.avg_reduction_pct|floatformat:1 }}%</td>
+                <td class="text-center">{% widthratio adjudicator.violations_count total_violations 100 %}%</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+    
+    <!-- Adjudicated Violations -->
+    <div class="page-break"></div>
+    {% if violations %}
+    <table class="violations-table">
+        <thead>
+            <tr>
+                <th width="7%">ID</th>
+                <th width="15%">Violator</th>
+                <th width="15%">Adjudication Date</th>
+                <th width="15%">Adjudicator</th>
+                <th width="12%">Original Amount</th>
+                <th width="12%">Adjudicated Amount</th>
+                <th width="10%">Reduction</th>
+                <th width="14%">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for violation in violations %}
+            <tr>
+                <td>{{ violation.id }}</td>
+                <td>{{ violation.violator.get_full_name }}</td>
+                <td>{{ violation.adjudication_date|date:"M d, Y H:i" }}</td>
+                <td>{{ violation.adjudicated_by.get_full_name }}</td>
+                <td class="text-right">{{ violation.original_fine_amount|default:violation.fine_amount|floatformat:2 }}</td>
+                <td class="text-right">{{ violation.fine_amount|floatformat:2 }}</td>
+                <td class="text-center">
+                    {% if violation.original_fine_amount %}
+                        {% with reduction=violation.original_fine_amount|sub:violation.fine_amount|div:violation.original_fine_amount|mul:100 %}
+                            {{ reduction|floatformat:1 }}%
+                        {% endwith %}
+                    {% else %}
+                        0.0%
+                    {% endif %}
+                </td>
+                <td class="text-center">
+                    <span class="badge 
+                        {% if violation.status == 'APPROVED' %}badge-success{% endif %}
+                        {% if violation.status == 'ADJUDICATED' %}badge-info{% endif %}
+                        {% if violation.status == 'PAID' %}badge-primary{% endif %}
+                        {% if violation.status == 'SETTLED' %}badge-primary{% endif %}">
+                        {{ violation.status }}
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="no-data">No adjudicated violations found for the selected period.</div>
+    {% endif %}
+    
+    <!-- Footer -->
+    <div id="footer_content">
+        <div class="footer">
+            <div class="report-meta">
+                <strong>Generated:</strong> {{ current_datetime|date:"F d, Y H:i" }} | <strong>Period:</strong> {{ period_label }} | <strong>Total Violations:</strong> {{ total_violations }}
+            </div>
+            <div>Traffic Violation System &copy; {{ current_datetime|date:"Y" }} | Adjudication Report</div>
+        </div>
+    </div>
+</body>
+</html> 

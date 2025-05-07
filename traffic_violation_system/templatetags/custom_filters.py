@@ -24,6 +24,17 @@ def mul(value, arg):
         return 0
 
 @register.filter
+def div(value, arg):
+    """
+    Divide the value by the argument
+    Usage: {{ value|div:arg }}
+    """
+    try:
+        return float(value) / float(arg)
+    except (ValueError, TypeError, ZeroDivisionError):
+        return 0
+
+@register.filter
 def floordiv(value, arg):
     """
     Perform integer division (floor division)
@@ -32,4 +43,15 @@ def floordiv(value, arg):
     try:
         return int(float(value) // float(arg))
     except (ValueError, TypeError, ZeroDivisionError):
+        return 0
+
+@register.filter
+def sub(value, arg):
+    """
+    Subtract the argument from the value
+    Usage: {{ value|sub:arg }}
+    """
+    try:
+        return float(value) - float(arg)
+    except (ValueError, TypeError):
         return 0 
