@@ -7,7 +7,7 @@ load_dotenv()
 
 # Hard-coded values are now fallbacks in case environment variables aren't set
 # Always prefer to use environment variables for sensitive data
-BREVO_API_KEY = os.environ.get('BREVO_API_KEY', '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')
+BREVO_API_KEY = os.environ.get('BREVO_API_KEY', '')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'hutchiejn@gmail.com')
 SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
 
