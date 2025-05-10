@@ -155,27 +155,56 @@ def backup_file(filepath):
     logging.info(f"Created backup: {backup_path}")
     return backup_path
 
+def is_binary_file(filepath, sample_size=8192):
+    """Check if a file is binary by reading a sample of its content"""
+    try:
+        with open(filepath, 'rb') as f:
+            sample = f.read(sample_size)
+            # Check for null bytes or other non-UTF-8 characters
+            if b'\x00' in sample:
+                return True
+            try:
+                sample.decode('utf-8')
+                return False  # Successfully decoded as UTF-8
+            except UnicodeDecodeError:
+                return True  # Not a valid UTF-8 file
+    except Exception as e:
+        logging.warning(f"Error checking if {filepath} is binary: {str(e)}")
+        return True  # Assume binary to be safe
+
 def patch_file(filepath):
     """Patch a single file with our import replacements"""
-    with open(filepath, 'r', encoding='utf-8') as f:
-        content = f.read()
+    # Skip binary files
+    if is_binary_file(filepath):
+        logging.info(f"Skipping binary file: {filepath}")
+        return False
     
-    original_content = content
-    patched = False
-    
-    for pattern, rule in PATCH_RULES.items():
-        if re.search(pattern, content):
-            backup_file(filepath)
-            content = re.sub(pattern, rule['replacement'], content)
-            patched = True
-            logging.info(f"Patched {pattern} in {filepath}")
-    
-    if patched:
-        with open(filepath, 'w', encoding='utf-8') as f:
-            f.write(content)
-        return True
-    
-    return False
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        original_content = content
+        patched = False
+        
+        for pattern, rule in PATCH_RULES.items():
+            if re.search(pattern, content):
+                backup_file(filepath)
+                content = re.sub(pattern, rule['replacement'], content)
+                patched = True
+                logging.info(f"Patched {pattern} in {filepath}")
+        
+        if patched:
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write(content)
+            return True
+        
+        return False
+    except UnicodeDecodeError as e:
+        logging.warning(f"Skipping file due to encoding error: {filepath}, Error: {str(e)}")
+        return False
+    except Exception as e:
+        logging.error(f"Error processing file {filepath}: {str(e)}")
+        return False
 
 def find_python_files(directory='.'):
     """Find all Python files recursively from the given directory"""
@@ -201,14 +230,21 @@ def main():
     
     # Track statistics
     patched_files = 0
+    skipped_files = 0
     
     # Process each file
     for filepath in python_files:
-        if patch_file(filepath):
-            patched_files += 1
+        try:
+            if patch_file(filepath):
+                patched_files += 1
+            else:
+                skipped_files += 1
+        except Exception as e:
+            logging.error(f"Error processing {filepath}: {str(e)}")
+            skipped_files += 1
     
-    logging.info(f"Patching complete. Modified {patched_files} files.")
-    print(f"Patching complete. Modified {patched_files} files.")
+    logging.info(f"Patching complete. Modified {patched_files} files, skipped {skipped_files} files.")
+    print(f"Patching complete. Modified {patched_files} files, skipped {skipped_files} files.")
 
 if __name__ == "__main__":
     main() 
