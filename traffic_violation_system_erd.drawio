@@ -1,0 +1,40 @@
+<mxfile host="65bd71144e">
+    <diagram id="C5RBs43oDa-KdzZeNtuy" name="Traffic Violation System ERD">
+        <mxGraphModel dx="1996" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+            <root>
+                <mxCell id="WIyWlLk6GJQsqaUBKTNV-0"/>
+                <mxCell id="WIyWlLk6GJQsqaUBKTNV-1" parent="WIyWlLk6GJQsqaUBKTNV-0"/>
+                <mxCell id="violator_table" value="&lt;b&gt;Violator&lt;/b&gt;&lt;br&gt;&lt;hr&gt;id (PK)&lt;br&gt;first_name&lt;br&gt;last_name&lt;br&gt;license_number&lt;br&gt;phone_number&lt;br&gt;address&lt;br&gt;created_at&lt;br&gt;updated_at" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;spacingLeft=4;spacingRight=4;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+                    <mxGeometry x="-60" y="350" width="160" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="violation_type_table" value="&lt;b&gt;ViolationType&lt;/b&gt;&lt;br&gt;&lt;hr&gt;id (PK)&lt;br&gt;name&lt;br&gt;description&lt;br&gt;amount&lt;br&gt;category&lt;br&gt;classification&lt;br&gt;is_active&lt;br&gt;is_ncap&lt;br&gt;created_at&lt;br&gt;updated_at" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;spacingLeft=4;spacingRight=4;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+                    <mxGeometry x="400" y="80" width="160" height="180" as="geometry"/>
+                </mxCell>
+                <mxCell id="violation_table" value="&lt;b&gt;Violation&lt;/b&gt;&lt;br&gt;&lt;hr&gt;id (PK)&lt;br&gt;submission_id&lt;br&gt;violator_id (FK)&lt;br&gt;user_account_id (FK)&lt;br&gt;enforcer_id (FK)&lt;br&gt;violation_date&lt;br&gt;location&lt;br&gt;violation_type&lt;br&gt;violation_type_obj_id (FK)&lt;br&gt;fine_amount&lt;br&gt;is_tdz_violation&lt;br&gt;image&lt;br&gt;status&lt;br&gt;description&lt;br&gt;payment_due_date&lt;br&gt;plate_number&lt;br&gt;vehicle_type&lt;br&gt;..." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;spacingLeft=4;spacingRight=4;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+                    <mxGeometry x="180" y="280" width="160" height="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="payment_table" value="&lt;b&gt;Payment&lt;/b&gt;&lt;br&gt;&lt;hr&gt;id (PK)&lt;br&gt;violation_id (FK)&lt;br&gt;amount_paid&lt;br&gt;payment_date&lt;br&gt;payment_method&lt;br&gt;transaction_id" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;spacingLeft=4;spacingRight=4;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+                    <mxGeometry x="425" y="360" width="160" height="140" as="geometry"/>
+                </mxCell>
+                <mxCell id="vio_to_vt" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERmany;startArrow=ERone;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;startFill=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="violator_table" target="violation_table" edge="1">
+                    <mxGeometry width="100" height="100" relative="1" as="geometry">
+                        <mxPoint x="350" y="160" as="sourcePoint"/>
+                        <mxPoint x="450" y="60" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="vt_to_vio" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERmany;startArrow=ERone;rounded=0;entryX=1;entryY=0.25;entryDx=0;entryDy=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;startFill=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="violation_type_table" target="violation_table" edge="1">
+                    <mxGeometry width="100" height="100" relative="1" as="geometry">
+                        <mxPoint x="350" y="180" as="sourcePoint"/>
+                        <mxPoint x="450" y="80" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="vio_to_pay" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERone;startArrow=ERone;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;startFill=0;endFill=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="violation_table" target="payment_table" edge="1">
+                    <mxGeometry width="100" height="100" relative="1" as="geometry">
+                        <mxPoint x="350" y="180" as="sourcePoint"/>
+                        <mxPoint x="450" y="80" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

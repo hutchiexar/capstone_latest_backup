@@ -7,6 +7,7 @@ urlpatterns = [
     path('check-repeat-violator/', views.check_repeat_violator, name='check_repeat_violator'),
     path('violations/<int:violation_id>/images/', views.get_violation_images, name='get_violation_images'),
     path('search_driver/<str:pd_number>/', views.search_driver_by_pd, name='search_driver_by_pd'),
+    path('check-violations/', views.check_registration_violations, name='check_registration_violations'),
     
     # Educational analytics endpoints
     path('educational-analytics/', educational_analytics.educational_analytics, name='educational_analytics'),

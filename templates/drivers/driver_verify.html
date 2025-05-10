@@ -172,7 +172,8 @@
                             <span class="badge bg-primary rounded-pill ms-2">{{ violations|length }}</span>
                         </h6>
                         {% if violations %}
-                        <div class="row" id="violationsContainer">
+                        <!-- Add data attribute for current driver to verify the violations belong to this driver -->
+                        <div class="row" id="violationsContainer" data-driver-id="{{ driver_id }}" data-driver-name="{{ driver.first_name }} {{ driver.last_name }}" data-driver-license="{{ driver.license_number|default:'N/A' }}">
                             {% for violation in violations %}
                             <div class="col-md-6 mb-3">
                                 <div class="card h-100 shadow-sm">
@@ -405,14 +406,75 @@
         if (countBadge) {
             countBadge.textContent = violations.length;
         }
+        
+        // NEW - Validate that violations belong to the current driver
+        validateViolationsForCurrentDriver();
     });
+    
+    // NEW - Function to validate that the violations belong to the current driver
+    function validateViolationsForCurrentDriver() {
+        const container = document.getElementById('violationsContainer');
+        if (!container) return;
+        
+        const driverId = container.getAttribute('data-driver-id');
+        const driverName = container.getAttribute('data-driver-name');
+        const driverLicense = container.getAttribute('data-driver-license');
+        
+        if (!driverId || !driverName) return;
+        
+        console.log(`Validating violations for driver: ${driverName} (ID: ${driverId}, License: ${driverLicense})`);
+        
+        // Get all violation cards
+        const violationCards = container.querySelectorAll('.col-md-6');
+        let validViolations = 0;
+        let removedViolations = 0;
+        
+        violationCards.forEach(card => {
+            let matchesDriver = false;
+            
+            // Check for driver-specific data attributes if available
+            if (card.hasAttribute('data-violation-driver-id')) {
+                matchesDriver = card.getAttribute('data-violation-driver-id') === driverId;
+            } 
+            // Otherwise, assume it matches since it was included in the server response
+            else {
+                matchesDriver = true;
+            }
+            
+            if (matchesDriver) {
+                validViolations++;
+            } else {
+                // Remove violations that don't match the current driver
+                card.remove();
+                removedViolations++;
+            }
+        });
+        
+        console.log(`Validation complete: ${validViolations} valid violations, ${removedViolations} violations removed`);
+        
+        // Update the count badge
+        const countBadge = container.closest('.mb-4').querySelector('.badge.rounded-pill');
+        if (countBadge) {
+            countBadge.textContent = validViolations;
+            
+            // If no valid violations left, show empty state
+            if (validViolations === 0 && container.querySelectorAll('.col-md-6').length === 0) {
+                container.innerHTML = `
+                    <div class="col-12 text-center py-3">
+                        <span class="material-icons" style="font-size: 48px; color: #e0e0e0;">fact_check</span>
+                        <p class="mb-0 mt-2">No pending violations found</p>
+                    </div>
+                `;
+            }
+        }
+    }
     
     function createViolationCard(violation) {
         const card = document.createElement('div');
         card.className = 'col-md-6 mb-3';
         
         // Check if this is an NCAP-like violation based on keywords
-        const isNCAP = ['helmet', 'camera', 'ncap', 'speed', 'red light', 'traffic signal', 'stoplight']
+        const isNCAP = ['helmet', 'no helmet', 'camera', 'ncap', 'speed', 'red light', 'traffic signal', 'stoplight']
             .some(keyword => violation.violation_type.toLowerCase().includes(keyword));
         
         card.innerHTML = `

@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Print Violation QR Code{% endblock %}
+
+{% block extra_css %}
+<style>
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        #printable-area, #printable-area * {
+            visibility: visible;
+        }
+        #printable-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+        }
+        .no-print {
+            display: none;
+        }
+    }
+    
+    .ticket-container {
+        border: 2px solid #000;
+        padding: 20px;
+        margin: 20px auto;
+        max-width: 800px;
+        font-family: Arial, sans-serif;
+    }
+    
+    .ticket-header {
+        text-align: center;
+        margin-bottom: 20px;
+        border-bottom: 1px solid #ccc;
+        padding-bottom: 10px;
+    }
+    
+    .ticket-title {
+        font-size: 24px;
+        font-weight: bold;
+        margin: 10px 0;
+    }
+    
+    .ticket-subtitle {
+        font-size: 18px;
+        margin: 5px 0;
+    }
+    
+    .ticket-body {
+        display: flex;
+        margin-bottom: 20px;
+    }
+    
+    .ticket-details {
+        flex: 2;
+        padding-right: 20px;
+    }
+    
+    .ticket-qr {
+        flex: 1;
+        text-align: center;
+    }
+    
+    .qr-code-img {
+        width: 150px;
+        height: 150px;
+    }
+    
+    .qr-instruction {
+        font-size: 12px;
+        margin-top: 10px;
+        text-align: center;
+    }
+    
+    .ticket-field {
+        margin-bottom: 10px;
+    }
+    
+    .ticket-field label {
+        font-weight: bold;
+        display: inline-block;
+        width: 150px;
+    }
+    
+    .ticket-amount {
+        font-size: 18px;
+        font-weight: bold;
+        text-align: right;
+        margin-top: 20px;
+        border-top: 1px solid #ccc;
+        padding-top: 10px;
+    }
+    
+    .action-buttons {
+        text-align: center;
+        margin: 20px 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="action-buttons no-print">
+        <button class="btn btn-primary" onclick="window.print()">Print QR Code Ticket</button>
+        <a href="javascript:history.back()" class="btn btn-secondary">Back</a>
+    </div>
+    
+    <div id="printable-area" class="ticket-container">
+        <div class="ticket-header">
+            <div class="ticket-title">TRAFFIC VIOLATION TICKET</div>
+            <div class="ticket-subtitle">City Traffic Management Office</div>
+        </div>
+        
+        <div class="ticket-body">
+            <div class="ticket-details">
+                <div class="ticket-field">
+                    <label>Ticket No:</label>
+                    <span>{{ violation.id }}</span>
+                </div>
+                <div class="ticket-field">
+                    <label>Date Issued:</label>
+                    <span>{{ violation.date_of_violation|date:"F d, Y" }}</span>
+                </div>
+                <div class="ticket-field">
+                    <label>Violation Type:</label>
+                    <span>{{ violation.violation_type }}</span>
+                </div>
+                <div class="ticket-field">
+                    <label>Location:</label>
+                    <span>{{ violation.location }}</span>
+                </div>
+                <div class="ticket-field">
+                    <label>Name:</label>
+                    <span>{{ violation.first_name }} {{ violation.last_name }}</span>
+                </div>
+                {% if violation.license_number %}
+                <div class="ticket-field">
+                    <label>License No:</label>
+                    <span>{{ violation.license_number }}</span>
+                </div>
+                {% endif %}
+                <div class="ticket-field">
+                    <label>Vehicle Plate:</label>
+                    <span>{{ violation.plate_number }}</span>
+                </div>
+                <div class="ticket-field">
+                    <label>Issuing Officer:</label>
+                    <span>{{ violation.issuing_officer }}</span>
+                </div>
+                
+                <div class="ticket-amount">
+                    TOTAL AMOUNT DUE: ₱{{ violation.fine_amount }}
+                </div>
+            </div>
+            
+            <div class="ticket-qr">
+                <img src="data:image/png;base64,{{ qr_image_base64 }}" alt="QR Code" class="qr-code-img">
+                <div class="qr-instruction">
+                    <p>Scan this QR code to register and manage your violation.</p>
+                    <p>{{ registration_url }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="ticket-footer">
+            <p>Please register within 7 days to avoid additional penalties. You may pay online after registration or visit the City Traffic Management Office.</p>
+            <p><strong>Note:</strong> This ticket serves as official notice of a traffic violation. Failure to respond may result in additional penalties or suspension of license.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-print when page loads (uncomment if needed)
+    // window.onload = function() {
+    //     window.print();
+    // };
+</script>
+{% endblock %} 

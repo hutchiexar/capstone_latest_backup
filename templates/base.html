@@ -3196,6 +3196,27 @@
                                 <span class="material-icons">paid</span>Violation Types
                             </a>
                             <!-- Educational Materials submenu - REPLACED -->
+                            <div class="submenu">
+                                <button class="list-group-item submenu-toggle {% if 'educational/admin' in request.path %}active{% endif %}" data-bs-toggle="collapse" data-bs-target="#educationalSubmenu">
+                                    <span class="material-icons">school</span>
+                                    <span class="flex-grow-1">Educational Materials</span>
+                                    <span class="material-icons submenu-icon">expand_more</span>
+                                </button>
+                                <div class="collapse {% if 'educational/admin' in request.path %}show{% endif %}" id="educationalSubmenu">
+                                    <a href="{% url 'educational:admin_index' %}" class="list-group-item submenu-item {% if 'educational/admin' in request.path and not 'categories' in request.path and not 'topics' in request.path and not 'quizzes' in request.path %}active{% endif %}">
+                                        <span class="material-icons">dashboard</span>Dashboard
+                                    </a>
+                                    <a href="{% url 'educational:admin_category_list' %}" class="list-group-item submenu-item {% if 'educational/admin/categories' in request.path %}active{% endif %}">
+                                        <span class="material-icons">category</span>Categories
+                                    </a>
+                                    <a href="{% url 'educational:admin_topic_list' %}" class="list-group-item submenu-item {% if 'educational/admin/topics' in request.path %}active{% endif %}">
+                                        <span class="material-icons">menu_book</span>Topics
+                                    </a>
+                                    <a href="{% url 'educational:admin_quiz_list' %}" class="list-group-item submenu-item {% if 'educational/admin/quizzes' in request.path %}active{% endif %}">
+                                        <span class="material-icons">quiz</span>Quizzes
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     {% endif %}

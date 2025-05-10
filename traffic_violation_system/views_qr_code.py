@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
-from .models import UserProfile, Driver, Vehicle, DriverVehicleAssignment, Violation, Operator
+from django.http import JsonResponse, HttpResponse
+from .models import UserProfile, Driver, Vehicle, DriverVehicleAssignment, Violation, Operator, ViolatorQRHash
 from django.contrib.auth.models import User
 from django.db.models import Q
 from django.conf import settings
@@ -9,6 +9,10 @@ import logging
 from django.contrib.auth.decorators import login_required
 from django.db import connection
 from django.utils import timezone
+import io
+import qrcode
+from django.urls import reverse
+from django.contrib import messages
 
 # Directly import the VehicleRegistration model to ensure it's available
 try:
@@ -21,6 +25,99 @@ except ImportError:
 
 # Set up logger
 logger = logging.getLogger(__name__)
+
+# Add this function after the imports section, before other functions
+def search_existing_users(first_name, last_name, license_number=None):
+    """
+    Search for existing users with the same name or license number.
+    
+    Args:
+        first_name: First name to search for
+        last_name: Last name to search for
+        license_number: Optional license number to search for
+    
+    Returns:
+        List of matching users with their registration details
+    """
+    from django.db.models import Q
+    from django.contrib.auth.models import User
+    
+    logger.info(f"Searching for existing users with name: {first_name} {last_name}, license: {license_number or 'None'}")
+    
+    matching_users = []
+    
+    # Build query to find users with matching name
+    query = Q(first_name__iexact=first_name) & Q(last_name__iexact=last_name)
+    
+    try:
+        # Find users with matching name
+        users = User.objects.filter(query).select_related('userprofile')
+        logger.info(f"Found {users.count()} users with matching name")
+        
+        # If we have a license number, also find users with that license
+        license_users = []
+        if license_number and license_number.strip() and license_number.strip().lower() != 'n/a':
+            clean_license = license_number.strip()
+            logger.info(f"Searching for users with license number: {clean_license}")
+            
+            # Try an exact match first
+            exact_license_users = User.objects.filter(userprofile__license_number__iexact=clean_license).select_related('userprofile')
+            logger.info(f"Found {exact_license_users.count()} users with exact matching license")
+            
+            # Then try a partial match (contains) for license numbers that might be formatted differently
+            partial_license_users = User.objects.filter(userprofile__license_number__icontains=clean_license).select_related('userprofile')
+            logger.info(f"Found {partial_license_users.count()} users with partial matching license")
+            
+            # Combine them using distinct to avoid duplicates
+            license_users = (exact_license_users | partial_license_users).distinct()
+            logger.info(f"Found {license_users.count()} total users with matching license")
+            
+            # Combine with name matches
+            users = (users | license_users).distinct()
+        
+        logger.info(f"Found total of {users.count()} distinct matching users")
+        
+        # Format the results
+        for user in users:
+            # Skip users without profiles
+            if not hasattr(user, 'userprofile'):
+                logger.warning(f"User {user.id} ({user.username}) has no userprofile")
+                continue
+                
+            # Get registration method (try to determine if it was from QR code or manual)
+            registration_method = "Manual Registration"
+            if user.userprofile.enforcer_id:
+                if user.userprofile.enforcer_id.startswith('QR'):
+                    registration_method = "QR Code Registration"
+                elif user.userprofile.enforcer_id.startswith('ENF'):
+                    registration_method = "Enforcer Registration"
+            
+            # Add user to results
+            try:
+                matching_users.append({
+                    'id': user.id,
+                    'username': user.username,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'email': user.email,
+                    'enforcer_id': user.userprofile.enforcer_id or 'N/A',
+                    'license_number': user.userprofile.license_number or 'Not provided',
+                    'is_driver': getattr(user.userprofile, 'is_driver', False),
+                    'is_operator': getattr(user.userprofile, 'is_operator', False),
+                    'registration_date': user.date_joined.strftime('%Y-%m-%d'),
+                    'registration_method': registration_method,
+                    'profile_url': f"/users/{user.id}/profile/"
+                })
+                logger.info(f"Added user to results: {user.get_full_name()} ({user.username})")
+            except Exception as e:
+                logger.error(f"Error adding user {user.id} to results: {str(e)}")
+            
+        logger.info(f"Found {len(matching_users)} existing users matching the criteria")
+        
+    except Exception as e:
+        logger.error(f"Error searching for existing users: {str(e)}")
+    
+    return matching_users
 
 # QR Code scanning and profile view
 @csrf_exempt
@@ -275,11 +372,13 @@ def qr_profile_view(request, enforcer_id):
             
             # Check if user has a license number and use it to filter
             if profile.license_number:
+                logger.info(f"Querying violations for user {user.username} with license {profile.license_number}")
                 violations = Violation.objects.filter(
                     Q(violator__license_number=profile.license_number) | Q(user_account=user)
                 ).order_by('-violation_date')
             else:
                 # Filter only by user account if no license number available
+                logger.info(f"Querying violations for user {user.username} by account only (no license)")
                 violations = Violation.objects.filter(user_account=user).order_by('-violation_date')
             
             logger.info(f"Retrieved violations using direct filter: found {violations.count() if violations else 0}")
@@ -288,6 +387,7 @@ def qr_profile_view(request, enforcer_id):
             # Fallback to try the custom manager if available
             try:
                 # Try using the custom manager as fallback
+                logger.info(f"Attempting to use custom violation manager for user {user.username}")
                 violations = Violation.user_violations.get_user_violations(user).order_by('-violation_date')
                 logger.info(f"Retrieved violations using UserViolationManager: found {violations.count() if violations else 0}")
             except Exception as manager_error:
@@ -303,10 +403,43 @@ def qr_profile_view(request, enforcer_id):
             
             logger.info(f"Filtered to {len(filtered_violations)} pending/adjudicated violations")
             
+            # Double-check all violations belong to this user
+            validated_violations = []
+            for violation in filtered_violations:
+                # Check if this violation is actually for this user
+                is_user_violation = False
+                
+                # Direct user account link
+                if hasattr(violation, 'user_account') and violation.user_account == user:
+                    is_user_violation = True
+                
+                # License number match
+                elif (hasattr(violation, 'violator') and 
+                      hasattr(violation.violator, 'license_number') and 
+                      violation.violator.license_number and 
+                      profile.license_number and
+                      violation.violator.license_number.lower() == profile.license_number.lower()):
+                    is_user_violation = True
+                
+                # QR hash link
+                elif (hasattr(violation, 'qr_hash') and 
+                      violation.qr_hash and 
+                      hasattr(violation.qr_hash, 'user_account') and
+                      violation.qr_hash.user_account == user):
+                    is_user_violation = True
+                    
+                # Include only verified user violations
+                if is_user_violation:
+                    validated_violations.append(violation)
+                else:
+                    logger.warning(f"Violation ID {violation.id} was returned for user {user.username} but doesn't appear to belong to them. Skipping.")
+            
+            logger.info(f"After user validation: {len(validated_violations)} of {len(filtered_violations)} violations are for this user")
+            
             # Convert violations to a list of dictionaries for the template
             violations_data = []
             
-            for violation in filtered_violations:
+            for violation in validated_violations:
                 # Convert to dictionary for template
                 violation_data = {
                     'id': violation.id,
@@ -502,7 +635,17 @@ def qr_user_data(request, enforcer_id):
         
         logger.info(f"Found user profile: {profile.enforcer_id} for user {user.username}")
         
-        # Basic user information - reuse the existing logic from qr_profile_view
+        # NEW: Search for other existing users with same name or license number
+        existing_users = search_existing_users(
+            user.first_name, 
+            user.last_name, 
+            profile.license_number
+        )
+        
+        # Filter out the current user from the results
+        existing_users = [u for u in existing_users if u['id'] != user.id]
+        
+        # Basic user information
         data = {
             'id': profile.enforcer_id,
             'name': user.get_full_name(),
@@ -515,6 +658,9 @@ def qr_user_data(request, enforcer_id):
             'contact_number': profile.contact_number,
             'email': user.email,
             'avatar': profile.avatar.url if profile.avatar else None,
+            # NEW: Add information about existing users with same name/license
+            'existing_users': existing_users,
+            'has_existing_users': len(existing_users) > 0,
         }
         
         logger.info(f"Basic user data prepared: {data}")
@@ -654,11 +800,13 @@ def qr_user_data(request, enforcer_id):
                 
                 # Check if user has a license number and use it to filter
                 if profile.license_number:
+                    logger.info(f"Querying violations for user {user.username} with license {profile.license_number}")
                     violations = Violation.objects.filter(
                         Q(violator__license_number=profile.license_number) | Q(user_account=user)
                     ).order_by('-violation_date')
                 else:
                     # Filter only by user account if no license number available
+                    logger.info(f"Querying violations for user {user.username} by account only (no license)")
                     violations = Violation.objects.filter(user_account=user).order_by('-violation_date')
                 
                 logger.info(f"Retrieved violations using direct filter: found {violations.count() if violations else 0}")
@@ -667,6 +815,7 @@ def qr_user_data(request, enforcer_id):
                 # Fallback to try the custom manager if available
                 try:
                     # Try using the custom manager as fallback
+                    logger.info(f"Attempting to use custom violation manager for user {user.username}")
                     violations = Violation.user_violations.get_user_violations(user).order_by('-violation_date')
                     logger.info(f"Retrieved violations using UserViolationManager: found {violations.count() if violations else 0}")
                 except Exception as manager_error:
@@ -682,10 +831,43 @@ def qr_user_data(request, enforcer_id):
                 
                 logger.info(f"Filtered to {len(filtered_violations)} pending/adjudicated violations")
                 
+                # Double-check all violations belong to this user
+                validated_violations = []
+                for violation in filtered_violations:
+                    # Check if this violation is actually for this user
+                    is_user_violation = False
+                    
+                    # Direct user account link
+                    if hasattr(violation, 'user_account') and violation.user_account == user:
+                        is_user_violation = True
+                    
+                    # License number match
+                    elif (hasattr(violation, 'violator') and 
+                          hasattr(violation.violator, 'license_number') and 
+                          violation.violator.license_number and 
+                          profile.license_number and
+                          violation.violator.license_number.lower() == profile.license_number.lower()):
+                        is_user_violation = True
+                    
+                    # QR hash link
+                    elif (hasattr(violation, 'qr_hash') and 
+                          violation.qr_hash and 
+                          hasattr(violation.qr_hash, 'user_account') and
+                          violation.qr_hash.user_account == user):
+                        is_user_violation = True
+                        
+                    # Include only verified user violations
+                    if is_user_violation:
+                        validated_violations.append(violation)
+                    else:
+                        logger.warning(f"Violation ID {violation.id} was returned for user {user.username} but doesn't appear to belong to them. Skipping.")
+                
+                logger.info(f"After user validation: {len(validated_violations)} of {len(filtered_violations)} violations are for this user")
+                
                 # Convert violations to a list of dictionaries for the template
                 violations_data = []
                 
-                for violation in filtered_violations:
+                for violation in validated_violations:
                     # Convert to dictionary for template
                     violation_data = {
                         'id': violation.id,
@@ -712,21 +894,163 @@ def qr_user_data(request, enforcer_id):
             logger.error(f"Error getting violation information: {str(e)}")
             data['violations'] = []
             
+        # Check if we're expecting a JSON response
+        if request.headers.get('Accept') == 'application/json':
+            return JsonResponse(data)
+        else:
+            return render(request, 'qr_user_data.html', {
+                'enforcer_id': enforcer_id,
+                'data': data,
+                'is_valid': is_valid,
+                'error': error,
+                'has_violations': data['violations'] != [],
+                'recent_violations': data['violations'][:5] if data['violations'] else None,
+                'violation_count': len(data['violations']) if data['violations'] else 0,
+                'now': timezone.now(),
+                'debug': settings.DEBUG,
+                'existing_users': data.get('existing_users', []),
+                'has_existing_users': data.get('has_existing_users', False),
+            })
+            
     except Exception as e:
-        logger.error(f"Error fetching user data: {str(e)}")
-        is_valid = False
-        error = str(e)
-        data = {}
+        logger.error(f"Error in qr_user_data: {str(e)}", exc_info=True)
+        return render(request, 'qr_user_data.html', {
+            'enforcer_id': enforcer_id,
+            'is_valid': False,
+            'error': f"An error occurred: {str(e)}",
+            'now': timezone.now(),
+            'debug': settings.DEBUG
+        })
+
+def get_or_create_violator_qr_hash(first_name, last_name, license_number=None, phone_number=None):
+    """
+    Get or create a ViolatorQRHash for a violator.
+    This ensures that multiple violations for the same violator use the same QR code.
+    """
+    # First, try to find an existing hash based on identifying information
+    existing_hash = None
     
-    # Get current datetime for verification timestamp
-    now = timezone.now()
+    # Check by license number if available (most reliable identifier)
+    if license_number:
+        existing_hash = ViolatorQRHash.objects.filter(
+            license_number=license_number,
+            registered=False  # Only use unregistered hashes
+        ).first()
     
-    # Render the dedicated template
-    return render(request, 'qr_user_data.html', {
-        'enforcer_id': enforcer_id,
-        'is_valid': is_valid,
-        'error': error,
-        'data': data,
-        'now': now,
-        'debug': settings.DEBUG
-    }) 
+    # If no existing hash found by license, try by name and phone if available
+    if not existing_hash and phone_number:
+        existing_hash = ViolatorQRHash.objects.filter(
+            first_name__iexact=first_name,
+            last_name__iexact=last_name,
+            phone_number=phone_number,
+            registered=False
+        ).first()
+    
+    # If still no match, check by name only as last resort
+    if not existing_hash:
+        existing_hash = ViolatorQRHash.objects.filter(
+            first_name__iexact=first_name,
+            last_name__iexact=last_name,
+            registered=False
+        ).first()
+    
+    # If we found an existing hash, return it
+    if existing_hash:
+        return existing_hash
+    
+    # Otherwise, create a new hash
+    hash_id = ViolatorQRHash.generate_hash(first_name, last_name, license_number)
+    
+    # Create 90-day expiration
+    expires_at = timezone.now() + timezone.timedelta(days=90)
+    
+    # Create new ViolatorQRHash
+    new_hash = ViolatorQRHash.objects.create(
+        hash_id=hash_id,
+        first_name=first_name,
+        last_name=last_name,
+        license_number=license_number,
+        phone_number=phone_number,
+        expires_at=expires_at
+    )
+    
+    return new_hash
+
+def generate_violation_qr_code(violation_id):
+    """
+    Generate a QR code for a violation.
+    Links the violation to an existing or new ViolatorQRHash.
+    """
+    # Get the violation
+    violation = get_object_or_404(Violation, id=violation_id)
+    
+    # If violation already has a QR hash, use it
+    if violation.qr_hash:
+        qr_hash = violation.qr_hash
+    else:
+        # Create or get a QR hash for this violator
+        qr_hash = get_or_create_violator_qr_hash(
+            first_name=violation.first_name,
+            last_name=violation.last_name,
+            license_number=violation.license_number,
+            phone_number=violation.phone_number
+        )
+        
+        # Link the violation to the QR hash
+        violation.qr_hash = qr_hash
+        violation.save()
+    
+    # Generate the registration URL with the hash
+    registration_url = reverse('register_with_violations', kwargs={'hash_id': qr_hash.hash_id})
+    absolute_url = f"{settings.SITE_URL}{registration_url}"
+    
+    # Create the QR code
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(absolute_url)
+    qr.make(fit=True)
+    
+    img = qr.make_image(fill_color="black", back_color="white")
+    
+    # Convert to bytes for response
+    buffer = io.BytesIO()
+    img.save(buffer, format="PNG")
+    buffer.seek(0)
+    
+    return buffer.getvalue(), absolute_url
+
+def violation_qr_code_view(request, violation_id):
+    """View to display QR code for a violation"""
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    qr_image, registration_url = generate_violation_qr_code(violation_id)
+    
+    # Return the QR code image
+    response = HttpResponse(qr_image, content_type="image/png")
+    response['Content-Disposition'] = f'inline; filename="violation_qr_{violation_id}.png"'
+    return response
+
+def violation_qr_code_print_view(request, violation_id):
+    """View to display a printable page with the QR code"""
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    violation = get_object_or_404(Violation, id=violation_id)
+    qr_image, registration_url = generate_violation_qr_code(violation_id)
+    
+    # Convert QR code image to base64 for embedding in HTML
+    import base64
+    qr_image_base64 = base64.b64encode(qr_image).decode('utf-8')
+    
+    context = {
+        'violation': violation,
+        'qr_image_base64': qr_image_base64,
+        'registration_url': registration_url,
+    }
+    
+    return render(request, 'violations/print_qr_code.html', context) 

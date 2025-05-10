@@ -25,6 +25,9 @@ class AuthenticationMiddleware:
         return response
 
     def process_view(self, request, view_func, view_args, view_kwargs):
+        logger = logging.getLogger(__name__)
+        logger.info(f"AuthenticationMiddleware: Processing path {request.path}")
+        
         # List of URLs that don't require authentication
         exempt_urls = [
             reverse('login'),
@@ -40,6 +43,13 @@ class AuthenticationMiddleware:
         
         # Check if URL is verification-related
         if 'verification' in request.path or 'verify_email' in request.path:
+            logger.info(f"AuthenticationMiddleware: Path {request.path} exempt due to verification")
+            return None
+        
+        # More permissive check for registration URLs
+        # This allows any path that contains 'register/violations' including both direct and hash-based
+        if 'register/violations' in request.path:
+            logger.info(f"AuthenticationMiddleware: Path {request.path} exempt due to registration")
             return None
         
         # Allow access to landing pages, static files, and media files
@@ -47,11 +57,13 @@ class AuthenticationMiddleware:
             any(url in request.path for url in ['/verification/', '/verify/']) or
             request.path.startswith('/static/') or 
             request.path.startswith('/media/')):
+            logger.info(f"AuthenticationMiddleware: Path {request.path} exempt due to being in exempt list")
             return None
 
         # Require authentication for all other pages
         if not request.user.is_authenticated:
             # Store the next URL in the session for redirect after login
+            logger.info(f"AuthenticationMiddleware: Requiring login for path {request.path}")
             next_url = request.get_full_path()
             request.session['next'] = next_url
             return redirect('login')
@@ -59,6 +71,7 @@ class AuthenticationMiddleware:
         # For authenticated users, if they're enforcers and trying to access the root URL,
         # redirect them to enforcer_map instead of dashboard
         if request.path == '/' and hasattr(request.user, 'userprofile') and request.user.userprofile.role == 'ENFORCER':
+            logger.info(f"AuthenticationMiddleware: Redirecting enforcer to enforcer_map")
             return redirect('enforcer_map')
             
         return None
@@ -131,6 +144,7 @@ class EmailVerificationMiddleware:
             r'^/media/',
             r'^/admin/',
             r'^/api/',
+            r'^/register/violations/',  # More permissive QR code registration URL pattern
         ]
         
         # Try to add any additional exempt paths from settings
@@ -156,6 +170,10 @@ class EmailVerificationMiddleware:
         # Log the current path for troubleshooting
         logger = logging.getLogger(__name__)
         logger.debug(f"EmailVerificationMiddleware: Checking path {path}")
+        
+        # More detailed logging for registration URLs
+        if 'register/violations' in path:
+            logger.info(f"EmailVerificationMiddleware: Registration URL detected: {path}")
         
         if any(re.match(url, path) for url in self.exempt_urls):
             logger.debug(f"EmailVerificationMiddleware: Path {path} is exempt")

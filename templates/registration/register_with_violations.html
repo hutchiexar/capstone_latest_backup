@@ -1,21 +1,107 @@
 {% extends 'base_auth.html' %}
 {% load static %}
 
-{% block title %}Create Account - CTTMO{% endblock %}
+{% block title %}Register with Violations - CTTMO{% endblock %}
+
+{% block extra_css %}
+<style>
+    .registration-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .card-header {
+        background-color: #f8f9fa;
+        padding: 15px 20px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .card-header h4 {
+        margin: 0;
+        color: #495057;
+    }
+    
+    .card-body {
+        padding: 20px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-label {
+        font-weight: 500;
+        margin-bottom: 8px;
+    }
+    
+    .violation-list {
+        margin-top: 20px;
+    }
+    
+    .violation-item {
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-left: 4px solid #dc3545;
+    }
+    
+    .violation-title {
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+    
+    .violation-detail {
+        margin-bottom: 5px;
+    }
+    
+    .btn-register {
+        background-color: #007bff;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-weight: 500;
+    }
+    
+    .alert {
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .alert-info {
+        background-color: #d1ecf1;
+        border-color: #bee5eb;
+        color: #0c5460;
+    }
+    
+    .alert-danger {
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+        color: #721c24;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <!-- Add Micromodal.js for modal dialogs -->
 <script src="https://unpkg.com/micromodal/dist/micromodal.min.js"></script>
-<!-- Add Axios for AJAX requests -->
-<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
 <div class="auth-container">
     <div class="register-card">
         <!-- Logo and Title Section -->
         <div class="text-center mb-3">
             <img src="{% static 'admin/img/logo.ico' %}" alt="Logo" class="register-logo mb-2">
-            <h1 class="register-title mb-1">Create Account</h1>
-            <p class="register-subtitle">Join CTTMO Traffic Violation Management System</p>
+            <h1 class="register-title mb-1">Register with Violations</h1>
+            <p class="register-subtitle">Complete your registration to manage your traffic violations</p>
         </div>
 
         <!-- Progress Bar -->
@@ -29,42 +115,87 @@
         {% if messages %}
         <div class="messages mb-4">
             {% for message in messages %}
-            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show">
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'warning' %}warning{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show">
                 {{ message }}
+                {% if "already registered" in message|striptags and "email" in message|striptags %}
+                <div class="mt-2">
+                    <a href="{% url 'login' %}" class="btn btn-sm btn-primary">
+                        <i class="material-icons small me-1">login</i> Login to Existing Account
+                    </a>
+                    <a href="{% url 'password_reset' %}" class="btn btn-sm btn-outline-secondary">
+                        <i class="material-icons small me-1">lock_reset</i> Forgot Password?
+                    </a>
+                </div>
+                {% endif %}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
             {% endfor %}
         </div>
         {% endif %}
 
-        <!-- QR Code Information Alert -->
+        <!-- Violation Information Alert -->
         <div class="alert alert-info alert-dismissible fade show mb-4">
             <div class="d-flex align-items-center">
-                <i class="material-icons me-2">qr_code_2</i>
+                <i class="material-icons me-2">info</i>
                 <div>
-                    <strong>QR Code Generated on Registration</strong>
-                    <p class="mb-0 small">Upon successful registration, a unique QR code will be automatically generated for your profile. This QR code will contain your driver information, license details, and associated vehicles.</p>
+                    <strong>Violations Linked to Your Account</strong>
+                    <p class="mb-0 small">You are registering with linked traffic violations. After registration, these violations will be automatically added to your account for management and payment.</p>
                 </div>
             </div>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
 
-        <!-- Violation Detection Alert -->
-        <div class="alert alert-warning alert-dismissible fade show mb-4">
-            <div class="d-flex align-items-center">
-                <i class="material-icons me-2">warning</i>
-                <div>
-                    <strong>Violation Detection</strong>
-                    <p class="mb-0 small">The system will automatically check for any existing violations associated with your name or license number. If violations are found, they will be linked to your account upon confirmation.</p>
+        <!-- Violations Card -->
+        <div class="accordion mb-4" id="violationsAccordion">
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="violationsHeader">
+                    <button class="accordion-button fw-semibold py-2" type="button" data-bs-toggle="collapse" data-bs-target="#violationsContent" aria-expanded="true" aria-controls="violationsContent">
+                        <span class="material-icons text-danger fs-6 me-2">report_problem</span>
+                        Traffic Violations ({{ violations|length }})
+                    </button>
+                </h2>
+                <div id="violationsContent" class="accordion-collapse collapse show" aria-labelledby="violationsHeader">
+                    <div class="accordion-body p-3">
+                        {% if violations %}
+                            {% for violation in violations %}
+                            <div class="violation-item mb-3 p-3 border-start border-danger border-3 rounded-3 bg-light">
+                                <div class="d-flex justify-content-between align-items-top mb-2">
+                                    <h6 class="fw-bold mb-0">
+                                        {% if violation.violation_type_obj %}
+                                            {{ violation.violation_type_obj.name }}
+                                        {% else %}
+                                            {{ violation.violation_type }}
+                                        {% endif %}
+                                    </h6>
+                                    <span class="badge bg-danger">₱{{ violation.fine_amount }}</span>
+                                </div>
+                                <div class="row g-2 small">
+                                    <div class="col-md-6">
+                                        <div><strong>Violation ID:</strong> {{ violation.id }}</div>
+                                        <div><strong>Date:</strong> {{ violation.violation_date }}</div>
+                                        <div><strong>Location:</strong> {{ violation.location }}</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div><strong>Status:</strong> <span class="badge bg-secondary">{{ violation.get_status_display }}</span></div>
+                                        {% if violation.description %}
+                                        <div><strong>Description:</strong> {{ violation.description|truncatechars:60 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="alert alert-danger">
+                                No valid violations found for this registration link. Please contact the traffic enforcement office.
+                            </div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
 
         <form method="post" enctype="multipart/form-data" id="registrationForm" class="needs-validation" novalidate>
             {% csrf_token %}
-            <!-- Hidden field for violations confirmation -->
-            <input type="hidden" name="violations_confirmed" id="violations_confirmed" value="false">
             
             <div class="row g-3">
                 <!-- Left column - Personal Information -->
@@ -84,9 +215,12 @@
                                             <label for="first_name" class="form-label small fw-semibold">First Name</label>
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text"><i class="material-icons small">badge</i></span>
-                                                <input type="text" class="form-control" id="first_name" name="first_name" required>
+                                                {{ form.first_name }}
                                                 <div class="invalid-feedback">Required</div>
                                             </div>
+                                            {% if form.first_name.errors %}
+                                            <div class="text-danger small">{{ form.first_name.errors }}</div>
+                                            {% endif %}
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -94,9 +228,12 @@
                                             <label for="last_name" class="form-label small fw-semibold">Last Name</label>
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text"><i class="material-icons small">badge</i></span>
-                                                <input type="text" class="form-control" id="last_name" name="last_name" required>
+                                                {{ form.last_name }}
                                                 <div class="invalid-feedback">Required</div>
                                             </div>
+                                            {% if form.last_name.errors %}
+                                            <div class="text-danger small">{{ form.last_name.errors }}</div>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>
@@ -105,28 +242,36 @@
                                     <label for="email" class="form-label small fw-semibold">Email Address</label>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text"><i class="material-icons small">email</i></span>
-                                        <input type="email" class="form-control" id="email" name="email" required>
+                                        {{ form.email }}
                                         <div class="invalid-feedback">Enter valid email</div>
                                     </div>
+                                    {% if form.email.errors %}
+                                    <div class="text-danger small">{{ form.email.errors }}</div>
+                                    {% endif %}
                                 </div>
 
                                 <div class="mb-2">
                                     <label for="phone_number" class="form-label small fw-semibold">Phone Number</label>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text"><i class="material-icons small">phone</i></span>
-                                        <input type="tel" class="form-control" id="phone_number" name="phone_number" 
-                                               pattern="[0-9]{11}" placeholder="09XXXXXXXXX" required>
+                                        {{ form.phone_number }}
                                         <div class="invalid-feedback">Enter 11-digit number</div>
                                     </div>
+                                    {% if form.phone_number.errors %}
+                                    <div class="text-danger small">{{ form.phone_number.errors }}</div>
+                                    {% endif %}
                                 </div>
 
                                 <div class="mb-2">
                                     <label for="address" class="form-label small fw-semibold">Complete Address</label>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text"><i class="material-icons small">home</i></span>
-                                        <textarea class="form-control" id="address" name="address" rows="2" required></textarea>
+                                        {{ form.address }}
                                         <div class="invalid-feedback">Enter your address</div>
                                     </div>
+                                    {% if form.address.errors %}
+                                    <div class="text-danger small">{{ form.address.errors }}</div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -148,22 +293,27 @@
                                     <label for="username" class="form-label small fw-semibold">Username</label>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text"><i class="material-icons small">account_circle</i></span>
-                                        <input type="text" class="form-control" id="username" name="username" required>
+                                        {{ form.username }}
                                         <div class="invalid-feedback">Choose a username</div>
                                     </div>
+                                    {% if form.username.errors %}
+                                    <div class="text-danger small">{{ form.username.errors }}</div>
+                                    {% endif %}
                                 </div>
 
                                 <div class="mb-2">
-                                    <label for="password" class="form-label small fw-semibold">Password</label>
+                                    <label for="password1" class="form-label small fw-semibold">Password</label>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text"><i class="material-icons small">lock</i></span>
-                                        <input type="password" class="form-control" id="password" name="password" 
-                                               required pattern="^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$">
+                                        {{ form.password1 }}
                                         <button class="btn btn-outline-secondary btn-sm" type="button" id="togglePassword">
                                             <i class="material-icons small">visibility</i>
                                         </button>
                                         <div class="invalid-feedback">8+ chars, include letters and numbers</div>
                                     </div>
+                                    {% if form.password1.errors %}
+                                    <div class="text-danger small">{{ form.password1.errors }}</div>
+                                    {% endif %}
                                     <!-- Password Strength Indicator -->
                                     <div class="password-strength mt-1" id="passwordStrength">
                                         <div class="progress" style="height: 4px;">
@@ -174,22 +324,27 @@
                                 </div>
 
                                 <div class="mb-2">
-                                    <label for="confirm_password" class="form-label small fw-semibold">Confirm Password</label>
+                                    <label for="password2" class="form-label small fw-semibold">Confirm Password</label>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text"><i class="material-icons small">lock_clock</i></span>
-                                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                                        {{ form.password2 }}
                                         <div class="invalid-feedback">Passwords must match</div>
                                     </div>
+                                    {% if form.password2.errors %}
+                                    <div class="text-danger small">{{ form.password2.errors }}</div>
+                                    {% endif %}
                                 </div>
 
                                 <div class="mb-2">
                                     <label for="license_number" class="form-label small fw-semibold">License Number</label>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text"><i class="material-icons small">credit_card</i></span>
-                                        <input type="text" class="form-control" id="license_number" name="license_number" 
-                                               placeholder="N01-23-456789">
+                                        {{ form.license_number }}
                                         <div class="invalid-feedback">Enter valid license number</div>
                                     </div>
+                                    {% if form.license_number.errors %}
+                                    <div class="text-danger small">{{ form.license_number.errors }}</div>
+                                    {% endif %}
                                     <small class="text-muted mt-1 d-block" style="font-size: 0.7rem;">Optional field - Format: N01-23-456789</small>
                                 </div>
                             </div>
@@ -214,8 +369,8 @@
                 <a href="{% url 'login' %}" class="btn btn-link text-muted small text-decoration-none">
                     <i class="material-icons align-middle small me-1">arrow_back</i> Back to Login
                 </a>
-                <button type="submit" class="btn btn-primary btn-sm px-3 py-2" id="registerBtn">
-                    Create Account <i class="material-icons align-middle small ms-1">arrow_forward</i>
+                <button type="submit" class="btn btn-primary btn-sm px-3 py-2">
+                    Register with Violations <i class="material-icons align-middle small ms-1">arrow_forward</i>
                 </button>
             </div>
         </form>
@@ -241,55 +396,12 @@
                 
                 <h6 class="fs-6 fw-bold">3. User Responsibilities</h6>
                 <p class="small">You are responsible for maintaining the confidentiality of your account credentials and for all activities under your account.</p>
+                
+                <h6 class="fs-6 fw-bold">4. Violations Management</h6>
+                <p class="small">By registering with linked violations, you acknowledge these violations and assume responsibility for their management or dispute through the platform.</p>
             </main>
             <footer class="modal__footer">
                 <button class="btn btn-primary" data-micromodal-close>I Understand</button>
-            </footer>
-        </div>
-    </div>
-</div>
-
-<!-- Violations Confirmation Modal -->
-<div class="modal micromodal-slide" id="modal-violations" aria-hidden="true">
-    <div class="modal__overlay" tabindex="-1" data-micromodal-close>
-        <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="modal-violations-title">
-            <header class="modal__header">
-                <h2 class="modal__title" id="modal-violations-title">
-                    <i class="material-icons align-middle text-warning">warning</i>
-                    Violations Found
-                </h2>
-                <button class="modal__close" aria-label="Close modal" data-micromodal-close></button>
-            </header>
-            <main class="modal__content" id="modal-violations-content">
-                <div class="alert alert-warning">
-                    <p>The system has detected the following traffic violations associated with your information:</p>
-                </div>
-                
-                <div id="violations-list" class="violations-list mb-3">
-                    <!-- Violations will be populated here by JavaScript -->
-                    <div class="text-center p-3">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="mt-2">Checking for violations...</p>
-                    </div>
-                </div>
-                
-                <p class="mb-3">These violations will be automatically linked to your new account. You can manage and pay for them after registration.</p>
-                
-                <div class="form-check mb-3">
-                    <input class="form-check-input" type="checkbox" id="confirmViolationsCheck" required>
-                    <label class="form-check-label" for="confirmViolationsCheck">
-                        I confirm these violations are mine and should be linked to my account
-                    </label>
-                    <div class="invalid-feedback" id="confirmViolationsCheckFeedback">
-                        You must confirm to proceed
-                    </div>
-                </div>
-            </main>
-            <footer class="modal__footer">
-                <button class="btn btn-secondary" data-micromodal-close>Cancel Registration</button>
-                <button class="btn btn-primary" id="confirmViolationsBtn" disabled>Confirm & Create Account</button>
             </footer>
         </div>
     </div>
@@ -412,45 +524,13 @@
     font-size: 0.95rem;
 }
 
-.avatar-preview {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    overflow: hidden;
-    background-color: #f8f9fa;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto;
-    border: 1px solid #dee2e6;
+.violation-item {
+    transition: all 0.2s ease;
 }
 
-.avatar-preview-inner {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-}
-
-.empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: #adb5bd;
-}
-
-.empty-state .material-icons {
-    font-size: 2rem;
-    margin-bottom: 0.25rem;
-}
-
-#avatarPreview {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+.violation-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 /* Media queries for responsive design */
@@ -648,348 +728,222 @@
   from { transform: translateY(0); }
   to { transform: translateY(-10%); }
 }
-
-/* Violations list styling */
-.violations-list {
-    max-height: 300px;
-    overflow-y: auto;
-    border: 1px solid #dee2e6;
-    border-radius: 0.5rem;
-    background-color: #f8f9fa;
-}
-
-.violation-item {
-    padding: 0.75rem;
-    border-bottom: 1px solid #dee2e6;
-    background-color: white;
-    transition: background-color 0.2s;
-}
-
-.violation-item:last-child {
-    border-bottom: none;
-}
-
-.violation-item:hover {
-    background-color: #f0f8ff;
-}
-
-.violation-title {
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-    color: #0d6efd;
-}
-
-.violation-details {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem 1rem;
-    font-size: 0.85rem;
-    color: #495057;
-}
-
-.violation-detail {
-    display: flex;
-    align-items: center;
-}
-
-.violation-detail i {
-    font-size: 0.9rem;
-    margin-right: 0.25rem;
-    opacity: 0.7;
-}
-
-/* Modal visibility fix */
-.modal.is-open {
-  display: block !important;
-}
-
-.modal__overlay {
-  z-index: 9999;
-  background: rgba(0, 0, 0, 0.6);
-}
-
-/* Fix for modal being behind overlay */
-.modal__container {
-  z-index: 10000;
-  background: white;
-  border-radius: 8px;
-  max-width: 90%;
-  width: 600px;
-}
-
-/* Modal open body style */
-body.modal-open {
-  overflow: hidden;
-}
 </style>
 
 <script>
-// Display any Django messages
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Micromodal with debug options
+    // Initialize Micromodal
     MicroModal.init({
         openTrigger: 'data-micromodal-trigger',
         closeTrigger: 'data-micromodal-close',
         disableFocus: false,
         disableScroll: true,
         awaitOpenAnimation: true,
-        awaitCloseAnimation: true,
-        debugMode: true,  // Add debug mode to help troubleshoot
-        onShow: modal => console.log('Modal shown:', modal.id),
-        onClose: modal => console.log('Modal closed:', modal.id)
+        awaitCloseAnimation: true
     });
     
-    // Setup form submission with violation check
+    // Form validation
     const form = document.getElementById('registrationForm');
-    const registerBtn = document.getElementById('registerBtn');
     let formSubmitting = false;
-    let violationsFound = false;
-    let violationsData = [];
     
-    // Store reference to this function so we can call it after violation confirmation
-    const submitForm = function() {
-        console.log('Submitting registration form');
-        formSubmitting = true;
-        if (registerBtn) {
-            registerBtn.disabled = true;
-            registerBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Creating Account...';
-        }
-        form.submit();
-    };
+    // Check if there are already error messages, which means form was submitted and had errors
+    const hasServerErrors = document.querySelectorAll('.alert-danger, .alert-error, .text-danger').length > 0;
+    if (hasServerErrors) {
+        // If there were validation errors from the server, make sure to highlight the form appropriately
+        form.classList.add('was-validated');
+    }
     
-    // Function to populate the violations list
-    const populateViolationsList = function(violations) {
-        console.log('Populating violations list with:', violations);
-        const container = document.getElementById('violations-list');
-        
-        if (!container) {
-            console.error('Violations list container not found');
-            return;
-        }
-        
-        // Clear loading state
-        container.innerHTML = '';
-        
-        if (!violations || violations.length === 0) {
-            container.innerHTML = '<div class="alert alert-success">No violations found.</div>';
-            return;
-        }
-        
-        // Create elements for each violation
-        violations.forEach(function(violation) {
-            const item = document.createElement('div');
-            item.className = 'violation-item';
-            
-            const title = document.createElement('div');
-            title.className = 'violation-title';
-            title.textContent = violation.violation_type;
-            
-            const details = document.createElement('div');
-            details.className = 'violation-details';
-            
-            // Add violation details
-            details.innerHTML = `
-                <div class="violation-detail">
-                    <i class="material-icons">event</i> Date: ${violation.violation_date}
-                </div>
-                <div class="violation-detail">
-                    <i class="material-icons">location_on</i> Location: ${violation.location}
-                </div>
-                <div class="violation-detail">
-                    <i class="material-icons">attach_money</i> Fine: ₱${violation.fine_amount}
-                </div>
-            `;
-            
-            item.appendChild(title);
-            item.appendChild(details);
-            container.appendChild(item);
-        });
-    };
-    
-    // Function to check for violations before form submission
-    const checkViolations = function(userData) {
-        console.log('Checking for violations before registration');
-        
-        // Get CSRF token for the API request
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-        
-        // Prepare form data for API request
-        const formData = new FormData();
-        for (const key in userData) {
-            formData.append(key, userData[key]);
-        }
-        
-        // Make API request using Axios
-        return axios.post('/api/check-violations/', formData, {
-            headers: {
-                'X-CSRFToken': csrfToken,
-                'Content-Type': 'multipart/form-data'
-            }
-        })
-        .then(function(response) {
-            // Handle API response
-            console.log('API response:', response.data);
-            const violations = response.data.violations || [];
-            
-            // Store the violations data
-            violationsData = violations;
-            
-            // Update UI based on whether violations were found
-            if (violations && violations.length > 0) {
-                // Violations found - show confirmation dialog
-                console.log(`Found ${violations.length} violations. Showing modal...`);
-                violationsFound = true;
-                populateViolationsList(violations);
-                
-                // Try multiple methods to ensure modal is shown
-                try {
-                    // Standard method
-                    MicroModal.show('modal-violations');
-                    console.log('MicroModal.show() called');
-                    
-                    // Direct DOM manipulation as backup
-                    setTimeout(function() {
-                        const modal = document.getElementById('modal-violations');
-                        if (modal) {
-                            console.log('Applying direct DOM manipulation to modal');
-                            modal.classList.add('is-open');
-                            modal.setAttribute('aria-hidden', 'false');
-                            
-                            // Force styles to ensure visibility
-                            modal.style.display = 'block';
-                            document.body.classList.add('modal-open');
-                            
-                            // Check if modal is actually visible after manipulation
-                            setTimeout(() => {
-                                const isModalVisible = window.getComputedStyle(modal).display !== 'none';
-                                console.log('Is modal visible?', isModalVisible);
-                                
-                                // If still not visible, use alert as fallback
-                                if (!isModalVisible) {
-                                    console.log('Modal not visible, using alert fallback');
-                                    useAlertFallback(violations);
-                                }
-                            }, 200);
-                        }
-                    }, 100);
-                    
-                } catch (err) {
-                    console.error('Error showing modal:', err);
-                    // Use alert as fallback if modal fails
-                    useAlertFallback(violations);
-                }
-                
-                // Reset form button state
-                formSubmitting = false;
-                if (registerBtn) {
-                    registerBtn.disabled = false;
-                    registerBtn.innerHTML = 'Create Account <i class="material-icons align-middle small ms-1">arrow_forward</i>';
-                }
-        } else {
-                // No violations found - proceed with registration
-                violationsFound = false;
-                document.getElementById('violations_confirmed').value = 'true'; // Skip confirmation step
-                submitForm();
-            }
-        })
-        .catch(function(error) {
-            console.error('Error checking violations:', error);
-            // On error, allow registration to proceed
-            violationsFound = false;
-            document.getElementById('violations_confirmed').value = 'true';
-            submitForm();
-        });
-    };
-    
-    // Fallback to alert if modal doesn't work
-    const useAlertFallback = function(violations) {
-        const message = `Found ${violations.length} violation(s) that will be linked to your account:\n\n` +
-            violations.map(v => `- ${v.violation_type} on ${v.violation_date} (₱${v.fine_amount})`).join('\n') +
-            '\n\nDo you want to continue with registration?';
-        
-        const confirmed = confirm(message);
-        if (confirmed) {
-            document.getElementById('violations_confirmed').value = 'true';
-            submitForm();
-        } else {
-            // Reset form submission state
-            formSubmitting = false;
-            if (registerBtn) {
-                registerBtn.disabled = false;
-                registerBtn.innerHTML = 'Create Account <i class="material-icons align-middle small ms-1">arrow_forward</i>';
-            }
-        }
-    };
-    
-    // Set up form submission handler
-    if (form) {
-        form.addEventListener('submit', function(event) {
-            // Prevent the default form submission
+    form.addEventListener('submit', function(event) {
+        // Prevent double submission
+        if (formSubmitting) {
             event.preventDefault();
-            
-            // Don't submit again if already in progress
-            if (formSubmitting) return;
-            
-            // Validate the form
-            if (!form.checkValidity()) {
+            return;
+        }
+        
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+            form.classList.add('was-validated');
+            return;
+        }
+        
+        // Check password match
+        const password = document.getElementById('id_password1');
+        const confirmPassword = document.getElementById('id_password2');
+        
+        if (password.value !== confirmPassword.value) {
+            confirmPassword.setCustomValidity('Passwords do not match');
+            event.preventDefault();
+            event.stopPropagation();
+            form.classList.add('was-validated');
+            // Show custom error message
+            const feedbackElement = confirmPassword.nextElementSibling;
+            if (feedbackElement && feedbackElement.classList.contains('invalid-feedback')) {
+                feedbackElement.textContent = 'Passwords do not match';
+            }
+            return;
+        } else {
+            confirmPassword.setCustomValidity('');
+        }
+        
+        // Check license number format
+        const licenseNumber = document.getElementById('id_license_number');
+        if (licenseNumber && licenseNumber.value !== '') {
+            // Simple regex test - license should have uppercase letters, numbers, and hyphens
+            if (!/^[A-Z0-9\-]+$/.test(licenseNumber.value)) {
+                licenseNumber.setCustomValidity('License number format is invalid');
+                event.preventDefault();
                 event.stopPropagation();
-                form.classList.add('was-validated');
-                return;
+            } else {
+                licenseNumber.setCustomValidity('');
             }
-            
-            // Mark form as submitting and update UI
-            formSubmitting = true;
-            if (registerBtn) {
-                registerBtn.disabled = true;
-                registerBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Checking...';
+        }
+        
+        // All validation passed, show loading state
+        formSubmitting = true;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Creating Account...';
+        
+        // Allow the form to submit
+        form.classList.add('was-validated');
+    });
+    
+    // Toggle password visibility
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('id_password1');
+    
+    if (togglePassword && passwordInput) {
+        togglePassword.addEventListener('click', function() {
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                this.querySelector('i').textContent = 'visibility_off';
+            } else {
+                passwordInput.type = 'password';
+                this.querySelector('i').textContent = 'visibility';
             }
-            
-            // Create object with form data for API
-            const formData = {
-                first_name: document.getElementById('first_name').value,
-                last_name: document.getElementById('last_name').value,
-                email: document.getElementById('email').value,
-                license_number: document.getElementById('license_number').value || ''
-            };
-            
-            // Check for violations
-            checkViolations(formData);
         });
     }
     
-    // Handle violations confirmation button
-    const confirmBtn = document.getElementById('confirmViolationsBtn');
-    const confirmCheck = document.getElementById('confirmViolationsCheck');
+    // Password strength meter
+    if (passwordInput) {
+        const strengthBar = document.querySelector('#passwordStrength .progress-bar');
+        const strengthText = document.getElementById('strengthText');
+        
+        passwordInput.addEventListener('input', function() {
+            const password = this.value;
+            let strength = 0;
+            
+            // Calculate strength
+            if (password.length >= 8) strength += 20;
+            if (password.match(/[a-z]+/)) strength += 20;
+            if (password.match(/[A-Z]+/)) strength += 20;
+            if (password.match(/[0-9]+/)) strength += 20;
+            if (password.match(/[^A-Za-z0-9]+/)) strength += 20;
+            
+            // Update UI
+            if (strengthBar) {
+                strengthBar.style.width = strength + '%';
+                
+                if (strength <= 20) {
+                    strengthBar.className = 'progress-bar bg-danger';
+                    strengthText.textContent = 'Very Weak';
+                } else if (strength <= 40) {
+                    strengthBar.className = 'progress-bar bg-warning';
+                    strengthText.textContent = 'Weak';
+                } else if (strength <= 60) {
+                    strengthBar.className = 'progress-bar bg-info';
+                    strengthText.textContent = 'Medium';
+                } else if (strength <= 80) {
+                    strengthBar.className = 'progress-bar bg-primary';
+                    strengthText.textContent = 'Strong';
+                } else {
+                    strengthBar.className = 'progress-bar bg-success';
+                    strengthText.textContent = 'Very Strong';
+                }
+            }
+        });
+    }
     
-    if (confirmBtn && confirmCheck) {
-        confirmCheck.addEventListener('change', function() {
-            confirmBtn.disabled = !this.checked;
+    // Confirm password validation on input
+    const confirmPasswordInput = document.getElementById('id_password2');
+    if (passwordInput && confirmPasswordInput) {
+        confirmPasswordInput.addEventListener('input', function() {
+            if (passwordInput.value !== this.value) {
+                this.setCustomValidity('Passwords do not match');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    }
+    
+    // Form progress tracking
+    const accordionItems = document.querySelectorAll('.accordion-item');
+    const formProgress = document.getElementById('formProgress');
+    
+    // Function to update progress
+    function updateProgress() {
+        let filledSections = 0;
+        let totalSections = accordionItems.length;
+        
+        accordionItems.forEach(function(item) {
+            const inputs = item.querySelectorAll('input, textarea');
+            let sectionFilled = true;
+            
+            inputs.forEach(function(input) {
+                if (input.required && !input.value) {
+                    sectionFilled = false;
+                }
+            });
+            
+            if (sectionFilled) filledSections++;
         });
         
-        confirmBtn.addEventListener('click', function() {
-            MicroModal.close('modal-violations');
-            document.getElementById('violations_confirmed').value = 'true';
-            submitForm();
-        });
+        if (formProgress) {
+            const progressPercentage = (filledSections / totalSections) * 100;
+            formProgress.style.width = progressPercentage + '%';
+        }
     }
-
-    const autoCloseAlerts = function() {
+    
+    // Monitor form inputs for changes
+    if (form) {
+        form.addEventListener('input', updateProgress);
+    }
+    
+    // Add animation to accordion items as they open
+    const accordionCollapses = document.querySelectorAll('.accordion-collapse');
+    accordionCollapses.forEach(function(collapse) {
+        collapse.addEventListener('shown.bs.collapse', function() {
+            const formGroups = this.querySelectorAll('.mb-2');
+            formGroups.forEach(function(group, index) {
+                group.style.opacity = '0';
+                group.style.transform = 'translateY(10px)';
+                group.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                
+                setTimeout(function() {
+                    group.style.opacity = '1';
+                    group.style.transform = 'translateY(0)';
+                }, 50 * (index + 1));
+            });
+        });
+    });
+    
+    // Auto-close messages after 5 seconds if not manually closed
     document.querySelectorAll('.alert').forEach(function(alert) {
-        // Auto-close messages after 5 seconds if not manually closed
         setTimeout(function() {
             const closeBtn = alert.querySelector('.btn-close');
             if (closeBtn) closeBtn.click();
         }, 5000);
     });
-    };
-    
-    {% if messages %}
-    // Auto-close Django messages
-    autoCloseAlerts();
-    {% endif %}
     
     // Initialize the progress bar on page load
     updateProgress();
+    
+    // Remove debug element if it exists
+    const debugElement = document.querySelector('[style*="background-color: red"]');
+    if (debugElement) {
+        debugElement.remove();
+    }
 });
 </script>
 {% endblock %} 

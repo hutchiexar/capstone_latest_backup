@@ -129,17 +129,62 @@ def driver_verify(request, driver_id):
                 })
         
         # Get all violations associated with this driver 
+        print(f"Querying violations for driver {driver.id}: {driver.first_name} {driver.last_name} (PD: {driver.new_pd_number}, License: {driver.license_number})")
         driver_violations = Violation.objects.filter(
             Q(pd_number=driver.new_pd_number) | 
             Q(pd_number=driver.old_pd_number) | 
             Q(violator__license_number=driver.license_number)
         ).order_by('-violation_date')
         
+        print(f"Initial query found {driver_violations.count()} violations for driver {driver.id}")
+        
         # Filter to only include pending and adjudicated violations
-        driver_violations = [
+        filtered_violations = [
             violation for violation in driver_violations 
             if getattr(violation, 'status', '').lower() in ['pending', 'adjudicated']
         ]
+        
+        print(f"After status filtering: {len(filtered_violations)} violations")
+        
+        # Perform a strict validation to ensure each violation actually belongs to this driver
+        validated_violations = []
+        for violation in filtered_violations:
+            is_driver_violation = False
+            
+            # PD number match
+            if (hasattr(violation, 'pd_number') and violation.pd_number and 
+                (violation.pd_number == driver.new_pd_number or 
+                 violation.pd_number == driver.old_pd_number)):
+                is_driver_violation = True
+            
+            # License number match
+            elif (hasattr(violation, 'violator') and 
+                  hasattr(violation.violator, 'license_number') and 
+                  violation.violator.license_number and 
+                  driver.license_number and
+                  violation.violator.license_number.lower() == driver.license_number.lower()):
+                is_driver_violation = True
+            
+            # Direct driver link
+            elif hasattr(violation, 'driver') and violation.driver and violation.driver.id == driver.id:
+                is_driver_violation = True
+            
+            # Name match as last resort (less reliable)
+            elif (hasattr(violation, 'violator') and 
+                  hasattr(violation.violator, 'first_name') and 
+                  hasattr(violation.violator, 'last_name') and
+                  violation.violator.first_name and 
+                  violation.violator.last_name and
+                  violation.violator.first_name.lower() == driver.first_name.lower() and
+                  violation.violator.last_name.lower() == driver.last_name.lower()):
+                is_driver_violation = True
+            
+            if is_driver_violation:
+                validated_violations.append(violation)
+            else:
+                print(f"Violation ID {violation.id} was returned but doesn't appear to belong to driver {driver.id}. Skipping.")
+        
+        print(f"After driver validation: {len(validated_violations)} violations are for this driver")
         
         # Separate violations into regular and NCAP
         ncap_violations = []
@@ -151,7 +196,7 @@ def driver_verify(request, driver_id):
             'speed', 'red light', 'traffic signal', 'stoplight'
         ]
         
-        for violation in driver_violations:
+        for violation in validated_violations:
             # Check if violation has any image fields (a common indicator of NCAP)
             has_images = False
             if hasattr(violation, 'image') and violation.image:
@@ -185,12 +230,12 @@ def driver_verify(request, driver_id):
             'is_valid': True,
             'now': timezone.now(),
             'vehicles': vehicles,
-            'violations': driver_violations,
+            'violations': validated_violations,
             'regular_violations': regular_violations,
             'ncap_violations': ncap_violations,
             'user_profile': user_profile,
             'data': {  # Add a data object for backward compatibility
-                'violations': driver_violations,
+                'violations': validated_violations,
                 'regular_violations': regular_violations,
                 'ncap_violations': ncap_violations,
             }

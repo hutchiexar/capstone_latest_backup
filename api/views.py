@@ -707,4 +707,104 @@ def search_driver_by_pd(request, pd_number):
         return JsonResponse({
             'error': 'An error occurred during the search',
             'message': str(e)
+        }, status=500)
+
+@csrf_exempt
+def check_registration_violations(request):
+    """
+    API endpoint to check for violations that should be linked to a new user during registration.
+    Searches for violations that match the license number, first name, or last name provided,
+    and are not yet claimed by any user.
+    
+    POST parameters:
+    - license_number: The license number to check (optional)
+    - first_name: The first name to check (required)
+    - last_name: The last name to check (required)
+    
+    Returns:
+    - JSON response with matching violations
+    """
+    try:
+        # Get parameters from request
+        license_number = request.POST.get('license_number', '').strip()
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        
+        logger.debug(f"Checking registration violations - license: '{license_number}', name: '{first_name} {last_name}'")
+        
+        if not first_name or not last_name:
+            return JsonResponse({
+                'success': False,
+                'message': 'First name and last name are required',
+                'violations': []
+            })
+            
+        # Build the base query
+        # Look for violations that:
+        # 1. Are not claimed (user_account is null)
+        # 2. Match license number OR (first name AND last name)
+        # 3. Are in a status that makes sense to claim
+        query = Violation.objects.filter(
+            user_account__isnull=True,  # Not claimed by any user
+            status__in=['PENDING', 'ADJUDICATED', 'APPROVED', 'OVERDUE']  # Active violations
+        )
+        
+        # Add filters based on provided information
+        filters = Q()
+        
+        # If license number is provided, add it to the filters
+        if license_number:
+            logger.debug(f"Adding license filter: {license_number}")
+            filters |= Q(violator__license_number__iexact=license_number)
+        
+        # Add name filters - both first and last name must match
+        if first_name and last_name:
+            logger.debug(f"Adding name filter: {first_name} {last_name}")
+            name_filter = Q(violator__first_name__iexact=first_name) & Q(violator__last_name__iexact=last_name)
+            filters |= name_filter
+        
+        # Apply filters to the query
+        if filters:
+            query = query.filter(filters)
+        else:
+            # If no valid filters, return empty results
+            return JsonResponse({
+                'success': True,
+                'message': 'No search criteria provided',
+                'violations': []
+            })
+            
+        # Execute query and format results
+        matching_violations = []
+        for v in query:
+            try:
+                # Get violation information
+                matching_violations.append({
+                    'id': v.id,
+                    'violation_code': v.violation_code or 'N/A',
+                    'description': v.description or v.violation_type or 'Unknown violation',
+                    'date': v.violation_date.strftime('%Y-%m-%d') if v.violation_date else 'Unknown',
+                    'time': v.violation_date.strftime('%H:%M') if v.violation_date else 'Unknown',
+                    'location': v.location or 'Unknown location',
+                    'fine_amount': f"PHP {v.fine_amount}" if v.fine_amount else 'Unknown',
+                    'status': v.status or 'PENDING',
+                    'violator_name': f"{v.violator.first_name} {v.violator.last_name}" if v.violator else 'Unknown'
+                })
+            except Exception as e:
+                logger.error(f"Error processing violation {v.id}: {str(e)}")
+        
+        logger.debug(f"Found {len(matching_violations)} matching violations")
+        
+        return JsonResponse({
+            'success': True,
+            'message': f"Found {len(matching_violations)} matching violations",
+            'violations': matching_violations
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in check_registration_violations: {str(e)}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'message': f"An error occurred: {str(e)}",
+            'violations': []
         }, status=500) 

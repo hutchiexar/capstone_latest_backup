@@ -346,7 +346,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const noDataMessage = document.getElementById('no-data-message');
     
     // Function to show notifications to the user
-    function showNotification(title, message, type = 'info') {
+    function showNotification(title, message, type = 'info', duration = 5000) {
         // Create notification element if it doesn't exist
         let notificationContainer = document.getElementById('notification-container');
         if (!notificationContainer) {
@@ -371,13 +371,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add to container
         notificationContainer.appendChild(notification);
         
-        // Remove after 5 seconds
+        // Remove after duration
         setTimeout(() => {
             notification.classList.remove('show');
             setTimeout(() => {
                 notification.remove();
             }, 300);
-        }, 5000);
+        }, duration);
     }
     
     let html5QrcodeScanner = new Html5QrcodeScanner(
@@ -575,7 +575,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 <th>Status</th>
                                             </tr>
                                         </thead>
-                                        <tbody id="violations-table-body">
+                                        <tbody id="violations-table-body" data-user-id="${data.id || ''}">
                                         </tbody>
                                     </table>
                                 </div>
@@ -591,7 +591,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 const tbody = document.getElementById('violations-table-body');
                 tbody.innerHTML = '';
                 
-                data.violations.forEach(violation => {
+                // Add data attribute with user info for validation
+                tbody.setAttribute('data-user-name', data.name || '');
+                tbody.setAttribute('data-user-license', data.license_number || '');
+                
+                // Filter violations to ensure they belong to this user
+                const validatedViolations = validateViolationsForCurrentUser(data.violations, data);
+                
+                validatedViolations.forEach(violation => {
                     const tr = document.createElement('tr');
                     
                     // Determine status badge color
@@ -613,7 +620,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 
                 violationsSection.style.display = 'block';
-                hasData = true;
+                
+                // Update display based on validated violations
+                if (validatedViolations.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="3" class="text-center">
+                                <p class="my-2">No violations found for this user</p>
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    hasData = true;
+                }
             }
             
             // Show no data message if no information was available
@@ -742,7 +761,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 <th>Status</th>
                                             </tr>
                                         </thead>
-                                        <tbody id="violations-table-body">
+                                        <tbody id="violations-table-body" data-user-id="${personalInfo.id || ''}">
                                         </tbody>
                                     </table>
                                 </div>
@@ -758,7 +777,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 const tbody = document.getElementById('violations-table-body');
                 tbody.innerHTML = '';
                 
-                violations.forEach(violation => {
+                // Add data attribute with user info for validation
+                tbody.setAttribute('data-user-name', personalInfo.name || '');
+                tbody.setAttribute('data-user-license', personalInfo.license || '');
+                
+                // Filter violations to ensure they belong to this user
+                const validatedViolations = validateViolationsForCurrentUser(violations, personalInfo);
+                
+                validatedViolations.forEach(violation => {
                     const tr = document.createElement('tr');
                     
                     // Determine status badge color
@@ -780,7 +806,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 
                 violationsSection.style.display = 'block';
-                hasData = true;
+                
+                // Update display based on validated violations
+                if (validatedViolations.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="3" class="text-center">
+                                <p class="my-2">No violations found for this user</p>
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    hasData = true;
+                }
             }
             
             // Show no data message if no information was available
@@ -1200,6 +1238,40 @@ document.addEventListener('DOMContentLoaded', function() {
         return violations;
     }
     
+    // NEW - Function to validate violations belong to the current user
+    function validateViolationsForCurrentUser(violations, userInfo) {
+        if (!violations || !userInfo) return violations;
+        
+        console.log(`Validating ${violations.length} violations for user: ${userInfo.name}`);
+        
+        // Filter violations to only include those that match the current user
+        // This is a best-effort validation since we don't have direct IDs to match
+        const validViolations = violations.filter(violation => {
+            // If the violation has user information and it matches our current user, keep it
+            if (violation.user_id && userInfo.id) {
+                return violation.user_id === userInfo.id;
+            }
+            
+            // If the violation has driver information that matches our current user, keep it
+            if (violation.driver_id && userInfo.id) {
+                return violation.driver_id === userInfo.id;
+            }
+            
+            // If the violation has license info that matches our user's license, keep it
+            if (violation.license_number && userInfo.license && 
+                userInfo.license !== 'N/A' && userInfo.license !== 'Not provided') {
+                return violation.license_number === userInfo.license;
+            }
+            
+            // Assume the violation belongs to the user since it was returned by the server
+            // in the context of this user's data request
+            return true;
+        });
+        
+        console.log(`Validation result: ${validViolations.length} of ${violations.length} violations are valid for this user`);
+        return validViolations;
+    }
+    
     // Success callback when QR code is successfully scanned
     function onScanSuccess(decodedText, decodedResult) {
         // Stop the scanner
@@ -1228,6 +1300,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 // This is a relative URL, prepend with base URL
                 const baseUrl = window.location.origin;
                 processedUrl = baseUrl + decodedText;
+            }
+            
+            // NEW: Use the enhanced JSON response to check for existing accounts
+            const checkForExistingAccounts = function(url) {
+                // Modify URL to request JSON format
+                const jsonUrl = new URL(url);
+                fetch(url, {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Check if there are existing users with same name/license
+                    if (data.has_existing_users && data.existing_users && data.existing_users.length > 0) {
+                        // Show notification about existing accounts
+                        showNotification(
+                            'Account Notice', 
+                            `Found ${data.existing_users.length} existing account(s) with the same name or license number. This may indicate duplicate accounts.`,
+                            'warning',
+                            10000 // Show for 10 seconds
+                        );
+                    }
+                })
+                .catch(error => {
+                    console.error("Error checking for existing accounts:", error);
+                });
             }
             
             // HANDLE USER QR CODES (universal approach for all formats)
@@ -1295,6 +1394,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Always redirect to qr_user_data endpoint for consistent handling
                     const userDataUrl = `${window.location.origin}/qr/user/${enforcer_id}/`;
                     console.log("Redirecting to user data endpoint:", userDataUrl);
+                    
+                    // NEW: Check for existing accounts with same name/license
+                    checkForExistingAccounts(userDataUrl);
+                    
+                    // Redirect to user data page
                     window.location.href = userDataUrl;
                     return;
                 } else if (url.pathname.includes('/qr/scanner')) {
@@ -1351,7 +1455,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Add event listeners for manual options
             document.getElementById('try-as-user').addEventListener('click', function() {
                 const cleanId = decodedText.trim().replace(/[^A-Za-z0-9_-]/g, '');
-                window.location.href = `${window.location.origin}/qr/user/${cleanId}/`;
+                const userDataUrl = `${window.location.origin}/qr/user/${cleanId}/`;
+                
+                // NEW: Check for existing accounts with same name/license
+                checkForExistingAccounts(userDataUrl);
+                
+                window.location.href = userDataUrl;
             });
             
             document.getElementById('try-as-driver').addEventListener('click', function() {

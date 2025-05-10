@@ -1,19 +1,18 @@
+import logging
+from decimal import Decimal
+from datetime import timedelta
+
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth import update_session_auth_hash
 from django.utils import timezone
 from django.db.models import Sum, Count, Q
-from decimal import Decimal
-from .models import UserNotification, UserReport, VehicleRegistration, OperatorViolationLookup, DriverApplication
-from traffic_violation_system.models import Violation, Violator, Operator, OperatorApplication, Driver
-from django.contrib.auth.forms import PasswordChangeForm
-from django.contrib.auth import update_session_auth_hash
 from django.http import HttpResponseNotAllowed, JsonResponse, HttpResponseRedirect, HttpResponse
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.contrib.auth.models import User
 from django.urls import reverse
 from django.db.utils import IntegrityError
-from datetime import datetime, timedelta
 from django.utils.timesince import timesince
 from traffic_violation_system.educational.models import (
     EducationalCategory, 
@@ -25,6 +24,17 @@ from traffic_violation_system.educational.models import (
 from django.template.loader import render_to_string
 import json
 import re
+from django.db import connection
+
+from traffic_violation_system.models import (
+    Violation, 
+    Payment,
+    Vehicle,
+    ViolatorQRHash,
+    Driver
+)
+from ..forms import PaymentForm
+from .models import VehicleRegistration, UserReport, DriverApplication, UserNotification
 
 @login_required
 def user_dashboard(request):
@@ -33,6 +43,49 @@ def user_dashboard(request):
     # Get the current user and their profile
     user = request.user
     profile = user.userprofile
+    
+    # Debug message for violations
+    import json
+    
+    # Check for direct violations
+    direct_violations = Violation.objects.filter(user_account=user)
+    messages.info(request, f"DEBUG: Found {direct_violations.count()} direct violations linked to your account.")
+    
+    # Raw SQL query for more direct debugging
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT COUNT(*) FROM traffic_violation_system_violation WHERE user_account_id = %s",
+            [user.id]
+        )
+        raw_count = cursor.fetchone()[0]
+        messages.info(request, f"DEBUG: Raw database query found {raw_count} violations with user_account_id = {user.id}")
+    
+    # Check for license-related violations if license exists
+    if profile.license_number and profile.license_number.strip():
+        license_violations = Violation.objects.filter(violator__license_number=profile.license_number)
+        messages.info(request, f"DEBUG: Found {license_violations.count()} violations linked to your license number: '{profile.license_number}'")
+        
+        # Also try with standardized license number format
+        std_license = profile.license_number.strip().upper().replace(' ', '')
+        if std_license != profile.license_number:
+            std_license_violations = Violation.objects.filter(violator__license_number=std_license)
+            messages.info(request, f"DEBUG: Found {std_license_violations.count()} violations with standardized license number: '{std_license}'")
+            
+            # Check if we need to update the profile license number
+            if std_license_violations.exists() and not license_violations.exists():
+                messages.info(request, f"NOTE: Your license number format might need standardization from '{profile.license_number}' to '{std_license}'")
+    else:
+        messages.info(request, f"DEBUG: No license number found in your profile.")
+    
+    # Debug check for QR hash related violations
+    try:
+        qr_hash_violations = Violation.objects.filter(qr_hash__user_account=user)
+        messages.info(request, f"DEBUG: Found {qr_hash_violations.count()} violations through QR hash link.")
+    except Exception as e:
+        messages.info(request, f"DEBUG: Error checking QR hash violations: {str(e)}")
+    
+    # Debug info for UserProfile
+    messages.info(request, f"DEBUG: Your UserProfile has these fields - license_number: '{profile.license_number}', is_driver: {profile.is_driver}")
     
     # Get violations linked to this user's license number and user account
     # Use the UserViolationManager to ensure we only get violations for this user
@@ -46,6 +99,17 @@ def user_dashboard(request):
     active_violations_count = all_violations.filter(
         Q(status='PENDING') | Q(status='APPROVED') | Q(status='ADJUDICATED')
     ).count()
+    
+    # Log the violations found by UserViolationManager
+    messages.info(request, f"DEBUG: UserViolationManager found {total_violations_count} violations in total")
+    if total_violations_count > 0:
+        violation_ids = [v.id for v in all_violations]
+        messages.info(request, f"DEBUG: Violation IDs found: {violation_ids}")
+        
+        # Debug the actual violation details for first violation
+        first_violation = all_violations.first()
+        if first_violation:
+            messages.info(request, f"DEBUG: First violation details - ID: {first_violation.id}, Type: {first_violation.violation_type}, User: {first_violation.user_account_id}, Violator License: {getattr(first_violation.violator, 'license_number', 'None') if first_violation.violator else 'No violator'}")
     
     # Sum of amounts for paid violations
     total_paid = all_violations.filter(status='PAID').aggregate(
@@ -67,6 +131,17 @@ def user_dashboard(request):
     recent_notifications = UserNotification.objects.filter(
         user=user
     ).order_by('-created_at')[:3]
+    
+    # Check for registered QR hashes
+    try:
+        qr_hashes = ViolatorQRHash.objects.filter(user_account=user)
+        if qr_hashes.exists():
+            messages.info(request, f"DEBUG: Found {qr_hashes.count()} QR hashes registered to your account.")
+            for qr_hash in qr_hashes:
+                linked_violations = Violation.objects.filter(qr_hash=qr_hash)
+                messages.info(request, f"DEBUG: QR hash {qr_hash.hash_id} has {linked_violations.count()} violations linked to it.")
+    except Exception as e:
+        messages.info(request, f"DEBUG: Error checking QR hashes: {str(e)}")
     
     context = {
         'profile': profile,
@@ -92,9 +167,26 @@ def user_violations(request):
     """
     user = request.user
     
+    # Debug message for violations
+    from django.contrib import messages
+    
+    # Get direct violations count
+    direct_violations_count = Violation.objects.filter(user_account=user).count()
+    messages.info(request, f"DEBUG: Found {direct_violations_count} direct violations linked to your account.")
+    
+    # Check database for any violation with user_account field set
+    with connection.cursor() as cursor:
+        # This will work for both MySQL and SQLite
+        cursor.execute("SELECT COUNT(*) FROM traffic_violation_system_violation WHERE user_account_id = %s", [user.id])
+        raw_count = cursor.fetchone()[0]
+        messages.info(request, f"DEBUG: Raw database query found {raw_count} violations with user_account_id = {user.id}")
+    
     # Get violations linked to this user's license number and user account
     # Use the UserViolationManager to ensure we only get violations for this user
     violations = Violation.user_violations.get_user_violations(user).order_by('-violation_date')
+    
+    # Debug the results from UserViolationManager
+    messages.info(request, f"DEBUG: UserViolationManager found {violations.count()} violations in total")
     
     # Search functionality
     search_query = request.GET.get('search', '')

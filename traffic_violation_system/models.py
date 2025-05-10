@@ -149,6 +149,7 @@ class Violation(models.Model):
         ('HEARING_SCHEDULED', 'Hearing Scheduled'),
         ('DISMISSED', 'Dismissed'),
         ('EXPIRED', 'Expired'),
+        ('ISSUED_DIRECT', 'Issued Direct'),  # Added for direct ticket issuance
     )
 
     VIOLATION_CHOICES = [
@@ -264,6 +265,21 @@ class Violation(models.Model):
     payment_date = models.DateTimeField(null=True, blank=True)
     payment_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     processed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='processed_payments')
+
+    # Signature fields
+    signature_refused = models.BooleanField(default=False, help_text="Whether the violator refused to sign")
+    refusal_note = models.TextField(blank=True, null=True, help_text="Reason for signature refusal")
+    signature_file = models.CharField(max_length=255, blank=True, null=True, help_text="Filename or path of the signature file")
+    
+    # Direct ticket fields
+    direct_ticket_details = models.TextField(blank=True, null=True)
+    citation_number = models.CharField(max_length=50, blank=True, null=True)
+    issue_date = models.DateField(null=True, blank=True)
+    court_date = models.DateField(null=True, blank=True)
+    issued_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='issued_direct_tickets')
+
+    # New fields
+    qr_hash = models.ForeignKey('ViolatorQRHash', on_delete=models.SET_NULL, null=True, blank=True, related_name='violations')
 
     def save(self, *args, **kwargs):
         if not self.payment_due_date:
@@ -856,3 +872,108 @@ class EmailVerificationToken(models.Model):
             self.verification_code = ''.join(random.choice(chars) for _ in range(6))
             
         super().save(*args, **kwargs)
+
+
+class ViolatorQRHash(models.Model):
+    """
+    This model stores the QR code hash that links multiple violations for the same violator.
+    It allows a single QR code to be used for multiple tickets and directs users to a registration page.
+    """
+    # Unique hash ID used in QR code URLs
+    hash_id = models.CharField(max_length=64, unique=True, db_index=True)
+    
+    # Violator information
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    license_number = models.CharField(max_length=20, blank=True, null=True)
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
+    
+    # Registration status
+    registered = models.BooleanField(default=False)
+    user_account = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='qr_hashes')
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    expires_at = models.DateTimeField(null=True, blank=True)  # Optional expiration date
+    
+    def __str__(self):
+        return f"QR Hash for {self.first_name} {self.last_name} ({self.hash_id})"
+    
+    def get_violations(self):
+        """Get all violations associated with this QR hash"""
+        return Violation.objects.filter(qr_hash=self)
+    
+    def get_register_url(self):
+        """Get the URL for the registration page with this hash"""
+        from django.urls import reverse
+        return reverse('register_with_violations', kwargs={'hash_id': self.hash_id})
+    
+    def get_total_fine(self):
+        """Get the total fine amount for all violations"""
+        return sum(v.fine_amount for v in self.get_violations())
+    
+    def generate_hash(first_name, last_name, license_number=None):
+        """Generate a unique hash based on violator information"""
+        import uuid
+        import hashlib
+        import logging
+        
+        # Get logger
+        logger = logging.getLogger(__name__)
+        logger.info(f"ViolatorQRHash.generate_hash called for: {first_name} {last_name}, license: {license_number}")
+        
+        # Standardize inputs
+        first_name = first_name.strip().lower() if first_name else "unknown"
+        last_name = last_name.strip().lower() if last_name else "unknown"
+        license_number = license_number.strip().upper().replace(' ', '') if license_number else None
+        
+        # First, try to find an existing hash based on identifying information
+        # The calling code should handle database interactions, so this remains a static method
+        try:
+            from django.apps import apps
+            ViolatorQRHash = apps.get_model('traffic_violation_system', 'ViolatorQRHash')
+            
+            # Check for existing hash based on license number or name
+            existing_hash = None
+            
+            # First check by license number if available
+            if license_number:
+                logger.info(f"Looking for existing QR hash by license number: {license_number}")
+                existing_hash = ViolatorQRHash.objects.filter(
+                    license_number__iexact=license_number
+                ).first()
+                if existing_hash:
+                    logger.info(f"REUSING existing QR hash by license number: {existing_hash.hash_id} for {first_name} {last_name}")
+                    return existing_hash.hash_id
+            
+            # If no match by license, try by name
+            if first_name != "unknown" and last_name != "unknown":
+                logger.info(f"Looking for existing QR hash by name: {first_name} {last_name}")
+                existing_hash = ViolatorQRHash.objects.filter(
+                    first_name__iexact=first_name,
+                    last_name__iexact=last_name
+                ).first()
+                if existing_hash:
+                    logger.info(f"REUSING existing QR hash by name: {existing_hash.hash_id} for {first_name} {last_name}")
+                    return existing_hash.hash_id
+                
+        except Exception as e:
+            # If there's any error during lookup, continue with new hash creation
+            logger.error(f"Error looking up existing QR hash: {str(e)}")
+            pass
+        
+        # Create a base string with violator information that's deterministic
+        # (same input will always produce same output)
+        base = f"{first_name}:{last_name}"
+        if license_number:
+            base += f":{license_number}"
+            
+        # Use a salt to add some security but ensure same input produces same hash
+        salt = "traffic-violation-system-salt-2023"  # Static salt
+        base += f":{salt}"
+        
+        # Create a SHA-256 hash and take the first 16 characters
+        hash_id = hashlib.sha256(base.encode()).hexdigest()[:16]
+        logger.info(f"CREATING new QR hash: {hash_id} for {first_name} {last_name}")
+        return hash_id

@@ -1,0 +1,58 @@
+<mxfile host="65bd71144e">
+    <diagram id="C5RBs43oDa-KdzZeNtuy" name="Report and System Models">
+        <mxGraphModel dx="2040" dy="842" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+            <root>
+                <mxCell id="WIyWlLk6GJQsqaUBKTNV-0"/>
+                <mxCell id="WIyWlLk6GJQsqaUBKTNV-1" parent="WIyWlLk6GJQsqaUBKTNV-0"/>
+                <mxCell id="report_table" value="&lt;b&gt;Report&lt;/b&gt;&lt;br&gt;&lt;hr&gt;id (PK)&lt;br&gt;name&lt;br&gt;description&lt;br&gt;type&lt;br&gt;query_template&lt;br&gt;chart_enabled&lt;br&gt;chart_type&lt;br&gt;is_active&lt;br&gt;created_at&lt;br&gt;updated_at" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=left;spacingLeft=4;spacingRight=4;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+                    <mxGeometry x="120" y="80" width="160" height="200" as="geometry"/>
+                </mxCell>
+                <mxCell id="report_permission_table" value="&lt;b&gt;ReportPermission&lt;/b&gt;&lt;br&gt;&lt;hr&gt;id (PK)&lt;br&gt;report_id (FK)&lt;br&gt;role" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=left;spacingLeft=4;spacingRight=4;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+                    <mxGeometry x="-70" y="374" width="160" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="report_schedule_table" value="&lt;b&gt;ReportSchedule&lt;/b&gt;&lt;br&gt;&lt;hr&gt;id (PK)&lt;br&gt;report_id (FK)&lt;br&gt;user_id (FK)&lt;br&gt;frequency&lt;br&gt;next_run&lt;br&gt;email_recipients&lt;br&gt;is_active&lt;br&gt;parameters" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=left;spacingLeft=4;spacingRight=4;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+                    <mxGeometry x="360" y="100" width="160" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="generated_report_table" value="&lt;b&gt;GeneratedReport&lt;/b&gt;&lt;br&gt;&lt;hr&gt;id (PK)&lt;br&gt;report_id (FK)&lt;br&gt;user_id (FK)&lt;br&gt;schedule_id (FK)&lt;br&gt;generated_at&lt;br&gt;pdf_file&lt;br&gt;parameters" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=left;spacingLeft=4;spacingRight=4;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+                    <mxGeometry x="340" y="400" width="160" height="140" as="geometry"/>
+                </mxCell>
+                <mxCell id="announcement_table" value="&lt;b&gt;Announcement&lt;/b&gt;&lt;br&gt;&lt;hr&gt;id (PK)&lt;br&gt;title&lt;br&gt;content&lt;br&gt;created_by_id (FK)&lt;br&gt;created_at&lt;br&gt;updated_at&lt;br&gt;is_active&lt;br&gt;priority&lt;br&gt;category&lt;br&gt;target_audience&lt;br&gt;is_popup&lt;br&gt;requires_acknowledgment&lt;br&gt;publish_date&lt;br&gt;expiration_date&lt;br&gt;geographic_area&lt;br&gt;view_count" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;align=left;spacingLeft=4;spacingRight=4;fontColor=#333333;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+                    <mxGeometry x="600" y="40" width="180" height="280" as="geometry"/>
+                </mxCell>
+                <mxCell id="announcement_ack_table" value="&lt;b&gt;AnnouncementAcknowledgment&lt;/b&gt;&lt;br&gt;&lt;hr&gt;id (PK)&lt;br&gt;announcement_id (FK)&lt;br&gt;user_id (FK)&lt;br&gt;acknowledged_at" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;align=left;spacingLeft=4;spacingRight=4;fontColor=#333333;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+                    <mxGeometry x="850" y="100" width="200" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="report_to_permission" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERmany;startArrow=ERone;rounded=0;exitX=-0.003;exitY=0.658;exitDx=0;exitDy=0;entryX=0.984;entryY=0.62;entryDx=0;entryDy=0;startFill=0;exitPerimeter=0;entryPerimeter=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="report_table" target="report_permission_table" edge="1">
+                    <mxGeometry width="100" height="100" relative="1" as="geometry">
+                        <mxPoint x="120" y="280.0000000000002" as="sourcePoint"/>
+                        <mxPoint x="120" y="460" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="report_to_schedule" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERmany;startArrow=ERone;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;startFill=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="report_table" target="report_schedule_table" edge="1">
+                    <mxGeometry width="100" height="100" relative="1" as="geometry">
+                        <mxPoint x="290" y="260" as="sourcePoint"/>
+                        <mxPoint x="390" y="160" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="report_to_generated" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERmany;startArrow=ERone;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;startFill=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="report_table" target="generated_report_table" edge="1">
+                    <mxGeometry width="100" height="100" relative="1" as="geometry">
+                        <mxPoint x="290" y="260" as="sourcePoint"/>
+                        <mxPoint x="390" y="160" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="schedule_to_generated" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERmany;startArrow=ERone;rounded=0;entryX=1.007;entryY=0.324;entryDx=0;entryDy=0;startFill=0;entryPerimeter=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="report_schedule_table" target="generated_report_table" edge="1">
+                    <mxGeometry width="100" height="100" relative="1" as="geometry">
+                        <mxPoint x="290" y="260" as="sourcePoint"/>
+                        <mxPoint x="390" y="160" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="announcement_to_ack" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERmany;startArrow=ERone;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;startFill=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="announcement_table" edge="1">
+                    <mxGeometry width="100" height="100" relative="1" as="geometry">
+                        <mxPoint x="290" y="260" as="sourcePoint"/>
+                        <mxPoint x="853" y="140" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

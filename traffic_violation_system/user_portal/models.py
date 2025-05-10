@@ -173,21 +173,34 @@ class UserViolationManager(models.Manager):
         
     def get_user_violations(self, user):
         """
-        Get all violations associated with this user, either by license number
-        or directly associated with the user account
+        Get all violations associated with this user, either by license number,
+        directly associated with the user account, or through QR hashes
         """
         from django.db.models import Q
+        import logging
+        logger = logging.getLogger(__name__)
         
         # If user doesn't have a profile or license number, just filter by user account
         if not hasattr(user, 'userprofile'):
             return self.filter(user_account=user)
+            
+        # Log that we're getting violations for this user
+        logger.info(f"Getting violations for user: {user.username} (ID: {user.id})")
             
         # Build a query for all possible ways this user could be connected to violations
         query = Q(user_account=user)
         
         # Add license number check if license number exists
         if user.userprofile.license_number:
-            query |= Q(violator__license_number=user.userprofile.license_number)
+            # Standardize the license number format for consistent matching
+            std_license = user.userprofile.license_number.strip().upper().replace(' ', '')
+            query |= Q(violator__license_number__iexact=std_license)
+            logger.info(f"Adding license number filter: {std_license}")
+            
+            # Also try the original format in case it's stored differently
+            if std_license != user.userprofile.license_number:
+                query |= Q(violator__license_number__iexact=user.userprofile.license_number)
+                logger.info(f"Adding original license number filter: {user.userprofile.license_number}")
         
         # If user is a driver, check for driver PD number
         if user.userprofile.is_driver:
@@ -195,21 +208,81 @@ class UserViolationManager(models.Manager):
             try:
                 from traffic_violation_system.models import Driver
                 drivers = Driver.objects.filter(
-                    first_name=user.first_name,
-                    last_name=user.last_name
+                    Q(first_name__iexact=user.first_name, last_name__iexact=user.last_name) |
+                    Q(license_number__iexact=user.userprofile.license_number if user.userprofile.license_number else 'nomatch')
                 )
                 if drivers.exists():
                     driver = drivers.first()
                     if driver.new_pd_number:
                         query |= Q(pd_number=driver.new_pd_number)
+                        logger.info(f"Adding PD number filter: {driver.new_pd_number}")
             except Exception as e:
                 # If there's an error, just log it and continue without this part of the filter
-                import logging
-                logger = logging.getLogger(__name__)
                 logger.error(f"Error getting driver PD number: {str(e)}")
+
+        # Add check for QR hashes registered to this user
+        try:
+            from traffic_violation_system.models import ViolatorQRHash
+            
+            # Get all QR hashes registered to this user
+            qr_hashes = ViolatorQRHash.objects.filter(user_account=user)
+            
+            if qr_hashes.exists():
+                # Add a filter for violations linked to any of the user's QR hashes
+                logger.info(f"Found {qr_hashes.count()} QR hashes for user {user.username}")
+                qr_hash_ids = list(qr_hashes.values_list('id', flat=True))
+                query |= Q(qr_hash__in=qr_hash_ids)
+                logger.info(f"Adding QR hash filter with IDs: {qr_hash_ids}")
+                
+                # Log individual QR hashes for debugging
+                for qr_hash in qr_hashes:
+                    violations_count = self.filter(qr_hash=qr_hash).count()
+                    logger.info(f"QR hash {qr_hash.hash_id} (ID: {qr_hash.id}) has {violations_count} linked violations")
+                    
+                    # For each violation linked to this QR hash, check if it's already associated with the user
+                    linked_violations = self.filter(qr_hash=qr_hash)
+                    for violation in linked_violations:
+                        if violation.user_account_id != user.id:
+                            logger.warning(f"Violation ID {violation.id} with QR hash {qr_hash.hash_id} is not directly linked to user {user.username}. Current user_account: {violation.user_account_id}")
+        except Exception as e:
+            logger.error(f"Error checking QR hashes for user: {str(e)}")
+            
+        # Add check for violations with matching violator name
+        try:
+            full_name = f"{user.first_name} {user.last_name}".strip().lower()
+            if full_name and full_name != " ":
+                query |= Q(violator__first_name__iexact=user.first_name, violator__last_name__iexact=user.last_name)
+                logger.info(f"Adding name filter for: {user.first_name} {user.last_name}")
+                
+                # Also check driver_name field which sometimes contains the full name
+                query |= Q(driver_name__icontains=full_name)
+                logger.info(f"Adding driver_name filter for: {full_name}")
+        except Exception as e:
+            logger.error(f"Error adding name filters: {str(e)}")
         
         # Return violations matching any of the conditions
-        return self.filter(query)
+        violations = self.filter(query).distinct()
+        logger.info(f"Found {violations.count()} total violations for user {user.username}")
+        
+        # Enhanced logging for each found violation
+        for v in violations:
+            v_license = getattr(v.violator, 'license_number', 'Unknown') if hasattr(v, 'violator') and v.violator else 'No violator'
+            v_name = f"{getattr(v.violator, 'first_name', '')} {getattr(v.violator, 'last_name', '')}" if hasattr(v, 'violator') and v.violator else 'No violator'
+            v_hash_id = v.qr_hash.hash_id if v.qr_hash else 'No QR hash'
+            v_user_id = v.user_account.id if v.user_account else 'Not linked'
+            
+            logger.info(f"Violation ID {v.id}: License={v_license}, Name={v_name}, QR Hash={v_hash_id}, User ID={v_user_id}")
+            
+            # If this violation has a QR hash but is not directly linked to the user, link it now
+            if v.qr_hash and v.qr_hash.user_account_id == user.id and (not v.user_account or v.user_account.id != user.id):
+                try:
+                    logger.warning(f"Fixing missing user account link for violation {v.id} - linking to user {user.username}")
+                    v.user_account = user
+                    v.save(update_fields=['user_account'])
+                except Exception as e:
+                    logger.error(f"Error fixing user account link for violation {v.id}: {str(e)}")
+        
+        return violations
 
 
 class VehicleRegistration(models.Model):

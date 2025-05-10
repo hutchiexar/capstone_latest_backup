@@ -3186,6 +3186,11 @@ function saveSignatureToServer(dataUrl) {
         return;
     }
     
+    // Always store the data URL immediately in the hidden field
+    // This ensures we have the signature data even if the server save fails
+    document.getElementById('signatureData').value = dataUrl;
+    console.log('Stored signature data in hidden field');
+    
     // Create a timestamp for unique filename
     const timestamp = new Date().getTime();
     const filename = `signature_${timestamp}.png`;
@@ -3211,13 +3216,17 @@ function saveSignatureToServer(dataUrl) {
             .then(data => {
                 if (data.success) {
                     console.log('Signature saved successfully:', data.filename);
-                    document.getElementById('signatureData').value = data.filename;
+                    // We already stored the data URL, but let's update with the filename if available
+                    if (data.filename) {
+                        document.getElementById('signatureData').value = data.filename;
+                    }
                 } else {
                     console.error('Failed to save signature:', data.message);
                 }
             })
             .catch(error => {
                 console.error('Error saving signature:', error);
+                // The signature is still available as a data URL in the hidden field
             });
         });
 }
@@ -3393,6 +3402,29 @@ document.getElementById('ticketForm').addEventListener('submit', async function(
         return;
     }
     
+    // Additional signature validation
+    const noSignature = document.getElementById('noSignature').checked;
+    const signatureData = document.getElementById('signatureData').value;
+    const refusalNote = document.getElementById('refusalNote').value;
+    
+    if (!noSignature && !signatureData && signaturePadInstance && !signaturePadInstance.isEmpty()) {
+        // We have a signature drawn but not saved - let's save it now
+        console.log('Signature drawn but not saved - saving now');
+        const dataUrl = signaturePadInstance.toDataURL('image/png');
+        document.getElementById('signatureData').value = dataUrl;
+    } else if (!noSignature && !signatureData) {
+        // No signature and not marked as refused
+        alert('Please provide a signature or check "Violator refused to sign"');
+        currentStep = 2; // Go to signature step
+        updateStep(currentStep);
+        return;
+    } else if (noSignature && !refusalNote) {
+        // No refusal note
+        alert('Please provide a reason why the violator refused to sign');
+        document.getElementById('refusalNote').focus();
+        return;
+    }
+    
     try {
         // Create a new FormData object
         const formData = new FormData(this);
@@ -3444,16 +3476,29 @@ document.getElementById('ticketForm').addEventListener('submit', async function(
         
         // Ensure signature data is included in the form data
         if (!document.getElementById('noSignature').checked) {
+            // Get the signature data (either saved filename or data URL)
             const signatureData = document.getElementById('signatureData').value;
+            
             if (signatureData) {
-                formData.set('signature_data', signatureData);
-                console.log('Signature data included in form submission:', signatureData);
+                // Check if it's a data URL (starts with "data:")
+                if (signatureData.startsWith('data:')) {
+                    // It's a data URL, we need to use it directly
+                    console.log('Using signature data URL for submission');
+                    formData.set('signature_data', signatureData);
+                    formData.set('is_signature_data_url', 'true');
+                } else {
+                    // It's a filename, use that
+                    console.log('Using signature filename for submission:', signatureData);
+                    formData.set('signature_data', signatureData);
+                    formData.set('is_signature_data_url', 'false');
+                }
             } else {
-                console.log('No signature data available');
+                console.warn('No signature data available but no signature refusal checked');
             }
         } else {
             const refusalNote = document.getElementById('refusalNote').value;
             formData.set('refusal_note', refusalNote);
+            formData.set('signature_refused', 'true');
             console.log('Signature refusal note included:', refusalNote);
         }
         
@@ -3500,14 +3545,40 @@ document.getElementById('ticketForm').addEventListener('submit', async function(
                         showClass: {
                             popup: 'animate__animated animate__fadeIn'
                         },
+                        footer: result.ticket_data.qr_print_url ? 
+                            `<div class="d-flex justify-content-center w-100 gap-2">
+                                <a href="${result.ticket_data.qr_print_url}" target="_blank" class="btn btn-primary">
+                                    <i class="fas fa-qrcode me-1"></i> Print QR Code
+                                </a>
+                                <a href="/violations/" class="btn btn-secondary">
+                                    <i class="fas fa-list me-1"></i> View All Violations
+                                </a>
+                            </div>` : '',
                         didDestroy: () => {
-                            // Redirect to violations list after SweetAlert is closed
-                            window.location.href = '/violations/';
+                            // Only redirect if user didn't click QR code button
+                            if (!window.qrCodeClicked) {
+                                window.location.href = '/violations/';
+                            }
                         }
                     });
+                    
+                    // Add event listener to track if QR code button was clicked
+                    setTimeout(() => {
+                        const qrCodeBtn = document.querySelector('.swal2-footer a.btn-primary');
+                        if (qrCodeBtn) {
+                            qrCodeBtn.addEventListener('click', function() {
+                                window.qrCodeClicked = true;
+                            });
+                        }
+                    }, 100);
                 } else {
                     // Fallback to standard alert if SweetAlert is not available
                     alert('Ticket issued successfully and sent to printer');
+                    if (result.ticket_data.qr_print_url) {
+                        if (confirm('Would you like to print the ticket with QR code?')) {
+                            window.open(result.ticket_data.qr_print_url, '_blank');
+                        }
+                    }
                     window.location.href = '/violations/';
                 }
                 
@@ -3629,12 +3700,33 @@ async function generateTicketContent(ticketData) {
     content += DOUBLE_STRIKE_OFF;
     content += '-'.repeat(42) + '\n';
     
+    // Registration Information
+    content += UNDERLINE_ON;
+    content += 'REGISTRATION INFORMATION\n';
+    content += UNDERLINE_OFF;
+    content += 'To register and manage your violations:\n';
+    if (ticketData.registration_url) {
+        content += `Visit: ${ticketData.registration_url}\n`;
+    } else {
+        content += 'Visit our traffic management office\n';
+        content += 'Or register online at traffic.example.gov\n';
+    }
+    content += '-'.repeat(42) + '\n';
+    
     // Signature Section
     content += UNDERLINE_ON;
     content += 'ACKNOWLEDGEMENT\n';
     content += UNDERLINE_OFF;
     
-    if (ticketData.signature_data) {
+    if (ticketData.signature_refused) {
+        // If signature was refused
+        content += DOUBLE_STRIKE_ON;
+        content += 'VIOLATOR REFUSED TO SIGN\n';
+        if (ticketData.refusal_note) {
+            content += `Reason: ${ticketData.refusal_note}\n`;
+        }
+        content += DOUBLE_STRIKE_OFF;
+    } else if (ticketData.signature_data) {
         console.log('Processing signature:', ticketData.signature_data);
         try {
             // Fetch the signature image
@@ -3723,67 +3815,95 @@ async function generateTicketContent(ticketData) {
             content += '\n';
             content += LINE_SPACE;
             content += CENTER;
-            content += 'Violator signature:\n';
-            content += LINE_SPACE;
-            
-            console.log('Signature bitmap processed successfully');
+            content += 'Violator Signature\n';
         } catch (error) {
-            console.error('Error processing signature:', error);
-            content += 'Signature not available\n';
+            console.error('Error processing signature image:', error);
+            content += 'Signature on file\n';
         }
-    } else if (ticketData.refusal_note) {
-        content += 'Violator refused to sign\n';
-        content += `Reason: ${ticketData.refusal_note}\n`;
     } else {
+        // No signature available
         content += 'No signature provided\n';
     }
     
-    content += LINE_SPACE;
-    
-    // Enforcer Information
-    content += UNDERLINE_ON;
-    content += 'ISSUED BY:\n';
-    content += UNDERLINE_OFF;
-    
-    // Get enforcer info from the server-provided data or sessionStorage
-    let enforcerName = ticketData.enforcer_name;
-    let enforcerId = ticketData.enforcer_id;
-    
-    // Debug logging for ticket generation
-    console.log('Ticket Data Enforcer Name:', ticketData.enforcer_name);
-    console.log('Ticket Data Enforcer ID:', ticketData.enforcer_id);
-    console.log('SessionStorage Enforcer Name:', sessionStorage.getItem('enforcer_name'));
-    console.log('SessionStorage Enforcer ID:', sessionStorage.getItem('enforcer_id'));
-    
-    // If not available in ticket data, try to get from sessionStorage
-    if (!enforcerName || enforcerName === '') {
-        enforcerName = sessionStorage.getItem('enforcer_name') || '';
-        console.log('Using enforcer name from sessionStorage:', enforcerName);
-    }
-    if (!enforcerId || enforcerId === '') {
-        enforcerId = sessionStorage.getItem('enforcer_id') || '';
-        console.log('Using enforcer ID from sessionStorage:', enforcerId);
-    }
-    
-    content += `${enforcerName || 'Not specified'}\n`;
-    content += `${enforcerId || 'Not specified'}\n`;
     content += '-'.repeat(42) + '\n';
     
-    // Footer
+    // Officer signature
+    content += LEFT;
+    content += `Enforcer: ${ticketData.enforcer}\n`;
+    content += `Enforcer ID: ${ticketData.enforcer_id}\n`;
+    
+    content += '-'.repeat(42) + '\n';
+    
+    // QR Code section
     content += CENTER;
     content += LINE_SPACE;
-    content += 'Please settle this violation within 72 hours\n';
-    content += 'at the CTTMO office\n\n';
-    content += `Reference No: ${ticketData.id}\n`;
+    content += 'SCAN QR CODE TO REGISTER ONLINE:\n';
+    content += LINE_SPACE;
     
-    // QR Code for digital verification (if supported)
-    if (ticketData.id) {
-        content += `${GS}k${String.fromCharCode(4)}${ticketData.id}${String.fromCharCode(0)}`;
+    try {
+        // Determine what data to use for the QR code
+        let qrCodeData = '';
+        
+        // Use the registration_url if available
+        if (ticketData.registration_url) {
+            qrCodeData = ticketData.registration_url;
+            console.log('Using registration_url for QR code:', qrCodeData);
+        } 
+        // Otherwise create a URL based on ID
+        else if (ticketData.id) {
+            qrCodeData = `${window.location.origin}/register/violations/direct/${ticketData.id}/`;
+            console.log('Using direct violation ID for QR code:', qrCodeData);
+        } else {
+            throw new Error('No QR code data available');
+        }
+        
+        console.log('FINAL QR CODE URL:', qrCodeData);
+        
+        // Only proceed if we have valid data
+        if (qrCodeData && qrCodeData.length > 0) {
+            // For exact measurement of data length
+            const dataLength = qrCodeData.length;
+            // Calculate pL and pH - the length bytes for ESC/POS commands
+            const totalLength = dataLength + 3; // data length + 3 bytes for parameters
+            const pL = totalLength % 256;
+            const pH = Math.floor(totalLength / 256);
+            
+            // QR code generation with ESC/POS commands
+            
+            // 1. Select the QR code model
+            content += GS + "(k" + String.fromCharCode(4, 0, 49, 65, 49, 0); // Model 1
+            
+            // 2. Set the error correction level (M = 15% error correction)
+            content += GS + "(k" + String.fromCharCode(3, 0, 49, 69, 49);
+            
+            // 3. Set the module size (dot size) - 6 for better printability
+            content += GS + "(k" + String.fromCharCode(3, 0, 49, 67, 6);
+            
+            // 4. Store the QR code data
+            content += GS + "(k" + String.fromCharCode(pL, pH, 49, 80, 48) + qrCodeData;
+            
+            // 5. Print the QR code
+            content += GS + "(k" + String.fromCharCode(3, 0, 49, 81, 48);
+            
+            // Add spacing after QR code
+            content += '\n\n';
+        }
+    } catch (error) {
+        console.error('Error generating QR code:', error);
+        
+        // Provide URL text as fallback
+        const registrationText = ticketData.registration_url || 
+            (ticketData.id ? `${window.location.origin}/register/violations/direct/${ticketData.id}/` : 'See citation details to register');
+        content += `Please visit: ${registrationText}\n`;
     }
     
-    // Reset printer settings and cut
-    content += DEFAULT_SPACING;
-    content += CONDENSED_OFF;
+    // Add registration instructions
+    content += LINE_SPACE;
+    content += 'Register online to manage your violation\n';
+    content += LINE_SPACE;
+    
+    // End with proper spacing and cut command
+    content += '\n\n\n\n';
     content += FEED_AND_CUT;
     
     return content;

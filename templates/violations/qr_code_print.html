@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .qr-print-container {
+        width: 100%;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .qr-print-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    
+    .qr-image-container {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    
+    .qr-image {
+        max-width: 300px;
+        height: auto;
+    }
+    
+    .violation-details {
+        margin-bottom: 30px;
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 5px;
+    }
+    
+    .violation-details h3 {
+        margin-top: 0;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
+    }
+    
+    .violation-item {
+        margin-bottom: 10px;
+    }
+    
+    .violation-item strong {
+        display: inline-block;
+        min-width: 200px;
+    }
+    
+    .instructions {
+        background-color: #f9f9f9;
+        padding: 20px;
+        border-radius: 5px;
+        margin-bottom: 30px;
+    }
+    
+    .print-button {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    
+    @media print {
+        .no-print {
+            display: none;
+        }
+        
+        body {
+            font-size: 12pt;
+        }
+        
+        .qr-print-container {
+            padding: 0;
+        }
+        
+        .violation-details {
+            border: none;
+            padding: 0;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="qr-print-container">
+    <div class="qr-print-header">
+        <h2>Violation Registration QR Code</h2>
+        <p>Ticket #{{ violation.ticket_number }}</p>
+    </div>
+    
+    <div class="instructions no-print">
+        <h4>Instructions:</h4>
+        <p>This QR code can be used by the violator to register an account linked to this violation. They can scan this code to complete their registration and pay their violation fee.</p>
+        <p>Print this page and provide it to the violator or take a screenshot of the QR code to share digitally.</p>
+    </div>
+    
+    <div class="qr-image-container">
+        <img src="data:image/png;base64,{{ qr_code_base64 }}" alt="Registration QR Code" class="qr-image">
+        <p>Scan this code to register with this violation</p>
+    </div>
+    
+    <div class="violation-details">
+        <h3>Violation Details</h3>
+        <div class="violation-item">
+            <strong>Ticket Number:</strong> {{ violation.ticket_number }}
+        </div>
+        <div class="violation-item">
+            <strong>Date & Time:</strong> {{ violation.date_of_violation }}
+        </div>
+        <div class="violation-item">
+            <strong>Location:</strong> {{ violation.location }}
+        </div>
+        <div class="violation-item">
+            <strong>Violation Type:</strong> {{ violation.violation_type.name }}
+        </div>
+        <div class="violation-item">
+            <strong>Fine Amount:</strong> ₱{{ violation.violation_type.violation_fee }}
+        </div>
+        <div class="violation-item">
+            <strong>Issuing Officer:</strong> {{ violation.issuing_officer }}
+        </div>
+    </div>
+    
+    <div class="print-button no-print">
+        <button onclick="window.print()" class="btn btn-primary">Print QR Code</button>
+        <a href="{% url 'issue_direct_ticket' %}" class="btn btn-secondary ml-3">Back to Ticket Issuance</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Auto-print dialog on page load (optional)
+        // setTimeout(function() {
+        //     window.print();
+        // }, 1000);
+    });
+</script>
+{% endblock %} 
