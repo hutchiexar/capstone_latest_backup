@@ -21,7 +21,7 @@ def get_adjudication_summary():
     
     approved_count = Violation.objects.filter(status='APPROVED').count()
     rejected_count = Violation.objects.filter(status='REJECTED').count()
-    pending_count = Violation.objects.filter(status='ADJUDICATED').count()
+    pending_count = Violation.objects.filter(status__in=['ADJUDICATED', 'PENDING']).count()
     
     # Recent period counts
     weekly_adjudications = Violation.objects.filter(
@@ -80,8 +80,22 @@ def get_adjudication_trend_data(timeframe='month'):
         total=Count('id'),
         approved=Count('id', filter=Q(status='APPROVED')),
         rejected=Count('id', filter=Q(status='REJECTED')),
-        pending=Count('id', filter=Q(status='ADJUDICATED'))
+        pending=Count('id', filter=Q(status__in=['ADJUDICATED', 'PENDING']))
     ).order_by('date')
+    
+    # Also include violations that have PENDING status without adjudication date
+    pending_data = Violation.objects.filter(
+        violation_date__gte=start_date,
+        status='PENDING',
+        adjudication_date__isnull=True
+    ).annotate(
+        date=TruncDate('violation_date')
+    ).values('date').annotate(
+        count=Count('id')
+    ).order_by('date')
+    
+    # Convert pending_data to dictionary for easy lookup
+    pending_dict = {item['date'].strftime(date_format): item['count'] for item in pending_data}
     
     # Convert to lists for chart data
     dates = []
@@ -101,19 +115,30 @@ def get_adjudication_trend_data(timeframe='month'):
     current_date = start_date
     while current_date <= today:
         date_str = current_date.strftime(date_format)
+        
         if date_str in data_dict:
             item = data_dict[date_str]
             dates.append(date_str)
             approved_series.append(item['approved'])
             rejected_series.append(item['rejected'])
-            pending_series.append(item['pending'])
+            
+            # Add any additional pending violations from pending_dict
+            additional_pending = pending_dict.get(date_str, 0)
+            pending_series.append(item['pending'] + additional_pending)
         else:
             dates.append(date_str)
             approved_series.append(0)
             rejected_series.append(0)
-            pending_series.append(0)
+            
+            # Use pending_dict if available for this date
+            pending_series.append(pending_dict.get(date_str, 0))
         
         current_date += delta
+    
+    # Add debug information
+    print(f"Generated adjudication trend data for {timeframe}")
+    print(f"Dates: {dates}")
+    print(f"Pending Series: {pending_series}")
     
     return {
         'dates': dates,

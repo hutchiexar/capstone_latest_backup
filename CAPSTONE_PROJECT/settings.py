@@ -260,6 +260,10 @@ EMAIL_VERIFICATION_EXEMPT_URLS = [
     r'^/logout/$',
     r'^/register/$',
     r'^/verification/',
+    r'^/accounts/password_reset/?$',
+    r'^/accounts/password_reset/done/?$',
+    r'^/accounts/reset/.+/.+/?$',  # More permissive pattern for reset URLs
+    r'^/accounts/reset/done/?$',
     r'^/static/',
     r'^/media/',
     r'^/admin/',

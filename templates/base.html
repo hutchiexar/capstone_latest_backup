@@ -3029,53 +3029,116 @@
                 {% with role=user.userprofile.role %}
                     <!-- Main Navigation -->
                     <div class="sidebar-section">
-                        <div class="sidebar-section-title">Main</div>
+                        <div class="sidebar-section-title">Dashboard</div>
                         <div class="list-group list-group-flush">
                             {% if user.userprofile.role != 'EDUCATOR' and user.userprofile.role != 'ENFORCER' %}
                             <a href="{% url 'admin_dashboard' %}" class="list-group-item {% if request.path == '/' %}active{% endif %}">
-                                <span class="material-icons">dashboard</span>Dashboard
+                                <span class="material-icons">dashboard</span>Main Dashboard
                             </a>
                             {% endif %}
                             
+                            {% if user.userprofile.role == 'ADMIN' %}
+                            <a href="{% url 'reports:dashboard' %}" class="list-group-item {% if '/reports/' in request.path %}active{% endif %}">
+                                <span class="material-icons">assessment</span>Data Analytics
+                            </a>
+                            {% endif %}
+                            
+                            {% if user.userprofile.role == 'ADMIN' or user.userprofile.role == 'SUPERVISOR' or user.userprofile.role == 'ENFORCER' %}
+                            <a href="{% url 'enforcer_map' %}" class="list-group-item {% if 'enforcer-map' in request.path %}active{% endif %}">
+                                <span class="material-icons">map</span>Enforcer Map
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Violations Management Section -->
+                    {% if user.userprofile.role != 'EDUCATOR' %}
+                    <div class="sidebar-section">
+                        <div class="sidebar-section-title">Violations & Enforcement</div>
+                        <div class="list-group list-group-flush">
                             <!-- Violations Submenu -->
-                            {% if user.userprofile.role != 'EDUCATOR' %}
                             <div class="submenu">
-                                <button class="list-group-item submenu-toggle {% if 'violations' in request.path or 'ncap' in request.path or 'adjudication' in request.path %}active{% endif %}" data-bs-toggle="collapse" data-bs-target="#violationsSubmenu">
+                                <button class="list-group-item submenu-toggle {% if 'violations' in request.path or 'ncap' in request.path %}active{% endif %}" data-bs-toggle="collapse" data-bs-target="#violationsSubmenu">
                                     <span class="material-icons">gavel</span>
-                                    <span class="flex-grow-1">Violations</span>
+                                    <span class="flex-grow-1">Violations Records</span>
                                     <span class="material-icons submenu-icon">expand_more</span>
                                 </button>
-                                <div class="collapse {% if 'violations' in request.path or 'ncap' in request.path or 'adjudication' in request.path %}show{% endif %}" id="violationsSubmenu">
+                                <div class="collapse {% if 'violations' in request.path or 'ncap' in request.path %}show{% endif %}" id="violationsSubmenu">
                                     <a href="{% url 'violations_list' %}" class="list-group-item submenu-item {% if 'violations' in request.path and 'ncap' not in request.path %}active{% endif %}">
                                         <span class="material-icons">list</span>Traffic Violations
                                     </a>
                                     <a href="{% url 'ncap_violations_list' %}" class="list-group-item submenu-item {% if 'ncap-violations' in request.path %}active{% endif %}">
                                         <span class="material-icons">photo_camera</span>NCAP Violations
                                     </a>
-                                    {% if user.userprofile.role != 'ENFORCER' and user.userprofile.role != 'SUPERVISOR' and user.userprofile.role != 'TREASURER' %}
+                                </div>
+                            </div>
+                            
+                            <!-- Violation Actions -->
+                            {% if user.userprofile.role != 'EDUCATOR' and user.userprofile.role != 'TREASURER' %}
+                            <div class="submenu">
+                                <button class="list-group-item submenu-toggle {% if 'issue-ticket' in request.path or 'upload-violation' in request.path %}active{% endif %}" data-bs-toggle="collapse" data-bs-target="#ticketingSubmenu">
+                                    <span class="material-icons">receipt</span>
+                                    <span class="flex-grow-1">Issue Violations</span>
+                                    <span class="material-icons submenu-icon">expand_more</span>
+                                </button>
+                                <div class="collapse {% if 'issue-ticket' in request.path or 'upload-violation' in request.path %}show{% endif %}" id="ticketingSubmenu">
+                                    <a href="{% url 'issue_ticket' %}" class="list-group-item submenu-item {% if 'issue-ticket' in request.path %}active{% endif %}">
+                                        <span class="material-icons">edit_note</span>Issue Ticket
+                                    </a>
+                                    <a href="{% url 'upload_violation' %}" class="list-group-item submenu-item {% if 'upload-violation' in request.path %}active{% endif %}">
+                                        <span class="material-icons">photo_camera</span>NCAP Upload
+                                    </a>
+                                    <a href="{% url 'qr_scanner' %}" class="list-group-item submenu-item {% if 'qr-scanner' in request.path %}active{% endif %}">
+                                        <span class="material-icons">qr_code_scanner</span>QR Scanner
+                                    </a>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Adjudication Submenu -->
+                            {% if user.userprofile.role != 'ENFORCER' and user.userprofile.role != 'SUPERVISOR' and user.userprofile.role != 'TREASURER' and user.userprofile.role != 'EDUCATOR' %}
+                            <div class="submenu">
+                                <button class="list-group-item submenu-toggle {% if 'adjudication' in request.path %}active{% endif %}" data-bs-toggle="collapse" data-bs-target="#adjudicationSubmenu">
+                                    <span class="material-icons">balance</span>
+                                    <span class="flex-grow-1">Adjudication</span>
+                                    <span class="material-icons submenu-icon">expand_more</span>
+                                </button>
+                                <div class="collapse {% if 'adjudication' in request.path %}show{% endif %}" id="adjudicationSubmenu">
                                     <a href="{% url 'adjudication_dashboard' %}" class="list-group-item submenu-item {% if 'adjudication/dashboard' in request.path %}active{% endif %}">
                                         <span class="material-icons">dashboard</span>Adjudication Dashboard
                                     </a>
                                     <a href="{% url 'adjudication_list' %}" class="list-group-item submenu-item {% if 'adjudication' in request.path and not 'dashboard' in request.path %}active{% endif %}">
-                                        <span class="material-icons">balance</span>Adjudication
+                                        <span class="material-icons">gavel</span>Manage Cases
                                     </a>
-                                    {% endif %}
                                 </div>
                             </div>
                             {% endif %}
+                            
+                            <!-- Violation Types - moved from Management to here -->
+                            {% if user.userprofile.role == 'ADMIN' %}
+                            <a href="{% url 'violation_types' %}" class="list-group-item {% if 'management/violation-types' in request.path %}active{% endif %}">
+                                <span class="material-icons">category</span>Violation Types
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
 
-                            <!-- Processing Submenu -->
-                            {% if user.userprofile.role == 'SUPERVISOR' or user.userprofile.role == 'TREASURER' or user.userprofile.role == 'ADMIN' %}
+                    <!-- Processing & Payments Section -->
+                    {% if user.userprofile.role == 'SUPERVISOR' or user.userprofile.role == 'TREASURER' or user.userprofile.role == 'ADMIN' %}
+                    <div class="sidebar-section">
+                        <div class="sidebar-section-title">Processing & Payments</div>
+                        <div class="list-group list-group-flush">
                             <div class="submenu">
                                 <button class="list-group-item submenu-toggle {% if 'pending-approvals' in request.path or 'payment-processing' in request.path or 'adjudication-history' in request.path %}active{% endif %}" data-bs-toggle="collapse" data-bs-target="#processingSubmenu">
                                     <span class="material-icons">pending_actions</span>
-                                    <span class="flex-grow-1">Processing</span>
+                                    <span class="flex-grow-1">Approval Workflow</span>
                                     <span class="material-icons submenu-icon">expand_more</span>
                                 </button>
                                 <div class="collapse {% if 'pending-approvals' in request.path or 'payment-processing' in request.path or 'adjudication-history' in request.path %}show{% endif %}" id="processingSubmenu">
                                     {% if user.userprofile.role == 'SUPERVISOR' or user.userprofile.role == 'ADMIN' %}
                                     <a href="{% url 'pending_approvals' %}" class="list-group-item submenu-item {% if 'pending-approvals' in request.path %}active{% endif %}">
-                                        <span class="material-icons">pending_actions</span>Pending Approvals
+                                        <span class="material-icons">pending</span>Pending Approvals
                                     </a>
                                     {% endif %}
                                     {% if user.userprofile.role == 'TREASURER' or user.userprofile.role == 'ADMIN' %}
@@ -3090,40 +3153,6 @@
                                     {% endif %}
                                 </div>
                             </div>
-                            {% endif %}
-
-                            {% if user.userprofile.role == 'ADMIN' or user.userprofile.role == 'SUPERVISOR' or user.userprofile.role == 'ENFORCER' %}
-                            <a href="{% url 'enforcer_map' %}" class="list-group-item {% if 'enforcer-map' in request.path %}active{% endif %}">
-                                <span class="material-icons">location_on</span>Enforcer Map
-                            </a>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <!-- Actions Section -->
-                    <div class="sidebar-section">
-                        <div class="sidebar-section-title">Actions</div>
-                        <div class="list-group list-group-flush">
-                            {% if user.userprofile.role != 'EDUCATOR' and user.userprofile.role != 'TREASURER' %}
-                            <div class="submenu">
-                                <button class="list-group-item submenu-toggle {% if 'issue-ticket' in request.path or 'upload-violation' in request.path %}active{% endif %}" data-bs-toggle="collapse" data-bs-target="#ticketingSubmenu">
-                                    <span class="material-icons">receipt</span>
-                                    <span class="flex-grow-1">Ticketing</span>
-                                    <span class="material-icons submenu-icon">expand_more</span>
-                                </button>
-                                <div class="collapse {% if 'issue-ticket' in request.path or 'upload-violation' in request.path %}show{% endif %}" id="ticketingSubmenu">
-                                    <a href="{% url 'issue_ticket' %}" class="list-group-item submenu-item {% if 'issue-ticket' in request.path %}active{% endif %}">
-                                        <span class="material-icons">receipt</span>Issue Ticket
-                                    </a>
-                                    <a href="{% url 'upload_violation' %}" class="list-group-item submenu-item {% if 'upload-violation' in request.path %}active{% endif %}">
-                                        <span class="material-icons">photo_camera</span>NCAP Upload
-                                    </a>
-                                </div>
-                            </div>
-                            {% endif %}
-
-                            {% if user.userprofile.role == 'ADMIN' %}
-                            {% endif %}
 
                             {% if user.userprofile.role in 'ADMIN,SUPERVISOR,TREASURER' %}
                             <a href="{% url 'payment_records' %}" class="list-group-item {% if 'payments' in request.path %}active{% endif %}">
@@ -3131,53 +3160,56 @@
                                 Payment Records
                             </a>
                             {% endif %}
-                            <a href="{% url 'announcements_list' %}" class="list-group-item {% if 'announcements' in request.path %}active{% endif %}">
-                                <span class="material-icons">campaign</span>Announcements
-                            </a>
-                            {% if user.userprofile.role != 'EDUCATOR' and user.userprofile.role != 'TREASURER' %}
-                            <a href="{% url 'qr_scanner' %}" class="list-group-item {% if 'qr-scanner' in request.path %}active{% endif %}">
-                                <span class="material-icons">qr_code_scanner</span>QR Scanner
-                            </a>
-                            {% endif %}
                         </div>
                     </div>
+                    {% endif %}
 
+                    <!-- User & Entity Management Section -->
                     {% if role == 'ADMIN' %}
-                    <!-- Management Section -->
                     <div class="sidebar-section">
-                        <div class="sidebar-section-title">Management</div>
+                        <div class="sidebar-section-title">User Management</div>
                         <div class="list-group list-group-flush">
                             <a href="{% url 'users_list' %}" class="list-group-item {% if 'users' in request.path %}active{% endif %}">
-                                <span class="material-icons">group</span>Users
+                                <span class="material-icons">group</span>System Users
                             </a>
                             <a href="{% url 'user_portal:user_management' %}" class="list-group-item {% if 'user-management' in request.path %}active{% endif %}">
                                 <span class="material-icons">directions_bike</span>Riders & Vehicles
                             </a>
+                            
+                            <!-- Operators Management -->
                             <div class="submenu">
-                                <button class="list-group-item submenu-toggle {% if 'operators' in request.path %}active{% endif %}" data-bs-toggle="collapse" data-bs-target="#operatorsSubmenu">
+                                <button class="list-group-item submenu-toggle {% if 'operators' in request.path or 'driver' in request.path %}active{% endif %}" data-bs-toggle="collapse" data-bs-target="#operatorsSubmenu">
                                     <span class="material-icons">commute</span>
-                                    <span class="flex-grow-1">Operators</span>
+                                    <span class="flex-grow-1">Transportation</span>
                                     <span class="material-icons submenu-icon">expand_more</span>
                                 </button>
                                 <div class="collapse {% if 'operators' in request.path or 'driver' in request.path %}show{% endif %}" id="operatorsSubmenu">
                                     <a href="{% url 'operator_list' %}" class="list-group-item submenu-item {% if 'operators' in request.path and not 'types' in request.path and not 'applications' in request.path %}active{% endif %}">
                                         <span class="material-icons">people</span>Manage Operators
                                     </a>
+                                    <a href="{% url 'admin_driver_list' %}" class="list-group-item submenu-item {% if 'driver' in request.path and not 'applications' in request.path %}active{% endif %}">
+                                        <span class="material-icons">person</span>Drivers
+                                    </a>
                                     <a href="{% url 'operator_applications_manage' %}" class="list-group-item submenu-item {% if 'operator/applications/manage' in request.path %}active{% endif %}">
-                                        <span class="material-icons">approval</span>Applications
+                                        <span class="material-icons">approval</span>Operator Applications
                                     </a>
                                     <a href="{% url 'user_portal:driver_applications_manage' %}" class="list-group-item submenu-item {% if 'driver/applications' in request.path %}active{% endif %}">
                                         <span class="material-icons">local_taxi</span>Driver Applications
                                     </a>
-                                    <a href="{% url 'admin_driver_list' %}" class="list-group-item submenu-item {% if 'driver' in request.path %}active{% endif %}">
-                                        <span class="material-icons">person</span>Drivers
-                                    </a>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Reports & Educational Content -->
+                    <div class="sidebar-section">
+                        <div class="sidebar-section-title">Reports & Education</div>
+                        <div class="list-group list-group-flush">
+                            <!-- Reports Submenu -->
                             <div class="submenu">
                                 <button class="list-group-item submenu-toggle {% if 'management/reports' in request.path or 'management/violation-reports' in request.path %}active{% endif %}" data-bs-toggle="collapse" data-bs-target="#reportsSubmenu">
                                     <span class="material-icons">summarize</span>
-                                    <span class="flex-grow-1">Reports</span>
+                                    <span class="flex-grow-1">System Reports</span>
                                     <span class="material-icons submenu-icon">expand_more</span>
                                 </button>
                                 <div class="collapse {% if 'management/reports' in request.path or 'management/violation-reports' in request.path %}show{% endif %}" id="reportsSubmenu">
@@ -3189,13 +3221,8 @@
                                     </a>
                                 </div>
                             </div>
-                            <a href="{% url 'reports:dashboard' %}" class="list-group-item {% if '/reports/' in request.path %}active{% endif %}">
-                                <span class="material-icons">assessment</span>Data Reports
-                            </a>
-                            <a href="{% url 'violation_types' %}" class="list-group-item {% if 'management/violation-types' in request.path %}active{% endif %}">
-                                <span class="material-icons">paid</span>Violation Types
-                            </a>
-                            <!-- Educational Materials submenu - REPLACED -->
+
+                            <!-- Educational Materials submenu -->
                             <div class="submenu">
                                 <button class="list-group-item submenu-toggle {% if 'educational/admin' in request.path %}active{% endif %}" data-bs-toggle="collapse" data-bs-target="#educationalSubmenu">
                                     <span class="material-icons">school</span>
@@ -3204,7 +3231,7 @@
                                 </button>
                                 <div class="collapse {% if 'educational/admin' in request.path %}show{% endif %}" id="educationalSubmenu">
                                     <a href="{% url 'educational:admin_index' %}" class="list-group-item submenu-item {% if 'educational/admin' in request.path and not 'categories' in request.path and not 'topics' in request.path and not 'quizzes' in request.path %}active{% endif %}">
-                                        <span class="material-icons">dashboard</span>Dashboard
+                                        <span class="material-icons">dashboard</span>Education Dashboard
                                     </a>
                                     <a href="{% url 'educational:admin_category_list' %}" class="list-group-item submenu-item {% if 'educational/admin/categories' in request.path %}active{% endif %}">
                                         <span class="material-icons">category</span>Categories
@@ -3220,19 +3247,19 @@
                         </div>
                     </div>
                     {% endif %}
-                    
-                    {% if role == 'ADMIN' %}
-                    <!-- User Management Section -->
+
+                    <!-- System Announcements -->
                     <div class="sidebar-section">
-                        <div class="sidebar-section-title">Management</div>
+                        <div class="sidebar-section-title">Communication</div>
                         <div class="list-group list-group-flush">
-                            <!-- Management menu items will go here -->
-                            <a href="{% url 'violation_types' %}" class="list-group-item {% if 'violation_types' in request.path %}active{% endif %}">
-                                <span class="material-icons">paid</span>Violation Types
+                            <a href="{% url 'announcements_list' %}" class="list-group-item {% if 'announcements' in request.path %}active{% endif %}">
+                                <span class="material-icons">campaign</span>Announcements
+                            </a>
+                            <a href="{% url 'activity_history' %}" class="list-group-item {% if 'activity_history' in request.path %}active{% endif %}">
+                                <span class="material-icons">history</span>Activity Logs
                             </a>
                         </div>
                     </div>
-                    {% endif %}
                     
                     <!-- Educator Menu Items -->
                     {% if user.is_authenticated and user.userprofile.role == 'EDUCATOR' %}

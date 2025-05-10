@@ -44,7 +44,7 @@
                     <input type="checkbox" class="form-check-input" id="rememberMe" name="remember">
                     <label class="form-check-label small" for="rememberMe">Remember me</label>
                 </div>
-                <a href="{% url 'password_reset' %}" class="text-decoration-none small">Forgot password?</a>
+                <a href="/accounts/password_reset/" class="text-decoration-none small" id="forgot-password-link">Forgot password?</a>
             </div>
 
             <button type="submit" class="btn btn-primary w-100 mb-3">
@@ -465,6 +465,22 @@ document.addEventListener('DOMContentLoaded', function() {
         awaitOpenAnimation: true,
         awaitCloseAnimation: true
     });
+
+    // Update forgot password link to include username for email lookup
+    const forgotPasswordLink = document.getElementById('forgot-password-link');
+    const usernameInput = document.querySelector('input[name="username"]');
+    
+    if (forgotPasswordLink && usernameInput) {
+        forgotPasswordLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            const username = usernameInput.value.trim();
+            if (username) {
+                window.location.href = `/accounts/password_reset/?username=${encodeURIComponent(username)}`;
+            } else {
+                window.location.href = '/accounts/password_reset/';
+            }
+        });
+    }
 
     // Toggle password visibility
     const toggleBtn = document.querySelector('.toggle-password');

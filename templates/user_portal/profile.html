@@ -1,4 +1,4 @@
-image.png{% extends 'user_portal/base_user.html' %}
+{% extends 'user_portal/base_user.html' %}
 {% load static %}
 
 {% block title %}My Profile - CTTMO User Portal{% endblock %}
@@ -284,51 +284,7 @@ image.png{% extends 'user_portal/base_user.html' %}
 
 {% block content %}
 <div class="container py-3 py-md-5 profile-container">
-    <!-- Loading Skeleton (hidden when data is loaded) -->
-    <div id="profile-skeleton" style="display: none;">
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card shadow-lg rounded-xl">
-                    <div class="card-body p-4 p-md-5">
-                        <div class="d-flex flex-column flex-md-row align-items-center">
-                            <div class="avatar-skeleton me-md-4 mb-3 mb-md-0" style="width: 120px; height: 120px;"></div>
-                            <div class="text-center text-md-start">
-                                <div class="text-skeleton" style="width: 180px;"></div>
-                                <div class="text-skeleton" style="width: 220px;"></div>
-                                <div class="text-skeleton" style="width: 120px;"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="row g-4">
-            <div class="col-12 col-md-6">
-                <div class="card shadow-lg rounded-xl">
-                    <div class="card-body p-4 p-md-5">
-                        <div class="text-skeleton" style="width: 150px;"></div>
-                        <div class="text-skeleton" style="width: 100%;"></div>
-                        <div class="text-skeleton" style="width: 100%;"></div>
-                        <div class="text-skeleton" style="width: 100%;"></div>
-                        <div class="text-skeleton" style="width: 100%;"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12 col-md-6">
-                <div class="card shadow-lg rounded-xl">
-                    <div class="card-body p-4 p-md-5">
-                        <div class="text-skeleton" style="width: 150px;"></div>
-                        <div class="text-skeleton" style="width: 100%;"></div>
-                        <div class="text-skeleton" style="width: 100%;"></div>
-                        <div class="text-skeleton" style="width: 100%;"></div>
-                        <div class="text-skeleton" style="width: 100%;"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Profile Content (will be shown after loading) -->
+    <!-- Profile Content -->
     <div id="profile-content">
     <!-- Profile Header -->
     <div class="row mb-4">
@@ -719,20 +675,6 @@ image.png{% extends 'user_portal/base_user.html' %}
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Show skeleton loading on page load
-    const profileSkeleton = document.getElementById('profile-skeleton');
-    const profileContent = document.getElementById('profile-content');
-    
-    // Simulate loading for demonstration
-    profileSkeleton.style.display = 'block';
-    profileContent.style.display = 'none';
-    
-    // After "loading" show the content
-    setTimeout(() => {
-        profileSkeleton.style.display = 'none';
-        profileContent.style.display = 'block';
-    }, 800);
-
     // Profile form submission handling
     const profileForm = document.getElementById('profileForm');
     const saveProfileBtn = document.getElementById('saveProfileBtn');
@@ -821,9 +763,8 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('confirmActionTitle').textContent = title;
         document.getElementById('confirmActionBody').textContent = message;
         
-        const confirmBtn = document.getElementById('confirmActionBtn');
-        
         // Remove existing event listeners
+        const confirmBtn = document.getElementById('confirmActionBtn');
         const newConfirmBtn = confirmBtn.cloneNode(true);
         confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
         

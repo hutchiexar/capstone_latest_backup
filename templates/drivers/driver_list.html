@@ -111,42 +111,32 @@
                         </td>
                         <td class="px-4 py-3 text-end">
                             <div class="action-buttons">
-                                <button type="button" 
-                                    class="btn btn-action btn-view"
-                                    data-bs-toggle="tooltip" 
-                                    data-bs-placement="top"
-                                    data-driver-id="{{ driver.id }}"
-                                    onclick="showDriverDetail('{% url 'driver_detail' driver.id %}')"
-                                    title="View Details">
-                                    <span class="material-icons" style="font-size: 18px;">visibility</span>
-                                </button>
+                                <a href="{% url 'driver_detail' driver.id %}" 
+                                   class="btn btn-primary action-btn"
+                                   title="View Details">
+                                    <span class="material-icons">visibility</span>
+                                </a>
                                 {% if user.userprofile.role == 'ADMIN' or user.userprofile.role == 'SUPERVISOR' %}
                                 <a href="{% url 'driver_update' driver.id %}" 
-                                    class="btn btn-action btn-edit" 
-                                    data-bs-toggle="tooltip" 
-                                    data-bs-placement="top" 
-                                    title="Edit Driver">
-                                    <span class="material-icons" style="font-size: 18px;">edit</span>
+                                   class="btn btn-info action-btn"
+                                   title="Edit Driver">
+                                    <span class="material-icons">edit</span>
                                 </a>
                                 {% endif %}
                                 {% if user.userprofile.role == 'ADMIN' %}
                                     {% if driver.active %}
                                     <button type="button" 
-                                        class="btn btn-action btn-delete" 
-                                        data-bs-toggle="tooltip" 
-                                        data-bs-placement="top" 
-                                        onclick="confirmDelete({{ driver.id }}, '{{ driver.last_name|escapejs }}, {{ driver.first_name|escapejs }}')"
-                                        title="Disable Driver">
-                                        <span class="material-icons" style="font-size: 18px;">block</span>
+                                       class="btn btn-warning action-btn"
+                                       title="Disable Driver"
+                                       onclick="confirmDelete({{ driver.id }}, '{{ driver.last_name|escapejs }}, {{ driver.first_name|escapejs }}')">
+                                        <span class="material-icons">block</span>
                                     </button>
                                     {% else %}
                                     <button type="button" 
-                                        class="btn btn-action btn-enable" 
-                                        data-bs-toggle="tooltip" 
-                                        data-bs-placement="top" 
-                                        onclick="confirmEnable({{ driver.id }}, '{{ driver.last_name|escapejs }}, {{ driver.first_name|escapejs }}')"
-                                        title="Enable Driver">
-                                        <span class="material-icons" style="font-size: 18px;">check_circle</span>
+                                       class="btn btn-success action-btn"
+                                       title="Enable Driver"
+                                       onclick="confirmEnable({{ driver.id }}, '{{ driver.last_name|escapejs }}, {{ driver.first_name|escapejs }}')">
+                                        <span class="material-icons">check_circle</span>
                                     </button>
                                     {% endif %}
                                 {% endif %}
@@ -251,33 +241,32 @@
                     </div>
                     <div class="card-footer p-2">
                         <div class="mobile-actions">
-                            <button type="button" 
-                                class="btn mobile-action-btn btn-view"
-                                onclick="showDriverDetail('{% url 'driver_detail' driver.id %}')">
-                                <span class="material-icons" style="font-size: 18px;">visibility</span>
-                                <span>View</span>
-                            </button>
+                            <a href="{% url 'driver_detail' driver.id %}" 
+                               class="btn mobile-action-btn btn-view">
+                                <span class="material-icons">visibility</span>
+                                <span class="view-text">View</span>
+                            </a>
                             {% if user.userprofile.role == 'ADMIN' or user.userprofile.role == 'SUPERVISOR' %}
                             <a href="{% url 'driver_update' driver.id %}" 
-                                class="btn mobile-action-btn btn-edit">
-                                <span class="material-icons" style="font-size: 18px;">edit</span>
-                                <span>Edit</span>
+                               class="btn mobile-action-btn btn-edit">
+                                <span class="material-icons">edit</span>
+                                <span class="view-text">Edit</span>
                             </a>
                             {% endif %}
                             {% if user.userprofile.role == 'ADMIN' %}
                                 {% if driver.active %}
                                 <button type="button" 
-                                    class="btn mobile-action-btn btn-delete"
-                                    onclick="confirmDelete({{ driver.id }}, '{{ driver.last_name|escapejs }}, {{ driver.first_name|escapejs }}')">
-                                    <span class="material-icons" style="font-size: 18px;">block</span>
-                                    <span>Disable</span>
+                                   class="btn mobile-action-btn btn-warning"
+                                   onclick="confirmDelete({{ driver.id }}, '{{ driver.last_name|escapejs }}, {{ driver.first_name|escapejs }}')">
+                                    <span class="material-icons">block</span>
+                                    <span class="view-text">Disable</span>
                                 </button>
                                 {% else %}
                                 <button type="button" 
-                                    class="btn mobile-action-btn btn-enable"
-                                    onclick="confirmEnable({{ driver.id }}, '{{ driver.last_name|escapejs }}, {{ driver.first_name|escapejs }}')">
-                                    <span class="material-icons" style="font-size: 18px;">check_circle</span>
-                                    <span>Enable</span>
+                                   class="btn mobile-action-btn btn-success"
+                                   onclick="confirmEnable({{ driver.id }}, '{{ driver.last_name|escapejs }}, {{ driver.first_name|escapejs }}')">
+                                    <span class="material-icons">check_circle</span>
+                                    <span class="view-text">Enable</span>
                                 </button>
                                 {% endif %}
                             {% endif %}
@@ -422,55 +411,131 @@
     
     .driver-card .card-footer {
         background-color: #f8f9fa;
-        padding: 12px 15px;
+        padding: 12px 15px !important;
         border-top: 1px solid #eaecef;
     }
     
-    /* Mobile action buttons */
-    .mobile-actions {
-        display: flex;
-        width: 100%;
-        justify-content: space-between;
-        gap: 2%;
+    /* Action Buttons */
+    .action-buttons {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 4px !important;
+        width: 100% !important;
+        max-width: 140px !important;
+        margin-left: auto !important;
     }
 
+    .action-btn {
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        max-width: 40px !important;
+        padding: 0 !important;
+        border-radius: 4px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex: 0 0 40px !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+        transition: all 0.2s !important;
+    }
+
+    .action-btn:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+    }
+
+    .action-btn .material-icons {
+        color: white !important;
+        font-size: 18px !important;
+        margin: 0 !important;
+        line-height: 1 !important;
+    }
+
+    /* View Button */
+    .btn-primary.action-btn {
+        background-color: var(--primary-color) !important;
+        border-color: var(--primary-color) !important;
+    }
+
+    /* Edit Button */
+    .btn-info.action-btn {
+        background-color: #8950fc !important;
+        border-color: #8950fc !important;
+    }
+
+    /* Warning Button */
+    .btn-warning.action-btn {
+        background-color: #f59e0b !important;
+        border-color: #f59e0b !important;
+    }
+
+    /* Success Button */
+    .btn-success.action-btn {
+        background-color: #198754 !important;
+        border-color: #198754 !important;
+    }
+
+    /* Hide text labels on buttons */
+    .view-text {
+        display: inline;
+        font-weight: 500;
+        font-size: 0.85rem;
+        color: white;
+    }
+
+    /* Mobile actions container */
+    .mobile-actions {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+    }
+
+    /* Mobile action buttons */
     .mobile-action-btn {
         flex: 1;
         display: flex;
         align-items: center;
         justify-content: center;
         padding: 8px 0;
-        border-radius: 4px;
+        border-radius: 6px;
         font-size: 0.875rem;
         gap: 5px;
-        transition: all 0.2s;
+        transition: all 0.2s ease;
         border: none;
         color: white;
         text-align: center;
     }
 
-    .mobile-action-btn.btn-edit {
-        background-color: #f59e0b;
-    }
-
-    .mobile-action-btn.btn-delete {
-        background-color: #ef4444;
-    }
-
     .mobile-action-btn:hover {
-        opacity: 0.9;
-        transform: translateY(-1px);
+        opacity: 0.95;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     }
 
     .mobile-action-btn:active {
         opacity: 1;
         transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
-    .mobile-action-btn span {
-        font-weight: 500;
-        font-size: 0.85rem;
-        color: white;
+    .mobile-action-btn.btn-view {
+        background-color: var(--primary-color, #2563eb);
+    }
+
+    .mobile-action-btn.btn-edit {
+        background-color: #8950fc;
+    }
+
+    .mobile-action-btn.btn-warning {
+        background-color: #f59e0b;
+    }
+
+    .mobile-action-btn.btn-success {
+        background-color: #198754;
     }
     
     .empty-state {
@@ -501,6 +566,17 @@
         .card-header, .card-body, .card-footer {
             padding: 0.75rem !important;
         }
+
+        .action-btn {
+            width: 36px !important;
+            height: 36px !important;
+            min-width: 36px !important;
+            max-width: 36px !important;
+        }
+        
+        .action-btn .material-icons {
+            font-size: 16px !important;
+        }
         
         /* Add swipe hint for pagination on mobile */
         .pagination-container {
@@ -517,25 +593,21 @@
     
     /* For very small screens */
     @media (max-width: 360px) {
-        .card-header h6 {
-            font-size: 0.9rem;
+        .mobile-action-btn {
+            padding: 6px 0;
         }
         
-        .text-muted {
+        .mobile-action-btn span.view-text {
             font-size: 0.8rem;
         }
-    }
-
-    /* Add CSS for the enable button */
-    .btn-enable {
-        color: #198754; /* Bootstrap success color */
-        background-color: rgba(25, 135, 84, 0.1);
-    }
-    .btn-enable:hover {
-        background-color: rgba(25, 135, 84, 0.2);
-    }
-    .mobile-action-btn.btn-enable {
-        background-color: #198754;
+        
+        .mobile-action-btn .material-icons {
+            font-size: 16px !important;
+        }
+        
+        .card-header h6 {
+            font-size: 0.95rem;
+        }
     }
 </style>
 

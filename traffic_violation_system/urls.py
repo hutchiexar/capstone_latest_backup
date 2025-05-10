@@ -3,6 +3,9 @@ from django.contrib.auth.views import LogoutView
 from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
+from django.urls import reverse_lazy
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 
 from . import views, violation_type_views, activity_views
 from .user_portal import views as user_portal_views
@@ -31,6 +34,34 @@ from . import receipt_views
 from . import api_views
 from . import updated_dashboard
 from educational_analytics import educational_analytics, educational_analytics_by_range
+from django.contrib.auth.tokens import default_token_generator
+from .views_password_reset import get_email_by_username, BrevoPasswordResetForm
+
+# DEBUG VIEW for troubleshooting - this will be removed later
+@csrf_exempt
+def debug_password_reset_route(request):
+    """Simple debug view to test password reset routing"""
+    return HttpResponse("""
+        <html>
+            <head><title>Password Reset Route Debug</title></head>
+            <body>
+                <h1>Password Reset Route is Working!</h1>
+                <p>If you can see this page, the routing to password reset is functional.</p>
+                <p>Go to the <a href="/accounts/password_reset/">actual password reset page</a>.</p>
+                <hr>
+                <h3>Debug Info:</h3>
+                <pre>
+                Path: {0}
+                User: {1}
+                Authenticated: {2}
+                </pre>
+            </body>
+        </html>
+    """.format(
+        request.path,
+        request.user.username if request.user.is_authenticated else "Anonymous",
+        request.user.is_authenticated
+    ))
 
 urlpatterns = [
     # Landing Pages
@@ -45,6 +76,7 @@ urlpatterns = [
     path('accounts/register/', register, name='register'),
     path('accounts/profile/', views.profile, name='profile'),
     path('accounts/profile/edit/', views.edit_profile, name='edit_profile'),
+    path('accounts/get-email-by-username/', get_email_by_username, name='get_email_by_username'),
     path('logout/', LogoutView.as_view(next_page='login'), name='logout'),
     
     # User Management
@@ -95,13 +127,23 @@ urlpatterns = [
     path('accounts/password_reset/', auth_views.PasswordResetView.as_view(
         template_name='registration/password_reset_form.html',
         email_template_name='registration/password_reset_email.html',
-        subject_template_name='registration/password_reset_subject.txt'
+        subject_template_name='registration/password_reset_subject.txt',
+        success_url=reverse_lazy('password_reset_done'),
+        token_generator=default_token_generator,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        html_email_template_name='registration/password_reset_email.html',
+        form_class=BrevoPasswordResetForm,
+        extra_context={'title': 'Password Reset'}
     ), name='password_reset'),
     path('accounts/password_reset/done/', auth_views.PasswordResetDoneView.as_view(
         template_name='registration/password_reset_done.html'
     ), name='password_reset_done'),
     path('accounts/reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(
-        template_name='registration/password_reset_confirm.html'
+        template_name='registration/password_reset_confirm.html',
+        success_url=reverse_lazy('password_reset_complete'),
+        token_generator=default_token_generator,
+        post_reset_login=False,
+        reset_url_token='set-password',
     ), name='password_reset_confirm'),
     path('accounts/reset/done/', auth_views.PasswordResetCompleteView.as_view(
         template_name='registration/password_reset_complete.html'
@@ -243,4 +285,7 @@ urlpatterns = [
     # Signature management
     path('get-signature/<str:filename>/', views.get_signature, name='get_signature'),
     path('save-signature/', views.save_signature, name='save_signature'),
+    
+    # Debug URL for password reset troubleshooting
+    path('debug-password-reset/', debug_password_reset_route, name='debug_password_reset'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) 

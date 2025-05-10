@@ -39,6 +39,9 @@ class AuthenticationMiddleware:
             reverse('track_violation'),
             reverse('verification_pending'),
             reverse('verification_required'),
+            reverse('password_reset'),
+            reverse('password_reset_done'),
+            reverse('get_email_by_username'),
         ]
         
         # Check if URL is verification-related
@@ -50,6 +53,12 @@ class AuthenticationMiddleware:
         # This allows any path that contains 'register/violations' including both direct and hash-based
         if 'register/violations' in request.path:
             logger.info(f"AuthenticationMiddleware: Path {request.path} exempt due to registration")
+            return None
+            
+        # Explicitly exempt password reset related URLs
+        if ('accounts/password_reset' in request.path or 
+            'accounts/reset' in request.path):
+            logger.info(f"AuthenticationMiddleware: Path {request.path} exempt due to password reset")
             return None
         
         # Allow access to landing pages, static files, and media files
@@ -139,7 +148,10 @@ class EmailVerificationMiddleware:
             r'^/register/?$',
             r'^/accounts/register/?$',
             r'^/verification/',
-            r'^/accounts/password_reset/',
+            r'^/accounts/password_reset/?$',
+            r'^/accounts/password_reset/done/?$',
+            r'^/accounts/reset/.+/.+/?$',  # Updated for more permissive matching
+            r'^/accounts/reset/done/?$',
             r'^/static/',
             r'^/media/',
             r'^/admin/',

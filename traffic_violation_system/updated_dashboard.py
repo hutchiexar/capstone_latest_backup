@@ -5,6 +5,7 @@ from django.utils import timezone
 from datetime import timedelta
 import json
 from django.core.serializers.json import DjangoJSONEncoder
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from .models import Violation
 
 @login_required
@@ -62,6 +63,20 @@ def admin_dashboard(request):
     adjudication_types = get_adjudication_type_breakdown()
     adjudication_performance = get_adjudication_performance()
     
+    # Paginate recent violations
+    recent_violations = violations.order_by('-violation_date')
+    paginator = Paginator(recent_violations, 5)  # Show 5 violations per page
+    page = request.GET.get('page', 1)
+    
+    try:
+        paginated_violations = paginator.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page
+        paginated_violations = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range, deliver last page
+        paginated_violations = paginator.page(paginator.num_pages)
+    
     context = {
         'total_violations': total_violations,
         'total_revenue': total_revenue,
@@ -75,7 +90,8 @@ def admin_dashboard(request):
         'settled_violations': settled_violations,
         'dates': json.dumps(dates, cls=DjangoJSONEncoder),
         'violations_data': json.dumps(violations_data),
-        'recent_violations': violations.order_by('-violation_date')[:10],
+        'recent_violations': paginated_violations,
+        'is_paginated': True,
         
         # Adjudication data
         'adjudication_summary': adjudication_summary,

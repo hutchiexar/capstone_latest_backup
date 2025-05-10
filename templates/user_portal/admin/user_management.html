@@ -227,9 +227,9 @@ document.addEventListener('DOMContentLoaded', function() {
     <div class="card shadow-sm border-0 rounded-3">
         <div class="card-body p-0">
             <!-- Table Container for desktop -->
-            <div class="table-responsive d-none d-md-block">
+            <div class="table-responsive d-none d-md-block scrollable-content">
                 <table class="table table-system table-hover align-middle mb-0" id="usersTable">
-                    <thead class="bg-light">
+                    <thead class="bg-light sticky-header">
                         <tr>
                             <th class="border-0 ps-4">User</th>
                             <th class="border-0">License</th>
@@ -395,7 +395,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             
             <!-- Mobile card view for users -->
-            <div class="user-cards d-block d-md-none">
+            <div class="user-cards d-block d-md-none scrollable-content-mobile">
                 {% for user_data in user_data %}
                 <div class="card mx-3 my-3 shadow-sm border-0 rounded-3">
                     <div class="card-header py-3 px-3 bg-white border-0 d-flex justify-content-between align-items-center">
@@ -1329,6 +1329,71 @@ document.addEventListener('DOMContentLoaded', function() {
 /* Add view-text class for hiding text labels */
 .view-text {
     display: none;
+}
+
+/* Scrollable content styles */
+.scrollable-content {
+    max-height: calc(100vh - 350px);
+    overflow-y: auto;
+    border-radius: 0.5rem;
+}
+
+.scrollable-content-mobile {
+    max-height: calc(100vh - 350px);
+    overflow-y: auto;
+    padding-bottom: 1rem;
+}
+
+/* Sticky header styles */
+.sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #f8f9fa;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Add scrollbar styling for better aesthetics */
+.scrollable-content::-webkit-scrollbar,
+.scrollable-content-mobile::-webkit-scrollbar {
+    width: 8px;
+}
+
+.scrollable-content::-webkit-scrollbar-track,
+.scrollable-content-mobile::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.scrollable-content::-webkit-scrollbar-thumb,
+.scrollable-content-mobile::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.scrollable-content::-webkit-scrollbar-thumb:hover,
+.scrollable-content-mobile::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
+/* Ensure vehicles section appears correctly within scrollable area */
+.vehicles-section {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+/* Responsive adjustments for scrollable content */
+@media (max-width: 768px) {
+    .scrollable-content-mobile {
+        max-height: calc(100vh - 300px);
+    }
+}
+
+@media (max-height: 700px) {
+    .scrollable-content, 
+    .scrollable-content-mobile {
+        max-height: calc(100vh - 250px);
+    }
 }
 </style>
 

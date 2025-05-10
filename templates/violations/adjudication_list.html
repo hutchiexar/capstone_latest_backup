@@ -65,11 +65,7 @@
                     <span class="material-icons me-2" style="color: var(--primary-color)">balance_scale</span>
                     <h4 class="mb-0">Adjudication Cases</h4>
                 </div>
-                <div class="d-flex align-items-center gap-3">
-                    <a href="{% url 'adjudication_dashboard' %}" class="btn btn-primary d-flex align-items-center gap-2">
-                        <span class="material-icons">dashboard</span>
-                        <span>Adjudication Dashboard</span>
-                    </a>
+                <div class="d-flex align-items-center">
                     {% include 'includes/search_form.html' with placeholder="Search by name, license number..." %}
                 </div>
             </div>
@@ -131,21 +127,14 @@
                                            data-violation-id="{{ violation.id }}" 
                                            data-bs-toggle="tooltip" 
                                            data-bs-placement="top" 
-                                           title="View Details and Violations">
+                                           title="View Details">
                                         <span class="material-icons">visibility</span>
                                     </button>
-                                    <a href="{% url 'violation_detail' violation.id %}" 
-                                       class="btn btn-purple action-btn"
-                                       data-bs-toggle="tooltip"
-                                       data-bs-placement="top"
-                                       title="View Violation Details">
-                                        <span class="material-icons">balance</span>
-                                    </a>
                                     <a href="{% url 'adjudication_page' violator_id=violation.violator.id %}" 
                                        class="btn btn-success action-btn"
                                        data-bs-toggle="tooltip"
                                        data-bs-placement="top"
-                                       title="New Adjudication Interface">
+                                       title="Adjudicate">
                                         <span class="material-icons">gavel</span>
                                     </a>
                                 </div>
@@ -197,14 +186,11 @@
                                 <button type="button" class="btn btn-primary action-btn view-violation-btn" data-violation-id="{{ violation.id }}">
                                     <span class="material-icons">visibility</span>
                                 </button>
-                                <a href="{% url 'violation_detail' violation.id %}" class="btn btn-purple action-btn">
-                                    <span class="material-icons">balance</span>
-                                </a>
                                 <a href="{% url 'adjudication_page' violator_id=violation.violator.id %}" 
                                    class="btn btn-success action-btn"
                                    data-bs-toggle="tooltip"
                                    data-bs-placement="top"
-                                   title="New Adjudication Interface">
+                                   title="Adjudicate">
                                     <span class="material-icons">gavel</span>
                                 </a>
                             </div>
@@ -774,29 +760,35 @@
 
 /* Action Buttons */
 .action-btn {
-    width: 40px !important;
-    height: 40px !important;
-    min-width: 40px !important;
-    max-width: 40px !important;
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
     padding: 0 !important;
-    border-radius: 4px !important;
+    border-radius: 8px !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    flex: 0 0 40px !important;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
-    transition: all 0.2s !important;
+    flex: 0 0 42px !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.12) !important;
+    transition: all 0.2s ease !important;
+    margin: 0 4px !important;
 }
 
 .action-btn:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+    transform: translateY(-3px) !important;
+    box-shadow: 0 5px 10px rgba(0,0,0,0.18) !important;
+}
+
+.action-btn:active {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.15) !important;
 }
 
 /* Icon sizing */
 .action-btn .material-icons {
     color: white !important;
-    font-size: 18px !important;
+    font-size: 20px !important;
     margin: 0 !important;
     line-height: 1 !important;
 }
@@ -806,9 +798,9 @@
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
-    gap: 4px !important;
+    gap: 8px !important;
     width: 100% !important;
-    max-width: 140px !important;
+    max-width: 110px !important;
     margin: 0 auto !important;
 }
 
@@ -821,11 +813,18 @@
 .table th, .table td {
     text-align: center;
     vertical-align: middle;
+    padding: 1rem 0.5rem;
 }
 
-/* Style for checkboxes */
-.form-check-input {
-    cursor: pointer;
+/* Improve table header styling */
+.table thead th {
+    font-weight: 600;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+    color: #475569;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    background-color: #f8fafc;
 }
 
 /* Selected row highlight */
@@ -833,44 +832,75 @@ tr.selected {
     background-color: rgba(var(--primary-rgb), 0.05);
 }
 
-/* Additional checkbox script to handle row selection highlighting */
-document.addEventListener('DOMContentLoaded', function() {
-    // Handle select-all checkbox
-    const selectAllCheckbox = document.getElementById('select-all');
-    if (selectAllCheckbox) {
-        selectAllCheckbox.addEventListener('change', function() {
-            const isChecked = this.checked;
-            const checkboxes = document.querySelectorAll('input[name="selected_violations"]');
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = isChecked;
-                // Highlight/unhighlight the row
-                const row = checkbox.closest('tr');
-                if (row) {
-                    if (isChecked) {
-                        row.classList.add('selected');
-                    } else {
-                        row.classList.remove('selected');
-                    }
-                }
-            });
-        });
+/* Improve adjudication cards for mobile */
+.adjudication-cards {
+    margin-top: 1rem;
+}
+
+.adjudication-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    margin-bottom: 1rem;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.adjudication-card-header {
+    padding: 1.25rem;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.adjudication-card-footer {
+    padding: 1.25rem;
+}
+
+/* Remove pagination styling */
+/* Pagination Styling */
+.pagination {
+    display: none;
+}
+
+.card-footer {
+    display: none;
+}
+
+/* Header Button Enhancement */
+.btn-primary {
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15) !important;
+}
+
+.btn-primary .material-icons {
+    font-size: 20px;
+}
+
+/* Mobile adjustments for header */
+@media (max-width: 768px) {
+    .d-flex.justify-content-between.align-items-center {
+        flex-direction: column;
+        align-items: flex-start !important;
     }
     
-    // Handle individual checkbox changes
-    const individualCheckboxes = document.querySelectorAll('input[name="selected_violations"]');
-    individualCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            const row = this.closest('tr');
-            if (row) {
-                if (this.checked) {
-                    row.classList.add('selected');
-                } else {
-                    row.classList.remove('selected');
-                }
-            }
-        });
-    });
-});
+    .d-flex.align-items-center {
+        margin-top: 1rem;
+        width: 100%;
+    }
+    
+    .search-form, .search-form .input-group {
+        width: 100%;
+    }
+}
 </style>
 
 <script>
@@ -1062,5 +1092,4 @@ function getCookie(name) {
 }
 </script>
 
-{% include 'includes/pagination.html' %}
 {% endblock %} 
