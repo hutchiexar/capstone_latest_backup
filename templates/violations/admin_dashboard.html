@@ -3,10 +3,29 @@
 
 {% block content %}
 <div class="container-fluid dashboard-container p-3 p-md-4">
-    <header class="dashboard-header mb-4">
-        <h2 class="text-primary fw-bold">Administrative Dashboard</h2>
-        <p class="text-muted">Overview of violations and adjudication analytics</p>
-    </header>
+    <!-- Header Section -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-body">
+            <div class="header-section">
+                <div class="header-title">
+                    <div class="icon-circle bg-primary text-white">
+                        <span class="material-icons">dashboard</span>
+                    </div>
+                    <div>
+                        <h4 class="mb-0">Administrative Dashboard</h4>
+                        <p class="text-muted mb-0 small">Overview of violations and adjudication analytics</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <a href="{% url 'violations_list' %}" class="btn btn-primary">
+                        <span class="material-icons">list</span>
+                        <span class="d-none d-sm-inline">View All Violations</span>
+                        <span class="d-inline d-sm-none">Violations</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Main Grid Layout Container -->
     <div class="dashboard-grid">
@@ -111,8 +130,24 @@
 
         <!-- Adjudication Analytics Container -->
         <div class="adjudication-container">
+            <!-- Adjudication Header Section -->
+            <div class="card shadow-sm border-0 rounded-3 mb-4">
+                <div class="card-body">
+                    <div class="header-section">
+                        <div class="header-title">
+                            <div class="icon-circle bg-secondary text-white">
+                                <span class="material-icons">balance</span>
+                            </div>
+                            <div>
+                                <h4 class="mb-0">Adjudication Analytics</h4>
+                                <p class="text-muted mb-0 small">Overview of case adjudication status and trends</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Adjudication Summary Cards -->
-            <h4 class="section-title">Adjudication Analytics</h4>
             <div class="adjudication-stats">
                 <!-- Total Adjudicated Card -->
                 <div class="stat-card">
@@ -226,20 +261,38 @@
         </div>
 
         <!-- Educational Analytics Section -->
-        <h4 class="section-title">Educational Analytics</h4>
-        <div class="educational-stats">
-            <!-- Total Categories Card -->
-            <div class="stat-card">
+        <div class="educational-container">
+            <!-- Educational Header Section -->
+            <div class="card shadow-sm border-0 rounded-3 mb-4">
                 <div class="card-body">
-                    <div class="icon-area education-icon">
-                        <span class="material-icons">category</span>
+                    <div class="header-section">
+                        <div class="header-title">
+                            <div class="icon-circle bg-info text-white">
+                                <span class="material-icons">school</span>
+                            </div>
+                            <div>
+                                <h4 class="mb-0">Educational Analytics</h4>
+                                <p class="text-muted mb-0 small">Performance metrics for educational modules and user progress</p>
+                            </div>
+                        </div>
                     </div>
-                    <div class="stat-content">
-                        <h6>TOTAL CATEGORIES</h6>
-                        <h2 id="total-categories">0</h2>
-                        <div class="trend">
-                            <span class="material-icons trend-up">show_chart</span>
-                            <span id="new-categories">0 new this month</span>
+                </div>
+            </div>
+            
+            <!-- Educational Stats Cards -->
+            <div class="educational-stats">
+                <!-- Total Categories Card -->
+                <div class="stat-card">
+                    <div class="card-body">
+                        <div class="icon-area education-icon">
+                            <span class="material-icons">category</span>
+                        </div>
+                        <div class="stat-content">
+                            <h6>TOTAL CATEGORIES</h6>
+                            <h2 id="total-categories">0</h2>
+                            <div class="trend">
+                                <span class="material-icons trend-up">show_chart</span>
+                                <span id="new-categories">0 new this month</span>
                     </div>
                 </div>
             </div>
@@ -306,8 +359,8 @@
                 </div>
                 <div class="card-body">
                     <canvas id="categoryTopicsChart"></canvas>
-                    </div>
-                    </div>
+                </div>
+            </div>
 
             <!-- Passing & Failure Rates Chart -->
             <div class="card chart-card pass-fail-chart">
@@ -497,13 +550,65 @@
         --dashboard-text-light: #94a3b8;
     }
 
+    /* Header Section Styles */
+    .header-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .header-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .icon-circle {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .header-actions .btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* Responsive header adjustments */
+    @media (max-width: 576px) {
+        .header-section {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        
+        .header-actions {
+            width: 100%;
+        }
+        
+        .header-actions .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
     /* Dashboard Container */
     .dashboard-container {
         background-color: var(--dashboard-bg);
         border-radius: 12px;
     }
     
-    /* Dashboard Header */
+    /* Dashboard Header - Old styles kept for compatibility */
     .dashboard-header h2 {
         font-size: 1.75rem;
         letter-spacing: -0.5px;
@@ -1112,6 +1217,41 @@
     .pagination .page-item.active .page-link:hover {
         background-color: var(--dashboard-primary-hover);
         color: white;
+    }
+
+    /* Adjudication Container and Educational Container */
+    .adjudication-container,
+    .educational-container {
+        grid-column: span 12;
+        background-color: var(--dashboard-bg);
+        padding: 0;
+        margin-bottom: 1rem;
+    }
+
+    .adjudication-container .adjudication-stats,
+    .educational-container .educational-stats {
+        margin-bottom: 2rem;
+    }
+
+    .adjudication-container .adjudication-charts,
+    .educational-container .educational-charts {
+        margin-top: 1rem;
+    }
+
+    /* Adjudication Stats - 4 cards in a row */
+    .adjudication-stats {
+        grid-column: span 12;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.25rem;
+    }
+
+    /* Adjudication Charts - Responsive layout */
+    .adjudication-charts {
+        grid-column: span 12;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 500px), 1fr));
+        gap: 1.25rem;
     }
 </style>
 
